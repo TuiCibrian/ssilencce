@@ -1,0 +1,479 @@
+# Repository Code Map
+
+Full per-file analysis of the ssilencce fork (Booming Music). Referenced from `AGENTS.md`.
+
+All paths are relative to `app/src/main/java/com/ssilencce/` unless stated otherwise.
+
+### Root & Build Configuration
+- `build.gradle.kts` — Top-level build file declaring shared plugins (AGP, SafeArgs, Compose compiler, KSP, AboutLibraries).
+- `settings.gradle.kts` — Repositories (google, mavenCentral, jitpack) and `:app` module inclusion.
+- `app/build.gradle.kts` — Module build: 3 flavors (github/fdroid/playstore), semantic version classes (Alpha/Beta/RC/Stable), signing, ABI splits, Last.fm key injection, CI APK naming with git hash.
+- `gradle/libs.versions.toml` — Version catalog for all dependencies (Media3, Compose, Koin, Ktor, Coil, Room, TagLib, etc.).
+- `gradle.properties`, `gradle/wrapper/gradle-wrapper.properties` — Gradle and wrapper configuration.
+- `public.properties` — Per-flavor public config (download/donation URLs, lyrics API endpoints).
+- `app/src/main/AndroidManifest.xml` — Permissions, activities, PlaybackService (MediaLibraryService), widget receivers, FileProvider, CoverProvider, Android Auto, searchable config.
+- `metadata/` — Store listings per locale (37 languages).
+- `assets/` — Store badges (F-Droid, Play Store, GitHub, etc.).
+- `.github/workflows/` — CI (`android.yml`) and release (`release.yml`) pipelines; issue/PR templates.
+
+### core/
+- `core/SsilencceDatabase.kt` — Room database (v6) with all entities and migrations.
+- `core/appwidgets/SsilencceGlanceWidget.kt` — Responsive Glance widget with 5 layouts showing cover, title, artist and controls.
+- `core/appwidgets/SsilencceGlanceWidgetReceiver.kt` — Receiver registering SsilencceGlanceWidget.
+- `core/appwidgets/CardWidget.kt` — Card-sized widget with framed cover and bottom title/controls bar.
+- `core/appwidgets/CardWidgetReceiver.kt` — Receiver registering CardWidget.
+- `core/appwidgets/FullWidget.kt` — Full-size widget with cover, gradient scrim, progress bar and controls.
+- `core/appwidgets/FullWidgetReceiver.kt` — Receiver registering FullWidget.
+- `core/appwidgets/WidgetComponent.kt` — Reusable Glance composables (album art, control icons, circular action button).
+- `core/appwidgets/WidgetExtension.kt` — Widget helpers: Dp→px, theme building with dynamic colors, service intents.
+- `core/appwidgets/state/PlaybackState.kt` — Serializable playback state for widgets plus light/dark WidgetTheme.
+- `core/appwidgets/state/PlaybackStateDefinition.kt` — GlanceStateDefinition persisting PlaybackState in a DataStore JSON file.
+- `core/audio/AudioOutputObserver.kt` — BroadcastReceiver exposing Flows for current audio device, system volume and bit-perfect state.
+- `core/audio/AutoEqTxtParser.kt` — Parser for AutoEq text files (`GraphicEQ: ...`) producing an AutoEqProfile.
+- `core/model/CategoryInfo.kt` — Parcelable navigation category mapping (Home, Songs, Albums...) with visibility (max 5).
+- `core/model/Cutoff.kt` — (description, interval ms) pair for library cutoff periods (e.g. recently added).
+- `core/model/GridViewType.kt` — Grid view type enum (Normal, Card, ColoredCard, Circle, Image).
+- `core/model/LibraryMargin.kt` — Computes total library margin from base margin, extra spacing and window insets.
+- `core/model/MediaEvent.kt` — Media event enum (content/favorite changed, playback restored/started).
+- `core/model/PaletteColor.kt` — Extracted cover colors (background, primary, text colors) with fallback error color.
+- `core/model/WebSearchEngine.kt` — Search engine enum (Google, Last.fm, Wikipedia, YouTube) with localized URLs.
+- `core/model/about/AboutItemData.kt` — DTO for "About" screen items (icon, title, summary, markdown, onClick).
+- `core/model/about/Contribution.kt` — Serializable contributor model loaded from a JSON asset.
+- `core/model/action/FolderAction.kt` — Folder action enum (Play, ShufflePlay, QueueNext, Queue, AddToPlaylist, Delete).
+- `core/model/action/NowPlayingAction.kt` — Now Playing action enum (Lyrics, AddToPlaylist, SleepTimer, SeekForward, etc.).
+- `core/model/action/QueueClearingBehavior.kt` — Enum for queue-clearing behavior (remove all vs. keep current).
+- `core/model/action/SongClickBehavior.kt` — Enum for tap-on-song behavior (play single/whole list, queue next/end).
+- `core/model/audiodevice/AudioDevice.kt` — Output device model resolving displayable name by type.
+- `core/model/audiodevice/AudioDeviceType.kt` — Device type enum (BluetoothA2DP, USB, HDMI, Speaker...) with mappings from AudioDeviceInfo/MediaRouter.
+- `core/model/audiodevice/BitPerfectState.kt` — Sealed bit-perfect state (Inactive/Active) with readable encoding/sample-rate labels.
+- `core/model/equalizer/EqBand.kt` — Immutable EQ band (index, value, range, frequency) with readable frequency.
+- `core/model/equalizer/EqBandCapabilities.kt` — EQ engine capabilities (dB range, band configs, max bands) building EqBand lists.
+- `core/model/equalizer/EqEngineMode.kt` — EQ engine enum (Basic with Android UUID, DynamicsProcessing custom UUID) with SDK auto-selection.
+- `core/model/equalizer/EqProfile.kt` — Serializable EQ profile (name, band levels, device associations, custom/AutoEq).
+- `core/model/equalizer/EqSession.kt` — EQ session identity (Internal/External, id, active).
+- `core/model/equalizer/EqState.kt` — Immutable EQ processing states (support, bands, mode, pro mode) plus bass/virtualizer/limiter/compressor states.
+- `core/model/equalizer/SoundState.kt` — Immutable Balance, Tempo (speed/pitch), system volume and ReplayGain states.
+- `core/model/equalizer/autoeq/AutoEqProfile.kt` — AutoEq profile (frequency/gain points + preamp) with logarithmic gain interpolation.
+- `core/model/filesystem/FileSystemItem.kt` — Common interface for filesystem items (id, name, path, dates).
+- `core/model/filesystem/FileSystemQuery.kt` — Filesystem query (name, path, children, storage root) with ".." up-navigation.
+- `core/model/filesystem/StorageDevice.kt` — Parcelable storage volume wrapper implementing FileSystemItem.
+- `core/model/lyrics/LyricsViewSettings.kt` — Lyrics view settings (player/full mode, centering, karaoke, effects) with preference keys.
+- `core/model/lyrics/LyricsViewState.kt` — Synced-lyrics playback state computing current line/word/background and crossfade.
+- `core/model/player/MetadataField.kt` — Selectable metadata field (Album, Genre, Year, Bitrate...) reading via MetadataReader.
+- `core/model/player/PlayerColorScheme.kt` — Player color scheme with 5 modes (AppTheme, SimpleColor, VibrantColor, MaterialYou, Blur).
+- `core/model/player/PlayerTintTarget.kt` — Re-tint target (view + old/new colors and classification) with builders.
+- `core/model/player/PlayerTransition.kt` — ViewPager transition enum with PageTransformer factory.
+- `core/model/player/ProgressState.kt` — Immutable progress state (position/duration) with remaining times and readable strings.
+- `core/model/shuffle/GroupShuffleMode.kt` — Group shuffle mode enum (ByGroup, BySong, FullRandom).
+- `core/model/shuffle/OpenShuffleMode.kt` — Enum for shuffle-on-open behavior (On, Off, Remember).
+- `core/model/shuffle/ShuffleOperationState.kt` — Special shuffle operation state (mode + Idle/InProgress).
+- `core/model/shuffle/SpecialShuffleMode.kt` — Special shuffle mode enum (PureRandom, MostPlayed, Favorites, ForgottenSongs, RecentlyAdded, Combined...).
+- `core/model/sort/SortItem.kt` — Sort menu items (KeySortItem with all keys, DescendingItem).
+- `core/model/sort/SortKey.kt` — Sort key enum with persistent preference values.
+- `core/model/task/Event.kt` — Single-consumable event wrapper (getContentIfNotConsumed/peekContent) for UI.
+- `core/model/task/Result.kt` — Sealed generic network result type (Success/Error/Loading).
+- `core/model/theme/AppTheme.kt` — App theme (id, style resource, dynamic colors, seed color) built from preferences.
+- `core/model/theme/ColorSchemes.kt` — Light/dark Material 3 ColorScheme pair.
+- `core/model/theme/NowPlayingButtonStyle.kt` — Player button style enum (Normal, Material3, Expressive) with drawables.
+- `core/model/theme/NowPlayingScreen.kt` — Now Playing screen style enum (Default, FullCover, Gradient, Plain, M3, Expressive, Peek).
+- `core/palette/PaletteProcessor.kt` — Extracts PaletteColor from bitmaps (QuantizerCelebi/Score + Palette) with white/black filters and contrast adjustments.
+- `core/sort/SortCollator.kt` — Cached locale Collator and name-based sorting helpers (ignores articles).
+- `core/sort/SortMode.kt` — Sealed sort-mode base: persists key/descending, builds sort menus; subclasses per entity.
+
+### data/
+- `data/LyricsParser.kt` — Lyrics parser interface (String/Reader → SyncedLyrics with track duration).
+- `data/SearchFilter.kt` — Parcelable search filter interface (name, compatible modes, suspend results).
+- `data/SongProvider.kt` — Minimal interface exposing a Song list.
+- `data/model/Song.kt` — Main song model (parcelable, FileSystemItem) with uri helpers and Song.emptySong.
+- `data/model/Album.kt` — Album with songs (SongProvider), name, duration, isSingle, cover and Album.empty.
+- `data/model/Artist.kt` — Artist with albums (SongProvider), counts, duration, album-artist support.
+- `data/model/ChannelMode.kt` — Channel mode enum (Mono...Surround 13.1) resolved by channel count.
+- `data/model/ContentType.kt` — Library content type enum (TopArtists, History, Favorites, NotRecentlyPlayed...) with flags.
+- `data/model/ExpandedSong.kt` — Song subclass with playCount, skipCount, lastPlayedAt and isFavorite.
+- `data/model/Folder.kt` — Music folder with musicFiles (FileSystemItem, SongProvider), name, counts and dates.
+- `data/model/Genre.kt` — Parcelable genre (id, name, songCount) with EmptyGenre.
+- `data/model/Playlist.kt` — Device playlist (id, name) resolving songs via repository, with EmptyPlaylist.
+- `data/model/QueuePosition.kt` — Queue position mapping between timeline indices and visible positions.
+- `data/model/QueueSong.kt` — Song subclass with a key (Pair<Long,Int>) for queue persistence.
+- `data/model/ReleaseYear.kt` — Release year with its songs (SongProvider), parcelable.
+- `data/model/Suggestion.kt` — Content suggestion (ContentType + item list).
+- `data/model/lyrics/LyricsActor.kt` — Lyrics actor enum (v1/v2/v3, duet, M/F) with background variants.
+- `data/model/lyrics/LyricsFile.kt` — Lyrics file (path + TTML/LRC format), parcelable and serializable.
+- `data/model/lyrics/LyricsSource.kt` — Lyrics source (Embedded/Downloaded/File) and mode (Plain/Synced) enums.
+- `data/model/lyrics/RawLyrics.kt` — Sealed raw lyrics (Embedded, Remote plain/synced/instrumental, Stored).
+- `data/model/lyrics/SyncedLyrics.kt` — Synced lyrics model: lines with times, word syllables, background content, translation and transliteration.
+- `data/model/network/LoginParams.kt` — Sealed login params (Last.fm user/password, ListenBrainz token).
+- `data/model/network/LoginState.kt` — Sealed login state (Empty/LoggingIn/LoggedIn/Failure) with helpers.
+- `data/model/network/NetworkFeature.kt` — Enableable network features (Images, Lyrics APIs, Last.fm, ListenBrainz, Updater) with availability checks.
+- `data/model/network/ScrobblingResult.kt` — Sealed scrobbling result (Success with songId / Failure with message).
+- `data/model/network/ScrobblingService.kt` — Scrobbling service enum (Lastfm, ListenBrainz).
+- `data/model/network/lastfm/LastFmResult.kt` — LastFmFailure enum mapping Last.fm error codes to resource messages.
+- `data/model/replaygain/ReplayGainMode.kt` — ReplayGain mode enum (Album/Track/Off) and ReplayGain data class (gains/peaks).
+- `data/model/search/FilterSelection.kt` — Parcelable search filter selection (mode, column, SQL selection and args).
+- `data/model/search/SearchQuery.kt` — Search query (filter mode, text, timestamp) with FilterMode enum.
+- `data/mapper/SearchFilterMapper.kt` — Extensions creating SearchFilters (Smart/Basic/LastAdded) for album/artist/folder/genre/year.
+- `data/mapper/SongMapper.kt` — Mappings between Song/SongEntity/HistoryEntity/PlayCountEntity.
+- `data/local/MediaQueryDispatcher.kt` — Fluent MediaStore query builder dispatching cursors via ContentResolver.
+- `data/local/MediaStoreObserver.kt` — ContentObserver batching MediaStore changes (500 ms) and triggering refresh.
+- `data/local/MediaStoreWriter.kt` — Writes files (images/playlists) to MediaStore on Android 10+ with Request/Result.
+- `data/local/MetadataReader.kt` — Reads audio metadata with TagLib (properties, tags, images, bitrate, sample rate, channel mode).
+- `data/local/MetadataWriter.kt` — Writes metadata and covers via TagLib (batch) and launches MediaScanner.
+- `data/local/ReplayGainTagExtractor.kt` — Extracts ReplayGain tags (standard, iTunes `----:com.apple.iTunes:`, Opus R128) with LruCache per Uri.
+- `data/local/lyrics/InstrumentalDetector.kt` — Detects instrumental songs by title keywords or short exact lyrics.
+- `data/local/lyrics/lrc/LrcLyricsParser.kt` — LRC/enhanced-LRC parser: multiple timestamps, word-sync, offset, translations.
+- `data/local/lyrics/lrc/LrcNode.kt` — Intermediate LRC parser node with children and conversion to SyncedLyrics.
+- `data/local/lyrics/ttml/TtmlAccompaniment.kt` — TTML accompaniment (translation/transliteration) state handling.
+- `data/local/lyrics/ttml/TtmlAgent.kt` — TTML agent (person/group/other) assigning actors to lines.
+- `data/local/lyrics/ttml/TtmlLyricsParser.kt` — TTML (Apple Music) parser with XmlPullParser building the node tree.
+- `data/local/lyrics/ttml/TtmlNode.kt` — TTML tree node with timings, text, background, agents and open/closed states.
+- `data/local/lyrics/ttml/TtmlNodeTree.kt` — Hierarchical TTML tree managing node open/close and final SyncedLyrics conversion.
+- `data/local/room/SongEntity.kt` — Room entity for playlist songs (unique index playlist_creator_id+id).
+- `data/local/room/QueueEntity.kt` — Room entity for a saved queue item (id + order).
+- `data/local/room/QueueDao.kt` — Queue DAO: save, list ordered, prune missing and transactional replace.
+- `data/local/room/PlaylistWithSongs.kt` — Room @Embedded+@Relation between playlist and its songs.
+- `data/local/room/PlaylistEntity.kt` — Room playlist entity (name, custom cover, description).
+- `data/local/room/PlaylistDao.kt` — Playlists/songs DAO: CRUD, relations as LiveData/Flow, searches, cascade delete.
+- `data/local/room/PlayCountEntity.kt` — Room play-count entity (playCount, skipCount, timePlayed) with song snapshot.
+- `data/local/room/PlayCountDao.kt` — Play-count DAO: upsert, transactional play/skip increments, top 100 in Flow.
+- `data/local/room/LyricsEntity.kt` — Room cached-lyrics entity (song id, lyrics, provider, isInstrumental).
+- `data/local/room/LyricsDao.kt` — Lyrics DAO: upsert, deletion by song/total, get individual/all.
+- `data/local/room/InclExclEntity.kt` — Room include/exclude path entity (path + type).
+- `data/local/room/InclExclDao.kt` — Whitelist/blacklist folder DAO (insert/delete/clear/get).
+- `data/local/room/HistoryEntity.kt` — Room playback-history entity (song snapshot + timePlayed).
+- `data/local/room/HistoryDao.kt` — History DAO: upsert, deletions, played/not-played songs with cutoffs, limit 100.
+- `data/local/search/BasicSearchFilter.kt` — Context search filter (folder/genre/year/playlist) with generic parcelable argument.
+- `data/local/search/LastAddedSearchFilter.kt` — Search filter over recently added content via SmartRepository.
+- `data/local/search/SmartSearchFilter.kt` — Configurable filter building MediaStore SQL by FilterSelection mode.
+- `data/local/repository/Repository.kt` — Main Repository interface: songs/albums/artists/genres/years/folders/playlists, searches, favorites, scrobbling.
+- `data/local/repository/SongRepository.kt` — Song queries from MediaStore (cursors, uris, MediaItems, blacklist) + RealSongRepository.
+- `data/local/repository/AlbumRepository.kt` — Albums from MediaStore grouping songs (splitIntoAlbums) + RealAlbumRepository.
+- `data/local/repository/ArtistRepository.kt` — Artists/album-artists grouped into albums + RealArtistRepository.
+- `data/local/repository/GenreRepository.kt` — Genres and their songs via MediaStore.Genres + RealGenreRepository.
+- `data/local/repository/LyricsRepository.kt` — Lyrics parsing (file/embedded/stored/remote), encoding detection, LruCache, saving.
+- `data/local/repository/NetworkRepository.kt` — Last.fm/ListenBrainz login and scrobbling, artist/album info, Deezer and MusicBrainz lookups.
+- `data/local/repository/PlaylistRepository.kt` — Device and Room playlists (create, rename, delete, favorites, songs).
+- `data/local/repository/SearchRepository.kt` — Global search with grouped filters and scoped searches (genre/playlist/year/folder).
+- `data/local/repository/SmartRepository.kt` — Smart content (top albums/artists, recent, never played), play counts and history.
+- `data/local/repository/SpecialRepository.kt` — Release years and filesystem folders/files with navigation.
+- `data/remote/KtorClient.kt` — Ktor/OkHttp HttpClient with 10 MB cache, cache-control and offline interceptors, JSON negotiation.
+- `data/remote/deezer/DeezerService.kt` — Deezer client: track/album/artist search.
+- `data/remote/deezer/model/DeezerAlbum.kt` — Deezer album response model with best-image selection (Jaro-Winkler).
+- `data/remote/deezer/model/DeezerArtist.kt` — Deezer artist model with getBestImage (0.90 similarity threshold).
+- `data/remote/deezer/model/DeezerTrack.kt` — Deezer track model with album artwork by size.
+- `data/remote/github/GitHubService.kt` — GitHub releases query (stable/prerelease, optional token) with latest downloadable selection.
+- `data/remote/github/model/GitHubRelease.kt` — GitHub release model: APK asset per ABI/flavor, version comparison, DownloadManager request.
+- `data/remote/lastfm/LastFmService.kt` — Last.fm client: album/artist info, signed mobile session (MD5), scrobble and now playing.
+- `data/remote/lastfm/model/LastFmAlbum.kt` — album.getInfo response model (wiki).
+- `data/remote/lastfm/model/LastFmArtist.kt` — artist.getInfo response model (bio).
+- `data/remote/lastfm/model/LastFmError.kt` — Last.fm API error model (message + code).
+- `data/remote/lastfm/model/LastFmResponse.kt` — Scrobble/now-playing response models with ignoredMessage.
+- `data/remote/lastfm/model/LastFmSession.kt` — Last.fm session response (name, key, subscriber).
+- `data/remote/lastfm/model/LastFmUser.kt` — Last.fm user model (name, realname, url).
+- `data/remote/listenbrainz/ListenBrainzService.kt` — ListenBrainz client: token validation and listen submission.
+- `data/remote/listenbrainz/model/ListenBrainzModels.kt` — ListenBrainz models (submission, listen, track metadata, validation responses).
+- `data/remote/lyrics/LyricsDownloadService.kt` — Orchestrates lyrics downloads from Lyrically/BetterLyrics/LRCLib per network features.
+- `data/remote/lyrics/api/LyricsApi.kt` — Common lyrics API interface (name, network feature, downloadLyrics).
+- `data/remote/lyrics/api/betterlyrics/BetterLyricsApi.kt` — BetterLyrics API (TTML) with timeouts.
+- `data/remote/lyrics/api/lrclib/LrcLibApi.kt` — LRCLib API: search with close duration and plain-lyrics fallback.
+- `data/remote/lyrics/api/lyrically/LyricallyApi.kt` — Lyrically API: iTunes search with Jaro-Winkler scoring and TTML/LRC/ELRC parsing.
+- `data/remote/lyrics/model/LyricsResponse.kt` — Lyrics response models (LRCLib, BetterLyrics, Lyrically).
+- `data/remote/lyrics/model/SearchResponse.kt` — iTunes search response model (resultCount, trackId, duration).
+- `data/remote/musicbrainz/MusicBrainzExt.kt` — Derives Cover Art Archive URL from a release.
+- `data/remote/musicbrainz/MusicBrainzService.kt` — MusicBrainz client: recording search and details with inc=.
+- `data/remote/musicbrainz/model/MusicBrainzModels.kt` — MusicBrainz models (search response, recording, relations, works, genres, artist credits).
+- `src/shared/.../lyrically/PaxsenixSearchHelper.kt` — (shared variant) iTunes Search API client via Ktor used by the Lyrically provider.
+- `src/playstore/.../lyrically/PaxsenixSearchHelper.kt` — (playstore variant) stub always returning null (no API access).
+
+### playback/
+- `playback/PlaybackService.kt` — MediaLibraryService owning the ExoPlayer, MediaSession, equalizer, notifications, Bluetooth and widgets (playback core).
+- `playback/AdvancedForwardingPlayer.kt` — ForwardingPlayer wrapper adding sequential timeline handling and upcoming-range realignment.
+- `playback/ImprovedShuffleOrder.kt` — Custom Media3 ShuffleOrder with random seed, atomic index and kotlinx-serialization persistence.
+- `playback/PersistentStorage.kt` — Persists queue, position and shuffle order in Room/SharedPreferences and restores asynchronously.
+- `playback/Playback.kt` — Constants for custom MediaSession commands/events (shuffle toggle, repeat cycle, favorite, playback restore).
+- `playback/PlaybackExtension.kt` — Extensions for MediaSession/Player/MediaItem: queue extraction, MediaItem↔Song conversion, extras.
+- `playback/ProgressObserver.kt` — Main-looper handler invoking a callback every 500 ms to observe playback progress.
+- `playback/SleepTimer.kt` — AlarmManager-based sleep timer with countdown, fade-out and pending-quit option, exposing StateFlows.
+- `playback/equalizer/EqualizerManager.kt` — Central manager applying EQ/balance/replay-gain/bass effects per output device, persisted in DataStore.
+- `playback/equalizer/engine/EQEngine.kt` — Abstract base wrapping audiofx effects (BassBoost/Virtualizer/LoudnessEnhancer) with safe operations.
+- `playback/equalizer/engine/BasicEQEngine.kt` — EQEngine implementation based on the classic android.media.audiofx.Equalizer.
+- `playback/equalizer/engine/DynamicsProcessingEngine.kt` — EQEngine using DynamicsProcessing (API 28+) with multiband compressor/limiter.
+- `playback/library/LibraryProvider.kt` — Resolves MediaItems for playback (including AAOS paths and search results) via the repository.
+- `playback/library/MediaIDs.kt` — Constants/helpers for hierarchical media ID paths (ROOT, SONGS, ALBUMS...).
+- `playback/processor/BalanceAudioProcessor.kt` — Media3 BaseAudioProcessor applying per-channel gain to 16-bit PCM.
+- `playback/processor/ByteUtils.kt` — Helpers for reading/writing signed 24-bit integers from/to ByteBuffer.
+- `playback/processor/ReplayGainAudioProcessor.kt` — Media3 BaseAudioProcessor applying ReplayGain (album/track mode, preamp, peak limiting) to 16/24-bit PCM.
+- `playback/renderer/AlacWorkaroundCodecSelector.kt` — MediaCodecSelector filtering hardware ALAC decoders to avoid broken high-bitrate M4A playback.
+- `playback/renderer/SsilencceRenderersFactory.kt` — DefaultRenderersFactory subclass injecting balance and ReplayGain processors into DefaultAudioSink.
+- `playback/shuffle/ShuffleManager.kt` — Implements smart/weighted shuffle modes (pure random, most played, favorites, forgotten, recent, combined, by-group).
+
+### coil/
+- `coil/CoilBitmapLoader.kt` — Media3 BitmapLoader backed by Coil's SingletonImageLoader for notification bitmaps.
+- `coil/CoilExtension.kt` — Coil extensions and default placeholder drawables for loading song/album/artist/playlist images.
+- `coil/CoverProvider.kt` — ContentProvider exposing content:// URIs resolving cached covers for albums/artists/playlists/genres.
+- `coil/CustomArtistImageManager.kt` — Saves chosen artist images to file, registers in SharedPreferences and notifies MediaStore.
+- `coil/CustomPlaylistImageManager.kt` — Creates/deletes custom playlist covers (reduced JPGs in the app files dir).
+- `coil/fetcher/ArtistImageFetcher.kt` — Coil fetcher resolving artist images from custom files, Deezer or MediaStore art.
+- `coil/fetcher/AudioCoverFetcher.kt` — Coil fetcher loading embedded/folder art (via TagLib) or MediaStore, falling back to Deezer.
+- `coil/fetcher/AutoGeneratedImageFetcher.kt` — Coil fetcher generating genre/year images by combining album covers.
+- `coil/fetcher/PlaylistImageFetcher.kt` — Coil fetcher loading the custom playlist cover or an auto-generated mosaic.
+- `coil/model/ArtistImage.kt` — Request data model (id, coverUri, name) for artist images.
+- `coil/model/AudioCover.kt` — Request data model (albumId, uri, path, artist/album/title, flags) for song/album covers.
+- `coil/model/AutoGeneratedImage.kt` — Request model (type, id, songCount) for a mosaic image of a genre or year.
+- `coil/model/PlaylistImage.kt` — Request model (playlistEntity, songs) for a playlist cover.
+- `coil/store/KeyerStore.kt` — Coil Keyer implementations producing stable cache keys for the image models.
+- `coil/store/MapperStore.kt` — Coil Mapper implementations converting Song/Album/Artist/Playlist/Genre/Year/FileSystemItem to image models.
+- `coil/util/AudioCoverUtils.kt` — Locates fallback folder art files (cover.jpg, folder.png...) next to the audio file.
+- `coil/util/AutoGeneratedImageUtil.kt` — Builds a mosaic bitmap from the album covers of a song list.
+- `coil/util/MergedImageUtils.kt` — Disposes and merges up to 9 cover bitmaps into a rotated 1600 px collage.
+
+### util/ and extensions/
+- `util/BackupHelper.kt` — Creates/restores ZIP backups with playlists (M3U), settings, lyrics and custom artist images.
+- `util/Constants.kt` — App constants: support email, GitHub/community/legal URLs, user agent.
+- `util/CryptoUtil.kt` — MD5 encoding and AES-GCM encryption/decryption of sensitive strings using the Android Keystore.
+- `util/FileUtil.kt` — App directories (playlists, custom images, thumbs) and storage helpers.
+- `util/MusicUtil.kt` — Batch song deletion from MediaStore with playlist/cache/SAF cleanup and progress reporting.
+- `util/Preferences.kt` — Central typed SharedPreferences access for all app settings.
+- `util/SongPlayCountHelper.kt` — Times playback per song to decide when to increment the counter (50% of duration).
+- `util/StopWatch.kt` — Simple thread-safe stopwatch (start/pause/reset/elapsed).
+- `util/StorageUtil.kt` — Enumerates mounted storage volumes and resolves the storage device of a directory.
+- `util/SwipeAndDragHelper.java` — ItemTouchHelper callback enabling drag reordering of RecyclerView items.
+- `util/color/NotificationColorUtil.java` — AOSP legacy helper for notification colors with guaranteed contrast.
+- `util/cursor/SortedCursorUtil.kt` — Builds a SortedLongCursor selecting MediaStore song ids in a given order.
+- `util/cursor/SortedLongCursor.java` — AbstractCursor presenting an underlying cursor reordered by ids (CyanogenMod legacy).
+- `util/m3u/M3UConstants.kt` — M3U format constants (extension, header, entry markers).
+- `util/m3u/M3UWriter.kt` — Exports playlists as .m3u files (plain file pre-Q, MediaStore on Q+).
+- `util/oem/MiPlayAudioSupport.kt` — Detects the Xiaomi Mi Play service availability on Chinese MIUI builds.
+- `util/oem/SystemMediaControlResolver.kt` — Opens the system media output switcher with OEM-specific intents or native dialogs.
+- `extensions/ActivityExt.kt` — Activity/Intent extensions: hide keyboard, keep screen on, typed extras, root view.
+- `extensions/AdapterExt.kt` — RecyclerView adapter helpers: image loading with palette colors in MediaEntryViewHolder.
+- `extensions/AndroidExt.kt` — SDK version checks (hasPie/hasQ/...) and PackageManager/HtmlCompat helpers.
+- `extensions/BluetoothExt.kt` — Checks whether a Bluetooth A2DP device is connected (API-aware).
+- `extensions/ContextExt.kt` — Context/Resources extensions: dp conversion, night mode, tablet/landscape detection, URL opening, toasts.
+- `extensions/FragmentExt.kt` — Fragment/AlertDialog helpers: dialog builders, default grid columns, argument bundles, transitions.
+- `extensions/InsetsExt.kt` — Applies window insets (padding/margins, IME, scrollable content) to legacy Views.
+- `extensions/IntentExt.kt` — Intent builders for sharing songs, opening web URLs, MIME/extra constants.
+- `extensions/SharedPreferencesExt.kt` — Observes SharedPreferences keys as Compose state via produceState.
+- `extensions/files/FileExt.kt` — File extensions: formatted names, readable sizes, pretty paths, FileProvider URIs, Jaudiotagger reads, ZipOutputStream.
+- `extensions/files/SAFExt.kt` — Storage Access Framework helpers: persisted URI permissions, document lookup by path, SAF deletion.
+- `extensions/media/ArtistNameExt.kt` — Artist name utilities: main artist extraction from "feat./ft.", unknown/multi detection.
+- `extensions/media/DataExt.kt` — Display string builders for Album/Artist/Song metadata (info, counts, Spanned titles, web search).
+- `extensions/media/MediaExt.kt` — MediaStore helpers: insert/delete/album-art URIs, readable track/duration numbers, thumbnail files.
+- `extensions/navigation/NavigationExt.kt` — Builds navigation argument bundles for detail screens and navigation actions.
+- `extensions/resources/ColorExt.kt` — Color utilities: luminance, darkening, contrast guarantee, desaturation, view/seekbar tinting.
+- `extensions/resources/DrawableExt.kt` — Drawable/Bitmap conversions: tinting, drawable→bitmap, resizing, JPG encoding.
+- `extensions/resources/ViewExt.kt` — View helpers: animations, visibility, icon tinting, toolbars, balloons, bottom sheets, keyboard.
+- `extensions/utilities/CalendarExt.kt` — Calendar helpers: elapsed today/week/month/year ms and playlist cutoff calculations.
+- `extensions/utilities/CursorExt.kt` — Cursor iteration helpers: null safety, row mapping, safe column reads.
+- `extensions/utilities/Utilities.kt` — String utilities: normalize, sanitize, collapse spaces, RTL/Arabic detection, enum/JSON helpers.
+
+### App entry points
+- `App.kt` — Application class: starts Koin, sets default preferences, crash activity, night mode, custom Coil ImageLoader, cache cleanup.
+- `MainModule.kt` — Koin DI modules: network services, Room database, repositories, playback components, media writers, image managers, ViewModels.
+- `MediaControllerOwner.kt` — Lifecycle-aware owner of the MediaController connected to the PlaybackService MediaSession.
+
+### ui/
+- `ui/LibraryCallbacks.kt` — Callback interfaces used by library adapters (songs, albums, artists, genres, years, files, playlists, search, home).
+- `ui/UiCallbacks.kt` — IBackConsumer (back press) and IScrollHelper (scroll to top) interfaces implemented by fragments.
+- `ui/adapters/YearAdapter.kt` — Multi-select RecyclerView adapter for release years with cover, name, song count and context menu.
+- `ui/adapters/SimpleItemAdapter.kt` — Minimal generic adapter for simple lists (configurable layout and TextView).
+- `ui/adapters/SearchAdapter.kt` — Multi-select adapter for search results distinguishing albums, artists, songs, playlists, genres and headers.
+- `ui/adapters/PlaylistAdapter.kt` — Multi-select playlist adapter (name, song count, image, transition, selection menu).
+- `ui/adapters/HomeAdapter.kt` — Home adapter rendering suggestion rows with a horizontal RecyclerView.
+- `ui/adapters/GenreAdapter.kt` — Genre adapter with palette image, name, song count and FastScroller popup text.
+- `ui/adapters/FileAdapter.kt` — Multi-select adapter for the file explorer (folders, songs, storage devices).
+- `ui/adapters/DraggableItemAdapter.kt` — Generic drag & drop adapter for reorderable lists with checkbox and drag handle.
+- `ui/adapters/DetailAdapters.kt` — Detail-screen adapters: HeaderAdapter, SectionHeaderAdapter, WikiAdapter, HorizontalListAdapter.
+- `ui/adapters/song/SongAdapter.kt` — Open base adapter for songs with multi-select, palette image, selection menu and section popup text.
+- `ui/adapters/song/SimpleSongAdapter.kt` — SongAdapter subclass showing track number, duration and info text per sort key.
+- `ui/adapters/song/PlaylistSongAdapter.kt` — SongAdapter subclass with drag & drop (advrecyclerview) for playlist reordering.
+- `ui/adapters/preference/ExtraInfoAdapter.kt` — Draggable adapter configuring extra metadata fields shown in the player.
+- `ui/adapters/preference/CategoryInfoAdapter.kt` — Draggable adapter choosing visible library categories (max 5, at least 1).
+- `ui/adapters/artist/ArtistAdapter.kt` — Multi-select artist adapter with palette image and album-artists-only support.
+- `ui/adapters/album/AlbumAdapter.kt` — Open multi-select album adapter with cover, sort text, transition and selection menu.
+- `ui/adapters/album/SimpleAlbumAdapter.kt` — AlbumAdapter subclass showing the album year as secondary text.
+- `ui/component/base/AbsBaseActivity.kt` — Base activity handling storage/notification permissions and music volume stream.
+- `ui/component/base/AbsThemeActivity.kt` — Base activity applying theme (dynamic colors, black theme, custom font), edge-to-edge, rotation lock.
+- `ui/component/base/AbsMainActivityFragment.kt` — MainActivity fragment base exposing PlayerViewModel/LibraryViewModel and reacting to playback events.
+- `ui/component/base/AbsRecyclerViewFragment.kt` — Base fragment with RecyclerView, toolbar, shuffle button, fast-scroller, mini-player margins.
+- `ui/component/base/AbsRecyclerViewCustomGridSizeFragment.kt` — Extends AbsRecyclerViewFragment with list/grid modes and configurable grid size/view type.
+- `ui/component/base/AbsPlayerFragment.kt` — Player screen base fragment (toolbar, song menu, animated background, gestures, player colors, dialogs).
+- `ui/component/base/AbsPlayerControlsFragment.kt` — Player controls base fragment (play/pause, repeat, shuffle, slider, titles) with animations.
+- `ui/component/base/AbsSlidingMusicPanelActivity.kt` — Base activity with sliding mini-player bottom sheet, bottom nav/rail, player styles, gestures, search.
+- `ui/component/base/AbsTagEditorActivity.kt` — Tag editor base activity: image selection (Photo Picker), SAF writing, Coil loading, tag saving.
+- `ui/component/base/AbsMultiSelectAdapter.kt` — Abstract adapter implementing multi-select mode with ActionMode (CAB) and select-all.
+- `ui/component/base/MediaEntryViewHolder.kt` — Base ViewHolder binding common media item views and resolving Koin ViewModels.
+- `ui/component/views/TopAppBarLayout.kt` — Custom AppBarLayout toggling between simple or collapsing mode per preference.
+- `ui/component/views/SquigglyProgress.kt` — Animated sine-wave progress drawable used by the player seekbar.
+- `ui/component/views/PlaceholderDrawable.kt` — Placeholder drawable with surface color and centered tinted icon.
+- `ui/component/views/PermissionView.kt` — XML-configurable FrameLayout showing number, title, description and button for a permission.
+- `ui/component/views/MusicSlider.kt` — FrameLayout wrapping a SeekBar (with SquigglyProgress) or Material Slider per preference.
+- `ui/component/views/MorphicIconButton.kt` — Button animating shape morphosis (square to circle) with rotating icon (based on XMusic).
+- `ui/component/views/InfoView.kt` — Simple view with title and text, horizontal/vertical styles via XML attributes.
+- `ui/component/views/SsilencceShapeableImageView.kt` — Shapeable ImageView forcing square measure and rounded corners.
+- `ui/component/views/AnimSlider.kt` — Material Slider animating its value via ObjectAnimator with alpha-colored thumb/track.
+- `ui/component/transform/ZoomOutPageTransformer.kt` — ViewPager PageTransformer with zoom-out effect.
+- `ui/component/transform/VerticalStackTransformation.kt` — PageTransformer stacking pages vertically with scale and Y offset.
+- `ui/component/transform/VerticalFlipTransformation.kt` — PageTransformer rotating pages on the X axis (3D camera).
+- `ui/component/transform/SimpleTransformer.kt` — No-op PageTransformer.
+- `ui/component/transform/ParallaxPagerTransformer.kt` — PageTransformer moving an inner view with parallax at configurable speed.
+- `ui/component/transform/HorizontalFlipTransformation.kt` — PageTransformer rotating pages on the Y axis (3D camera).
+- `ui/component/transform/HingeTransformation.kt` — PageTransformer rotating from the top-left pivot like a hinge, with fade.
+- `ui/component/transform/DepthTransformation.kt` — Classic depth PageTransformer (incoming page grows and fades in).
+- `ui/component/transform/CascadingPageTransformer.kt` — Cascading transformer with rotation, offset and decreasing scale of side pages.
+- `ui/component/transform/CarouselPagerTransformer.kt` — Carousel-style transformer scaling/offsetting pages by distance to center.
+- `ui/component/menu/MenuClick.kt` — PopupMenu factory and abstract OnClickMenu class showing a popup on click.
+- `ui/component/menu/MenuItemClickExt.kt` — Extensions resolving menu item actions (play next, add to queue/playlist, share, delete, edit tags, navigate).
+- `ui/component/preferences/ThemePreference.kt` — Preference with a MaterialButtonToggleGroup for light/dark/system theme.
+- `ui/component/preferences/SwitchWithButtonPreference.kt` — SwitchPreferenceCompat adding an extra button with listener.
+- `ui/component/preferences/ProgressIndicatorPreference.kt` — Preference showing/hiding a CircularProgressIndicator in its widget frame.
+- `ui/component/preferences/CustomDialogPreference.kt` — Simple DialogPreference without customization.
+- `ui/component/preferences/dialog/SongClickActionPreferenceDialog.kt` — Compose DialogFragment choosing the tap-on-song behavior (SongClickBehavior).
+- `ui/component/preferences/dialog/SingleSelectionDialog.kt` — Compose-based single-selection PreferenceDialogFragmentCompat with radio buttons.
+- `ui/component/preferences/dialog/NowPlayingScreenPreferenceDialog.kt` — Dialog with ViewPager of now-playing styles, color scheme and transition spinners.
+- `ui/component/preferences/dialog/ExtraInfoPreferenceDialog.kt` — Dialog with draggable RecyclerView (ExtraInfoAdapter) for player/widget extra info.
+- `ui/component/preferences/dialog/ClearQueueActionPreferenceDialog.kt` — Compose DialogFragment choosing the queue-clearing behavior.
+- `ui/component/preferences/dialog/CategoriesPreferenceDialog.kt` — Dialog with draggable list (CategoryInfoAdapter) to enable/reorder library categories.
+- `ui/component/preferences/dialog/ActionOnCoverPreferenceDialog.kt` — Compose DialogFragment for the cover-gesture action (tap/double-tap/long-press).
+- `ui/component/compose/TitledSurface.kt` — Collapsible card composables (TitledCard/SwitchCard) with title, icon and optional switch.
+- `ui/component/compose/TipView.kt` — Tip/info card with icon and text.
+- `ui/component/compose/SmallHeader.kt` — Compact header with image (MediaImage), title, subtitle and optional trailing content.
+- `ui/component/compose/ShapedText.kt` — Text label with clipped shape, background color and optional click.
+- `ui/component/compose/EmptyView.kt` — Empty state view with circular icon, title, subtitle and optional button.
+- `ui/component/compose/DialogListItem.kt` — Dialog list items with radio button or checkbox.
+- `ui/component/compose/DialogButton.kt` — Checkbox row for Compose dialogs.
+- `ui/component/compose/Dialog.kt` — Reusable Compose dialogs: ConfirmDialog and InputDialog.
+- `ui/component/compose/ButtonGroup.kt` — Connected TonalToggleButton group with resolved icons/texts.
+- `ui/component/compose/AnimatedEqBars.kt` — Animated EQ bars (Canvas + infinite sine animation) active while playing.
+- `ui/component/compose/CollapsibleAppBar.kt` — Compose Scaffold with collapsible or simple TopAppBar per app bar preference.
+- `ui/component/compose/ErrorView.kt` — Error view with icon, text and error container colors.
+- `ui/component/compose/EqualizerWaveform.kt` — Canvas drawing the EQ waveform with smoothed line, fill and 0 dB baseline.
+- `ui/component/compose/IconifiedSlider.kt` — Material Slider track drawing an icon along active/inactive track.
+- `ui/component/compose/Legacy.kt` — Surface for bottom sheets with rounded top corners.
+- `ui/component/compose/ObserveAsEvent.kt` — Collects a Flow as an event respecting STARTED lifecycle.
+- `ui/component/compose/MaterialSwitch.kt` — Switch-style toggle row with icon, title and subtitle over primaryContainer.
+- `ui/component/compose/MediaImage.kt` — Media image with Coil (AsyncImage) and placeholder on load/error.
+- `ui/component/compose/decoration/FadingEdge.kt` — fadingEdges modifier applying fade gradients on content edges (RTL aware).
+- `ui/component/compose/decoration/AnimatedBackground.kt` — animatedGradient modifier drawing a looping animated gradient while playing.
+- `ui/component/compose/preferences/PreferenceItem.kt` — Compose preference items (icon, title, summary, switch/value variants).
+- `ui/component/compose/lyrics/LyricsView.kt` — Full Compose lyrics view: LazyColumn with synced scrolling, active line highlight, blur/shadow effects, RTL.
+- `ui/component/compose/lyrics/KaraokeStyleText.kt` — Karaoke-style line rendering measuring syllables and animating text fill by playback time.
+- `ui/component/compose/lyrics/SpannedWordText.kt` — Word-by-word synced lyrics rendering using AnnotatedString (based on Metrolist).
+- `ui/component/compose/color/ColorComponent.kt` — Color utilities: isDark/darken via HCT (m3color), on-surface colors, gradient extraction from Bitmap.
+- `ui/component/compose/menu/MenuItem.kt` — Sealed menu item model (Action, DropDown, Checkable, Divider) with visibility/enabled.
+- `ui/component/compose/menu/OverflowMenu.kt` — Compose overflow menu (DropdownMenu) built from MenuItem with radio/checkbox states.
+- `ui/component/compose/player/NowPlayingSlider.kt` — Compose player slider with straight/wavy track and thumb styles.
+- `ui/dialogs/WebSearchDialog.kt` — Dialog offering web search engines for a song, opening the browser.
+- `ui/dialogs/SAFDialog.kt` — Dialog requesting SAF access via OpenDocumentTree and notifying the persisted Uri.
+- `ui/dialogs/MultiCheckDialog.kt` — Generic multi-select dialog with RecyclerView checkboxes (MultiCheckConfig).
+- `ui/dialogs/songs/DeleteSongsDialog.kt` — Deletes songs from the library using MediaStore createDeleteRequest/TrashRequest (with SAF fallback).
+- `ui/dialogs/playlists/RemoveFromPlaylistDialog.kt` — Confirmation dialog to remove one or more songs from a playlist.
+- `ui/dialogs/playlists/ImportPlaylistDialog.kt` — Lists device playlists (M3U/others) for import with multi-selection and progress.
+- `ui/dialogs/playlists/EditPlaylistDialog.kt` — Edits an existing playlist (name, description, image with Photo Picker).
+- `ui/dialogs/playlists/DeletePlaylistDialog.kt` — Confirmation dialog to delete one or more playlists.
+- `ui/dialogs/playlists/CreatePlaylistDialog.kt` — Creates a new playlist with name, description, cover and optional initial songs.
+- `ui/dialogs/playlists/AddToPlaylistDialog.kt` — Compose bottom sheet with search and multi-select of playlists for adding songs.
+- `ui/dialogs/library/FolderChooserDialog.kt` — Navigable folder tree dialog for selecting a storage folder.
+- `ui/dialogs/library/BlacklistWhitelistDialog.kt` — Manages blacklisted/whitelisted library folders via InclExclDao and FolderChooserDialog.
+- `ui/theme/Theme.kt` — SsilencceTheme (light/dark/black/dynamic schemes) and PlayerTheme (player color scheme).
+- `ui/theme/Color.kt` — Static Material 3 color palettes (lightScheme/darkScheme) for the default theme.
+- `ui/theme/Type.kt` — Typography: Google Sans Flex font family and customTypography applied to all styles.
+- `ui/theme/Tokens.kt` — Dimension tokens for sliders (corner size, gaps, track heights).
+- `ui/theme/Monet.kt` — Dynamic (Monet/M3) color scheme generation from a key color with palette styles and system contrast.
+
+### ui/screen/
+- `ui/screen/MainActivity.kt` — Main activity extending AbsSlidingMusicPanelActivity; NavHost, playback intents, MediaController commands, dynamic shortcuts, update search.
+- `ui/screen/about/AboutFragment.kt` — Fragment inflating a ComposeView with AboutScreen, handling back and transitions.
+- `ui/screen/about/AboutScreen.kt` — Compose "About" screen: app info, contributors table, licenses with dialog, more contributors.
+- `ui/screen/equalizer/EqualizerFragment.kt` — Compose fragment orchestrating EqualizerViewModel/LibraryViewModel/PlayerViewModel for EqualizerScreen.
+- `ui/screen/equalizer/EqualizerResult.kt` — EQ profile operation results (deletion, export/import with Uri/mime, requests).
+- `ui/screen/equalizer/EqualizerScreen.kt` — Full EQ UI: band sliders, bass boost, virtualizer, compressor, limiter, balance, tempo, replay gain, profile import/export.
+- `ui/screen/equalizer/EqualizerViewModel.kt` — Exposes EqualizerManager state, implements profile import/export (JSON/TXT AutoEq), launches system AudioEffect.
+- `ui/screen/error/ErrorActivity.kt` — Crash-handler activity saving the report to a .log file, with copy/share/report/restart actions.
+- `ui/screen/info/InfoResult.kt` — State data classes: PlayInfoResult (play counts), AudioHeaderInfo (format/bitrate), SongInfo (metadata, isMissingMetadata).
+- `ui/screen/info/InfoViewModel.kt` — Loads album/artist, computes PlayInfoResult from PlayCountEntity and builds SongInfo via MetadataReader + Jaudiotagger.
+- `ui/screen/info/PlayInfoFragment.kt` — View fragment showing playback statistics (plays/skips, last date, top tracks) for an album/artist/list.
+- `ui/screen/info/SongDetailFragment.kt` — Compose BottomSheetDialogFragment showing song detail with metadata refresh.
+- `ui/screen/library/LibraryResult.kt` — Library operation results (HandleIntentResult, AddToPlaylistResult, ImportResult with messages).
+- `ui/screen/library/LibraryViewModel.kt` — Central library ViewModel: LiveData of all collections, forced reloads, intents, shuffle, playlist import, loading animations.
+- `ui/screen/library/home/HomeBinding.kt` — Typed wrapper of the home layout views.
+- `ui/screen/library/home/HomeFragment.kt` — Library home screen: greeting header, last added, top tracks, history, shuffle button and suggestions.
+- `ui/screen/library/home/HomeResult.kt` — SuggestedResult with Idle/Loading/Ready states for home suggestions.
+- `ui/screen/library/albums/AlbumListFragment.kt` — Album list/grid fragment with shuffle, menus and detail navigation.
+- `ui/screen/library/albums/AlbumDetailFragment.kt` — Album detail with cover header, song list, similar albums, Last.fm wiki and container transition.
+- `ui/screen/library/albums/AlbumDetailViewModel.kt` — Loads album by id, similar albums and Last.fm wiki.
+- `ui/screen/library/artists/ArtistListFragment.kt` — Artist list/grid fragment with shuffle, sorting and context menus.
+- `ui/screen/library/artists/ArtistDetailFragment.kt` — Artist detail: header image, albums/songs, similar artists and Last.fm biography.
+- `ui/screen/library/artists/ArtistDetailViewModel.kt` — Loads artist by id/name, similar artists and Last.fm biography.
+- `ui/screen/library/folders/FoldersListFragment.kt` — Filesystem explorer fragment (FileAdapter, IFileCallback) with recursive navigation.
+- `ui/screen/library/folders/FolderDetailFragment.kt` — Folder detail showing the songs of a given path.
+- `ui/screen/library/folders/FolderDetailViewModel.kt` — Minimal ViewModel loading a Folder by path.
+- `ui/screen/library/genres/GenresListFragment.kt` — Genre list/grid fragment with sorting and forced reload on resume.
+- `ui/screen/library/genres/GenreDetailFragment.kt` — Genre detail listing its songs with song menus and shuffle.
+- `ui/screen/library/genres/GenreDetailViewModel.kt` — Loads the songs of a genre.
+- `ui/screen/library/playlists/PlaylistListFragment.kt` — Playlist list/grid fragment with menus, create/import dialogs and detail navigation.
+- `ui/screen/library/playlists/PlaylistDetailFragment.kt` — Playlist detail (incl. favorites) with drag & drop reordering, internal search, menus.
+- `ui/screen/library/playlists/PlaylistDetailViewModel.kt` — Exposes playlist songs, existence and PlaylistWithSongs observables.
+- `ui/screen/library/search/SearchFragment.kt` — Search screen with text field, voice input, SearchFilters, grouped results and navigation.
+- `ui/screen/library/search/SearchViewModel.kt` — Combines query+filter with 300 ms debounce, executes repository.search and emits the resulting queue.
+- `ui/screen/library/songs/SongListFragment.kt` — All-songs list/grid fragment with shuffle, sorting and menus.
+- `ui/screen/library/years/YearsListFragment.kt` — Release-year list/grid fragment with sorting and reload on resume.
+- `ui/screen/library/years/YearDetailFragment.kt` — Year detail listing its songs.
+- `ui/screen/library/years/YearDetailViewModel.kt` — Loads a ReleaseYear by year.
+- `ui/screen/lyrics/LyricsFragment.kt` — Compose fragment container of LyricsScreen, navigating to the editor.
+- `ui/screen/lyrics/LyricsScreen.kt` — Compose synced-lyrics screen: auto-scrolling, blur/background effects, keepScreenOn, auto-advance with playback.
+- `ui/screen/lyrics/LyricsViewModel.kt` — Central lyrics ViewModel: loading from repository/network, InstrumentalDetector, view settings, editor state.
+- `ui/screen/lyrics/LyricsEditorFragment.kt` — Compose fragment showing LyricsEditorScreen for the song from navigation args.
+- `ui/screen/lyrics/LyricsEditorScreen.kt` — Compose lyrics editor: text editing with preview, instrumental detection, online search, saving lyrics/LRC files.
+- `ui/screen/other/DetailListFragment.kt` — Generic content list fragment (albums/artists/songs per ContentType) for "last added" with menus.
+- `ui/screen/other/MiniPlayerFragment.kt` — Bottom mini-player: cover, title, play/next/prev buttons (with long-press gestures), progress, panel expansion.
+- `ui/screen/other/ShuffleModeBottomSheet.kt` — Compose bottom sheet choosing special shuffle modes over the full library.
+- `ui/screen/other/ShuffleModeFragment.kt` — Compose BottomSheetDialogFragment wrapping ShuffleModeBottomSheet with library/player ViewModels.
+- `ui/screen/permissions/PermissionsActivity.kt` — Initial permission requests (storage/audio, images, Bluetooth, exact alarms) with PermissionView.
+- `ui/screen/player/PlayerAnimator.kt` — Abstract AnimatorSet manager for player animations (prepare/start/disable with FastOutSlowIn).
+- `ui/screen/player/PlayerGesturesController.kt` — Gesture controller (OnTouchListener + GestureDetector) mapping taps/double-taps/long-presses/flings to GestureType.
+- `ui/screen/player/PlayerViewModel.kt` — Central player ViewModel: MediaController subscription, progress, events, shuffle/queue, session commands, palette colors.
+- `ui/screen/player/cover/CoverPagerFragment.kt` — ViewPager of covers (carousel effect) with player gestures and palette color capture.
+- `ui/screen/player/cover/page/ImageFragment.kt` — Single cover page fragment loading with Coil, applying theme layouts and processing palette colors.
+- `ui/screen/player/cover/CoverLyricsFragment.kt` — Compose fragment showing lyrics over the cover with expand-to-full-lyrics action.
+- `ui/screen/player/styles/defaultstyle/DefaultPlayerFragment.kt` — Default style player fragment (toolbar, cover, color scheme tinting, panel management).
+- `ui/screen/player/styles/defaultstyle/DefaultPlayerControlsFragment.kt` — Default style controls: slider, play/next/prev/repeat/shuffle buttons and animations.
+- `ui/screen/player/styles/expressivestyle/ExpressivePlayerFragment.kt` — Expressive style fragment: blur background, toolbar, actions popup, color scheme, gestures.
+- `ui/screen/player/styles/expressivestyle/ExpressivePlayerControlsFragment.kt` — Expressive controls with MorphicIconButton, slider and animations.
+- `ui/screen/player/styles/fullcoverstyle/FullCoverPlayerFragment.kt` — FullCover style: full-screen cover as background with dynamic tinting.
+- `ui/screen/player/styles/fullcoverstyle/FullCoverPlayerControlsFragment.kt` — Overlaid controls for FullCover with animations and actions popup.
+- `ui/screen/player/styles/gradientstyle/GradientPlayerFragment.kt` — Gradient style combining cover and color gradient derived from the scheme.
+- `ui/screen/player/styles/gradientstyle/GradientPlayerControlsFragment.kt` — Gradient controls: slider, repeat/shuffle, actions popup.
+- `ui/screen/player/styles/m3style/M3PlayerFragment.kt` — Material 3 style player with toolbar and Material tinting.
+- `ui/screen/player/styles/m3style/M3PlayerControlsFragment.kt` — M3 controls with play/pause FAB, slider and animations.
+- `ui/screen/player/styles/peekplayerstyle/PeekPlayerFragment.kt` — Peek style: top progress bar, compact toolbar, scheme tinting.
+- `ui/screen/player/styles/peekplayerstyle/PeekPlayerControlsFragment.kt` — Peek controls: slider, repeat/shuffle, play/pause and animations.
+- `ui/screen/player/styles/plainstyle/PlainPlayerFragment.kt` — Plain style with simple cover, toolbar and color scheme.
+- `ui/screen/player/styles/plainstyle/PlainPlayerControlsFragment.kt` — Plain controls with play/pause FAB, slider and animations.
+- `ui/screen/queue/QueueFragment.kt` — Expanded BottomSheetDialogFragment containing the queue in Compose with song actions.
+- `ui/screen/queue/QueueScreen.kt` — Compose queue UI: highlighted current song, search, drag reordering, filters, actions menu.
+- `ui/screen/scrobbling/ScrobblingServiceLoginFragment.kt` — Compose bottom sheet for scrobbling login (Last.fm/Libre.fm): user/token or API key form.
+- `ui/screen/settings/SettingsFragment.kt` — Settings container with nested NavHostFragment, toolbar and destination listener.
+- `ui/screen/settings/SettingsScreen.kt` — Enum mapping each settings category to its XML preference layout and navigation action.
+- `ui/screen/settings/PreferencesScreenFragment.kt` — PreferenceFragmentCompat with all preference screens and change handlers.
+- `ui/screen/sleeptimer/SleepTimerFragment.kt` — Expanded BottomSheetDialogFragment showing SleepTimerBottomSheet with SleepTimerViewModel.
+- `ui/screen/sleeptimer/SleepTimerScreen.kt` — Compose sleep timer bottom sheet: minutes slider, end-music/fade-out options, start/stop.
+- `ui/screen/sleeptimer/SleepTimerViewModel.kt` — Combines SleepTimer state with DataStore preferences (fade-out duration, timer value) and emits events.
+- `ui/screen/sound/SoundSettingsFragment.kt` — Compose BottomSheetDialogFragment opening SoundSettingsScreen with EqualizerViewModel.
+- `ui/screen/sound/SoundSettingsScreen.kt` — Compose sound settings bottom sheet: balance, tempo, replay gain, volume, connected to EQ state.
+- `ui/screen/tageditor/SongTagEditorActivity.kt` — Song tag editor activity with all fields (title, artist, year, track, lyrics...), cover and MusicBrainz search dialog.
+- `ui/screen/tageditor/AlbumTagEditorActivity.kt` — Album tag editor (via AbsTagEditorActivity): album/album artist/conductor fields, cover, web search.
+- `ui/screen/tageditor/ArtistTagEditorActivity.kt` — Artist tag editor with artist image (Coil), name fields and change confirmation.
+- `ui/screen/tageditor/TagEditorResult.kt` — TagEditorResult (editable fields) and SaveTagsResult (scan/failure counters).
+- `ui/screen/tageditor/TagEditorViewModel.kt` — Reads/writes metadata with MetadataWriter (TagLib), handles covers, saves via MediaStoreWriter/repository.
+- `ui/screen/update/UpdateDialog.kt` — Update dialog showing the GitHub release with markdown changelog, links and ignore option.
+- `ui/screen/update/UpdateSearchResult.kt` — UpdateSearchResult states (Idle/Searching/Completed/Failed) and shouldStartNewSearchFor logic.
+- `ui/screen/update/UpdateViewModel.kt` — Queries GitHubService.latestRelease, records search timestamp and publishes result/download events.
+
+### res/ (resources)
+- `res/drawable/` — ~170 XML drawables: Material icons (ic_*), logos, selectors, shadows, animated vector drawables (play/pause/favorite), squiggly thumb.
+- `res/layout/` — ~100 layouts: player fragments per style, home, details, item layouts, dialogs, tag editor, widgets; with `layout-land/` variants.
+- `res/values/` — Strings (main file plus ~40 locale translations), colors (night/v31), dimens (land/large/sw600dp/xlarge), styles/themes, arrays, attrs, bools, ids, integers.
+- `res/navigation/` — NavGraphs: `graph_main.xml` and `graph_settings.xml`.
+- `res/menu/` — ~25 XML menus (song/album/artist/playlist/detail/selection/now-playing).
+- `res/xml/` — Preference screens per category, widget info files, shortcuts, searchable, backup descriptors, provider paths, automotive app descriptor.
+- `res/font/`, `res/anim/`, `res/raw/` — Google Sans Flex font, fragment/item animations, keep.xml.

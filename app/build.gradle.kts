@@ -80,7 +80,7 @@ val currentVersionCode = currentVersion.code
 
 android {
     compileSdk = 37
-    namespace = "com.mardous.booming"
+    namespace = "com.ssilencce"
 
     defaultConfig {
         minSdk = 26
@@ -245,7 +245,7 @@ androidComponents {
         variant.outputs.forEach { output ->
             val filter = output.filters.joinToString("-") { it.identifier }
             val abi = filter.ifEmpty { "universal" }
-            output.outputFileName = "BoomingMusic-${output.versionName.get()}-${variant.flavorName}-$abi.apk"
+            output.outputFileName = "ssilencce-${output.versionName.get()}-${variant.flavorName}-$abi.apk"
         }
     }
 }
