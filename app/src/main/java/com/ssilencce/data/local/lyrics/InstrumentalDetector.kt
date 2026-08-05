@@ -1,4 +1,4 @@
-package com.mardous.booming.data.local.lyrics
+package com.ssilencce.data.local.lyrics
 
 class InstrumentalDetector(
     private val identifiers: Set<String>,

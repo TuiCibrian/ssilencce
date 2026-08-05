@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences
+package com.ssilencce.ui.component.preferences
 
 import android.content.Context
 import android.util.AttributeSet

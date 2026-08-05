@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -35,29 +35,29 @@ import androidx.media3.common.Player
 import com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.mardous.booming.R
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.ProgressState
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.getShapeAppearanceModel
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.media.asReadableDuration
-import com.mardous.booming.extensions.resources.applyColor
-import com.mardous.booming.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
-import com.mardous.booming.ui.component.views.MusicSlider
-import com.mardous.booming.ui.screen.MainActivity
-import com.mardous.booming.ui.screen.player.PlayerAnimator
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.util.ANIMATE_PLAYER_CONTROL
-import com.mardous.booming.util.DISPLAY_ALBUM_TITLE
-import com.mardous.booming.util.DISPLAY_EXTRA_INFO
-import com.mardous.booming.util.ENABLE_SCROLLING_TEXT
-import com.mardous.booming.util.NOW_PLAYING_EXTRA_INFO
-import com.mardous.booming.util.PREFER_ALBUM_ARTIST_NAME
-import com.mardous.booming.util.Preferences
-import com.mardous.booming.util.SQUIGGLY_SEEK_BAR
+import com.ssilencce.R
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.ProgressState
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.getShapeAppearanceModel
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.media.asReadableDuration
+import com.ssilencce.extensions.resources.applyColor
+import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
+import com.ssilencce.ui.component.views.MusicSlider
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.ui.screen.player.PlayerAnimator
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.util.ANIMATE_PLAYER_CONTROL
+import com.ssilencce.util.DISPLAY_ALBUM_TITLE
+import com.ssilencce.util.DISPLAY_EXTRA_INFO
+import com.ssilencce.util.ENABLE_SCROLLING_TEXT
+import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.PREFER_ALBUM_ARTIST_NAME
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.SQUIGGLY_SEEK_BAR
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter

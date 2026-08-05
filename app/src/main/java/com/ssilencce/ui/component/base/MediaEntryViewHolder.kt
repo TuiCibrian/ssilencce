@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.view.View
 import android.view.View.OnLongClickListener
@@ -24,7 +24,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import com.mardous.booming.R
+import com.ssilencce.R
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 
 open class MediaEntryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),

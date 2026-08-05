@@ -1,5 +1,5 @@
 @file:SuppressLint("LocalContextGetResourceValueCall")
-package com.mardous.booming.ui.screen.sleeptimer
+package com.ssilencce.ui.screen.sleeptimer
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
@@ -53,9 +53,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mardous.booming.R
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.theme.SliderTokens
+import com.ssilencce.R
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.theme.SliderTokens
 import kotlin.math.round
 
 data class SleepTimerUiState(

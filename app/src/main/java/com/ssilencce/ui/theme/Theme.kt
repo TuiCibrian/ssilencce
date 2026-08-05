@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.theme
+package com.ssilencce.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -8,9 +8,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.colorResource
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.util.Preferences
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -89,7 +89,7 @@ private val darkScheme = darkColorScheme(
 )
 
 @Composable
-fun BoomingMusicTheme(
+fun SsilencceTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     blackTheme: Boolean = Preferences.blackTheme,
     dynamicColor: Boolean = Preferences.isMaterialYouTheme,

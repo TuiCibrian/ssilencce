@@ -1,4 +1,4 @@
-package com.mardous.booming.core.palette
+package com.ssilencce.core.palette
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -8,9 +8,9 @@ import androidx.core.graphics.scale
 import androidx.palette.graphics.Palette
 import com.kyant.m3color.quantize.QuantizerCelebi
 import com.kyant.m3color.score.Score
-import com.mardous.booming.core.model.PaletteColor
-import com.mardous.booming.extensions.resources.isColorLight
-import com.mardous.booming.util.color.NotificationColorUtil
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.extensions.resources.isColorLight
+import com.ssilencce.util.color.NotificationColorUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlin.math.abs

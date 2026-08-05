@@ -1,4 +1,4 @@
-package com.mardous.booming.playback.processor
+package com.ssilencce.playback.processor
 
 import java.nio.ByteBuffer
 

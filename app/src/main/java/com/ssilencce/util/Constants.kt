@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
-import com.mardous.booming.BuildConfig
+import com.ssilencce.BuildConfig
 
 object Constants {
     // Support Email
@@ -40,5 +40,5 @@ object Constants {
     const val DOWNLOAD_URL = BuildConfig.DOWNLOAD_URL
     const val DONATION_LINK = BuildConfig.DONATION_LINK
 
-    const val USER_AGENT = "BoomingMusic/${BuildConfig.VERSION_NAME} ($APP_GITHUB_URL)"
+    const val USER_AGENT = "ssilencce/${BuildConfig.VERSION_NAME} ($APP_GITHUB_URL)"
 }

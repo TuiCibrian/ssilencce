@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose.menu
+package com.ssilencce.ui.component.compose.menu
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -32,7 +32,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.mardous.booming.R
+import com.ssilencce.R
 
 object MenuDefaults {
     val OverflowIcon: Painter

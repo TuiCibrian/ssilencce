@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.styles.peekplayerstyle
+package com.ssilencce.ui.screen.player.styles.peekplayerstyle
 
 import android.animation.Animator
 import android.animation.TimeInterpolator
@@ -24,19 +24,19 @@ import android.os.Bundle
 import android.view.View
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.iconButtonTintTarget
-import com.mardous.booming.core.model.player.tintTarget
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentPeekPlayerPlaybackControlsBinding
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
-import com.mardous.booming.ui.component.views.MusicSlider
-import com.mardous.booming.ui.screen.player.PlayerAnimator
+import com.ssilencce.R
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.iconButtonTintTarget
+import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentPeekPlayerPlaybackControlsBinding
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
+import com.ssilencce.ui.component.views.MusicSlider
+import com.ssilencce.ui.screen.player.PlayerAnimator
 import java.util.LinkedList
 
 /**

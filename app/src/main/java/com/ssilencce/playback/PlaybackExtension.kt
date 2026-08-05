@@ -1,4 +1,4 @@
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -8,7 +8,7 @@ import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaSession
-import com.mardous.booming.data.model.Song
+import com.ssilencce.data.model.Song
 
 /**
  * A Pair containing a MediaItem object and its index within the current Timeline.

@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.mapper
+package com.ssilencce.data.mapper
 
-import com.mardous.booming.data.local.room.HistoryEntity
-import com.mardous.booming.data.local.room.PlayCountEntity
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.local.room.SongEntity
-import com.mardous.booming.data.model.Song
+import com.ssilencce.data.local.room.HistoryEntity
+import com.ssilencce.data.local.room.PlayCountEntity
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.room.SongEntity
+import com.ssilencce.data.model.Song
 
 fun List<SongEntity>.toSongs(): List<Song> {
     return map { it.toSong() }

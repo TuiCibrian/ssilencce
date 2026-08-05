@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.equalizer
+package com.ssilencce.ui.screen.equalizer
 
 import android.net.Uri
 import androidx.annotation.StringRes
-import com.mardous.booming.core.model.equalizer.EqProfile
-import com.mardous.booming.core.model.equalizer.autoeq.AutoEqProfile
+import com.ssilencce.core.model.equalizer.EqProfile
+import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 
 open class ProfileOpResult(
     val success: Boolean,

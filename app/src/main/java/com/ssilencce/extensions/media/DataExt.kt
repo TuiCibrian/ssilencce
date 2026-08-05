@@ -15,24 +15,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.media
+package com.ssilencce.extensions.media
 
 import android.content.Context
 import android.text.SpannableString
 import androidx.core.text.buildSpannedString
-import com.mardous.booming.R
-import com.mardous.booming.core.model.WebSearchEngine
-import com.mardous.booming.data.local.ReplayGainTagExtractor
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.plurals
-import com.mardous.booming.extensions.resources.textColorPrimary
-import com.mardous.booming.extensions.resources.textColorSecondary
-import com.mardous.booming.extensions.resources.toForegroundColorSpan
-import com.mardous.booming.extensions.utilities.DEFAULT_INFO_DELIMITER
-import com.mardous.booming.extensions.utilities.buildInfoString
+import com.ssilencce.R
+import com.ssilencce.core.model.WebSearchEngine
+import com.ssilencce.data.local.ReplayGainTagExtractor
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.plurals
+import com.ssilencce.extensions.resources.textColorPrimary
+import com.ssilencce.extensions.resources.textColorSecondary
+import com.ssilencce.extensions.resources.toForegroundColorSpan
+import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
+import com.ssilencce.extensions.utilities.buildInfoString
 import java.util.Locale
 
 fun Album.isArtistNameUnknown() = albumArtistName().isArtistNameUnknown()

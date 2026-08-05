@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.content.res.Configuration
@@ -26,9 +26,9 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.AppBarLayout.LayoutParams.SCROLL_FLAG_NO_SCROLL
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.shape.MaterialShapeDrawable
-import com.mardous.booming.databinding.CollapsingAppbarLayoutBinding
-import com.mardous.booming.databinding.SimpleAppbarLayoutBinding
-import com.mardous.booming.util.Preferences
+import com.ssilencce.databinding.CollapsingAppbarLayoutBinding
+import com.ssilencce.databinding.SimpleAppbarLayoutBinding
+import com.ssilencce.util.Preferences
 
 class TopAppBarLayout @JvmOverloads constructor(
     context: Context,

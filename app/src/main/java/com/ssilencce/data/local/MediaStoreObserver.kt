@@ -1,4 +1,4 @@
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.content.Context
 import android.database.ContentObserver

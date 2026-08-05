@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui
+package com.ssilencce.ui
 
 interface IBackConsumer {
     fun handleBackPress(): Boolean

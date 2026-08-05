@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.resources
+package com.ssilencce.extensions.resources
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -39,10 +39,10 @@ import androidx.fragment.app.Fragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.slider.Slider
-import com.mardous.booming.R
-import com.mardous.booming.extensions.isNightMode
-import com.mardous.booming.extensions.resolveColor
-import com.mardous.booming.ui.component.views.MorphicIconButton
+import com.ssilencce.R
+import com.ssilencce.extensions.isNightMode
+import com.ssilencce.extensions.resolveColor
+import com.ssilencce.ui.component.views.MorphicIconButton
 import kotlin.math.abs
 
 val Int.isColorLight: Boolean

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.filesystem
+package com.ssilencce.core.model.filesystem
 
 interface FileSystemItem {
 

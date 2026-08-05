@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.info
+package com.ssilencce.ui.screen.info
 
 import android.content.Context
 import android.os.Bundle
@@ -26,19 +26,19 @@ import androidx.core.view.updateMargins
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.google.android.material.divider.MaterialDivider
-import com.mardous.booming.R
-import com.mardous.booming.coil.albumImage
-import com.mardous.booming.coil.artistImage
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentPlayInfoBinding
-import com.mardous.booming.extensions.*
-import com.mardous.booming.extensions.media.asNumberOfTimes
-import com.mardous.booming.extensions.media.displayName
-import com.mardous.booming.extensions.resources.show
-import com.mardous.booming.extensions.utilities.dateStr
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.R
+import com.ssilencce.coil.albumImage
+import com.ssilencce.coil.artistImage
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentPlayInfoBinding
+import com.ssilencce.extensions.*
+import com.ssilencce.extensions.media.asNumberOfTimes
+import com.ssilencce.extensions.media.displayName
+import com.ssilencce.extensions.resources.show
+import com.ssilencce.extensions.utilities.dateStr
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**

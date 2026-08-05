@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets.state
+package com.ssilencce.core.appwidgets.state
 
 import android.content.Context
 import androidx.datastore.core.CorruptionException

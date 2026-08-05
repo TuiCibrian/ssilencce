@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -35,20 +35,20 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.mardous.booming.R
-import com.mardous.booming.core.model.MediaEvent
-import com.mardous.booming.databinding.FragmentMainRecyclerBinding
-import com.mardous.booming.extensions.createBoomingMusicBalloon
-import com.mardous.booming.extensions.dp
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.resources.createFastScroller
-import com.mardous.booming.extensions.resources.onVerticalScroll
-import com.mardous.booming.extensions.setSupportActionBar
-import com.mardous.booming.extensions.topLevelTransition
-import com.mardous.booming.extensions.whichFragment
-import com.mardous.booming.ui.IScrollHelper
-import com.mardous.booming.ui.dialogs.playlists.ImportPlaylistDialog
-import com.mardous.booming.ui.screen.other.ShuffleModeFragment
+import com.ssilencce.R
+import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.databinding.FragmentMainRecyclerBinding
+import com.ssilencce.extensions.createSsilencceBalloon
+import com.ssilencce.extensions.dp
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.resources.createFastScroller
+import com.ssilencce.extensions.resources.onVerticalScroll
+import com.ssilencce.extensions.setSupportActionBar
+import com.ssilencce.extensions.topLevelTransition
+import com.ssilencce.extensions.whichFragment
+import com.ssilencce.ui.IScrollHelper
+import com.ssilencce.ui.dialogs.playlists.ImportPlaylistDialog
+import com.ssilencce.ui.screen.other.ShuffleModeFragment
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.zhanghai.android.fastscroll.FastScroller
@@ -128,7 +128,7 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         _binding?.shuffleButton?.doOnLayout {
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(1000)
-                val balloon = createBoomingMusicBalloon("shuffle_button_tip") {
+                val balloon = createSsilencceBalloon("shuffle_button_tip") {
                     setDismissWhenClicked(true)
                     setText(getString(R.string.shuffle_button_tip))
                 }

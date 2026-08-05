@@ -1,7 +1,7 @@
-package com.mardous.booming.data.model.network.lastfm
+package com.ssilencce.data.model.network.lastfm
 
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class LastFmFailure(
     private val codes: IntArray,

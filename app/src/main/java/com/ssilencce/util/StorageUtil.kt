@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -24,9 +24,9 @@ import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.util.Log
 import androidx.core.content.getSystemService
-import com.mardous.booming.R
-import com.mardous.booming.core.model.filesystem.StorageDevice
-import com.mardous.booming.extensions.hasR
+import com.ssilencce.R
+import com.ssilencce.core.model.filesystem.StorageDevice
+import com.ssilencce.extensions.hasR
 import kotlinx.io.IOException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get

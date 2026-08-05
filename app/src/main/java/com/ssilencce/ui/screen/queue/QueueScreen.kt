@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.queue
+package com.ssilencce.ui.screen.queue
 
 import android.annotation.SuppressLint
 import androidx.compose.animation.Crossfade
@@ -79,26 +79,26 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
-import com.mardous.booming.R
-import com.mardous.booming.data.model.QueueSong
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.media.songCountStr
-import com.mardous.booming.extensions.media.songInfo
-import com.mardous.booming.extensions.media.songsDurationStr
-import com.mardous.booming.extensions.observeKeyAsState
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.ui.component.compose.AnimatedEqBars
-import com.mardous.booming.ui.component.compose.MediaImage
-import com.mardous.booming.ui.component.compose.ObserveAsEvent
-import com.mardous.booming.ui.component.compose.SmallHeader
-import com.mardous.booming.ui.component.compose.menu.MenuDefaults
-import com.mardous.booming.ui.component.compose.menu.MenuItem
-import com.mardous.booming.ui.component.compose.menu.OverflowMenu
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.screen.player.QUEUE_DEBOUNCE
-import com.mardous.booming.util.LOCKED_QUEUE
+import com.ssilencce.R
+import com.ssilencce.data.model.QueueSong
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.media.songCountStr
+import com.ssilencce.extensions.media.songInfo
+import com.ssilencce.extensions.media.songsDurationStr
+import com.ssilencce.extensions.observeKeyAsState
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.ui.component.compose.AnimatedEqBars
+import com.ssilencce.ui.component.compose.MediaImage
+import com.ssilencce.ui.component.compose.ObserveAsEvent
+import com.ssilencce.ui.component.compose.SmallHeader
+import com.ssilencce.ui.component.compose.menu.MenuDefaults
+import com.ssilencce.ui.component.compose.menu.MenuItem
+import com.ssilencce.ui.component.compose.menu.OverflowMenu
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.QUEUE_DEBOUNCE
+import com.ssilencce.util.LOCKED_QUEUE
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import my.nanihadesuka.compose.LazyColumnScrollbar

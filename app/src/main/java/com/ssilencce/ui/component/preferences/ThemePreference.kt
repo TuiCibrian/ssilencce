@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences
+package com.ssilencce.ui.component.preferences
 
 import android.content.Context
 import android.util.AttributeSet
@@ -23,9 +23,9 @@ import android.view.View
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
 import com.google.android.material.button.MaterialButtonToggleGroup
-import com.mardous.booming.R
-import com.mardous.booming.util.GeneralTheme
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.util.GeneralTheme
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)

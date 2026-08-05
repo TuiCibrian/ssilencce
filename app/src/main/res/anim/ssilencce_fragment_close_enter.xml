@@ -34,6 +34,6 @@
         android:fillEnabled="true"
         android:fillBefore="true"
         android:fillAfter="true"
-        android:interpolator="@anim/booming_fragment_fast_out_extra_slow_in"
+        android:interpolator="@anim/ssilencce_fragment_fast_out_extra_slow_in"
         android:duration="300" />
 </set>

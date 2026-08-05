@@ -1,4 +1,4 @@
-package com.mardous.booming.coil
+package com.ssilencce.coil
 
 import android.content.Context
 import android.graphics.Bitmap

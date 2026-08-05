@@ -1,4 +1,4 @@
-package com.mardous.booming.coil.model
+package com.ssilencce.coil.model
 
 import android.net.Uri
 

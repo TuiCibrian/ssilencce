@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.library.albums
+package com.ssilencce.ui.screen.library.albums
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -6,9 +6,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.network.NetworkFeature
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.network.NetworkFeature
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

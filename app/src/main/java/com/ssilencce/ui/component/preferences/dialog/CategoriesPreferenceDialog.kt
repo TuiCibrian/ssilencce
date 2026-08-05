@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -24,13 +24,13 @@ import androidx.core.os.BundleCompat
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.databinding.DialogRecyclerViewBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.ui.adapters.preference.CategoryInfoAdapter
-import com.mardous.booming.util.LIBRARY_CATEGORIES
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.databinding.DialogRecyclerViewBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.ui.adapters.preference.CategoryInfoAdapter
+import com.ssilencce.util.LIBRARY_CATEGORIES
+import com.ssilencce.util.Preferences
 
 class CategoriesPreferenceDialog : DialogFragment() {
 

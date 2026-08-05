@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
 import android.content.Context
@@ -31,15 +31,15 @@ import androidx.fragment.app.DialogFragment
 import androidx.viewpager.widget.PagerAdapter
 import androidx.viewpager.widget.ViewPager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTransition
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.databinding.PreferenceDialogNowPlayingScreenBinding
-import com.mardous.booming.databinding.PreferenceDialogNowPlayingScreenItemBinding
-import com.mardous.booming.extensions.dp
-import com.mardous.booming.extensions.resources.hide
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTransition
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.databinding.PreferenceDialogNowPlayingScreenBinding
+import com.ssilencce.databinding.PreferenceDialogNowPlayingScreenItemBinding
+import com.ssilencce.extensions.dp
+import com.ssilencce.extensions.resources.hide
+import com.ssilencce.util.Preferences
 
 class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChangeListener,
     AdapterView.OnItemSelectedListener {

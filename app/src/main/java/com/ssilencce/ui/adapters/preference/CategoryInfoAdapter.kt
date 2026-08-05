@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.preference
+package com.ssilencce.ui.adapters.preference
 
 import android.annotation.SuppressLint
-import com.mardous.booming.R
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.adapters.DraggableItemAdapter
+import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.adapters.DraggableItemAdapter
 
 class CategoryInfoAdapter(
     categoryInfos: MutableList<CategoryInfo>

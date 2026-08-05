@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose
+package com.ssilencce.ui.component.compose
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme

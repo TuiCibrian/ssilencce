@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.home
+package com.ssilencce.ui.screen.library.home
 
-import com.mardous.booming.databinding.FragmentHomeBinding
+import com.ssilencce.databinding.FragmentHomeBinding
 
 class HomeBinding(homeBinding: FragmentHomeBinding) {
     val root = homeBinding.root

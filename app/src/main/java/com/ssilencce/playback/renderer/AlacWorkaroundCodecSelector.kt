@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.playback.renderer
+package com.ssilencce.playback.renderer
 
 import androidx.annotation.OptIn
 import androidx.media3.common.MimeTypes

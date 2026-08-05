@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose
+package com.ssilencce.ui.component.compose
 
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
@@ -24,7 +24,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mardous.booming.R
+import com.ssilencce.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

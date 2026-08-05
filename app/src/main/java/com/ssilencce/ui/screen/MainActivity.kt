@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen
+package com.ssilencce.ui.screen
 
 import android.content.Intent
 import android.content.pm.ShortcutManager
@@ -15,23 +15,23 @@ import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import com.mardous.booming.R
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.core.model.MediaEvent
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.extensions.currentFragment
-import com.mardous.booming.extensions.navigation.isValidCategory
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.whichFragment
-import com.mardous.booming.playback.Playback
-import com.mardous.booming.playback.library.MediaIDs
-import com.mardous.booming.core.model.shuffle.OpenShuffleMode
-import com.mardous.booming.ui.IScrollHelper
-import com.mardous.booming.ui.component.base.AbsSlidingMusicPanelActivity
-import com.mardous.booming.ui.screen.update.UpdateDialog
-import com.mardous.booming.ui.screen.update.UpdateSearchResult
-import com.mardous.booming.ui.screen.update.UpdateViewModel
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.extensions.currentFragment
+import com.ssilencce.extensions.navigation.isValidCategory
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.whichFragment
+import com.ssilencce.playback.Playback
+import com.ssilencce.playback.library.MediaIDs
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.ui.IScrollHelper
+import com.ssilencce.ui.component.base.AbsSlidingMusicPanelActivity
+import com.ssilencce.ui.screen.update.UpdateDialog
+import com.ssilencce.ui.screen.update.UpdateSearchResult
+import com.ssilencce.ui.screen.update.UpdateViewModel
+import com.ssilencce.util.Preferences
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -263,15 +263,15 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
     }
 
     companion object {
-        private const val APP_SHORTCUT_LAST_ADDED = "com.mardous.booming.shortcut.LAST_ADDED"
-        private const val APP_SHORTCUT_TOP_TRACKS = "com.mardous.booming.shortcut.TOP_TRACKS"
-        private const val APP_SHORTCUT_SHUFFLE = "com.mardous.booming.shortcut.SHUFFLE"
-        private const val APP_SHORTCUT_FAVORITES = "com.mardous.booming.shortcut.FAVORITES"
+        private const val APP_SHORTCUT_LAST_ADDED = "com.ssilencce.shortcut.LAST_ADDED"
+        private const val APP_SHORTCUT_TOP_TRACKS = "com.ssilencce.shortcut.TOP_TRACKS"
+        private const val APP_SHORTCUT_SHUFFLE = "com.ssilencce.shortcut.SHUFFLE"
+        private const val APP_SHORTCUT_FAVORITES = "com.ssilencce.shortcut.FAVORITES"
 
         private val OLD_SHORTCUT_IDS = listOf(
-            "com.mardous.booming.appshortcuts.id.last_added",
-            "com.mardous.booming.appshortcuts.id.top_tracks",
-            "com.mardous.booming.appshortcuts.id.shuffle_all",
+            "com.ssilencce.appshortcuts.id.last_added",
+            "com.ssilencce.appshortcuts.id.top_tracks",
+            "com.ssilencce.appshortcuts.id.shuffle_all",
         )
     }
 }

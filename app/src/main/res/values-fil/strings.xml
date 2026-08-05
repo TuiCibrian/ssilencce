@@ -138,7 +138,7 @@
     <string name="permission_bluetooth_description">Kailangan ng app ang pahintulot para sa mga kalapit na device upang maghanap ng mga Bluetooth device</string>
     <string name="permission_bluetooth_denied">Tinanggihan ang pahintulot para sa mga kalapit na device.</string>
     <string name="permission_read_images_title">Basahin ang mga larawan (opsyonal)</string>
-    <string name="permission_read_images_summary">Kinakailangan ang pahintulot na ito upang mahanap ng Booming Music ang mga file ng album art sa iyong mga folder ng musika. Kung hindi mo balak gamitin ang feature na ito, maaari mong piliing huwag ibigay ang pahintulot.</string>
+    <string name="permission_read_images_summary">Kinakailangan ang pahintulot na ito upang mahanap ng ssilencce ang mga file ng album art sa iyong mga folder ng musika. Kung hindi mo balak gamitin ang feature na ito, maaari mong piliing huwag ibigay ang pahintulot.</string>
     <string name="permission_read_images_denied">Kailangan mong magbigay ng pahintulot na magbasa ng mga larawan mula sa device.</string>
     <string name="permission_exact_alarms_title">Mag-iskedyul ng mga eksaktong alarm (opsyonal)</string>
     <string name="permission_exact_alarms_description">Kinakailangan ang pahintulot na magtakda ng mga eksaktong alarm upang gumana nang maayos ang sleep timer</string>

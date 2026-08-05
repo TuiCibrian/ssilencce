@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.permissions
+package com.ssilencce.ui.screen.permissions
 
 import android.Manifest.permission.BLUETOOTH_CONNECT
 import android.Manifest.permission.READ_MEDIA_IMAGES
@@ -20,14 +20,14 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.getSystemService
 import androidx.core.view.isVisible
-import com.mardous.booming.R
-import com.mardous.booming.databinding.ActivityPermissionBinding
-import com.mardous.booming.extensions.hasS
-import com.mardous.booming.extensions.hasT
-import com.mardous.booming.extensions.resources.primaryColor
-import com.mardous.booming.ui.component.base.AbsBaseActivity
-import com.mardous.booming.ui.component.views.PermissionView
-import com.mardous.booming.ui.screen.MainActivity
+import com.ssilencce.R
+import com.ssilencce.databinding.ActivityPermissionBinding
+import com.ssilencce.extensions.hasS
+import com.ssilencce.extensions.hasT
+import com.ssilencce.extensions.resources.primaryColor
+import com.ssilencce.ui.component.base.AbsBaseActivity
+import com.ssilencce.ui.component.views.PermissionView
+import com.ssilencce.ui.screen.MainActivity
 
 /**
  * @author Christians M. A. (mardous)

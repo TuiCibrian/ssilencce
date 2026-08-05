@@ -1,10 +1,10 @@
-package com.mardous.booming.data.remote.lyrics.api.betterlyrics
+package com.ssilencce.data.remote.lyrics.api.betterlyrics
 
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.lyrics.RawLyrics
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.data.remote.lyrics.api.LyricsApi
-import com.mardous.booming.data.remote.lyrics.model.BetterLyricsResponse
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.lyrics.RawLyrics
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.remote.lyrics.api.LyricsApi
+import com.ssilencce.data.remote.lyrics.model.BetterLyricsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.timeout

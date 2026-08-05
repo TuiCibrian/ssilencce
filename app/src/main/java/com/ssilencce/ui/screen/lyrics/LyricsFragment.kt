@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.ui.screen.lyrics
+package com.ssilencce.ui.screen.lyrics
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -23,12 +23,12 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.mardous.booming.R
-import com.mardous.booming.extensions.currentFragment
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.ui.screen.MainActivity
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.extensions.currentFragment
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 /**
@@ -45,7 +45,7 @@ class LyricsFragment : Fragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     LyricsScreen(
                         onEditClick = { currentSong ->
                             findNavController().navigate(

@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.utilities
+package com.ssilencce.extensions.utilities
 
 import android.content.Context
-import com.mardous.booming.R
-import com.mardous.booming.util.PlaylistCutoff
+import com.ssilencce.R
+import com.ssilencce.util.PlaylistCutoff
 import java.text.DateFormat
 import java.util.Calendar
 import java.util.Date

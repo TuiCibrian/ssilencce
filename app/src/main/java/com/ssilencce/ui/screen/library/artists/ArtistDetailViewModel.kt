@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.library.artists
+package com.ssilencce.ui.screen.library.artists
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
@@ -6,11 +6,11 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.core.sort.sortedByMediaName
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.data.remote.lastfm.model.LastFmArtist
+import com.ssilencce.core.sort.sortedByMediaName
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.remote.lastfm.model.LastFmArtist
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

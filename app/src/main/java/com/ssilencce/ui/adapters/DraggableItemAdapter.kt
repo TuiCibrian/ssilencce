@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -26,8 +26,8 @@ import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.R
-import com.mardous.booming.util.SwipeAndDragHelper
+import com.ssilencce.R
+import com.ssilencce.util.SwipeAndDragHelper
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 

@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
 import androidx.annotation.Keep
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.files
+package com.ssilencce.extensions.files
 
 import android.content.Context
 import android.content.Intent
@@ -23,9 +23,9 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.showToast
+import com.ssilencce.R
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.showToast
 import java.io.File
 
 private const val TAG = "SAF"

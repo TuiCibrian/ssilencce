@@ -15,21 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.content.Context
 import android.net.Uri
 import androidx.annotation.StringRes
-import com.mardous.booming.R
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.local.room.LyricsDao
-import com.mardous.booming.data.local.room.LyricsEntity
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.mapper.toSongEntity
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.files.zipOutputStream
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.util.m3u.M3UWriter
+import com.ssilencce.R
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.room.LyricsDao
+import com.ssilencce.data.local.room.LyricsEntity
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.mapper.toSongEntity
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.files.zipOutputStream
+import com.ssilencce.extensions.showToast
+import com.ssilencce.util.m3u.M3UWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json

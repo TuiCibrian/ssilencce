@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.other
+package com.ssilencce.ui.screen.other
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -26,20 +26,20 @@ import android.view.View
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import coil3.request.Disposable
-import com.mardous.booming.R
-import com.mardous.booming.coil.songImage
-import com.mardous.booming.core.model.player.ProgressState
-import com.mardous.booming.core.model.theme.NowPlayingButtonStyle
-import com.mardous.booming.databinding.FragmentMiniPlayerBinding
-import com.mardous.booming.extensions.isTablet
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.resources.*
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.songImage
+import com.ssilencce.core.model.player.ProgressState
+import com.ssilencce.core.model.theme.NowPlayingButtonStyle
+import com.ssilencce.databinding.FragmentMiniPlayerBinding
+import com.ssilencce.extensions.isTablet
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.resources.*
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter

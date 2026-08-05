@@ -1,8 +1,8 @@
-package com.mardous.booming.core.model.action
+package com.ssilencce.core.model.action
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class SongClickBehavior(
     @DrawableRes val iconRes: Int,

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.tageditor
+package com.ssilencce.ui.screen.tageditor
 
 data class TagEditorResult(
     val title: String? = null,

@@ -15,15 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.content.Context
-import com.mardous.booming.R
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.mapper.toSongs
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.search.SearchQuery
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.search.SearchQuery
+import com.ssilencce.util.Preferences
 
 interface SearchRepository {
     suspend fun searchAll(context: Context, query: SearchQuery, filter: SearchFilter?): List<Any>

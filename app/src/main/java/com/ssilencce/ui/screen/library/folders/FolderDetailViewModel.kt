@@ -1,11 +1,11 @@
-package com.mardous.booming.ui.screen.library.folders
+package com.ssilencce.ui.screen.library.folders
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Folder
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Folder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

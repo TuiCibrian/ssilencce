@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.playback.renderer
+package com.ssilencce.playback.renderer
 
 import android.content.Context
 import androidx.annotation.OptIn
@@ -23,11 +23,11 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
-import com.mardous.booming.playback.processor.BalanceAudioProcessor
-import com.mardous.booming.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 
 @OptIn(UnstableApi::class)
-class BoomingMusicRenderersFactory(
+class SsilencceRenderersFactory(
     context: Context,
     private val balanceProcessor: BalanceAudioProcessor,
     private val replayGainProcessor: ReplayGainAudioProcessor

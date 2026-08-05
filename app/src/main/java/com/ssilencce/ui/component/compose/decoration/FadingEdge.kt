@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose.decoration
+package com.ssilencce.ui.component.compose.decoration
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier

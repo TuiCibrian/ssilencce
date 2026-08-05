@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose
+package com.ssilencce.ui.component.compose
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable

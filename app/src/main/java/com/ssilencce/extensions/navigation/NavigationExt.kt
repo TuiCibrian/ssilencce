@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.navigation
+package com.ssilencce.extensions.navigation
 
 import android.view.View
 import androidx.annotation.IdRes
@@ -26,19 +26,19 @@ import androidx.navigation.contains
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.FragmentNavigatorExtras
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.model.*
-import com.mardous.booming.ui.screen.info.PlayInfoFragmentArgs
-import com.mardous.booming.ui.screen.info.SongDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.albums.AlbumDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.artists.ArtistDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.folders.FolderDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.genres.GenreDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.playlists.PlaylistDetailFragmentArgs
-import com.mardous.booming.ui.screen.library.search.SearchFragmentArgs
-import com.mardous.booming.ui.screen.other.DetailListFragmentArgs
-import com.mardous.booming.util.Preferences
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.model.*
+import com.ssilencce.ui.screen.info.PlayInfoFragmentArgs
+import com.ssilencce.ui.screen.info.SongDetailFragmentArgs
+import com.ssilencce.ui.screen.library.albums.AlbumDetailFragmentArgs
+import com.ssilencce.ui.screen.library.artists.ArtistDetailFragmentArgs
+import com.ssilencce.ui.screen.library.folders.FolderDetailFragmentArgs
+import com.ssilencce.ui.screen.library.genres.GenreDetailFragmentArgs
+import com.ssilencce.ui.screen.library.playlists.PlaylistDetailFragmentArgs
+import com.ssilencce.ui.screen.library.search.SearchFragmentArgs
+import com.ssilencce.ui.screen.other.DetailListFragmentArgs
+import com.ssilencce.util.Preferences
 
 fun playInfoArgs(album: Album) =
     PlayInfoFragmentArgs.Builder(false, album.id, null)

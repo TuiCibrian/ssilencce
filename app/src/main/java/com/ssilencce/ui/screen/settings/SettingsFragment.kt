@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.settings
+package com.ssilencce.ui.screen.settings
 
 import android.os.Bundle
 import android.view.Menu
@@ -27,12 +27,12 @@ import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.mardous.booming.R
-import com.mardous.booming.databinding.FragmentSettingsBinding
-import com.mardous.booming.extensions.applyHorizontalWindowInsets
-import com.mardous.booming.extensions.getOnBackPressedDispatcher
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.R
+import com.ssilencce.databinding.FragmentSettingsBinding
+import com.ssilencce.extensions.applyHorizontalWindowInsets
+import com.ssilencce.extensions.getOnBackPressedDispatcher
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
 
 /**
  * @author Christians M. A. (mardous)

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs
+package com.ssilencce.ui.dialogs
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -23,14 +23,14 @@ import android.os.Bundle
 import androidx.core.os.BundleCompat
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.model.WebSearchEngine
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.EXTRA_SONG
-import com.mardous.booming.extensions.media.searchQuery
-import com.mardous.booming.extensions.openWeb
-import com.mardous.booming.extensions.toChooser
-import com.mardous.booming.extensions.withArgs
+import com.ssilencce.R
+import com.ssilencce.core.model.WebSearchEngine
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.EXTRA_SONG
+import com.ssilencce.extensions.media.searchQuery
+import com.ssilencce.extensions.openWeb
+import com.ssilencce.extensions.toChooser
+import com.ssilencce.extensions.withArgs
 
 class WebSearchDialog : DialogFragment() {
 

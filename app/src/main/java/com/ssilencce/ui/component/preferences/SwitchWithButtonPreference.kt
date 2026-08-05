@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences
+package com.ssilencce.ui.component.preferences
 
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.Button
 import androidx.preference.PreferenceViewHolder
 import androidx.preference.SwitchPreferenceCompat
-import com.mardous.booming.R
+import com.ssilencce.R
 
 /**
  * @author Christians M. A. (mardous)

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.musicbrainz.model
+package com.ssilencce.data.remote.musicbrainz.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

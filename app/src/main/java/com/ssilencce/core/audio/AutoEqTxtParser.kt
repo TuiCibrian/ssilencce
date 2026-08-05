@@ -1,10 +1,10 @@
-package com.mardous.booming.core.audio
+package com.ssilencce.core.audio
 
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
-import com.mardous.booming.core.model.equalizer.autoeq.AutoEqPoint
-import com.mardous.booming.core.model.equalizer.autoeq.AutoEqProfile
+import com.ssilencce.core.model.equalizer.autoeq.AutoEqPoint
+import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 import java.io.BufferedReader
 import java.io.InputStreamReader
 

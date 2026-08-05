@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.cover
+package com.ssilencce.ui.screen.player.cover
 
 import android.animation.AnimatorSet
 import android.animation.ObjectAnimator
@@ -36,26 +36,26 @@ import androidx.lifecycle.Lifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.viewpager.widget.ViewPager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.PaletteColor
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentPlayerAlbumCoverBinding
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.extensions.keepScreenOn
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.navigation.findActivityNavController
-import com.mardous.booming.extensions.resources.BOOMING_ANIM_TIME
-import com.mardous.booming.ui.adapters.pager.CustomFragmentStatePagerAdapter
-import com.mardous.booming.ui.component.base.AbsPlayerFragment
-import com.mardous.booming.ui.component.transform.CarouselPagerTransformer
-import com.mardous.booming.ui.screen.player.PlayerGesturesController
-import com.mardous.booming.ui.screen.player.PlayerGesturesController.GestureType
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.screen.player.cover.page.ImageFragment
-import com.mardous.booming.ui.screen.player.cover.page.ImageFragment.ColorReceiver
-import com.mardous.booming.util.Preferences
-import com.mardous.booming.util.SWIPE_ON_COVER
+import com.ssilencce.R
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentPlayerAlbumCoverBinding
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.extensions.keepScreenOn
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.navigation.findActivityNavController
+import com.ssilencce.extensions.resources.SSILENCCE_ANIM_TIME
+import com.ssilencce.ui.adapters.pager.CustomFragmentStatePagerAdapter
+import com.ssilencce.ui.component.base.AbsPlayerFragment
+import com.ssilencce.ui.component.transform.CarouselPagerTransformer
+import com.ssilencce.ui.screen.player.PlayerGesturesController
+import com.ssilencce.ui.screen.player.PlayerGesturesController.GestureType
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.cover.page.ImageFragment
+import com.ssilencce.ui.screen.player.cover.page.ImageFragment.ColorReceiver
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.SWIPE_ON_COVER
 import kotlinx.coroutines.FlowPreview
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
@@ -248,7 +248,7 @@ class CoverPagerFragment : Fragment(R.layout.fragment_player_album_cover),
             ObjectAnimator.ofFloat(binding.coverLyricsFragment, View.ALPHA, 1f),
             ObjectAnimator.ofFloat(binding.viewPager, View.ALPHA, 0f)
         )
-        animatorSet.duration = BOOMING_ANIM_TIME
+        animatorSet.duration = SSILENCCE_ANIM_TIME
         animatorSet.doOnEnd {
             _binding?.viewPager?.isInvisible = true
             isAnimatingLyrics = false
@@ -280,7 +280,7 @@ class CoverPagerFragment : Fragment(R.layout.fragment_player_album_cover),
             ObjectAnimator.ofFloat(binding.coverLyricsFragment, View.ALPHA, 0f),
             ObjectAnimator.ofFloat(binding.viewPager, View.ALPHA, 1f)
         )
-        animatorSet.duration = BOOMING_ANIM_TIME
+        animatorSet.duration = SSILENCCE_ANIM_TIME
         animatorSet.doOnStart {
             _binding?.viewPager?.isInvisible = false
         }

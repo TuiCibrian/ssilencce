@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
 import android.content.Context
@@ -25,15 +25,15 @@ import androidx.core.os.BundleCompat
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.MetadataField
-import com.mardous.booming.databinding.DialogRecyclerViewBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.adapters.preference.ExtraInfoAdapter
-import com.mardous.booming.util.NOW_PLAYING_EXTRA_INFO
-import com.mardous.booming.util.Preferences
-import com.mardous.booming.util.WIDGET_THIRD_LINE_CONTENT
+import com.ssilencce.R
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.databinding.DialogRecyclerViewBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.adapters.preference.ExtraInfoAdapter
+import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
 
 class ExtraInfoPreferenceDialog : DialogFragment() {
 

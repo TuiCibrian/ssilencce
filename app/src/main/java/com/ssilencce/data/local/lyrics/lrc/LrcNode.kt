@@ -1,7 +1,7 @@
-package com.mardous.booming.data.local.lyrics.lrc
+package com.ssilencce.data.local.lyrics.lrc
 
-import com.mardous.booming.data.model.lyrics.LyricsActor
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.model.lyrics.LyricsActor
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 
 data class LrcNode(
     val start: Long,

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.song
+package com.ssilencce.ui.adapters.song
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -29,26 +29,26 @@ import androidx.annotation.MenuRes
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_SONG_IMAGE
-import com.mardous.booming.core.model.action.SongClickBehavior
-import com.mardous.booming.core.model.sort.SortKey
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.isActivated
-import com.mardous.booming.extensions.loadPaletteImage
-import com.mardous.booming.extensions.media.asSectionName
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.media.songInfo
-import com.mardous.booming.extensions.resources.hide
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_SONG_IMAGE
+import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.sort.SortKey
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.isActivated
+import com.ssilencce.extensions.loadPaletteImage
+import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.media.songInfo
+import com.ssilencce.extensions.resources.hide
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.util.Preferences
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.tageditor
+package com.ssilencce.ui.screen.tageditor
 
 import android.content.DialogInterface
 import android.graphics.drawable.Drawable
@@ -28,13 +28,13 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.toBitmap
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_ARTIST_IMAGE
-import com.mardous.booming.data.local.MetadataReader
-import com.mardous.booming.databinding.TagEditorArtistFieldBinding
-import com.mardous.booming.extensions.webSearch
-import com.mardous.booming.ui.component.base.AbsTagEditorActivity
-import com.mardous.booming.ui.component.views.getPlaceholderDrawable
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_ARTIST_IMAGE
+import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.databinding.TagEditorArtistFieldBinding
+import com.ssilencce.extensions.webSearch
+import com.ssilencce.ui.component.base.AbsTagEditorActivity
+import com.ssilencce.ui.component.views.getPlaceholderDrawable
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 

@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.musicbrainz
+package com.ssilencce.data.remote.musicbrainz
 
-import com.mardous.booming.data.remote.musicbrainz.MusicBrainzService.Companion.COVER_ARCHIVE_URL
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzRelease
+import com.ssilencce.data.remote.musicbrainz.MusicBrainzService.Companion.COVER_ARCHIVE_URL
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRelease
 
 val MusicBrainzRelease.artworkUrl get() = "$COVER_ARCHIVE_URL/release/$id/front"

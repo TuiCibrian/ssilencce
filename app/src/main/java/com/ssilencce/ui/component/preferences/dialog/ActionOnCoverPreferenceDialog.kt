@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
 import android.content.SharedPreferences
@@ -37,15 +37,15 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.edit
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.ui.component.compose.DialogListItemWithRadio
-import com.mardous.booming.ui.theme.BoomingMusicTheme
-import com.mardous.booming.util.COVER_DOUBLE_TAP_ACTION
-import com.mardous.booming.util.COVER_LEFT_DOUBLE_TAP_ACTION
-import com.mardous.booming.util.COVER_LONG_PRESS_ACTION
-import com.mardous.booming.util.COVER_RIGHT_DOUBLE_TAP_ACTION
-import com.mardous.booming.util.COVER_SINGLE_TAP_ACTION
-import com.mardous.booming.util.Preferences
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.ui.component.compose.DialogListItemWithRadio
+import com.ssilencce.ui.theme.SsilencceTheme
+import com.ssilencce.util.COVER_DOUBLE_TAP_ACTION
+import com.ssilencce.util.COVER_LEFT_DOUBLE_TAP_ACTION
+import com.ssilencce.util.COVER_LONG_PRESS_ACTION
+import com.ssilencce.util.COVER_RIGHT_DOUBLE_TAP_ACTION
+import com.ssilencce.util.COVER_SINGLE_TAP_ACTION
+import com.ssilencce.util.Preferences
 import org.koin.android.ext.android.get
 
 /**
@@ -67,7 +67,7 @@ class ActionOnCoverPreferenceDialog : DialogFragment() {
                         ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
                     )
                     setContent {
-                        BoomingMusicTheme {
+                        SsilencceTheme {
                             DialogScreen(
                                 actions = allActions,
                                 selected = getCurrentAction(prefKey),

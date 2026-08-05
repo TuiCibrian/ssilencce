@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library
+package com.ssilencce.ui.screen.library
 
 import android.content.Context
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Song
+import com.ssilencce.R
+import com.ssilencce.data.model.Song
 
 data class HandleIntentResult(
     val handled: Boolean,

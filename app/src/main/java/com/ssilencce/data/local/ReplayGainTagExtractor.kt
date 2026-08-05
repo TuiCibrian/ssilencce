@@ -14,12 +14,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.net.Uri
 import android.util.LruCache
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.replaygain.ReplayGain
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.replaygain.ReplayGain
 
 object ReplayGainTagExtractor {
 

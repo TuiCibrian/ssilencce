@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets
+package com.ssilencce.core.appwidgets
 
 import android.graphics.BitmapFactory
 import android.util.Log
@@ -20,8 +20,8 @@ import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.wrapContentSize
 import androidx.glance.unit.ColorProvider
-import com.mardous.booming.R
-import com.mardous.booming.core.appwidgets.state.PlaybackState
+import com.ssilencce.R
+import com.ssilencce.core.appwidgets.state.PlaybackState
 
 @Composable
 fun AlbumArtGlance(
@@ -35,7 +35,7 @@ fun AlbumArtGlance(
             val options = BitmapFactory.Options()
             BitmapFactory.decodeByteArray(it, 0, it.size, options)
         } catch (t: Throwable) {
-            Log.e("BoomingGlanceWidget", "Cannot decode artwork bitmap", t)
+            Log.e("SsilencceGlanceWidget", "Cannot decode artwork bitmap", t)
             null
         }
     }

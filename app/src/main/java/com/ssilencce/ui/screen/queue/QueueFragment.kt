@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.queue
+package com.ssilencce.ui.screen.queue
 
 import android.app.Dialog
 import android.os.Bundle
@@ -27,16 +27,16 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.R
-import com.mardous.booming.extensions.getShareSongIntent
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.navigation.songDetailArgs
-import com.mardous.booming.extensions.toChooser
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.dialogs.playlists.AddToPlaylistDialog
-import com.mardous.booming.ui.dialogs.songs.DeleteSongsDialog
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.extensions.getShareSongIntent
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.navigation.songDetailArgs
+import com.ssilencce.extensions.toChooser
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.dialogs.playlists.AddToPlaylistDialog
+import com.ssilencce.ui.dialogs.songs.DeleteSongsDialog
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class QueueFragment : BottomSheetDialogFragment() {
@@ -57,7 +57,7 @@ class QueueFragment : BottomSheetDialogFragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     BottomSheetDialogSurface {
                         QueueScreen(
                             onAddToPlaylistClick = { songs ->

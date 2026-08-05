@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.about
+package com.ssilencce.ui.screen.about
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -23,9 +23,9 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
-import com.mardous.booming.extensions.getOnBackPressedDispatcher
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.extensions.getOnBackPressedDispatcher
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.ui.theme.SsilencceTheme
 
 /**
  * @author Christians M. A. (mardous)
@@ -38,7 +38,7 @@ class AboutFragment : Fragment() {
     ): View? {
         return ComposeView(requireContext()).apply {
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     AboutScreen(
                         onBackClick = {
                             getOnBackPressedDispatcher().onBackPressed()

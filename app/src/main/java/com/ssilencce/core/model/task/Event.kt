@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.core.model.task
+package com.ssilencce.core.model.task
 
 open class Event<out T>(private val content: T) {
 

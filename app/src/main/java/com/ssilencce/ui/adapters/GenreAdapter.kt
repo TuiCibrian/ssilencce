@@ -15,21 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.coil.DEFAULT_GENRE_IMAGE
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.extensions.loadPaletteImage
-import com.mardous.booming.extensions.media.asNumberOfSongs
-import com.mardous.booming.extensions.media.asSectionName
-import com.mardous.booming.extensions.resources.hide
-import com.mardous.booming.ui.IGenreCallback
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.coil.DEFAULT_GENRE_IMAGE
+import com.ssilencce.data.model.Genre
+import com.ssilencce.extensions.loadPaletteImage
+import com.ssilencce.extensions.media.asNumberOfSongs
+import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.resources.hide
+import com.ssilencce.ui.IGenreCallback
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import org.koin.core.component.KoinComponent
 import kotlin.properties.Delegates

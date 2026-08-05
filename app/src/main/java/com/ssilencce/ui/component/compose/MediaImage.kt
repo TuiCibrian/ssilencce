@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose
+package com.ssilencce.ui.component.compose
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -19,7 +19,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.compose.rememberConstraintsSizeResolver
 import coil3.request.ImageRequest
-import com.mardous.booming.R
+import com.ssilencce.R
 
 @Composable
 fun MediaImage(

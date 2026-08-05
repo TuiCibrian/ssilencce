@@ -17,7 +17,7 @@
 
 @file:SuppressLint("DiscouragedApi", "InternalInsetResource")
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -43,10 +43,10 @@ import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.shape.ShapeAppearanceModel
-import com.mardous.booming.core.model.theme.AppTheme
-import com.mardous.booming.extensions.files.readString
-import com.mardous.booming.extensions.resources.getDrawableCompat
-import com.mardous.booming.extensions.resources.getTinted
+import com.ssilencce.core.model.theme.AppTheme
+import com.ssilencce.extensions.files.readString
+import com.ssilencce.extensions.resources.getDrawableCompat
+import com.ssilencce.extensions.resources.getTinted
 import io.ktor.http.encodeURLParameter
 
 val Context.fileProviderAuthority: String

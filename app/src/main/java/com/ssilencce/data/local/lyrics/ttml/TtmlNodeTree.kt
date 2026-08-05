@@ -1,7 +1,7 @@
-package com.mardous.booming.data.local.lyrics.ttml
+package com.ssilencce.data.local.lyrics.ttml
 
-import com.mardous.booming.data.model.lyrics.LyricsActor
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.model.lyrics.LyricsActor
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 import java.util.Locale
 
 /**

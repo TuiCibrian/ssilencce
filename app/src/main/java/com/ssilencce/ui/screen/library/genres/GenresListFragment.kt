@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.genres
+package com.ssilencce.ui.screen.library.genres
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -26,15 +26,15 @@ import android.view.View
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.sort.GenreSortMode
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.extensions.navigation.genreDetailArgs
-import com.mardous.booming.ui.IGenreCallback
-import com.mardous.booming.ui.adapters.GenreAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.screen.library.ReloadType
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.sort.GenreSortMode
+import com.ssilencce.data.model.Genre
+import com.ssilencce.extensions.navigation.genreDetailArgs
+import com.ssilencce.ui.IGenreCallback
+import com.ssilencce.ui.adapters.GenreAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.screen.library.ReloadType
 
 class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, GridLayoutManager>(),
     IGenreCallback {

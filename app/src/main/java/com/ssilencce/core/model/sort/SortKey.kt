@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.sort
+package com.ssilencce.core.model.sort
 
 enum class SortKey(val value: String) {
     Name("az_key"), // keep user preference, we can clean this up at some point, but im not gonna be making that call :D

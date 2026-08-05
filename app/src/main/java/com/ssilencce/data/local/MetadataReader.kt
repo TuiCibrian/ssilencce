@@ -1,4 +1,4 @@
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.content.ContentResolver
 import android.content.Context
@@ -10,7 +10,7 @@ import com.kyant.taglib.AudioProperties
 import com.kyant.taglib.Metadata
 import com.kyant.taglib.Picture
 import com.kyant.taglib.TagLib
-import com.mardous.booming.data.model.ChannelMode
+import com.ssilencce.data.model.ChannelMode
 import org.jaudiotagger.tag.reference.GenreTypes
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get

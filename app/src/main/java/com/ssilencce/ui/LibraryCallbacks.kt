@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui
+package com.ssilencce.ui
 
 import android.view.MenuItem
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.core.model.filesystem.FileSystemItem
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.model.*
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.model.*
 
 interface ISongCallback {
     fun songMenuItemClick(song: Song, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?): Boolean

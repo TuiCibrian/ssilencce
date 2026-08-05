@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.library
+package com.ssilencce.ui.dialogs.library
 
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.READ_MEDIA_AUDIO
@@ -30,14 +30,14 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat.checkSelfPermission
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.sort.sortedByName
-import com.mardous.booming.databinding.DialogRecyclerViewBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.hasT
-import com.mardous.booming.extensions.resources.useLinearLayout
-import com.mardous.booming.ui.adapters.SimpleItemAdapter
-import com.mardous.booming.util.StorageUtil
+import com.ssilencce.R
+import com.ssilencce.core.sort.sortedByName
+import com.ssilencce.databinding.DialogRecyclerViewBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.hasT
+import com.ssilencce.extensions.resources.useLinearLayout
+import com.ssilencce.ui.adapters.SimpleItemAdapter
+import com.ssilencce.util.StorageUtil
 import java.io.File
 import java.io.IOException
 

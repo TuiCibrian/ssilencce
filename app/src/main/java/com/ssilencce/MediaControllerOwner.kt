@@ -1,4 +1,4 @@
-package com.mardous.booming
+package com.ssilencce
 
 import android.app.PendingIntent
 import android.content.ComponentName
@@ -13,8 +13,8 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.*
 import com.google.common.util.concurrent.ListenableFuture
-import com.mardous.booming.core.model.task.Event
-import com.mardous.booming.playback.PlaybackService
+import com.ssilencce.core.model.task.Event
+import com.ssilencce.playback.PlaybackService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.concurrent.atomics.AtomicReference

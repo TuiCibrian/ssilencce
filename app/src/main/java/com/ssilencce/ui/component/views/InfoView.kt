@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.util.AttributeSet
 import android.widget.FrameLayout
 import android.widget.TextView
-import com.mardous.booming.R
+import com.ssilencce.R
 
 /**
  * @author Christians M. A. (mardous)

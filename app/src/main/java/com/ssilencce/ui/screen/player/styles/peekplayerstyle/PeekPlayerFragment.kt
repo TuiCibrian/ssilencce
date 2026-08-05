@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.styles.peekplayerstyle
+package com.ssilencce.ui.screen.player.styles.peekplayerstyle
 
 import android.os.Bundle
 import android.view.Menu
@@ -27,16 +27,16 @@ import androidx.core.view.WindowInsetsCompat.Type
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import com.google.android.material.color.MaterialColors
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.*
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.databinding.FragmentPeekPlayerBinding
-import com.mardous.booming.extensions.getOnBackPressedDispatcher
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.whichFragment
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.AbsPlayerFragment
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.player.*
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.databinding.FragmentPeekPlayerBinding
+import com.ssilencce.extensions.getOnBackPressedDispatcher
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.whichFragment
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.AbsPlayerFragment
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)

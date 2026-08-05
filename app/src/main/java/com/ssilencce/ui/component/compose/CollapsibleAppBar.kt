@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose
+package com.ssilencce.ui.component.compose
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -7,9 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import com.mardous.booming.R
-import com.mardous.booming.ui.component.views.TopAppBarLayout
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.ui.component.views.TopAppBarLayout
+import com.ssilencce.util.Preferences
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

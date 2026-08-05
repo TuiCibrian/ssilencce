@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.sleeptimer
+package com.ssilencce.ui.screen.sleeptimer
 
 import android.app.Dialog
 import android.os.Bundle
@@ -9,7 +9,7 @@ import androidx.compose.ui.platform.ComposeView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class SleepTimerFragment: BottomSheetDialogFragment() {
@@ -31,7 +31,7 @@ class SleepTimerFragment: BottomSheetDialogFragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     SleepTimerBottomSheet(
                         viewModel = viewModel
                     )

@@ -1,4 +1,4 @@
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
@@ -66,52 +66,52 @@ import com.google.common.collect.ImmutableList
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
-import com.mardous.booming.R
-import com.mardous.booming.coil.CoilBitmapLoader
-import com.mardous.booming.core.appwidgets.BoomingGlanceWidget
-import com.mardous.booming.core.appwidgets.CardWidget
-import com.mardous.booming.core.appwidgets.FullWidget
-import com.mardous.booming.core.appwidgets.WidgetTheme
-import com.mardous.booming.core.appwidgets.state.PlaybackState
-import com.mardous.booming.core.appwidgets.state.PlaybackStateDefinition
-import com.mardous.booming.core.audio.AudioOutputObserver
-import com.mardous.booming.core.model.player.MetadataField
-import com.mardous.booming.core.palette.PaletteProcessor
-import com.mardous.booming.data.local.MediaStoreObserver
-import com.mardous.booming.data.local.ReplayGainTagExtractor
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.data.model.network.ScrobblingService
-import com.mardous.booming.extensions.isBluetoothA2dpConnected
-import com.mardous.booming.extensions.isBluetoothA2dpDisconnected
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.playback.equalizer.EqualizerManager
-import com.mardous.booming.playback.library.LibraryProvider
-import com.mardous.booming.playback.library.MediaIDs
-import com.mardous.booming.playback.processor.BalanceAudioProcessor
-import com.mardous.booming.playback.processor.ReplayGainAudioProcessor
-import com.mardous.booming.playback.renderer.AlacWorkaroundCodecSelector
-import com.mardous.booming.playback.renderer.BoomingMusicRenderersFactory
-import com.mardous.booming.ui.screen.MainActivity
-import com.mardous.booming.util.CLEAR_QUEUE_ON_COMPLETION
-import com.mardous.booming.util.ENABLE_HISTORY
-import com.mardous.booming.util.IGNORE_AUDIO_FOCUS
-import com.mardous.booming.util.MP3_INDEX_SEEKING
-import com.mardous.booming.util.PAUSE_ON_ZERO_VOLUME
-import com.mardous.booming.util.PLAY_ON_STARTUP_MODE
-import com.mardous.booming.util.PlayOnStartupMode
-import com.mardous.booming.util.Preferences
-import com.mardous.booming.util.Preferences.requireString
-import com.mardous.booming.util.QUEUE_NEXT_MODE
-import com.mardous.booming.util.REWIND_WITH_BACK
-import com.mardous.booming.util.SEEK_INTERVAL
-import com.mardous.booming.util.STOP_WHEN_CLOSED_FROM_RECENTS
-import com.mardous.booming.util.SongPlayCountHelper
-import com.mardous.booming.util.WIDGET_DYNAMIC_COLORS
-import com.mardous.booming.util.WIDGET_IMAGE_CORNER_RADIUS
-import com.mardous.booming.util.WIDGET_SMALL_LAYOUT_STYLE
-import com.mardous.booming.util.WIDGET_THIRD_LINE_CONTENT
+import com.ssilencce.R
+import com.ssilencce.coil.CoilBitmapLoader
+import com.ssilencce.core.appwidgets.SsilencceGlanceWidget
+import com.ssilencce.core.appwidgets.CardWidget
+import com.ssilencce.core.appwidgets.FullWidget
+import com.ssilencce.core.appwidgets.WidgetTheme
+import com.ssilencce.core.appwidgets.state.PlaybackState
+import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
+import com.ssilencce.core.audio.AudioOutputObserver
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.core.palette.PaletteProcessor
+import com.ssilencce.data.local.MediaStoreObserver
+import com.ssilencce.data.local.ReplayGainTagExtractor
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.model.network.ScrobblingService
+import com.ssilencce.extensions.isBluetoothA2dpConnected
+import com.ssilencce.extensions.isBluetoothA2dpDisconnected
+import com.ssilencce.extensions.showToast
+import com.ssilencce.playback.equalizer.EqualizerManager
+import com.ssilencce.playback.library.LibraryProvider
+import com.ssilencce.playback.library.MediaIDs
+import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.playback.renderer.AlacWorkaroundCodecSelector
+import com.ssilencce.playback.renderer.SsilencceRenderersFactory
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.util.CLEAR_QUEUE_ON_COMPLETION
+import com.ssilencce.util.ENABLE_HISTORY
+import com.ssilencce.util.IGNORE_AUDIO_FOCUS
+import com.ssilencce.util.MP3_INDEX_SEEKING
+import com.ssilencce.util.PAUSE_ON_ZERO_VOLUME
+import com.ssilencce.util.PLAY_ON_STARTUP_MODE
+import com.ssilencce.util.PlayOnStartupMode
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.Preferences.requireString
+import com.ssilencce.util.QUEUE_NEXT_MODE
+import com.ssilencce.util.REWIND_WITH_BACK
+import com.ssilencce.util.SEEK_INTERVAL
+import com.ssilencce.util.STOP_WHEN_CLOSED_FROM_RECENTS
+import com.ssilencce.util.SongPlayCountHelper
+import com.ssilencce.util.WIDGET_DYNAMIC_COLORS
+import com.ssilencce.util.WIDGET_IMAGE_CORNER_RADIUS
+import com.ssilencce.util.WIDGET_SMALL_LAYOUT_STYLE
+import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -152,7 +152,7 @@ class PlaybackService :
         )
     }
 
-    private val playerThread = HandlerThread("Booming-ExoPlayer", Process.THREAD_PRIORITY_AUDIO)
+    private val playerThread = HandlerThread("Ssilencce-ExoPlayer", Process.THREAD_PRIORITY_AUDIO)
     private val balanceProcessor: BalanceAudioProcessor by inject()
     private val replayGainProcessor: ReplayGainAudioProcessor by inject()
 
@@ -255,7 +255,7 @@ class PlaybackService :
                         .build(), handleAudioFocus
                 )
                 .setRenderersFactory(
-                    BoomingMusicRenderersFactory(this, balanceProcessor, replayGainProcessor)
+                    SsilencceRenderersFactory(this, balanceProcessor, replayGainProcessor)
                         .setEnableAudioFloatOutput(equalizerManager.audioFloatOutput.value)
                         .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                         .setMediaCodecSelector(AlacWorkaroundCodecSelector())
@@ -996,14 +996,14 @@ class PlaybackService :
 
     private suspend fun updateGlanceWidgets(playbackState: PlaybackState) = withContext(IO) {
         try {
-            val boomingWidget = BoomingGlanceWidget()
-            val boomingWidgetIds = glanceManager.getGlanceIds(boomingWidget.javaClass)
-            if (boomingWidgetIds.isNotEmpty()) {
-                boomingWidgetIds.forEach { id ->
+            val ssilencceWidget = SsilencceGlanceWidget()
+            val ssilencceWidgetIds = glanceManager.getGlanceIds(ssilencceWidget.javaClass)
+            if (ssilencceWidgetIds.isNotEmpty()) {
+                ssilencceWidgetIds.forEach { id ->
                     updateAppWidgetState(applicationContext, PlaybackStateDefinition, id) {
                         playbackState
                     }
-                    boomingWidget.update(applicationContext, id)
+                    ssilencceWidget.update(applicationContext, id)
                 }
             }
 
@@ -1237,7 +1237,7 @@ class PlaybackService :
     }
 
     companion object {
-        private const val PACKAGE_NAME = "com.mardous.booming"
+        private const val PACKAGE_NAME = "com.ssilencce"
 
         const val ACTION_TOGGLE_SHUFFLE = "$PACKAGE_NAME.action.ACTION_TOGGLE_SHUFFLE"
         const val ACTION_CYCLE_REPEAT = "$PACKAGE_NAME.action.ACTION_CYCLE_REPEAT"

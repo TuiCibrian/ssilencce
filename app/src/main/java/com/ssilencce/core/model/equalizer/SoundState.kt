@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.equalizer
+package com.ssilencce.core.model.equalizer
 
 import androidx.compose.runtime.Immutable
-import com.mardous.booming.data.model.replaygain.ReplayGainMode
+import com.ssilencce.data.model.replaygain.ReplayGainMode
 
 @Immutable
 data class BalanceState(

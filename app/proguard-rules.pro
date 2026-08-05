@@ -70,18 +70,18 @@
 -keep class com.google.android.material.bottomsheet.** { *; }
 -keep class com.google.android.material.transition.** { *; }
 
--keep class com.mardous.booming.ui.component.base.** { *; }
--keep class com.mardous.booming.ui.screen.player.styles.** { *; }
+-keep class com.ssilencce.ui.component.base.** { *; }
+-keep class com.ssilencce.ui.screen.player.styles.** { *; }
 
--keep class com.mardous.booming.core.model.** { *; }
--keep class com.mardous.booming.data.local.room.LyricsEntity { *; }
--keep class com.mardous.booming.data.remote.deezer.model.** { *; }
--keep class com.mardous.booming.data.remote.lastfm.model.** { *; }
--keep class com.mardous.booming.data.remote.listenbrainz.model.** { *; }
--keep class com.mardous.booming.data.remote.lyrics.model.** { *; }
--keep class com.mardous.booming.data.local.search.** { *; }
--keep class com.mardous.booming.data.model.search.** { *; }
--keep class com.mardous.booming.data.model.replaygain.** { *; }
+-keep class com.ssilencce.core.model.** { *; }
+-keep class com.ssilencce.data.local.room.LyricsEntity { *; }
+-keep class com.ssilencce.data.remote.deezer.model.** { *; }
+-keep class com.ssilencce.data.remote.lastfm.model.** { *; }
+-keep class com.ssilencce.data.remote.listenbrainz.model.** { *; }
+-keep class com.ssilencce.data.remote.lyrics.model.** { *; }
+-keep class com.ssilencce.data.local.search.** { *; }
+-keep class com.ssilencce.data.model.search.** { *; }
+-keep class com.ssilencce.data.model.replaygain.** { *; }
 
 # Hide an annoying compilation warning
 # http://stackoverflow.com/questions/3308010/what-is-the-ignoring-innerclasses-attribute-warning-output-during-compilation

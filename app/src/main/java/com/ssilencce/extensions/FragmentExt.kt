@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import android.content.Context
 import android.os.Bundle
@@ -36,8 +36,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.fragment.NavHostFragment
 import androidx.transition.Fade
 import com.google.android.material.transition.MaterialSharedAxis
-import com.mardous.booming.R
-import com.mardous.booming.extensions.resources.createBoomingMusicBalloon
+import com.ssilencce.R
+import com.ssilencce.extensions.resources.createSsilencceBalloon
 import com.skydoves.balloon.Balloon
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -79,10 +79,10 @@ inline fun Fragment.runOnUi(crossinline consumer: (View) -> Unit) {
 inline fun <T : Fragment> T.withArgs(argsBuilder: Bundle.() -> Unit): T =
     this.apply { arguments = Bundle().apply(argsBuilder) }
 
-inline fun Fragment.createBoomingMusicBalloon(
+inline fun Fragment.createSsilencceBalloon(
     tooltipId: String,
     crossinline block: Balloon.Builder.() -> Unit
-) = requestContext { it.createBoomingMusicBalloon(tooltipId, viewLifecycleOwner, block = block) }
+) = requestContext { it.createSsilencceBalloon(tooltipId, viewLifecycleOwner, block = block) }
 
 fun Fragment.plurals(resId: Int, quantity: Int) = requireContext().plurals(resId, quantity)
 

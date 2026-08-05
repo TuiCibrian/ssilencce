@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.room
+package com.ssilencce.data.local.room
 
 import androidx.room.*
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.resources
+package com.ssilencce.extensions.resources
 
 import android.animation.Animator
 import android.animation.ObjectAnimator
@@ -68,11 +68,11 @@ import com.google.android.material.progressindicator.BaseProgressIndicator
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.shape.Shapeable
 import com.google.android.material.slider.Slider
-import com.mardous.booming.R
-import com.mardous.booming.extensions.dip
-import com.mardous.booming.extensions.resolveColor
-import com.mardous.booming.ui.component.views.MorphicIconButton
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.extensions.dip
+import com.ssilencce.extensions.resolveColor
+import com.ssilencce.ui.component.views.MorphicIconButton
+import com.ssilencce.util.Preferences
 import com.skydoves.balloon.ArrowPositionRules
 import com.skydoves.balloon.Balloon
 import com.skydoves.balloon.BalloonAnimation
@@ -86,7 +86,7 @@ import me.zhanghai.android.fastscroll.FastScroller
 import me.zhanghai.android.fastscroll.FastScrollerBuilder
 import com.google.android.material.R as M3R
 
-const val BOOMING_ANIM_TIME = 350L
+const val SSILENCCE_ANIM_TIME = 350L
 
 val View.backgroundColor: Int
     get() = (background as? ColorDrawable)?.color
@@ -130,7 +130,7 @@ fun View.show(animate: Boolean = false, onCompleted: AnimationCompleted? = null)
         }
         this.animate()
             .alpha(1f)
-            .setDuration(BOOMING_ANIM_TIME)
+            .setDuration(SSILENCCE_ANIM_TIME)
             .withStartAction {
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 isVisible = true
@@ -154,7 +154,7 @@ fun View.hide(animate: Boolean = false, onCompleted: AnimationCompleted? = null)
         }
         this.animate()
             .alpha(0f)
-            .setDuration(BOOMING_ANIM_TIME)
+            .setDuration(SSILENCCE_ANIM_TIME)
             .withStartAction {
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
             }
@@ -457,7 +457,7 @@ fun NavigationBarView.show() {
     drawable.setBounds(left, parent.height, right, parent.height + height)
     parent.overlay.add(drawable)
     ValueAnimator.ofInt(parent.height, top).apply {
-        duration = BOOMING_ANIM_TIME
+        duration = SSILENCCE_ANIM_TIME
         interpolator = AnimationUtils.loadInterpolator(context, android.R.interpolator.accelerate_decelerate)
         addUpdateListener {
             val newTop = it.animatedValue as Int
@@ -495,7 +495,7 @@ fun NavigationBarView.hide() {
     parent.overlay.add(drawable)
     isGone = true
     ValueAnimator.ofInt(top, parent.height).apply {
-        duration = BOOMING_ANIM_TIME
+        duration = SSILENCCE_ANIM_TIME
         interpolator = AnimationUtils.loadInterpolator(context, android.R.interpolator.accelerate_decelerate)
         addUpdateListener {
             val newTop = it.animatedValue as Int
@@ -531,7 +531,7 @@ fun BaseProgressIndicator<*>.setWavy(isWavy: Boolean) {
     }
 
     val animator = ValueAnimator.ofInt(oldAmplitude, newAmplitude).apply {
-        duration = BOOMING_ANIM_TIME
+        duration = SSILENCCE_ANIM_TIME
         interpolator = DecelerateInterpolator()
         addUpdateListener {
             waveAmplitude = it.animatedValue as Int
@@ -584,7 +584,7 @@ fun Slider.setTrackingTouchListener(
     })
 }
 
-inline fun Context.createBoomingMusicBalloon(
+inline fun Context.createSsilencceBalloon(
     tooltipId: String,
     lifecycleOwner: LifecycleOwner,
     crossinline block: Balloon.Builder.() -> Unit
@@ -611,7 +611,7 @@ inline fun Context.createBoomingMusicBalloon(
 
 fun BottomSheetBehavior<*>.peekHeightAnimate(value: Int): Animator {
     return ObjectAnimator.ofInt(this, "peekHeight", value).apply {
-        duration = BOOMING_ANIM_TIME
+        duration = SSILENCCE_ANIM_TIME
         start()
     }
 }

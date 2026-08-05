@@ -1,9 +1,9 @@
-package com.mardous.booming.data.remote.listenbrainz
+package com.ssilencce.data.remote.listenbrainz
 
-import com.mardous.booming.data.remote.listenbrainz.model.ListenBrainzResponse
-import com.mardous.booming.data.remote.listenbrainz.model.ListenBrainzSubmission
-import com.mardous.booming.data.remote.listenbrainz.model.ListenBrainzTokenValidationResponse
-import com.mardous.booming.util.Constants.USER_AGENT
+import com.ssilencce.data.remote.listenbrainz.model.ListenBrainzResponse
+import com.ssilencce.data.remote.listenbrainz.model.ListenBrainzSubmission
+import com.ssilencce.data.remote.listenbrainz.model.ListenBrainzTokenValidationResponse
+import com.ssilencce.util.Constants.USER_AGENT
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

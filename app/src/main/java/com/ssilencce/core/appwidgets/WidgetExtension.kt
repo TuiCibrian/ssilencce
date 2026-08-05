@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets
+package com.ssilencce.core.appwidgets
 
 import android.content.ComponentName
 import android.content.Context
@@ -16,10 +16,10 @@ import androidx.glance.appwidget.action.actionStartService
 import androidx.glance.color.ColorProvider
 import androidx.glance.color.ColorProviders
 import androidx.glance.color.colorProviders
-import com.mardous.booming.core.appwidgets.state.WidgetTheme
-import com.mardous.booming.playback.PlaybackService
-import com.mardous.booming.ui.theme.PaletteStyle
-import com.mardous.booming.ui.theme.dynamicColorSchemes
+import com.ssilencce.core.appwidgets.state.WidgetTheme
+import com.ssilencce.playback.PlaybackService
+import com.ssilencce.ui.theme.PaletteStyle
+import com.ssilencce.ui.theme.dynamicColorSchemes
 
 fun Dp.toPx(context: Context): Int {
     return TypedValue.applyDimension(

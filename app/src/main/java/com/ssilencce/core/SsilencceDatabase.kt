@@ -1,10 +1,10 @@
-package com.mardous.booming.core
+package com.ssilencce.core
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
-import com.mardous.booming.data.local.room.*
+import com.ssilencce.data.local.room.*
 
 @Database(
     entities = [
@@ -19,7 +19,7 @@ import com.mardous.booming.data.local.room.*
     version = 6,
     exportSchema = false
 )
-abstract class BoomingDatabase : RoomDatabase() {
+abstract class SsilencceDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao
     abstract fun playCountDao(): PlayCountDao
     abstract fun historyDao(): HistoryDao

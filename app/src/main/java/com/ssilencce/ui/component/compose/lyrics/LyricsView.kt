@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose.lyrics
+package com.ssilencce.ui.component.compose.lyrics
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOut
@@ -65,15 +65,15 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
-import com.mardous.booming.R
-import com.mardous.booming.core.model.lyrics.LyricsViewSettings
-import com.mardous.booming.core.model.lyrics.LyricsViewState
-import com.mardous.booming.data.model.lyrics.LyricsActor
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
-import com.mardous.booming.extensions.hasS
-import com.mardous.booming.extensions.utilities.isRtl
-import com.mardous.booming.ui.component.compose.decoration.FadingEdges
-import com.mardous.booming.ui.component.compose.decoration.fadingEdges
+import com.ssilencce.R
+import com.ssilencce.core.model.lyrics.LyricsViewSettings
+import com.ssilencce.core.model.lyrics.LyricsViewState
+import com.ssilencce.data.model.lyrics.LyricsActor
+import com.ssilencce.data.model.lyrics.SyncedLyrics
+import com.ssilencce.extensions.hasS
+import com.ssilencce.extensions.utilities.isRtl
+import com.ssilencce.ui.component.compose.decoration.FadingEdges
+import com.ssilencce.ui.component.compose.decoration.fadingEdges
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.sin

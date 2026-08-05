@@ -1,9 +1,9 @@
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 import android.content.Context
-import com.mardous.booming.extensions.resolveColor
-import com.mardous.booming.extensions.resources.withAlpha
-import com.mardous.booming.ui.component.views.PlaceholderDrawable
+import com.ssilencce.extensions.resolveColor
+import com.ssilencce.extensions.resources.withAlpha
+import com.ssilencce.ui.component.views.PlaceholderDrawable
 
 class PaletteColor(
     val backgroundColor: Int,

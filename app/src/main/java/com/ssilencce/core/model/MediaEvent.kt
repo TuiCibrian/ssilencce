@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 enum class MediaEvent {
     MediaContentChanged,

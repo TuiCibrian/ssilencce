@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.player
+package com.ssilencce.core.model.player
 
 import android.content.Context
 import android.graphics.Color
@@ -26,21 +26,21 @@ import androidx.core.graphics.ColorUtils
 import androidx.preference.PreferenceManager
 import com.kyant.m3color.hct.Hct
 import com.kyant.m3color.scheme.SchemeContent
-import com.mardous.booming.R
-import com.mardous.booming.core.model.PaletteColor
-import com.mardous.booming.extensions.isNightMode
-import com.mardous.booming.extensions.resolveColor
-import com.mardous.booming.extensions.resources.adjustSaturationIfTooHigh
-import com.mardous.booming.extensions.resources.desaturateIfTooDarkComparedTo
-import com.mardous.booming.extensions.resources.ensureContrastAgainst
-import com.mardous.booming.extensions.resources.onSurfaceColor
-import com.mardous.booming.extensions.resources.primaryColor
-import com.mardous.booming.extensions.resources.surfaceColor
-import com.mardous.booming.extensions.resources.withAlpha
-import com.mardous.booming.extensions.systemContrast
-import com.mardous.booming.ui.component.compose.color.onThis
-import com.mardous.booming.util.PLAYER_BLUR_RADIUS
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.extensions.isNightMode
+import com.ssilencce.extensions.resolveColor
+import com.ssilencce.extensions.resources.adjustSaturationIfTooHigh
+import com.ssilencce.extensions.resources.desaturateIfTooDarkComparedTo
+import com.ssilencce.extensions.resources.ensureContrastAgainst
+import com.ssilencce.extensions.resources.onSurfaceColor
+import com.ssilencce.extensions.resources.primaryColor
+import com.ssilencce.extensions.resources.surfaceColor
+import com.ssilencce.extensions.resources.withAlpha
+import com.ssilencce.extensions.systemContrast
+import com.ssilencce.ui.component.compose.color.onThis
+import com.ssilencce.util.PLAYER_BLUR_RADIUS
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.google.android.material.R as M3R

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import android.content.Context
 import android.content.Intent

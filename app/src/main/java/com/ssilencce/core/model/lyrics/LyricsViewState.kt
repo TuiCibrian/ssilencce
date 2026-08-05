@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.lyrics
+package com.ssilencce.core.model.lyrics
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -6,7 +6,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 import kotlin.math.abs
 
 @Stable

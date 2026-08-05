@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.playlists
+package com.ssilencce.ui.screen.library.playlists
 
 import android.graphics.Color
 import android.os.Bundle
@@ -35,36 +35,36 @@ import com.google.android.material.transition.MaterialContainerTransform
 import com.h6ah4i.android.widget.advrecyclerview.animator.RefactoredDefaultItemAnimator
 import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropManager
 import com.h6ah4i.android.widget.advrecyclerview.utils.WrapperAdapterUtils
-import com.mardous.booming.R
-import com.mardous.booming.coil.playlistImage
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.mapper.searchFilter
-import com.mardous.booming.data.mapper.toSongEntity
-import com.mardous.booming.data.mapper.toSongs
-import com.mardous.booming.data.mapper.toSongsEntity
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentPlaylistDetailBinding
-import com.mardous.booming.extensions.applyHorizontalWindowInsets
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.extensions.isNullOrEmpty
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.extensions.media.isFavorites
-import com.mardous.booming.extensions.media.playlistInfo
-import com.mardous.booming.extensions.navigation.searchArgs
-import com.mardous.booming.extensions.resources.createFastScroller
-import com.mardous.booming.extensions.resources.removeHorizontalMarginIfRequired
-import com.mardous.booming.extensions.resources.surfaceColor
-import com.mardous.booming.extensions.setSupportActionBar
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.core.model.shuffle.OpenShuffleMode
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.adapters.song.PlaylistSongAdapter
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
-import com.mardous.booming.ui.component.menu.onPlaylistMenu
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.ui.dialogs.playlists.RemoveFromPlaylistDialog
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.playlistImage
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.mapper.searchFilter
+import com.ssilencce.data.mapper.toSongEntity
+import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.mapper.toSongsEntity
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentPlaylistDetailBinding
+import com.ssilencce.extensions.applyHorizontalWindowInsets
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.extensions.isNullOrEmpty
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.extensions.media.isFavorites
+import com.ssilencce.extensions.media.playlistInfo
+import com.ssilencce.extensions.navigation.searchArgs
+import com.ssilencce.extensions.resources.createFastScroller
+import com.ssilencce.extensions.resources.removeHorizontalMarginIfRequired
+import com.ssilencce.extensions.resources.surfaceColor
+import com.ssilencce.extensions.setSupportActionBar
+import com.ssilencce.extensions.showToast
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.adapters.song.PlaylistSongAdapter
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.menu.onPlaylistMenu
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.dialogs.playlists.RemoveFromPlaylistDialog
+import com.ssilencce.util.Preferences
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 

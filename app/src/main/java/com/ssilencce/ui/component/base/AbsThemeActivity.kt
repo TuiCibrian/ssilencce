@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.annotation.SuppressLint
 import android.content.pm.ActivityInfo
@@ -29,12 +29,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.color.DynamicColorsOptions
-import com.mardous.booming.R
-import com.mardous.booming.extensions.createAppTheme
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.extensions.resources.isColorLight
-import com.mardous.booming.extensions.resources.surfaceColor
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.extensions.createAppTheme
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.resources.isColorLight
+import com.ssilencce.extensions.resources.surfaceColor
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)

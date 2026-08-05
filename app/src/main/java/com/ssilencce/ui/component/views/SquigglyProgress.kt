@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 /*
  * Copyright (C) 2022 The Android Open Source Project
@@ -24,7 +24,7 @@ import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.os.SystemClock
 import androidx.annotation.VisibleForTesting
-import com.mardous.booming.extensions.resources.withAlpha
+import com.ssilencce.extensions.resources.withAlpha
 
 private const val TWO_PI = (Math.PI * 2f).toFloat()
 

@@ -1,6 +1,6 @@
-# Contributing to Booming Music
+# Contributing to ssilencce
 
-Thank you for your interest in contributing to Booming Music! We value your help in making this the best music player for Android.
+Thank you for your interest in contributing to ssilencce! We value your help in making this the best music player for Android.
 
 To ensure a smooth collaboration process, please review the following guidelines before you start.
 
@@ -8,7 +8,7 @@ To ensure a smooth collaboration process, please review the following guidelines
 By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). We expect all contributors to maintain a respectful and professional environment.
 
 ## Communication
-The [GitHub Issue Tracker](https://github.com/mardous/BoomingMusic/issues) is the primary channel for bug reports and feature requests. 
+The [GitHub Issue Tracker](https://github.com/OWNER/REPO/issues) is the primary channel for bug reports and feature requests. 
 - Please do not send emails for these purposes.
 - Use GitHub Reactions (👍, 😄, etc.) instead of commenting "+1".
 
@@ -53,4 +53,4 @@ Ensure your code builds correctly using:
 ---
 
 ## Licensing
-By contributing to Booming Music, you agree that your contributions will be licensed under the [GNU General Public License v3.0](LICENSE.txt).
+By contributing to ssilencce, you agree that your contributions will be licensed under the [GNU General Public License v3.0](LICENSE.txt).

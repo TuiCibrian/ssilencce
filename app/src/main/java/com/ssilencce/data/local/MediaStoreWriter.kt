@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.content.ContentResolver
 import android.content.ContentValues
@@ -23,8 +23,8 @@ import android.content.Context
 import android.net.Uri
 import android.os.Environment
 import android.provider.MediaStore
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.util.FileUtil.PLAYLISTS_DIRECTORY_NAME
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.util.FileUtil.PLAYLISTS_DIRECTORY_NAME
 import java.io.File
 import java.io.IOException
 import java.io.OutputStream

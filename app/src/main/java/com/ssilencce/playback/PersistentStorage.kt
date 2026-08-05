@@ -1,4 +1,4 @@
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import android.content.Context
 import android.os.Bundle
@@ -11,10 +11,10 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.local.room.QueueDao
-import com.mardous.booming.data.local.room.QueueEntity
-import com.mardous.booming.playback.ImprovedShuffleOrder.SerializedOrder
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.room.QueueDao
+import com.ssilencce.data.local.room.QueueEntity
+import com.ssilencce.playback.ImprovedShuffleOrder.SerializedOrder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

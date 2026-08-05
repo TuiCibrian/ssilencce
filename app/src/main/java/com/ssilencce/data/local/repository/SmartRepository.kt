@@ -15,23 +15,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.content.Context
 import android.database.Cursor
 import android.provider.MediaStore.Audio.AudioColumns
-import com.mardous.booming.data.local.MediaQueryDispatcher
-import com.mardous.booming.data.local.room.HistoryDao
-import com.mardous.booming.data.local.room.HistoryEntity
-import com.mardous.booming.data.local.room.PlayCountDao
-import com.mardous.booming.data.local.room.PlayCountEntity
-import com.mardous.booming.data.mapper.toHistoryEntity
-import com.mardous.booming.data.mapper.toSong
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.ContentType
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.util.Preferences
+import com.ssilencce.data.local.MediaQueryDispatcher
+import com.ssilencce.data.local.room.HistoryDao
+import com.ssilencce.data.local.room.HistoryEntity
+import com.ssilencce.data.local.room.PlayCountDao
+import com.ssilencce.data.local.room.PlayCountEntity
+import com.ssilencce.data.mapper.toHistoryEntity
+import com.ssilencce.data.mapper.toSong
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.Song
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

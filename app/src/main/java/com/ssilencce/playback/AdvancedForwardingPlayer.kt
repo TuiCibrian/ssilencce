@@ -1,4 +1,4 @@
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import androidx.media3.common.C
 import androidx.media3.common.ForwardingPlayer

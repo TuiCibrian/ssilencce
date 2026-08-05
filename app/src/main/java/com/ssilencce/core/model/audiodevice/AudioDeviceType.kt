@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.audiodevice
+package com.ssilencce.core.model.audiodevice
 
 import android.media.AudioDeviceInfo
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.mediarouter.media.MediaRouter
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class AudioDeviceType(
     @param:DrawableRes val iconRes: Int,

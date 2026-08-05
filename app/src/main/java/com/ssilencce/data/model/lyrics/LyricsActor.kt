@@ -1,4 +1,4 @@
-package com.mardous.booming.data.model.lyrics
+package com.ssilencce.data.model.lyrics
 
 enum class LyricsActor(val value: String, val isBackground: Boolean) {
     Voice1("v1", false), Voice1Background("v1", true),

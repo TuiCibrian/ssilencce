@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.audiodevice
+package com.ssilencce.core.model.audiodevice
 
 import android.content.Context
 import android.os.Build

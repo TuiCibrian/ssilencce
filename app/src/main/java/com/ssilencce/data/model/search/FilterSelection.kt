@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model.search
+package com.ssilencce.data.model.search
 
 import android.os.Parcelable
-import com.mardous.booming.data.model.search.SearchQuery.FilterMode
+import com.ssilencce.data.model.search.SearchQuery.FilterMode
 import kotlinx.parcelize.Parcelize
 
 @Parcelize

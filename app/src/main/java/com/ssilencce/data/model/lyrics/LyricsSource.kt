@@ -1,6 +1,6 @@
-package com.mardous.booming.data.model.lyrics
+package com.ssilencce.data.model.lyrics
 
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class LyricsSource(val titleRes: Int) {
     Embedded(R.string.embedded_lyrics),

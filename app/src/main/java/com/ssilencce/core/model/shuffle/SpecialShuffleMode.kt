@@ -1,6 +1,6 @@
-package com.mardous.booming.core.model.shuffle
+package com.ssilencce.core.model.shuffle
 
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class SpecialShuffleMode(val iconRes: Int, val titleRes: Int, val descriptionRes: Int) {
     PureRandom(

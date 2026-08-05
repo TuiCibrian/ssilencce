@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util.cursor
+package com.ssilencce.util.cursor
 
 import android.database.Cursor
 import android.provider.MediaStore.Audio.AudioColumns
-import com.mardous.booming.data.local.repository.RealSongRepository
+import com.ssilencce.data.local.repository.RealSongRepository
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 

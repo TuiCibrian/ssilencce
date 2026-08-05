@@ -1,4 +1,4 @@
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.content.ContentResolver
 import android.content.Context
@@ -10,12 +10,12 @@ import android.os.Parcelable
 import android.util.Log
 import com.kyant.taglib.Picture
 import com.kyant.taglib.TagLib
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.media.createAlbumArtThumbFile
-import com.mardous.booming.extensions.media.deleteAlbumArt
-import com.mardous.booming.extensions.media.insertAlbumArt
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.createAlbumArtThumbFile
+import com.ssilencce.extensions.media.deleteAlbumArt
+import com.ssilencce.extensions.media.insertAlbumArt
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -113,7 +113,7 @@ class MetadataWriter : KoinComponent {
         }
         return Picture(
             data = byteArray,
-            description = "Embedded Front Cover - Booming Music",
+            description = "Embedded Front Cover - ssilencce",
             pictureType = "Front Cover",
             mimeType = "image/jpeg"
         )

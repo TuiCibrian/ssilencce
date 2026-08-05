@@ -15,17 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.content.Context
 import android.provider.BaseColumns
 import android.provider.MediaStore
 import androidx.core.net.toUri
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.files.deleteUsingSAF
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.extensions.onUI
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.files.deleteUsingSAF
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.onUI
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 

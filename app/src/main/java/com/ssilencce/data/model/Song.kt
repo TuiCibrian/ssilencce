@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
 import android.content.ContentUris
 import android.net.Uri
@@ -23,11 +23,11 @@ import android.os.Parcelable
 import android.provider.MediaStore
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import com.mardous.booming.coil.CoverProvider
-import com.mardous.booming.core.model.filesystem.FileSystemItem
-import com.mardous.booming.data.local.repository.RealSongRepository.Companion.getAudioContentUri
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.extensions.media.songInfo
+import com.ssilencce.coil.CoverProvider
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.data.local.repository.RealSongRepository.Companion.getAudioContentUri
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.media.songInfo
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.util.Date

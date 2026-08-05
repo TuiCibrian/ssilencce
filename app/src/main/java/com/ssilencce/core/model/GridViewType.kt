@@ -15,12 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.annotation.Px
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class GridViewType(@IdRes val itemId: Int, @LayoutRes val layoutRes: Int, val margin: Int = 4) {
     Normal(R.id.action_view_type_normal, R.layout.item_grid),

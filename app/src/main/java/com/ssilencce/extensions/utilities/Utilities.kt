@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.utilities
+package com.ssilencce.extensions.utilities
 
 import android.os.Build
 import android.util.Log
@@ -111,7 +111,7 @@ inline fun <reified T> String?.deserialize(defaultValue: T): T {
     }
     return if (!isNullOrEmpty())
         runCatching<T> { lenientJson.decodeFromString(this) }
-            .onFailure { Log.d("BoomingUtilities", "Json.decodeFromString($this): error", it) }
+            .onFailure { Log.d("SsilencceUtilities", "Json.decodeFromString($this): error", it) }
             .getOrDefault(defaultValue)
     else defaultValue
 }

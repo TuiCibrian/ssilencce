@@ -1,9 +1,9 @@
-package com.mardous.booming.data.local.lyrics.ttml
+package com.ssilencce.data.local.lyrics.ttml
 
 import android.util.Log
-import com.mardous.booming.data.LyricsParser
-import com.mardous.booming.data.model.lyrics.LyricsFile
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.LyricsParser
+import com.ssilencce.data.model.lyrics.LyricsFile
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserException
 import org.xmlpull.v1.XmlPullParserFactory

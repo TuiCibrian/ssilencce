@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.action
+package com.ssilencce.core.model.action
 
 import androidx.annotation.IdRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class FolderAction(@IdRes val id: Int, val preferenceValue: String) {
     Play(R.id.action_play, "play"),

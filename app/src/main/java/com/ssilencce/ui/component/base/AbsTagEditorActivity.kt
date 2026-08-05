@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.annotation.SuppressLint
 import android.app.Dialog
@@ -26,12 +26,12 @@ import coil3.request.crossfade
 import coil3.target.Target
 import coil3.toBitmap
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.core.sort.sortedByName
-import com.mardous.booming.data.local.EditTarget
-import com.mardous.booming.databinding.ActivityTagEditorBinding
-import com.mardous.booming.extensions.*
-import com.mardous.booming.extensions.resources.setupStatusBarForeground
-import com.mardous.booming.ui.screen.tageditor.TagEditorViewModel
+import com.ssilencce.core.sort.sortedByName
+import com.ssilencce.data.local.EditTarget
+import com.ssilencce.databinding.ActivityTagEditorBinding
+import com.ssilencce.extensions.*
+import com.ssilencce.extensions.resources.setupStatusBarForeground
+import com.ssilencce.ui.screen.tageditor.TagEditorViewModel
 import org.jaudiotagger.tag.reference.GenreTypes
 
 /**
@@ -116,14 +116,14 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
 
     protected open fun selectImage() {
         val items = arrayOf(
-            getString(com.mardous.booming.R.string.download_image),
-            getString(com.mardous.booming.R.string.pick_from_local_storage),
-            getString(com.mardous.booming.R.string.web_search),
-            getString(com.mardous.booming.R.string.restore_default),
-            getString(com.mardous.booming.R.string.remove_cover)
+            getString(com.ssilencce.R.string.download_image),
+            getString(com.ssilencce.R.string.pick_from_local_storage),
+            getString(com.ssilencce.R.string.web_search),
+            getString(com.ssilencce.R.string.restore_default),
+            getString(com.ssilencce.R.string.remove_cover)
         )
         MaterialAlertDialogBuilder(this)
-            .setTitle(com.mardous.booming.R.string.update_image)
+            .setTitle(com.ssilencce.R.string.update_image)
             .setItems(items) { _: DialogInterface, which: Int ->
                 when (which) {
                     0 -> downloadOnlineImage()
@@ -200,13 +200,13 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
         viewModel.write(this, propertyMap).observe(this) { result ->
             if (result.isLoading) {
                 binding.actionSave.hide()
-                showToast(com.mardous.booming.R.string.saving_changes)
+                showToast(com.ssilencce.R.string.saving_changes)
             } else {
                 binding.actionSave.show()
                 if (result.isSuccess) {
-                    showToast(com.mardous.booming.R.string.changes_saved_successfully)
+                    showToast(com.ssilencce.R.string.changes_saved_successfully)
                 } else {
-                    showToast(com.mardous.booming.R.string.could_not_save_some_changes)
+                    showToast(com.ssilencce.R.string.could_not_save_some_changes)
                 }
             }
         }

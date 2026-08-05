@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.lyrics
+package com.ssilencce.ui.screen.lyrics
 
 import android.app.Application
 import android.content.Context
@@ -16,19 +16,19 @@ import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.core.model.lyrics.LyricsViewSettings
-import com.mardous.booming.core.model.lyrics.LyricsViewSettings.BackgroundEffect
-import com.mardous.booming.core.model.lyrics.LyricsViewSettings.Key
-import com.mardous.booming.data.local.lyrics.InstrumentalDetector
-import com.mardous.booming.data.local.repository.LyricsRepository
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.lyrics.LyricsSource
-import com.mardous.booming.data.model.lyrics.RawLyrics
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.data.model.network.NetworkFeature.Lyrics.BetterLyrics
-import com.mardous.booming.data.model.network.NetworkFeature.Lyrics.LRCLib
-import com.mardous.booming.data.model.network.NetworkFeature.Lyrics.Lyrically
-import com.mardous.booming.extensions.media.isArtistNameUnknown
+import com.ssilencce.core.model.lyrics.LyricsViewSettings
+import com.ssilencce.core.model.lyrics.LyricsViewSettings.BackgroundEffect
+import com.ssilencce.core.model.lyrics.LyricsViewSettings.Key
+import com.ssilencce.data.local.lyrics.InstrumentalDetector
+import com.ssilencce.data.local.repository.LyricsRepository
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.lyrics.LyricsSource
+import com.ssilencce.data.model.lyrics.RawLyrics
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.model.network.NetworkFeature.Lyrics.BetterLyrics
+import com.ssilencce.data.model.network.NetworkFeature.Lyrics.LRCLib
+import com.ssilencce.data.model.network.NetworkFeature.Lyrics.Lyrically
+import com.ssilencce.extensions.media.isArtistNameUnknown
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -41,7 +41,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
-import com.mardous.booming.core.model.lyrics.LyricsViewSettings.Mode as LyricsViewMode
+import com.ssilencce.core.model.lyrics.LyricsViewSettings.Mode as LyricsViewMode
 
 /**
  * @author Christians M. A. (mardous)

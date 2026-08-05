@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.core.model.filesystem
+package com.ssilencce.core.model.filesystem
 
 import android.os.Parcelable
-import com.mardous.booming.core.sort.FileSortMode
-import com.mardous.booming.util.StorageUtil
+import com.ssilencce.core.sort.FileSortMode
+import com.ssilencce.util.StorageUtil
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import org.koin.core.component.KoinComponent

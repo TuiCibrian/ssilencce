@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.compose.lyrics
+package com.ssilencce.ui.component.compose.lyrics
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,7 +28,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 
 @Composable
 fun SpannedWordText(

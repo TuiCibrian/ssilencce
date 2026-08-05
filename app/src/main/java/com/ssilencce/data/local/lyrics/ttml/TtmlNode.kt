@@ -1,6 +1,6 @@
-package com.mardous.booming.data.local.lyrics.ttml
+package com.ssilencce.data.local.lyrics.ttml
 
-import com.mardous.booming.extensions.utilities.isWhitespace
+import com.ssilencce.extensions.utilities.isWhitespace
 
 /**
  * Represents a single node in a TTML (Timed Text Markup Language) document.

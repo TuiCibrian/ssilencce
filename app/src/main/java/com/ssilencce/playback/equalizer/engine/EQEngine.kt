@@ -1,18 +1,18 @@
 @file:Suppress("DEPRECATION")
-package com.mardous.booming.playback.equalizer.engine
+package com.ssilencce.playback.equalizer.engine
 
 import android.media.audiofx.BassBoost
 import android.media.audiofx.LoudnessEnhancer
 import android.media.audiofx.Virtualizer
 import android.util.Log
 import androidx.annotation.CallSuper
-import com.mardous.booming.core.model.equalizer.BassBoostState
-import com.mardous.booming.core.model.equalizer.CompressorState
-import com.mardous.booming.core.model.equalizer.EqBandCapabilities
-import com.mardous.booming.core.model.equalizer.EqProfile
-import com.mardous.booming.core.model.equalizer.LimiterState
-import com.mardous.booming.core.model.equalizer.LoudnessGainState
-import com.mardous.booming.core.model.equalizer.VirtualizerState
+import com.ssilencce.core.model.equalizer.BassBoostState
+import com.ssilencce.core.model.equalizer.CompressorState
+import com.ssilencce.core.model.equalizer.EqBandCapabilities
+import com.ssilencce.core.model.equalizer.EqProfile
+import com.ssilencce.core.model.equalizer.LimiterState
+import com.ssilencce.core.model.equalizer.LoudnessGainState
+import com.ssilencce.core.model.equalizer.VirtualizerState
 
 abstract class EQEngine(val sessionId: Int) {
 

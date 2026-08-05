@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 import java.net.URLEncoder
 import java.util.Locale
 

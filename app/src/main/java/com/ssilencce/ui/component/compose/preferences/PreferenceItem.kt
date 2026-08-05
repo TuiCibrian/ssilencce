@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose.preferences
+package com.ssilencce.ui.component.compose.preferences
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
@@ -16,7 +16,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mardous.booming.R
+import com.ssilencce.R
 
 @Composable
 fun PreferenceScreenItem(

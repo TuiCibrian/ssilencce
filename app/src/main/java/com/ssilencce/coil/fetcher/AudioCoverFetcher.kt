@@ -1,4 +1,4 @@
-package com.mardous.booming.coil.fetcher
+package com.ssilencce.coil.fetcher
 
 import android.content.SharedPreferences
 import android.util.Log
@@ -10,15 +10,15 @@ import coil3.fetch.Fetcher
 import coil3.fetch.SourceFetchResult
 import coil3.request.Options
 import com.kyant.taglib.TagLib
-import com.mardous.booming.coil.model.AudioCover
-import com.mardous.booming.coil.util.AudioCoverUtils
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.extensions.media.asAlbumCoverUri
-import com.mardous.booming.extensions.media.isArtistNameUnknown
-import com.mardous.booming.util.ImageSize
-import com.mardous.booming.util.PREFERRED_IMAGE_SIZE
-import com.mardous.booming.util.Preferences.requireString
+import com.ssilencce.coil.model.AudioCover
+import com.ssilencce.coil.util.AudioCoverUtils
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.extensions.media.asAlbumCoverUri
+import com.ssilencce.extensions.media.isArtistNameUnknown
+import com.ssilencce.util.ImageSize
+import com.ssilencce.util.PREFERRED_IMAGE_SIZE
+import com.ssilencce.util.Preferences.requireString
 import okio.IOException
 import okio.buffer
 import okio.source

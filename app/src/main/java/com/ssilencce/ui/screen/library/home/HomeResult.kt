@@ -15,9 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.home
+package com.ssilencce.ui.screen.library.home
 
-import com.mardous.booming.data.model.Suggestion
+import com.ssilencce.data.model.Suggestion
 
 data class SuggestedResult(
     val state: State = State.Idle,

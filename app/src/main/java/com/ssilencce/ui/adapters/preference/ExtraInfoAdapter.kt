@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.preference
+package com.ssilencce.ui.adapters.preference
 
-import com.mardous.booming.core.model.player.MetadataField
-import com.mardous.booming.ui.adapters.DraggableItemAdapter
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.ui.adapters.DraggableItemAdapter
 
 /**
  * @author Christians M. A. (mardous)

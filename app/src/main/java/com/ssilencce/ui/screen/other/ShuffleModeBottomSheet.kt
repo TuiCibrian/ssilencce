@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.other
+package com.ssilencce.ui.screen.other
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
@@ -40,12 +40,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mardous.booming.core.model.shuffle.ShuffleOperationState
-import com.mardous.booming.core.model.shuffle.SpecialShuffleMode
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.ui.screen.library.ReloadType
-import com.mardous.booming.ui.screen.player.PlayerViewModel
+import com.ssilencce.core.model.shuffle.ShuffleOperationState
+import com.ssilencce.core.model.shuffle.SpecialShuffleMode
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.screen.library.ReloadType
+import com.ssilencce.ui.screen.player.PlayerViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

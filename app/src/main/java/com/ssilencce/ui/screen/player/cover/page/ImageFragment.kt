@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.player.cover.page
+package com.ssilencce.ui.screen.player.cover.page
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -16,17 +16,17 @@ import coil3.request.crossfade
 import coil3.toBitmap
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.imageview.ShapeableImageView
-import com.mardous.booming.R
-import com.mardous.booming.coil.songImage
-import com.mardous.booming.core.model.PaletteColor
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.core.palette.PaletteProcessor
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.EXTRA_SONG
-import com.mardous.booming.extensions.requestView
-import com.mardous.booming.extensions.resources.setCornerRadius
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.songImage
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.core.palette.PaletteProcessor
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.EXTRA_SONG
+import com.ssilencce.extensions.requestView
+import com.ssilencce.extensions.resources.setCornerRadius
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch

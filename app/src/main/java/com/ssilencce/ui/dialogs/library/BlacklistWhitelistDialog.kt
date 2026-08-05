@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.library
+package com.ssilencce.ui.dialogs.library
 
 import android.annotation.SuppressLint
 import android.app.Dialog
@@ -28,16 +28,16 @@ import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.data.local.room.InclExclDao
-import com.mardous.booming.data.local.room.InclExclEntity
-import com.mardous.booming.databinding.DialogProgressRecyclerViewBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.files.getCanonicalPathSafe
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.adapters.SimpleItemAdapter
-import com.mardous.booming.ui.dialogs.library.FolderChooserDialog.FolderCallback
+import com.ssilencce.R
+import com.ssilencce.data.local.room.InclExclDao
+import com.ssilencce.data.local.room.InclExclEntity
+import com.ssilencce.databinding.DialogProgressRecyclerViewBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.files.getCanonicalPathSafe
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.adapters.SimpleItemAdapter
+import com.ssilencce.ui.dialogs.library.FolderChooserDialog.FolderCallback
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch

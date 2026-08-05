@@ -1,4 +1,4 @@
-package com.mardous.booming.coil.fetcher
+package com.ssilencce.coil.fetcher
 
 import android.content.ContentResolver
 import android.content.SharedPreferences
@@ -10,14 +10,14 @@ import coil3.fetch.FetchResult
 import coil3.fetch.Fetcher
 import coil3.fetch.SourceFetchResult
 import coil3.request.Options
-import com.mardous.booming.coil.CustomArtistImageManager
-import com.mardous.booming.coil.model.ArtistImage
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.util.ImageSize
-import com.mardous.booming.util.PREFERRED_IMAGE_SIZE
-import com.mardous.booming.util.Preferences.requireString
+import com.ssilencce.coil.CustomArtistImageManager
+import com.ssilencce.coil.model.ArtistImage
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.util.ImageSize
+import com.ssilencce.util.PREFERRED_IMAGE_SIZE
+import com.ssilencce.util.Preferences.requireString
 import okio.Path.Companion.toOkioPath
 import okio.buffer
 import okio.source

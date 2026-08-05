@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.playlists
+package com.ssilencce.ui.dialogs.playlists
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -89,19 +89,19 @@ import androidx.fragment.app.DialogFragment
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.R
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.EXTRA_SONGS
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.media.songCountStr
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.component.compose.EmptyView
-import com.mardous.booming.ui.component.compose.MediaImage
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.EXTRA_SONGS
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.media.songCountStr
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.component.compose.EmptyView
+import com.ssilencce.ui.component.compose.MediaImage
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 sealed class AddToPlaylistUiState(open val isLoading: Boolean) {
@@ -138,7 +138,7 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     AddToPlaylistScreen(
                         songs = songs,
                         onCreatePlaylistClick = {

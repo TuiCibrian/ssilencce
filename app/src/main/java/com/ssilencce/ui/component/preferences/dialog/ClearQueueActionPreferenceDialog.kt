@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
 import android.os.Bundle
@@ -22,11 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.core.model.action.QueueClearingBehavior
-import com.mardous.booming.ui.component.compose.DialogListItemWithRadio
-import com.mardous.booming.ui.theme.BoomingMusicTheme
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.action.QueueClearingBehavior
+import com.ssilencce.ui.component.compose.DialogListItemWithRadio
+import com.ssilencce.ui.theme.SsilencceTheme
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)
@@ -42,7 +42,7 @@ class ClearQueueActionPreferenceDialog : DialogFragment() {
                         ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
                     )
                     setContent {
-                        BoomingMusicTheme {
+                        SsilencceTheme {
                             var selectedAction by remember {
                                 mutableStateOf(Preferences.clearQueueAction)
                             }

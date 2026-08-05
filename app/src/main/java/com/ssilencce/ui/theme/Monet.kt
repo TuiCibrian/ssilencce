@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.theme
+package com.ssilencce.ui.theme
 
 import android.app.UiModeManager
 import android.os.Build
@@ -19,7 +19,7 @@ import com.kyant.m3color.scheme.SchemeNeutral
 import com.kyant.m3color.scheme.SchemeRainbow
 import com.kyant.m3color.scheme.SchemeTonalSpot
 import com.kyant.m3color.scheme.SchemeVibrant
-import com.mardous.booming.core.model.theme.ColorSchemes
+import com.ssilencce.core.model.theme.ColorSchemes
 
 @Stable
 @Composable

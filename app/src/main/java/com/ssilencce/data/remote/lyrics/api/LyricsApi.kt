@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.lyrics.api
+package com.ssilencce.data.remote.lyrics.api
 
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.lyrics.RawLyrics
-import com.mardous.booming.data.model.network.NetworkFeature
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.lyrics.RawLyrics
+import com.ssilencce.data.model.network.NetworkFeature
 
 interface LyricsApi {
     val name: String

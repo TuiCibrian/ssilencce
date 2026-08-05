@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
 import android.content.Context
 import android.database.Cursor
 import android.os.Parcelable
 import android.provider.MediaStore
-import com.mardous.booming.data.local.repository.PlaylistRepository
-import com.mardous.booming.extensions.media.asNumberOfSongs
+import com.ssilencce.data.local.repository.PlaylistRepository
+import com.ssilencce.extensions.media.asNumberOfSongs
 import kotlinx.parcelize.Parcelize
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get

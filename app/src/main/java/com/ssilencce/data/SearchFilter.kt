@@ -1,7 +1,7 @@
-package com.mardous.booming.data
+package com.ssilencce.data
 
 import android.os.Parcelable
-import com.mardous.booming.data.model.search.SearchQuery
+import com.ssilencce.data.model.search.SearchQuery
 
 interface SearchFilter : Parcelable {
     fun getName(): CharSequence

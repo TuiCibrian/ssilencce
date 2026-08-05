@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.about
+package com.ssilencce.core.model.about
 
 import androidx.compose.runtime.Composable
 

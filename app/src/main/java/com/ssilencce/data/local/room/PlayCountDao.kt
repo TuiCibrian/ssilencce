@@ -12,14 +12,14 @@
  * See the GNU General Public License for more details.
  *
  */
-package com.mardous.booming.data.local.room
+package com.ssilencce.data.local.room
 
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Upsert
-import com.mardous.booming.data.mapper.toPlayCount
-import com.mardous.booming.data.model.Song
+import com.ssilencce.data.mapper.toPlayCount
+import com.ssilencce.data.model.Song
 import kotlinx.coroutines.flow.Flow
 
 @Dao

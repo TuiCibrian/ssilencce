@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater

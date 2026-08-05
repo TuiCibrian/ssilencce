@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.player.styles.expressivestyle
+package com.ssilencce.ui.screen.player.styles.expressivestyle
 
 import android.animation.AnimatorSet
 import android.graphics.Color
@@ -14,24 +14,24 @@ import androidx.core.view.WindowInsetsCompat.Type
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.media3.common.Player
-import com.mardous.booming.R
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.surfaceTintTarget
-import com.mardous.booming.core.model.player.tintTarget
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.databinding.FragmentExpressivePlayerBinding
-import com.mardous.booming.extensions.getOnBackPressedDispatcher
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.extensions.launchAndRepeatWithViewLifecycle
-import com.mardous.booming.extensions.resources.applyColor
-import com.mardous.booming.extensions.whichFragment
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.AbsPlayerFragment
-import com.mardous.booming.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.surfaceTintTarget
+import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.databinding.FragmentExpressivePlayerBinding
+import com.ssilencce.extensions.getOnBackPressedDispatcher
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.resources.applyColor
+import com.ssilencce.extensions.whichFragment
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.AbsPlayerFragment
+import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
+import com.ssilencce.util.Preferences
 
 class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_player),
     View.OnClickListener, View.OnLongClickListener {

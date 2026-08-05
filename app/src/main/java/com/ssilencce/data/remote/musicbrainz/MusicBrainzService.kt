@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.musicbrainz
+package com.ssilencce.data.remote.musicbrainz
 
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzRecording
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzSearchResponse
-import com.mardous.booming.util.Constants.USER_AGENT
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRecording
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzSearchResponse
+import com.ssilencce.util.Constants.USER_AGENT
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

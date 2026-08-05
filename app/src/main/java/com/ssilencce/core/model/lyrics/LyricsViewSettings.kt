@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.lyrics
+package com.ssilencce.core.model.lyrics
 
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.text.TextStyle

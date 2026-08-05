@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
@@ -39,7 +39,7 @@ fun String.encodeMd5(): String {
 object CryptoUtil {
 
     private const val ANDROID_KEY_STORE = "AndroidKeyStore"
-    private const val KEY_ALIAS = "BoomingMusicCryptoKey"
+    private const val KEY_ALIAS = "SsilencceCryptoKey"
     private const val ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
     private const val BLOCK_MODE = KeyProperties.BLOCK_MODE_GCM
     private const val PADDING = KeyProperties.ENCRYPTION_PADDING_NONE

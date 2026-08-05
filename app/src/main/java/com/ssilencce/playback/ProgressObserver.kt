@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import android.os.Handler
 import android.os.Looper

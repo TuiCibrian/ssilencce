@@ -12,7 +12,7 @@
  * See the GNU General Public License for more details.
  */
 
-package com.mardous.booming.ui.component.transform
+package com.ssilencce.ui.component.transform
 
 import android.content.Context
 import android.view.View

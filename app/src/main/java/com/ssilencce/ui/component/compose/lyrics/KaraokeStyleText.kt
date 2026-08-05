@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.compose.lyrics
+package com.ssilencce.ui.component.compose.lyrics
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -46,8 +46,8 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
-import com.mardous.booming.extensions.utilities.isRtl
+import com.ssilencce.data.model.lyrics.SyncedLyrics
+import com.ssilencce.extensions.utilities.isRtl
 
 private val LayerPaint = Paint()
 

@@ -1,4 +1,4 @@
-package com.mardous.booming.playback
+package com.ssilencce.playback
 
 import android.app.AlarmManager
 import android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP
@@ -13,8 +13,8 @@ import android.os.Looper
 import android.os.SystemClock
 import android.provider.Settings
 import androidx.annotation.RequiresApi
-import com.mardous.booming.extensions.media.asReadableDuration
-import com.mardous.booming.ui.screen.sleeptimer.SleepTimerWaitingFor
+import com.ssilencce.extensions.media.asReadableDuration
+import com.ssilencce.ui.screen.sleeptimer.SleepTimerWaitingFor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 

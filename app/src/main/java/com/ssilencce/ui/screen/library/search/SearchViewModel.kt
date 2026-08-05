@@ -1,14 +1,14 @@
-package com.mardous.booming.ui.screen.library.search
+package com.ssilencce.ui.screen.library.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.core.model.action.SongClickBehavior
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.search.SearchQuery
-import com.mardous.booming.extensions.media.indexOfSong
-import com.mardous.booming.util.Preferences
+import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.search.SearchQuery
+import com.ssilencce.extensions.media.indexOfSong
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow

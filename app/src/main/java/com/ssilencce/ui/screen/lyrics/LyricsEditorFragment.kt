@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.lyrics
+package com.ssilencce.ui.screen.lyrics
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -25,8 +25,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.ui.theme.SsilencceTheme
 
 class LyricsEditorFragment : Fragment() {
 
@@ -40,7 +40,7 @@ class LyricsEditorFragment : Fragment() {
     ): View {
         return ComposeView(requireContext()).apply {
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     LyricsEditorScreen(
                         song = song,
                         onBackClick = {

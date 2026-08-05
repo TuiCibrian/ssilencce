@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.song
+package com.ssilencce.ui.adapters.song
 
 import android.annotation.SuppressLint
 import android.view.View
@@ -29,13 +29,13 @@ import com.h6ah4i.android.widget.advrecyclerview.draggable.DraggableItemState
 import com.h6ah4i.android.widget.advrecyclerview.draggable.DraggableItemViewHolder
 import com.h6ah4i.android.widget.advrecyclerview.draggable.ItemDraggableRange
 import com.h6ah4i.android.widget.advrecyclerview.draggable.annotation.DraggableItemStateFlags
-import com.mardous.booming.R
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.mapper.toSongsEntity
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.resources.hitTest
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.screen.library.LibraryViewModel
+import com.ssilencce.R
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.mapper.toSongsEntity
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.resources.hitTest
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel

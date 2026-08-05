@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.preferences.dialog
+package com.ssilencce.ui.component.preferences.dialog
 
 import android.content.Context
 import android.content.DialogInterface
@@ -20,9 +20,9 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.unit.dp
 import androidx.preference.ListPreference
 import androidx.preference.PreferenceDialogFragmentCompat
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.component.compose.DialogListItemWithRadio
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.component.compose.DialogListItemWithRadio
+import com.ssilencce.ui.theme.SsilencceTheme
 
 class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
 
@@ -66,7 +66,7 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     DialogView(
                         titles = entries?.map { it.toString() }.orEmpty(),
                         selectedIndex = clickedDialogEntryIndex,

@@ -15,13 +15,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.files
+package com.ssilencce.extensions.files
 
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import com.mardous.booming.extensions.fileProviderAuthority
-import com.mardous.booming.util.StorageUtil
+import com.ssilencce.extensions.fileProviderAuthority
+import com.ssilencce.util.StorageUtil
 import org.jaudiotagger.audio.AudioFile
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.audio.AudioHeader

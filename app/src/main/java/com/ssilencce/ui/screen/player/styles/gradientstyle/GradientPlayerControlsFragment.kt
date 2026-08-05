@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.styles.gradientstyle
+package com.ssilencce.ui.screen.player.styles.gradientstyle
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -28,19 +28,19 @@ import androidx.core.view.WindowInsetsCompat.Type
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import com.google.android.material.button.MaterialButton
-import com.mardous.booming.R
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.iconButtonTintTarget
-import com.mardous.booming.core.model.player.tintTarget
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentGradientPlayerPlaybackControlsBinding
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
-import com.mardous.booming.ui.component.views.MusicSlider
+import com.ssilencce.R
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.iconButtonTintTarget
+import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentGradientPlayerPlaybackControlsBinding
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
+import com.ssilencce.ui.component.views.MusicSlider
 
 class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_gradient_player_playback_controls) {
 

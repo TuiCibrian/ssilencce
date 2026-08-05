@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.artist
+package com.ssilencce.ui.adapters.artist
 
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -23,22 +23,22 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import androidx.fragment.app.FragmentActivity
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_ARTIST_IMAGE
-import com.mardous.booming.core.sort.ArtistSortMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.extensions.isActivated
-import com.mardous.booming.extensions.loadPaletteImage
-import com.mardous.booming.extensions.media.artistInfo
-import com.mardous.booming.extensions.media.asSectionName
-import com.mardous.booming.extensions.media.displayName
-import com.mardous.booming.ui.IArtistCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_ARTIST_IMAGE
+import com.ssilencce.core.sort.ArtistSortMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Artist
+import com.ssilencce.extensions.isActivated
+import com.ssilencce.extensions.loadPaletteImage
+import com.ssilencce.extensions.media.artistInfo
+import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.media.displayName
+import com.ssilencce.ui.IArtistCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.util.Preferences
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty

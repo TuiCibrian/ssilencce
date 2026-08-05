@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.transform
+package com.ssilencce.ui.component.transform
 
 import android.view.View
 import androidx.viewpager.widget.ViewPager

@@ -1,4 +1,4 @@
-package com.mardous.booming.data.model.lyrics
+package com.ssilencce.data.model.lyrics
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize

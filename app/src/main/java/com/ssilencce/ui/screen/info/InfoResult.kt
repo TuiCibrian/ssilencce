@@ -1,6 +1,6 @@
-package com.mardous.booming.ui.screen.info
+package com.ssilencce.ui.screen.info
 
-import com.mardous.booming.data.local.room.PlayCountEntity
+import com.ssilencce.data.local.room.PlayCountEntity
 
 data class PlayInfoResult(
     val playCount: Int,

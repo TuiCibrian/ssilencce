@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.compose.color
+package com.ssilencce.ui.component.compose.color
 
 import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
@@ -7,10 +7,10 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.palette.graphics.Palette
 import com.kyant.m3color.hct.Hct
 import com.kyant.m3color.score.Score
-import com.mardous.booming.ui.theme.onSurfaceDark
-import com.mardous.booming.ui.theme.onSurfaceLight
-import com.mardous.booming.ui.theme.onSurfaceVariantDark
-import com.mardous.booming.ui.theme.onSurfaceVariantLight
+import com.ssilencce.ui.theme.onSurfaceDark
+import com.ssilencce.ui.theme.onSurfaceLight
+import com.ssilencce.ui.theme.onSurfaceVariantDark
+import com.ssilencce.ui.theme.onSurfaceVariantLight
 
 fun Color.isDark(): Boolean = this.luminance() < 0.4
 

@@ -15,16 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
-import com.mardous.booming.core.sort.AlbumSortMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.util.Preferences
+import com.ssilencce.core.sort.AlbumSortMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Song
+import com.ssilencce.util.Preferences
 
 interface AlbumRepository {
     fun album(albumId: Long): Album

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.shuffle
+package com.ssilencce.core.model.shuffle
 
 enum class OpenShuffleMode {
     On, Off, Remember

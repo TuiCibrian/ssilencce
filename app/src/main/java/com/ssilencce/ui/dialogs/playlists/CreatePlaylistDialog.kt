@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.playlists
+package com.ssilencce.ui.dialogs.playlists
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -28,16 +28,16 @@ import coil3.load
 import coil3.size.Precision
 import coil3.size.Scale
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_PLAYLIST_IMAGE
-import com.mardous.booming.coil.placeholderDrawableRes
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.DialogCreatePlaylistBinding
-import com.mardous.booming.extensions.EXTRA_SONGS
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.screen.library.LibraryViewModel
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_PLAYLIST_IMAGE
+import com.ssilencce.coil.placeholderDrawableRes
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.DialogCreatePlaylistBinding
+import com.ssilencce.extensions.EXTRA_SONGS
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class CreatePlaylistDialog : DialogFragment() {

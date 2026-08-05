@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.equalizer
+package com.ssilencce.core.model.equalizer
 
 data class EqSession(
     val type: SessionType,

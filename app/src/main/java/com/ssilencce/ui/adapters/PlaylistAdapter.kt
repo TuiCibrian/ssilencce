@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -24,15 +24,15 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
-import com.mardous.booming.R
-import com.mardous.booming.coil.playlistImage
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.extensions.media.asNumberOfSongs
-import com.mardous.booming.ui.IPlaylistCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
-import com.mardous.booming.ui.screen.player.PlayerViewModel
+import com.ssilencce.R
+import com.ssilencce.coil.playlistImage
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.extensions.media.asNumberOfSongs
+import com.ssilencce.ui.IPlaylistCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
+import com.ssilencce.ui.screen.player.PlayerViewModel
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 

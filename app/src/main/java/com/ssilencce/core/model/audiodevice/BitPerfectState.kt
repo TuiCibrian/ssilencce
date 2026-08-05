@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.audiodevice
+package com.ssilencce.core.model.audiodevice
 
 import android.media.AudioFormat
 import java.util.Locale

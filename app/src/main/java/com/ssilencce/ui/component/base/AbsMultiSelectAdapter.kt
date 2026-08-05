@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.view.ActionMode
 import android.view.Menu
@@ -24,7 +24,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.annotation.MenuRes
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.R
+import com.ssilencce.R
 
 abstract class AbsMultiSelectAdapter<VH : RecyclerView.ViewHolder, I>(
     private val activity: FragmentActivity, @MenuRes protected var menuRes: Int

@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.theme
+package com.ssilencce.core.model.theme
 
 import androidx.compose.material3.ColorScheme
 

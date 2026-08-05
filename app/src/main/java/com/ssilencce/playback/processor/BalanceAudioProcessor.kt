@@ -1,4 +1,4 @@
-package com.mardous.booming.playback.processor
+package com.ssilencce.playback.processor
 
 import androidx.annotation.OptIn
 import androidx.media3.common.C

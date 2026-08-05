@@ -1,6 +1,6 @@
 @file:SuppressLint("LocalContextGetResourceValueCall")
 
-package com.mardous.booming.ui.screen.equalizer
+package com.ssilencce.ui.screen.equalizer
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
@@ -82,36 +82,36 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ShareCompat
-import com.mardous.booming.R
-import com.mardous.booming.core.model.LibraryMargin
-import com.mardous.booming.core.model.audiodevice.AudioDeviceType
-import com.mardous.booming.core.model.equalizer.EqBand
-import com.mardous.booming.core.model.equalizer.EqEngineMode
-import com.mardous.booming.core.model.equalizer.EqProfile
-import com.mardous.booming.core.model.equalizer.ReplayGainState
-import com.mardous.booming.core.model.equalizer.autoeq.AutoEqProfile
-import com.mardous.booming.data.model.replaygain.ReplayGainMode
-import com.mardous.booming.extensions.MIME_TYPE_APPLICATION
-import com.mardous.booming.extensions.MIME_TYPE_PLAIN_TEXT
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.component.compose.ButtonGroup
-import com.mardous.booming.ui.component.compose.CollapsibleAppBarScaffold
-import com.mardous.booming.ui.component.compose.ConfirmDialog
-import com.mardous.booming.ui.component.compose.DialogCheckBox
-import com.mardous.booming.ui.component.compose.DialogListItemWithCheckBox
-import com.mardous.booming.ui.component.compose.DialogListItemWithRadio
-import com.mardous.booming.ui.component.compose.EmptyView
-import com.mardous.booming.ui.component.compose.EqualizerWaveform
-import com.mardous.booming.ui.component.compose.InputDialog
-import com.mardous.booming.ui.component.compose.MaterialSwitch
-import com.mardous.booming.ui.component.compose.ShapedText
-import com.mardous.booming.ui.component.compose.SwitchCard
-import com.mardous.booming.ui.component.compose.TipView
-import com.mardous.booming.ui.component.compose.TitledCard
-import com.mardous.booming.ui.component.compose.menu.MenuItem
-import com.mardous.booming.ui.component.compose.menu.TopAppBarMenu
-import com.mardous.booming.ui.screen.library.LibraryViewModel
+import com.ssilencce.R
+import com.ssilencce.core.model.LibraryMargin
+import com.ssilencce.core.model.audiodevice.AudioDeviceType
+import com.ssilencce.core.model.equalizer.EqBand
+import com.ssilencce.core.model.equalizer.EqEngineMode
+import com.ssilencce.core.model.equalizer.EqProfile
+import com.ssilencce.core.model.equalizer.ReplayGainState
+import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
+import com.ssilencce.data.model.replaygain.ReplayGainMode
+import com.ssilencce.extensions.MIME_TYPE_APPLICATION
+import com.ssilencce.extensions.MIME_TYPE_PLAIN_TEXT
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.component.compose.ButtonGroup
+import com.ssilencce.ui.component.compose.CollapsibleAppBarScaffold
+import com.ssilencce.ui.component.compose.ConfirmDialog
+import com.ssilencce.ui.component.compose.DialogCheckBox
+import com.ssilencce.ui.component.compose.DialogListItemWithCheckBox
+import com.ssilencce.ui.component.compose.DialogListItemWithRadio
+import com.ssilencce.ui.component.compose.EmptyView
+import com.ssilencce.ui.component.compose.EqualizerWaveform
+import com.ssilencce.ui.component.compose.InputDialog
+import com.ssilencce.ui.component.compose.MaterialSwitch
+import com.ssilencce.ui.component.compose.ShapedText
+import com.ssilencce.ui.component.compose.SwitchCard
+import com.ssilencce.ui.component.compose.TipView
+import com.ssilencce.ui.component.compose.TitledCard
+import com.ssilencce.ui.component.compose.menu.MenuItem
+import com.ssilencce.ui.component.compose.menu.TopAppBarMenu
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import java.util.Locale
 
 private const val PRESET_NAME_MAX_LENGTH = 48
@@ -154,7 +154,7 @@ fun EqualizerScreen(
                 context.showToast(R.string.select_a_file_containing_autoeq_params)
             } else {
                 importProfileLauncher.launch(arrayOf(MIME_TYPE_APPLICATION))
-                context.showToast(R.string.select_a_file_containing_booming_eq_profiles)
+                context.showToast(R.string.select_a_file_containing_ssilencce_eq_profiles)
             }
         } catch (_: ActivityNotFoundException) {
             context.showToast("File picker not found")

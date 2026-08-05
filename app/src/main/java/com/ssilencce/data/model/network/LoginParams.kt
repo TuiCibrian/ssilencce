@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model.network
+package com.ssilencce.data.model.network
 
 sealed class LoginParams(
     private val data: Map<String, String>

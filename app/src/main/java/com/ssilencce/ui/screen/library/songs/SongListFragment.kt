@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.songs
+package com.ssilencce.ui.screen.library.songs
 
 import android.os.Bundle
 import android.view.Menu
@@ -24,16 +24,16 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.content.edit
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.adapters.song.SongAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.ui.screen.library.ReloadType
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Song
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.adapters.song.SongAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.screen.library.ReloadType
 
 /**
  * @author Christians M. A. (mardous)

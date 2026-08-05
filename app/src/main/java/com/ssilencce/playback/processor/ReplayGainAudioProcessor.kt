@@ -1,14 +1,14 @@
-package com.mardous.booming.playback.processor
+package com.ssilencce.playback.processor
 
 import androidx.annotation.OptIn
 import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
-import com.mardous.booming.data.model.replaygain.ReplayGain
-import com.mardous.booming.data.model.replaygain.ReplayGainMode
-import com.mardous.booming.playback.processor.ByteUtils.getInt24
-import com.mardous.booming.playback.processor.ByteUtils.putInt24
+import com.ssilencce.data.model.replaygain.ReplayGain
+import com.ssilencce.data.model.replaygain.ReplayGainMode
+import com.ssilencce.playback.processor.ByteUtils.getInt24
+import com.ssilencce.playback.processor.ByteUtils.putInt24
 import java.nio.ByteBuffer
 import kotlin.math.log10
 import kotlin.math.min

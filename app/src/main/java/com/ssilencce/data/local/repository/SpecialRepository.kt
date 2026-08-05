@@ -15,18 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.provider.MediaStore.Audio.AudioColumns
-import com.mardous.booming.core.model.filesystem.FileSystemItem
-import com.mardous.booming.core.model.filesystem.FileSystemQuery
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.core.sort.YearSortMode
-import com.mardous.booming.core.sort.sortingCollator
-import com.mardous.booming.data.model.Folder
-import com.mardous.booming.data.model.ReleaseYear
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.util.StorageUtil
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.core.model.filesystem.FileSystemQuery
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.core.sort.YearSortMode
+import com.ssilencce.core.sort.sortingCollator
+import com.ssilencce.data.model.Folder
+import com.ssilencce.data.model.ReleaseYear
+import com.ssilencce.data.model.Song
+import com.ssilencce.util.StorageUtil
 
 interface SpecialRepository {
     suspend fun releaseYears(): List<ReleaseYear>

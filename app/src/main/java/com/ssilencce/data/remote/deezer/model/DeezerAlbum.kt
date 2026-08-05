@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.deezer.model
+package com.ssilencce.data.remote.deezer.model
 
-import com.mardous.booming.extensions.utilities.normalize
-import com.mardous.booming.util.ImageSize
+import com.ssilencce.extensions.utilities.normalize
+import com.ssilencce.util.ImageSize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

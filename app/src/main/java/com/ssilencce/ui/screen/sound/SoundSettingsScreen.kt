@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.sound
+package com.ssilencce.ui.screen.sound
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -59,16 +59,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import com.mardous.booming.R
-import com.mardous.booming.core.model.audiodevice.AudioDevice
-import com.mardous.booming.core.model.audiodevice.BitPerfectState
-import com.mardous.booming.extensions.hasR
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.component.compose.IconifiedSliderTrack
-import com.mardous.booming.ui.component.compose.ShapedText
-import com.mardous.booming.ui.component.compose.TitledCard
-import com.mardous.booming.ui.screen.equalizer.EqualizerViewModel
-import com.mardous.booming.ui.theme.SliderTokens
+import com.ssilencce.R
+import com.ssilencce.core.model.audiodevice.AudioDevice
+import com.ssilencce.core.model.audiodevice.BitPerfectState
+import com.ssilencce.extensions.hasR
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.component.compose.IconifiedSliderTrack
+import com.ssilencce.ui.component.compose.ShapedText
+import com.ssilencce.ui.component.compose.TitledCard
+import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.theme.SliderTokens
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)

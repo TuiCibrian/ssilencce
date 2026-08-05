@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
 import android.net.Uri
-import com.mardous.booming.data.SongProvider
-import com.mardous.booming.extensions.media.asAlbumCoverUri
+import com.ssilencce.data.SongProvider
+import com.ssilencce.extensions.media.asAlbumCoverUri
 import java.util.Objects
 
 data class Album(

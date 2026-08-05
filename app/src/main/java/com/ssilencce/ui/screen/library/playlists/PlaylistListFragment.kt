@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.playlists
+package com.ssilencce.ui.screen.library.playlists
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -26,19 +26,19 @@ import android.view.View
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.sort.PlaylistSortMode
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.extensions.navigation.playlistDetailArgs
-import com.mardous.booming.ui.IPlaylistCallback
-import com.mardous.booming.ui.adapters.PlaylistAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.component.menu.onPlaylistMenu
-import com.mardous.booming.ui.component.menu.onPlaylistsMenu
-import com.mardous.booming.ui.dialogs.playlists.CreatePlaylistDialog
-import com.mardous.booming.ui.dialogs.playlists.ImportPlaylistDialog
-import com.mardous.booming.ui.screen.library.ReloadType
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.sort.PlaylistSortMode
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.extensions.navigation.playlistDetailArgs
+import com.ssilencce.ui.IPlaylistCallback
+import com.ssilencce.ui.adapters.PlaylistAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.menu.onPlaylistMenu
+import com.ssilencce.ui.component.menu.onPlaylistsMenu
+import com.ssilencce.ui.dialogs.playlists.CreatePlaylistDialog
+import com.ssilencce.ui.dialogs.playlists.ImportPlaylistDialog
+import com.ssilencce.ui.screen.library.ReloadType
 
 /**
  * @author Christians M. A. (mardous)

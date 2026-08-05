@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.error
+package com.ssilencce.ui.screen.error
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -7,15 +7,15 @@ import androidx.core.app.ShareCompat
 import androidx.core.content.FileProvider
 import androidx.core.content.getSystemService
 import cat.ereza.customactivityoncrash.CustomActivityOnCrash
-import com.mardous.booming.R
-import com.mardous.booming.databinding.ActivityErrorBinding
-import com.mardous.booming.extensions.applyWindowInsets
-import com.mardous.booming.extensions.fileProviderAuthority
-import com.mardous.booming.extensions.files.asFormattedFileTime
-import com.mardous.booming.extensions.openUrl
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.component.base.AbsThemeActivity
-import com.mardous.booming.util.Constants.ISSUE_TRACKER_LINK
+import com.ssilencce.R
+import com.ssilencce.databinding.ActivityErrorBinding
+import com.ssilencce.extensions.applyWindowInsets
+import com.ssilencce.extensions.fileProviderAuthority
+import com.ssilencce.extensions.files.asFormattedFileTime
+import com.ssilencce.extensions.openUrl
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.component.base.AbsThemeActivity
+import com.ssilencce.util.Constants.ISSUE_TRACKER_LINK
 import java.io.File
 
 /**

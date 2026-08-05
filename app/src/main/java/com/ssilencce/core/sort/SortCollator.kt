@@ -1,9 +1,9 @@
-package com.mardous.booming.core.sort
+package com.ssilencce.core.sort
 
 import android.icu.text.Collator
 import android.icu.text.RuleBasedCollator
-import com.mardous.booming.extensions.media.normalizeForSorting
-import com.mardous.booming.util.Preferences
+import com.ssilencce.extensions.media.normalizeForSorting
+import com.ssilencce.util.Preferences
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 

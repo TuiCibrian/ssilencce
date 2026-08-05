@@ -15,18 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.player
+package com.ssilencce.core.model.player
 
 import android.os.Parcelable
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.MetadataField.Content.Bitrate
-import com.mardous.booming.core.model.player.MetadataField.Content.Format
-import com.mardous.booming.core.model.player.MetadataField.Content.SampleRate
-import com.mardous.booming.data.local.MetadataReader
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.files.formatFixed
-import com.mardous.booming.extensions.files.toAudioFile
-import com.mardous.booming.extensions.utilities.DEFAULT_INFO_DELIMITER
+import com.ssilencce.R
+import com.ssilencce.core.model.player.MetadataField.Content.Bitrate
+import com.ssilencce.core.model.player.MetadataField.Content.Format
+import com.ssilencce.core.model.player.MetadataField.Content.SampleRate
+import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.files.formatFixed
+import com.ssilencce.extensions.files.toAudioFile
+import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

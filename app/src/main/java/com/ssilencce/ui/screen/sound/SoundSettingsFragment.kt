@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.sound
+package com.ssilencce.ui.screen.sound
 
 import android.app.Dialog
 import android.os.Bundle
@@ -27,9 +27,9 @@ import androidx.compose.ui.platform.ViewCompositionStrategy
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.ui.screen.equalizer.EqualizerViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -59,7 +59,7 @@ class SoundSettingsFragment : BottomSheetDialogFragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     SoundSettingsSheet(viewModel)
                 }
             }

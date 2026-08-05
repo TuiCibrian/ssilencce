@@ -1,9 +1,9 @@
-package com.mardous.booming.core.model.equalizer
+package com.ssilencce.core.model.equalizer
 
 import android.content.Context
-import com.mardous.booming.R
-import com.mardous.booming.core.model.audiodevice.AudioDeviceType
-import com.mardous.booming.extensions.utilities.DEFAULT_INFO_DELIMITER
+import com.ssilencce.R
+import com.ssilencce.core.model.audiodevice.AudioDeviceType
+import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

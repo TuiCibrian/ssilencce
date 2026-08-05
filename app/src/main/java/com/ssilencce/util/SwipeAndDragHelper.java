@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util;
+package com.ssilencce.util;
 
 import android.graphics.Canvas;
 

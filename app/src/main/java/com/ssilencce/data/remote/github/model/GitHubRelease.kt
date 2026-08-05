@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.github.model
+package com.ssilencce.data.remote.github.model
 
 import android.app.DownloadManager
 import android.content.Context
@@ -26,10 +26,10 @@ import android.os.Environment
 import android.os.Parcelable
 import androidx.core.content.edit
 import androidx.core.net.toUri
-import com.mardous.booming.BuildConfig
-import com.mardous.booming.R
-import com.mardous.booming.extensions.files.asReadableFileSize
-import com.mardous.booming.extensions.packageInfo
+import com.ssilencce.BuildConfig
+import com.ssilencce.R
+import com.ssilencce.extensions.files.asReadableFileSize
+import com.ssilencce.extensions.packageInfo
 import io.github.g00fy2.versioncompare.Version
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName

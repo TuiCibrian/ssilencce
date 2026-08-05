@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util.m3u
+package com.ssilencce.util.m3u
 
 object M3UConstants {
     const val EXTENSION = "m3u"

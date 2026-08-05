@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.theme
+package com.ssilencce.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

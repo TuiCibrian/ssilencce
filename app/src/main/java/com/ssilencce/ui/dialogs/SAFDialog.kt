@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs
+package com.ssilencce.ui.dialogs
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -27,9 +27,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.files.saveTreeUri
+import com.ssilencce.R
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.files.saveTreeUri
 
 class SAFDialog : DialogFragment() {
 

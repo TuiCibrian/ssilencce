@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.settings
+package com.ssilencce.ui.screen.settings
 
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 /**
  * @author Christians M. A. (mardous)

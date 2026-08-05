@@ -1,4 +1,4 @@
-package com.mardous.booming.playback.library
+package com.ssilencce.playback.library
 
 object MediaIDs {
     const val ROOT = "ROOT"

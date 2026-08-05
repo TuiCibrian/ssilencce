@@ -15,21 +15,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.playlists
+package com.ssilencce.ui.dialogs.playlists
 
 import android.app.Dialog
 import android.content.DialogInterface
 import android.os.Bundle
 import androidx.fragment.app.DialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.extensions.EXTRA_PLAYLISTS
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.toHtml
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.screen.library.LibraryViewModel
+import com.ssilencce.R
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.extensions.EXTRA_PLAYLISTS
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.toHtml
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class DeletePlaylistDialog : DialogFragment() {

@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.update
+package com.ssilencce.ui.screen.update
 
 import android.app.Dialog
 import android.content.DialogInterface
@@ -9,12 +9,12 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.data.remote.github.model.GitHubRelease
-import com.mardous.booming.databinding.DialogUpdateInfoBinding
-import com.mardous.booming.extensions.openUrl
-import com.mardous.booming.extensions.resources.setMarkdownText
-import com.mardous.booming.extensions.showToast
+import com.ssilencce.R
+import com.ssilencce.data.remote.github.model.GitHubRelease
+import com.ssilencce.databinding.DialogUpdateInfoBinding
+import com.ssilencce.extensions.openUrl
+import com.ssilencce.extensions.resources.setMarkdownText
+import com.ssilencce.extensions.showToast
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class UpdateDialog : BottomSheetDialogFragment(), View.OnClickListener {

@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.content.res.ColorStateList
@@ -8,7 +8,7 @@ import androidx.annotation.AttrRes
 import androidx.annotation.DrawableRes
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.color.MaterialColors.getColorStateList
-import com.mardous.booming.extensions.resources.getDrawableCompat
+import com.ssilencce.extensions.resources.getDrawableCompat
 import kotlin.math.min
 import com.google.android.material.R as M3R
 

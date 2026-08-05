@@ -1,4 +1,4 @@
-package com.mardous.booming.data.remote.lyrics.model
+package com.ssilencce.data.remote.lyrics.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.os.Bundle
 import android.view.Menu
@@ -24,9 +24,9 @@ import android.view.MenuItem
 import android.view.View
 import androidx.annotation.LayoutRes
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.extensions.isLandscape
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.extensions.isLandscape
 
 abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<*>, LM : RecyclerView.LayoutManager> :
     AbsRecyclerViewFragment<Adt, LM>() {

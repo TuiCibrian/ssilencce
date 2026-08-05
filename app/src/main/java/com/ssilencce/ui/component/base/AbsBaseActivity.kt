@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.Manifest.permission.*
 import android.content.Intent
@@ -29,10 +29,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.ActivityCompat.requestPermissions
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import com.google.android.material.snackbar.Snackbar
-import com.mardous.booming.R
-import com.mardous.booming.extensions.hasR
-import com.mardous.booming.extensions.hasT
-import com.mardous.booming.extensions.rootView
+import com.ssilencce.R
+import com.ssilencce.extensions.hasR
+import com.ssilencce.extensions.hasT
+import com.ssilencce.extensions.rootView
 
 abstract class AbsBaseActivity : AbsThemeActivity() {
 

@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets
+package com.ssilencce.core.appwidgets
 
 import android.content.Context
 import android.view.KeyEvent
@@ -24,10 +24,10 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.wrapContentHeight
-import com.mardous.booming.R
-import com.mardous.booming.core.appwidgets.state.PlaybackState
-import com.mardous.booming.core.appwidgets.state.PlaybackStateDefinition
-import com.mardous.booming.ui.screen.MainActivity
+import com.ssilencce.R
+import com.ssilencce.core.appwidgets.state.PlaybackState
+import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
+import com.ssilencce.ui.screen.MainActivity
 
 class CardWidget : GlanceAppWidget() {
 

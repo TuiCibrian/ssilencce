@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.media
+package com.ssilencce.extensions.media
 
 import android.content.ContentResolver
 import android.content.ContentUris
@@ -25,11 +25,11 @@ import android.provider.MediaStore.Audio.AlbumColumns
 import android.provider.MediaStore.MediaColumns
 import androidx.core.content.contentValuesOf
 import androidx.core.net.toUri
-import com.mardous.booming.R
-import com.mardous.booming.core.sort.SortMode
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.extensions.plurals
-import com.mardous.booming.util.FileUtil
+import com.ssilencce.R
+import com.ssilencce.core.sort.SortMode
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.plurals
+import com.ssilencce.util.FileUtil
 import java.io.File
 import java.util.Locale
 

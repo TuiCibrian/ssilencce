@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.SongProvider
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.SongProvider
 import java.util.Objects
 
 /**

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.songs
+package com.ssilencce.ui.dialogs.songs
 
 import android.app.Activity
 import android.app.Dialog
@@ -34,16 +34,16 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.DialogFragment
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.DialogDeleteSongsBinding
-import com.mardous.booming.extensions.*
-import com.mardous.booming.extensions.files.isSAFAccessGranted
-import com.mardous.booming.extensions.files.isSAFRequiredForSongs
-import com.mardous.booming.ui.dialogs.SAFDialog
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.util.MusicUtil
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.DialogDeleteSongsBinding
+import com.ssilencce.extensions.*
+import com.ssilencce.extensions.files.isSAFAccessGranted
+import com.ssilencce.extensions.files.isSAFRequiredForSongs
+import com.ssilencce.ui.dialogs.SAFDialog
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.util.MusicUtil
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import android.content.Context
 import android.view.View
@@ -34,7 +34,7 @@ import androidx.core.view.marginStart
 import androidx.core.view.marginTop
 import androidx.core.view.updateLayoutParams
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.mardous.booming.R
+import com.ssilencce.R
 
 fun WindowInsetsCompat?.getBottomInsets(context: Context): Int {
     return this?.getInsets(Type.systemBars())?.bottom

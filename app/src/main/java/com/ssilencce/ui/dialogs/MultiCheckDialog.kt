@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs
+package com.ssilencce.ui.dialogs
 
 import android.app.Dialog
 import android.content.Context
@@ -27,13 +27,13 @@ import android.widget.CheckBox
 import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.databinding.DialogMultiCheckBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.resources.hide
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.adapters.SimpleItemAdapter
+import com.ssilencce.R
+import com.ssilencce.databinding.DialogMultiCheckBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.resources.hide
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.adapters.SimpleItemAdapter
 import kotlinx.parcelize.Parcelize
 import kotlin.properties.Delegates
 

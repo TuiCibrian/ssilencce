@@ -1,10 +1,10 @@
-package com.mardous.booming.ui.theme
+package com.ssilencce.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import com.mardous.booming.R
+import com.ssilencce.R
 
 val GoogleSansFlex = FontFamily(
     Font(R.font.googlesansflex_extralight, FontWeight.ExtraLight),

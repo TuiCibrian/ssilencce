@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.other
+package com.ssilencce.ui.screen.other
 
 import android.os.Bundle
 import android.view.Menu
@@ -29,36 +29,36 @@ import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.mardous.booming.R
-import com.mardous.booming.data.mapper.lastAddedSearchFilter
-import com.mardous.booming.data.mapper.searchFilter
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.ContentType
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentDetailListBinding
-import com.mardous.booming.extensions.*
-import com.mardous.booming.extensions.media.playlistInfo
-import com.mardous.booming.extensions.navigation.albumDetailArgs
-import com.mardous.booming.extensions.navigation.artistDetailArgs
-import com.mardous.booming.extensions.navigation.asFragmentExtras
-import com.mardous.booming.extensions.navigation.searchArgs
-import com.mardous.booming.extensions.resources.createFastScroller
-import com.mardous.booming.extensions.resources.hide
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.core.model.shuffle.OpenShuffleMode
-import com.mardous.booming.ui.IAlbumCallback
-import com.mardous.booming.ui.IArtistCallback
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.adapters.album.AlbumAdapter
-import com.mardous.booming.ui.adapters.artist.ArtistAdapter
-import com.mardous.booming.ui.adapters.song.SongAdapter
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
-import com.mardous.booming.ui.component.menu.onAlbumsMenu
-import com.mardous.booming.ui.component.menu.onArtistsMenu
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.data.mapper.lastAddedSearchFilter
+import com.ssilencce.data.mapper.searchFilter
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentDetailListBinding
+import com.ssilencce.extensions.*
+import com.ssilencce.extensions.media.playlistInfo
+import com.ssilencce.extensions.navigation.albumDetailArgs
+import com.ssilencce.extensions.navigation.artistDetailArgs
+import com.ssilencce.extensions.navigation.asFragmentExtras
+import com.ssilencce.extensions.navigation.searchArgs
+import com.ssilencce.extensions.resources.createFastScroller
+import com.ssilencce.extensions.resources.hide
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.ui.IAlbumCallback
+import com.ssilencce.ui.IArtistCallback
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.adapters.album.AlbumAdapter
+import com.ssilencce.ui.adapters.artist.ArtistAdapter
+import com.ssilencce.ui.adapters.song.SongAdapter
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.menu.onAlbumsMenu
+import com.ssilencce.ui.component.menu.onArtistsMenu
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.util.Preferences
 
 class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list), ISongCallback, IArtistCallback,
     IAlbumCallback {

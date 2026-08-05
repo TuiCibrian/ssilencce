@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
@@ -29,26 +29,26 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import coil3.load
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_SONG_IMAGE
-import com.mardous.booming.coil.placeholderDrawableRes
-import com.mardous.booming.core.model.action.SongClickBehavior
-import com.mardous.booming.core.model.filesystem.FileSystemItem
-import com.mardous.booming.core.model.filesystem.StorageDevice
-import com.mardous.booming.core.model.sort.SortKey
-import com.mardous.booming.core.sort.FileSortMode
-import com.mardous.booming.data.model.Folder
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.isActivated
-import com.mardous.booming.extensions.media.asReadableTrackNumber
-import com.mardous.booming.extensions.media.songInfo
-import com.mardous.booming.extensions.plurals
-import com.mardous.booming.extensions.resources.useAsIcon
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.ui.IFileCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_SONG_IMAGE
+import com.ssilencce.coil.placeholderDrawableRes
+import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.core.model.filesystem.StorageDevice
+import com.ssilencce.core.model.sort.SortKey
+import com.ssilencce.core.sort.FileSortMode
+import com.ssilencce.data.model.Folder
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.isActivated
+import com.ssilencce.extensions.media.asReadableTrackNumber
+import com.ssilencce.extensions.media.songInfo
+import com.ssilencce.extensions.plurals
+import com.ssilencce.extensions.resources.useAsIcon
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.ui.IFileCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
 
 class FileAdapter(
     activity: FragmentActivity,

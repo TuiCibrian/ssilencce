@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.sleeptimer
+package com.ssilencce.ui.screen.sleeptimer
 
 import android.app.Application
 import android.content.Context
@@ -8,8 +8,8 @@ import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.App
-import com.mardous.booming.playback.SleepTimer
+import com.ssilencce.App
+import com.ssilencce.playback.SleepTimer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow

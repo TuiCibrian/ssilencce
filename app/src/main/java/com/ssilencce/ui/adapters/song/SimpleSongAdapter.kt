@@ -15,19 +15,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.song
+package com.ssilencce.ui.adapters.song
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.fragment.app.FragmentActivity
-import com.mardous.booming.core.model.sort.SortKey
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.media.asReadableDuration
-import com.mardous.booming.extensions.media.asReadableTrackNumber
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.ui.ISongCallback
+import com.ssilencce.core.model.sort.SortKey
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.asReadableDuration
+import com.ssilencce.extensions.media.asReadableTrackNumber
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.ui.ISongCallback
 
 class SimpleSongAdapter(
     context: FragmentActivity,

@@ -1,4 +1,4 @@
-package com.mardous.booming.data.local.room
+package com.ssilencce.data.local.room
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey

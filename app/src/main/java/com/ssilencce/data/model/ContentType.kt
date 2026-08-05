@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class ContentType(@StringRes internal val titleRes: Int) {
     TopArtists(R.string.top_artists),

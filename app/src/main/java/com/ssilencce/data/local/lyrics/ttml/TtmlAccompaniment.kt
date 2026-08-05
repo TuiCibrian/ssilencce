@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.lyrics.ttml
+package com.ssilencce.data.local.lyrics.ttml
 
-import com.mardous.booming.extensions.utilities.collapseSpaces
-import com.mardous.booming.extensions.utilities.isWhitespace
+import com.ssilencce.extensions.utilities.collapseSpaces
+import com.ssilencce.extensions.utilities.isWhitespace
 
 class TtmlTranslation(override val type: Type.Translation, val isInLine: Boolean) :
     TtmlAccompaniment(type)

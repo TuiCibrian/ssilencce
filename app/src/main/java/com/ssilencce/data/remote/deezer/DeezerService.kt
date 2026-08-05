@@ -15,11 +15,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.deezer
+package com.ssilencce.data.remote.deezer
 
-import com.mardous.booming.data.remote.deezer.model.DeezerAlbum
-import com.mardous.booming.data.remote.deezer.model.DeezerArtist
-import com.mardous.booming.data.remote.deezer.model.DeezerTrack
+import com.ssilencce.data.remote.deezer.model.DeezerAlbum
+import com.ssilencce.data.remote.deezer.model.DeezerArtist
+import com.ssilencce.data.remote.deezer.model.DeezerTrack
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

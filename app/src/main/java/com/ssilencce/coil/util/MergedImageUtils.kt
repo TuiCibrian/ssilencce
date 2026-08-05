@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.coil.util
+package com.ssilencce.coil.util
 
 import android.graphics.Bitmap
 import android.graphics.Canvas

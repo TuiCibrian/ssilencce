@@ -15,22 +15,22 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.tageditor
+package com.ssilencce.ui.screen.tageditor
 
 import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_ALBUM_IMAGE
-import com.mardous.booming.data.local.MetadataReader
-import com.mardous.booming.data.local.toBitmap
-import com.mardous.booming.databinding.TagEditorAlbumFieldBinding
-import com.mardous.booming.extensions.resources.getResized
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.webSearch
-import com.mardous.booming.ui.component.base.AbsTagEditorActivity
-import com.mardous.booming.ui.component.views.getPlaceholderDrawable
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_ALBUM_IMAGE
+import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.data.local.toBitmap
+import com.ssilencce.databinding.TagEditorAlbumFieldBinding
+import com.ssilencce.extensions.resources.getResized
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.webSearch
+import com.ssilencce.ui.component.base.AbsTagEditorActivity
+import com.ssilencce.ui.component.views.getPlaceholderDrawable
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 

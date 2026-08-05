@@ -1,7 +1,7 @@
-package com.mardous.booming.data
+package com.ssilencce.data
 
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
-import com.mardous.booming.data.model.lyrics.LyricsFile
+import com.ssilencce.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.model.lyrics.LyricsFile
 import java.io.Reader
 
 interface LyricsParser {

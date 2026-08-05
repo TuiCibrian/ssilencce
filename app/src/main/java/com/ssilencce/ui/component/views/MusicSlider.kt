@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.content.res.TypedArray
@@ -10,9 +10,9 @@ import android.widget.FrameLayout
 import android.widget.SeekBar
 import androidx.core.content.withStyledAttributes
 import com.google.android.material.slider.Slider
-import com.mardous.booming.R
-import com.mardous.booming.extensions.resources.applyColor
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.extensions.resources.applyColor
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M.A. (mardous)

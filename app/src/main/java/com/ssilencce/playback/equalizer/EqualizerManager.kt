@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.playback.equalizer
+package com.ssilencce.playback.equalizer
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -29,33 +29,33 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.media3.common.util.UnstableApi
-import com.mardous.booming.core.audio.AudioOutputObserver
-import com.mardous.booming.core.model.audiodevice.AudioDevice
-import com.mardous.booming.core.model.audiodevice.AudioDeviceType
-import com.mardous.booming.core.model.equalizer.BalanceState
-import com.mardous.booming.core.model.equalizer.BassBoostState
-import com.mardous.booming.core.model.equalizer.CompressorState
-import com.mardous.booming.core.model.equalizer.EqBandCapabilities
-import com.mardous.booming.core.model.equalizer.EqEngineMode
-import com.mardous.booming.core.model.equalizer.EqProfile
-import com.mardous.booming.core.model.equalizer.EqSession
-import com.mardous.booming.core.model.equalizer.EqSession.SessionType
-import com.mardous.booming.core.model.equalizer.EqState
-import com.mardous.booming.core.model.equalizer.LimiterState
-import com.mardous.booming.core.model.equalizer.LoudnessGainState
-import com.mardous.booming.core.model.equalizer.ReplayGainState
-import com.mardous.booming.core.model.equalizer.TempoState
-import com.mardous.booming.core.model.equalizer.VirtualizerState
-import com.mardous.booming.core.model.equalizer.VolumeState
-import com.mardous.booming.core.model.equalizer.autoeq.AutoEqProfile
-import com.mardous.booming.data.model.replaygain.ReplayGainMode
-import com.mardous.booming.extensions.files.getFormattedFileName
-import com.mardous.booming.extensions.utilities.toEnum
-import com.mardous.booming.playback.equalizer.engine.BasicEQEngine
-import com.mardous.booming.playback.equalizer.engine.DynamicsProcessingEngine
-import com.mardous.booming.playback.equalizer.engine.EQEngine
-import com.mardous.booming.playback.processor.BalanceAudioProcessor
-import com.mardous.booming.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.core.audio.AudioOutputObserver
+import com.ssilencce.core.model.audiodevice.AudioDevice
+import com.ssilencce.core.model.audiodevice.AudioDeviceType
+import com.ssilencce.core.model.equalizer.BalanceState
+import com.ssilencce.core.model.equalizer.BassBoostState
+import com.ssilencce.core.model.equalizer.CompressorState
+import com.ssilencce.core.model.equalizer.EqBandCapabilities
+import com.ssilencce.core.model.equalizer.EqEngineMode
+import com.ssilencce.core.model.equalizer.EqProfile
+import com.ssilencce.core.model.equalizer.EqSession
+import com.ssilencce.core.model.equalizer.EqSession.SessionType
+import com.ssilencce.core.model.equalizer.EqState
+import com.ssilencce.core.model.equalizer.LimiterState
+import com.ssilencce.core.model.equalizer.LoudnessGainState
+import com.ssilencce.core.model.equalizer.ReplayGainState
+import com.ssilencce.core.model.equalizer.TempoState
+import com.ssilencce.core.model.equalizer.VirtualizerState
+import com.ssilencce.core.model.equalizer.VolumeState
+import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
+import com.ssilencce.data.model.replaygain.ReplayGainMode
+import com.ssilencce.extensions.files.getFormattedFileName
+import com.ssilencce.extensions.utilities.toEnum
+import com.ssilencce.playback.equalizer.engine.BasicEQEngine
+import com.ssilencce.playback.equalizer.engine.DynamicsProcessingEngine
+import com.ssilencce.playback.equalizer.engine.EQEngine
+import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
@@ -414,7 +414,7 @@ class EqualizerManager(
         return autoEqProfiles.value.none { it.name.equals(profileName, ignoreCase = true) }
     }
 
-    fun getNewExportName(): String = getFormattedFileName("BoomingEQ", "json")
+    fun getNewExportName(): String = getFormattedFileName("SsilencceEQ", "json")
 
     fun getEmptyCustomProfile(bandCount: Int): EqProfile {
         return EqProfile(EqProfile.CUSTOM_PRESET_NAME, FloatArray(bandCount), isCustom = true)

@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local
+package com.ssilencce.data.local
 
 import android.content.ContentResolver
 import android.database.Cursor
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.WorkerThread
-import com.mardous.booming.data.local.repository.RealSongRepository.Companion.getAudioContentUri
+import com.ssilencce.data.local.repository.RealSongRepository.Companion.getAudioContentUri
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 

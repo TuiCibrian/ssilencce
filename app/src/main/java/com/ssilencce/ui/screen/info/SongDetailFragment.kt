@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.ui.screen.info
+package com.ssilencce.ui.screen.info
 
 import android.app.Dialog
 import android.content.Intent
@@ -69,20 +69,20 @@ import androidx.navigation.fragment.navArgs
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.R
-import com.mardous.booming.data.local.EditTarget
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.ui.component.base.AbsTagEditorActivity
-import com.mardous.booming.ui.component.base.goToDestination
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.component.compose.ErrorView
-import com.mardous.booming.ui.component.compose.ShapedText
-import com.mardous.booming.ui.component.compose.SmallHeader
-import com.mardous.booming.ui.component.compose.TitledCard
-import com.mardous.booming.ui.screen.lyrics.LyricsEditorFragmentArgs
-import com.mardous.booming.ui.screen.tageditor.SongTagEditorActivity
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.data.local.EditTarget
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.ui.component.base.AbsTagEditorActivity
+import com.ssilencce.ui.component.base.goToDestination
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.component.compose.ErrorView
+import com.ssilencce.ui.component.compose.ShapedText
+import com.ssilencce.ui.component.compose.SmallHeader
+import com.ssilencce.ui.component.compose.TitledCard
+import com.ssilencce.ui.screen.lyrics.LyricsEditorFragmentArgs
+import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 data class SongInfoUiState(
@@ -123,7 +123,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     SongInfoScreen(
                         viewModel = viewModel,
                         song = song,

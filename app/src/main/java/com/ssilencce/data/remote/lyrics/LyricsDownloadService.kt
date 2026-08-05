@@ -15,17 +15,17 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.lyrics
+package com.ssilencce.data.remote.lyrics
 
 import android.util.Log
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.lyrics.RawLyrics
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.data.remote.lyrics.api.betterlyrics.BetterLyricsApi
-import com.mardous.booming.data.remote.lyrics.api.lrclib.LrcLibApi
-import com.mardous.booming.data.remote.lyrics.api.lyrically.LyricallyApi
-import com.mardous.booming.extensions.media.albumArtistName
-import com.mardous.booming.extensions.media.extractMainArtistName
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.lyrics.RawLyrics
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.remote.lyrics.api.betterlyrics.BetterLyricsApi
+import com.ssilencce.data.remote.lyrics.api.lrclib.LrcLibApi
+import com.ssilencce.data.remote.lyrics.api.lyrically.LyricallyApi
+import com.ssilencce.extensions.media.albumArtistName
+import com.ssilencce.extensions.media.extractMainArtistName
 import io.ktor.client.HttpClient
 import java.io.IOException
 

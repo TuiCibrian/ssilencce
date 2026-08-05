@@ -1,6 +1,6 @@
-package com.mardous.booming.core.model.sort
+package com.ssilencce.core.model.sort
 
-import com.mardous.booming.R
+import com.ssilencce.R
 
 sealed class SortItem(val group: Int, val id: Int, val title: Int)
 

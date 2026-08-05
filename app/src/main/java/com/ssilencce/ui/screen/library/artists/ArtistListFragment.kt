@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.artists
+package com.ssilencce.ui.screen.library.artists
 
 import android.os.Bundle
 import android.view.Menu
@@ -25,22 +25,22 @@ import android.view.View
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.model.sort.SortKey
-import com.mardous.booming.core.sort.ArtistSortMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.extensions.navigation.artistDetailArgs
-import com.mardous.booming.extensions.navigation.asFragmentExtras
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.IArtistCallback
-import com.mardous.booming.ui.adapters.artist.ArtistAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.component.menu.onArtistMenu
-import com.mardous.booming.ui.component.menu.onArtistsMenu
-import com.mardous.booming.ui.screen.library.ReloadType
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.model.sort.SortKey
+import com.ssilencce.core.sort.ArtistSortMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Artist
+import com.ssilencce.extensions.navigation.artistDetailArgs
+import com.ssilencce.extensions.navigation.asFragmentExtras
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.IArtistCallback
+import com.ssilencce.ui.adapters.artist.ArtistAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.menu.onArtistMenu
+import com.ssilencce.ui.component.menu.onArtistsMenu
+import com.ssilencce.ui.screen.library.ReloadType
+import com.ssilencce.util.Preferences
 
 class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, GridLayoutManager>(),
     IArtistCallback {

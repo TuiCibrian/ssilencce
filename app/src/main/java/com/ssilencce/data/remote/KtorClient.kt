@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote
+package com.ssilencce.data.remote
 
 import android.content.Context
 import io.ktor.client.HttpClient
@@ -68,7 +68,7 @@ private fun offlineCacheInterceptor(): Interceptor {
         val url = request.url.toString()
 
         if ((url.contains("api.deezer.com") || url.contains("ws.audioscrobbler.com")) &&
-            !com.mardous.booming.data.model.network.NetworkFeature.isOnline(ignoreWifiSetting = true)
+            !com.ssilencce.data.model.network.NetworkFeature.isOnline(ignoreWifiSetting = true)
         ) {
             val cacheControl = CacheControl.Builder()
                 .onlyIfCached()

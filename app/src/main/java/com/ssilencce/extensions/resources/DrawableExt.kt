@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.resources
+package com.ssilencce.extensions.resources
 
 import android.content.Context
 import android.graphics.Bitmap

@@ -15,23 +15,23 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.annotation.SuppressLint
 import android.view.*
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isGone
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_YEAR_IMAGE
-import com.mardous.booming.data.model.ReleaseYear
-import com.mardous.booming.extensions.isActivated
-import com.mardous.booming.extensions.loadPaletteImage
-import com.mardous.booming.extensions.media.asNumberOfSongs
-import com.mardous.booming.ui.IYearCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_YEAR_IMAGE
+import com.ssilencce.data.model.ReleaseYear
+import com.ssilencce.extensions.isActivated
+import com.ssilencce.extensions.loadPaletteImage
+import com.ssilencce.extensions.media.asNumberOfSongs
+import com.ssilencce.ui.IYearCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 

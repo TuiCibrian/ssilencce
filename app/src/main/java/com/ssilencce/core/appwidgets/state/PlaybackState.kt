@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets.state
+package com.ssilencce.core.appwidgets.state
 
 import androidx.media3.common.Player
 import kotlinx.serialization.Serializable

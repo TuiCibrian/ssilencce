@@ -1,7 +1,7 @@
-package com.mardous.booming.coil.model
+package com.ssilencce.coil.model
 
 import android.net.Uri
-import com.mardous.booming.extensions.media.isArtistNameUnknown
+import com.ssilencce.extensions.media.isArtistNameUnknown
 
 class ArtistImage(val id: Long, val coverUri: Uri, val name: String) {
     val isNameUnknown = name.isArtistNameUnknown()

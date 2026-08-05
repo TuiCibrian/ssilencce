@@ -1,8 +1,8 @@
-package com.mardous.booming.extensions.media
+package com.ssilencce.extensions.media
 
 import android.content.Context
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Artist
+import com.ssilencce.R
+import com.ssilencce.data.model.Artist
 import org.koin.core.context.GlobalContext
 import java.util.regex.Pattern
 

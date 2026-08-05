@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.graphics.drawable.Drawable
@@ -24,7 +24,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.android.material.button.MaterialButton
-import com.mardous.booming.R
+import com.ssilencce.R
 
 class PermissionView(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
 

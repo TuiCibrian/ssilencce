@@ -15,16 +15,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.theme
+package com.ssilencce.core.model.theme
 
 import android.content.Context
 import androidx.annotation.StyleRes
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.core.content.ContextCompat
 import com.google.android.material.color.DynamicColors
-import com.mardous.booming.R
-import com.mardous.booming.util.GeneralTheme
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.util.GeneralTheme
+import com.ssilencce.util.Preferences
 
 class AppTheme private constructor(
     val id: String,
@@ -38,10 +38,10 @@ class AppTheme private constructor(
         get() = id == GeneralTheme.BLACK
 
     enum class Mode(@StyleRes val themeRes: Int) {
-        Light(R.style.Theme_Booming_Light),
-        Dark(R.style.Theme_Booming),
-        Black(R.style.Theme_Booming_Black),
-        FollowSystem(R.style.Theme_Booming_FollowSystem)
+        Light(R.style.Theme_Ssilencce_Light),
+        Dark(R.style.Theme_Ssilencce),
+        Black(R.style.Theme_Ssilencce_Black),
+        FollowSystem(R.style.Theme_Ssilencce_FollowSystem)
     }
 
     companion object {

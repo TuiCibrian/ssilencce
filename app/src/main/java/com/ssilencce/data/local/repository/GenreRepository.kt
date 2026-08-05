@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.annotation.SuppressLint
 import android.content.ContentResolver
@@ -24,14 +24,14 @@ import android.net.Uri
 import android.provider.BaseColumns
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.Genres
-import com.mardous.booming.core.sort.GenreSortMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.utilities.getLongSafe
-import com.mardous.booming.extensions.utilities.getStringSafe
-import com.mardous.booming.extensions.utilities.mapIfValid
-import com.mardous.booming.extensions.utilities.takeOrDefault
+import com.ssilencce.core.sort.GenreSortMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.utilities.getLongSafe
+import com.ssilencce.extensions.utilities.getStringSafe
+import com.ssilencce.extensions.utilities.mapIfValid
+import com.ssilencce.extensions.utilities.takeOrDefault
 
 interface GenreRepository {
     suspend fun genres(query: String): List<Genre>

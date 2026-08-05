@@ -15,15 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.search
+package com.ssilencce.data.local.search
 
 import android.os.Parcelable
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.local.MediaQueryDispatcher
-import com.mardous.booming.data.local.repository.RealAlbumRepository
-import com.mardous.booming.data.local.repository.RealSongRepository
-import com.mardous.booming.data.model.search.FilterSelection
-import com.mardous.booming.data.model.search.SearchQuery
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.local.MediaQueryDispatcher
+import com.ssilencce.data.local.repository.RealAlbumRepository
+import com.ssilencce.data.local.repository.RealSongRepository
+import com.ssilencce.data.model.search.FilterSelection
+import com.ssilencce.data.model.search.SearchQuery
 import kotlinx.parcelize.Parcelize
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get

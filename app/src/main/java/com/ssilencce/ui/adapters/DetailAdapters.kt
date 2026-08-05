@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
@@ -25,12 +25,12 @@ import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.databinding.ItemDetailHeaderBinding
-import com.mardous.booming.databinding.ItemDetailHorizontalListBinding
-import com.mardous.booming.databinding.ItemDetailSectionHeaderBinding
-import com.mardous.booming.databinding.ItemDetailWikiBinding
-import com.mardous.booming.extensions.resources.setMarkdownText
-import com.mardous.booming.extensions.resources.show
+import com.ssilencce.databinding.ItemDetailHeaderBinding
+import com.ssilencce.databinding.ItemDetailHorizontalListBinding
+import com.ssilencce.databinding.ItemDetailSectionHeaderBinding
+import com.ssilencce.databinding.ItemDetailWikiBinding
+import com.ssilencce.extensions.resources.setMarkdownText
+import com.ssilencce.extensions.resources.show
 
 class HeaderAdapter(
     private val onBind: (ItemDetailHeaderBinding) -> Unit

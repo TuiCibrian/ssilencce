@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.content.Context
 import android.util.AttributeSet
@@ -23,16 +23,16 @@ import androidx.core.content.withStyledAttributes
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.ShapeAppearanceModel
-import com.mardous.booming.R
+import com.ssilencce.R
 
-class BoomingShapeableImageView @JvmOverloads constructor(
+class SsilencceShapeableImageView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyle: Int = -1
 ) : ShapeableImageView(context, attrs, defStyle) {
 
     init {
-        context.withStyledAttributes(attrs, R.styleable.BoomingShapeableImageView, defStyle, -1) {
+        context.withStyledAttributes(attrs, R.styleable.SsilencceShapeableImageView, defStyle, -1) {
             addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
                 val radius = width / 2f
                 shapeAppearanceModel = ShapeAppearanceModel().withCornerSize(radius)

@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.tageditor
+package com.ssilencce.ui.screen.tageditor
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -10,15 +10,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
 import com.kyant.taglib.Picture
-import com.mardous.booming.coil.CustomArtistImageManager
-import com.mardous.booming.data.local.EditTarget
-import com.mardous.booming.data.local.MetadataReader
-import com.mardous.booming.data.local.MetadataWriter
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.remote.musicbrainz.artworkUrl
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzRecording
-import com.mardous.booming.extensions.utilities.capitalize
+import com.ssilencce.coil.CustomArtistImageManager
+import com.ssilencce.data.local.EditTarget
+import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.data.local.MetadataWriter
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.remote.musicbrainz.artworkUrl
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRecording
+import com.ssilencce.extensions.utilities.capitalize
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

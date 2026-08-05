@@ -14,7 +14,7 @@
  * limitations under the License
  */
 
-package com.mardous.booming.util.color;
+package com.ssilencce.util.color;
 
 import android.graphics.Color;
 import android.util.Log;

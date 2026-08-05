@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.dialogs.playlists
+package com.ssilencce.ui.dialogs.playlists
 
 import android.app.Dialog
 import android.content.Context
@@ -31,14 +31,14 @@ import androidx.fragment.app.DialogFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import com.mardous.booming.R
-import com.mardous.booming.databinding.DialogProgressRecyclerViewBinding
-import com.mardous.booming.extensions.create
-import com.mardous.booming.extensions.media.getSpannedTitles
-import com.mardous.booming.extensions.requestContext
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.screen.library.ImportablePlaylistResult
-import com.mardous.booming.ui.screen.library.LibraryViewModel
+import com.ssilencce.R
+import com.ssilencce.databinding.DialogProgressRecyclerViewBinding
+import com.ssilencce.extensions.create
+import com.ssilencce.extensions.media.getSpannedTitles
+import com.ssilencce.extensions.requestContext
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.screen.library.ImportablePlaylistResult
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 /**

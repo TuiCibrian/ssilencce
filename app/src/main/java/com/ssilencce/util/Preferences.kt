@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -24,29 +24,29 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.edit
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.navigation.NavigationBarView.LabelVisibility
-import com.mardous.booming.R
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.core.model.Cutoff
-import com.mardous.booming.core.model.action.FolderAction
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.core.model.action.QueueClearingBehavior
-import com.mardous.booming.core.model.action.SongClickBehavior
-import com.mardous.booming.core.model.player.MetadataField
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTransition
-import com.mardous.booming.core.model.shuffle.GroupShuffleMode
-import com.mardous.booming.core.model.theme.AppTheme
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.extensions.files.getCanonicalPathSafe
-import com.mardous.booming.extensions.hasQ
-import com.mardous.booming.extensions.hasS
-import com.mardous.booming.extensions.intRes
-import com.mardous.booming.extensions.utilities.calendarSingleton
-import com.mardous.booming.extensions.utilities.deserialize
-import com.mardous.booming.extensions.utilities.getCutoffTimeMillis
-import com.mardous.booming.extensions.utilities.serialize
-import com.mardous.booming.extensions.utilities.toEnum
-import com.mardous.booming.ui.component.views.TopAppBarLayout
+import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.core.model.Cutoff
+import com.ssilencce.core.model.action.FolderAction
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.action.QueueClearingBehavior
+import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTransition
+import com.ssilencce.core.model.shuffle.GroupShuffleMode
+import com.ssilencce.core.model.theme.AppTheme
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.extensions.files.getCanonicalPathSafe
+import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.hasS
+import com.ssilencce.extensions.intRes
+import com.ssilencce.extensions.utilities.calendarSingleton
+import com.ssilencce.extensions.utilities.deserialize
+import com.ssilencce.extensions.utilities.getCutoffTimeMillis
+import com.ssilencce.extensions.utilities.serialize
+import com.ssilencce.extensions.utilities.toEnum
+import com.ssilencce.ui.component.views.TopAppBarLayout
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File

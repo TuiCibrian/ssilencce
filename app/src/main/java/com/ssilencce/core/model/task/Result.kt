@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.task
+package com.ssilencce.core.model.task
 
 /**
  * Generic class that holds the network state

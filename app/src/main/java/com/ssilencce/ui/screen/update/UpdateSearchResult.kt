@@ -1,6 +1,6 @@
-package com.mardous.booming.ui.screen.update
+package com.ssilencce.ui.screen.update
 
-import com.mardous.booming.data.remote.github.model.GitHubRelease
+import com.ssilencce.data.remote.github.model.GitHubRelease
 
 data class UpdateSearchResult(
     val state: State = State.Idle,

@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.player.cover
+package com.ssilencce.ui.screen.player.cover
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,15 +7,15 @@ import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
-import com.mardous.booming.R
-import com.mardous.booming.extensions.currentFragment
-import com.mardous.booming.ui.component.base.goToDestination
-import com.mardous.booming.ui.screen.MainActivity
-import com.mardous.booming.ui.screen.lyrics.CoverLyricsScreen
-import com.mardous.booming.ui.screen.lyrics.LyricsFragment
-import com.mardous.booming.ui.screen.lyrics.LyricsViewModel
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.extensions.currentFragment
+import com.ssilencce.ui.component.base.goToDestination
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.ui.screen.lyrics.CoverLyricsScreen
+import com.ssilencce.ui.screen.lyrics.LyricsFragment
+import com.ssilencce.ui.screen.lyrics.LyricsViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class CoverLyricsFragment : Fragment() {
@@ -33,7 +33,7 @@ class CoverLyricsFragment : Fragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     CoverLyricsScreen(
                         lyricsViewModel,
                         playerViewModel,

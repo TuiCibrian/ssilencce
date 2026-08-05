@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.animation.Animator
 import android.animation.ObjectAnimator
@@ -24,8 +24,8 @@ import android.util.AttributeSet
 import android.view.animation.DecelerateInterpolator
 import androidx.core.animation.addListener
 import com.google.android.material.slider.Slider
-import com.mardous.booming.extensions.resources.toColorStateList
-import com.mardous.booming.extensions.resources.withAlpha
+import com.ssilencce.extensions.resources.toColorStateList
+import com.ssilencce.extensions.resources.withAlpha
 
 /**
  * @author Christians M. A. (mardous)

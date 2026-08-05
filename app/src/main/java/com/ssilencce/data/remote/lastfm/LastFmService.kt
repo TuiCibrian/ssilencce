@@ -15,18 +15,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.lastfm
+package com.ssilencce.data.remote.lastfm
 
-import com.mardous.booming.BuildConfig
-import com.mardous.booming.data.remote.lastfm.model.LastFmAlbum
-import com.mardous.booming.data.remote.lastfm.model.LastFmArtist
-import com.mardous.booming.data.remote.lastfm.model.LastFmError
-import com.mardous.booming.data.remote.lastfm.model.LastFmSessionResponse
-import com.mardous.booming.data.remote.lastfm.model.LastFmUserResponse
-import com.mardous.booming.data.remote.lastfm.model.NowPlayingResponse
-import com.mardous.booming.data.remote.lastfm.model.ScrobbleResponse
-import com.mardous.booming.util.Constants.USER_AGENT
-import com.mardous.booming.util.encodeMd5
+import com.ssilencce.BuildConfig
+import com.ssilencce.data.remote.lastfm.model.LastFmAlbum
+import com.ssilencce.data.remote.lastfm.model.LastFmArtist
+import com.ssilencce.data.remote.lastfm.model.LastFmError
+import com.ssilencce.data.remote.lastfm.model.LastFmSessionResponse
+import com.ssilencce.data.remote.lastfm.model.LastFmUserResponse
+import com.ssilencce.data.remote.lastfm.model.NowPlayingResponse
+import com.ssilencce.data.remote.lastfm.model.ScrobbleResponse
+import com.ssilencce.util.Constants.USER_AGENT
+import com.ssilencce.util.encodeMd5
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder

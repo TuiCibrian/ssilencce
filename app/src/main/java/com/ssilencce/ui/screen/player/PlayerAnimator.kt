@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player
+package com.ssilencce.ui.screen.player
 
 import android.animation.Animator
 import android.animation.AnimatorSet

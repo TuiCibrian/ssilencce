@@ -1,17 +1,17 @@
-package com.mardous.booming.data.mapper
+package com.ssilencce.data.mapper
 
 import android.content.Context
 import android.provider.MediaStore
-import com.mardous.booming.R
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.local.search.BasicSearchFilter
-import com.mardous.booming.data.local.search.LastAddedSearchFilter
-import com.mardous.booming.data.local.search.SmartSearchFilter
-import com.mardous.booming.data.model.*
-import com.mardous.booming.data.model.search.FilterSelection
-import com.mardous.booming.data.model.search.SearchQuery
-import com.mardous.booming.extensions.media.displayName
+import com.ssilencce.R
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.search.BasicSearchFilter
+import com.ssilencce.data.local.search.LastAddedSearchFilter
+import com.ssilencce.data.local.search.SmartSearchFilter
+import com.ssilencce.data.model.*
+import com.ssilencce.data.model.search.FilterSelection
+import com.ssilencce.data.model.search.SearchQuery
+import com.ssilencce.extensions.media.displayName
 
 fun Album.searchFilter(context: Context) =
     SmartSearchFilter(

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions.utilities
+package com.ssilencce.extensions.utilities
 
 import android.database.Cursor
 import android.util.Log

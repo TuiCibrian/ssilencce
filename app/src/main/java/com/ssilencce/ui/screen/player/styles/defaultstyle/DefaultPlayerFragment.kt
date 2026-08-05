@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.styles.defaultstyle
+package com.ssilencce.ui.screen.player.styles.defaultstyle
 
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -28,20 +28,20 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsCompat.Type
 import androidx.core.view.updatePadding
-import com.mardous.booming.R
-import com.mardous.booming.core.model.action.NowPlayingAction
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.surfaceTintTarget
-import com.mardous.booming.core.model.player.tintTarget
-import com.mardous.booming.core.model.theme.NowPlayingScreen
-import com.mardous.booming.databinding.FragmentDefaultPlayerBinding
-import com.mardous.booming.extensions.whichFragment
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.AbsPlayerFragment
-import com.mardous.booming.util.DISPLAY_NEXT_SONG
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.surfaceTintTarget
+import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.databinding.FragmentDefaultPlayerBinding
+import com.ssilencce.extensions.whichFragment
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.AbsPlayerFragment
+import com.ssilencce.util.DISPLAY_NEXT_SONG
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)

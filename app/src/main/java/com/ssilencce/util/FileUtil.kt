@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.util
+package com.ssilencce.util
 
 import android.content.Context
 import android.os.Environment
@@ -27,7 +27,7 @@ object FileUtil : KoinComponent {
 
     const val PLAYLISTS_DIRECTORY_NAME = "Playlists"
 
-    // Directories that are accessible only for Booming
+    // Directories that are accessible only for ssilencce
     private const val CUSTOM_ARTIST_IMAGES_DIRECTORY_NAME = "custom_artist_images"
     private const val CUSTOM_PLAYLIST_IMAGES_DIRECTORY_NAME = "custom_playlist_images"
     private const val THUMBS_DIRECTORY_NAME = "Thumbs"

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.views
+package com.ssilencce.ui.component.views
 
 import android.animation.ValueAnimator
 import android.annotation.SuppressLint
@@ -47,8 +47,8 @@ import androidx.graphics.shapes.Morph
 import androidx.graphics.shapes.toPath
 import com.google.android.material.color.MaterialColors
 import com.google.android.material.shape.MaterialShapes
-import com.mardous.booming.R
-import com.mardous.booming.extensions.dp
+import com.ssilencce.R
+import com.ssilencce.extensions.dp
 import kotlin.math.min
 
 /**

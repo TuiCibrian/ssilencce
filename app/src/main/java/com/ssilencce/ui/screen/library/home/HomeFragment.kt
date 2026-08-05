@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.home
+package com.ssilencce.ui.screen.library.home
 
 import android.os.Bundle
 import android.view.Menu
@@ -27,44 +27,44 @@ import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.ContentType
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.Suggestion
-import com.mardous.booming.databinding.FragmentHomeBinding
-import com.mardous.booming.extensions.dp
-import com.mardous.booming.extensions.isNullOrEmpty
-import com.mardous.booming.extensions.navigation.albumDetailArgs
-import com.mardous.booming.extensions.navigation.artistDetailArgs
-import com.mardous.booming.extensions.navigation.asFragmentExtras
-import com.mardous.booming.extensions.navigation.detailArgs
-import com.mardous.booming.extensions.navigation.playlistDetailArgs
-import com.mardous.booming.extensions.resources.addPaddingRelative
-import com.mardous.booming.extensions.resources.destroyOnDetach
-import com.mardous.booming.extensions.resources.primaryColor
-import com.mardous.booming.extensions.resources.setupStatusBarForeground
-import com.mardous.booming.extensions.setSupportActionBar
-import com.mardous.booming.extensions.toHtml
-import com.mardous.booming.extensions.topLevelTransition
-import com.mardous.booming.ui.IAlbumCallback
-import com.mardous.booming.ui.IArtistCallback
-import com.mardous.booming.ui.IHomeCallback
-import com.mardous.booming.ui.IScrollHelper
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.adapters.HomeAdapter
-import com.mardous.booming.ui.adapters.album.AlbumAdapter
-import com.mardous.booming.ui.adapters.artist.ArtistAdapter
-import com.mardous.booming.ui.adapters.song.SongAdapter
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
-import com.mardous.booming.ui.component.menu.onAlbumMenu
-import com.mardous.booming.ui.component.menu.onAlbumsMenu
-import com.mardous.booming.ui.component.menu.onArtistMenu
-import com.mardous.booming.ui.component.menu.onArtistsMenu
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.ui.screen.library.ReloadType
+import com.ssilencce.R
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.Suggestion
+import com.ssilencce.databinding.FragmentHomeBinding
+import com.ssilencce.extensions.dp
+import com.ssilencce.extensions.isNullOrEmpty
+import com.ssilencce.extensions.navigation.albumDetailArgs
+import com.ssilencce.extensions.navigation.artistDetailArgs
+import com.ssilencce.extensions.navigation.asFragmentExtras
+import com.ssilencce.extensions.navigation.detailArgs
+import com.ssilencce.extensions.navigation.playlistDetailArgs
+import com.ssilencce.extensions.resources.addPaddingRelative
+import com.ssilencce.extensions.resources.destroyOnDetach
+import com.ssilencce.extensions.resources.primaryColor
+import com.ssilencce.extensions.resources.setupStatusBarForeground
+import com.ssilencce.extensions.setSupportActionBar
+import com.ssilencce.extensions.toHtml
+import com.ssilencce.extensions.topLevelTransition
+import com.ssilencce.ui.IAlbumCallback
+import com.ssilencce.ui.IArtistCallback
+import com.ssilencce.ui.IHomeCallback
+import com.ssilencce.ui.IScrollHelper
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.adapters.HomeAdapter
+import com.ssilencce.ui.adapters.album.AlbumAdapter
+import com.ssilencce.ui.adapters.artist.ArtistAdapter
+import com.ssilencce.ui.adapters.song.SongAdapter
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.menu.onAlbumMenu
+import com.ssilencce.ui.component.menu.onAlbumsMenu
+import com.ssilencce.ui.component.menu.onArtistMenu
+import com.ssilencce.ui.component.menu.onArtistsMenu
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.screen.library.ReloadType
 
 /**
  * @author Christians M. A. (mardous)
@@ -140,7 +140,7 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
             findNavController().navigate(R.id.nav_search)
         }
         val hexColor = String.format("#%06X", 0xFFFFFF and primaryColor())
-        val appName = "Booming <font color=$hexColor>Music</font>".toHtml()
+        val appName = "ssile<font color=$hexColor>ncce</font>".toHtml()
         binding.appBarLayout.title = appName
     }
 

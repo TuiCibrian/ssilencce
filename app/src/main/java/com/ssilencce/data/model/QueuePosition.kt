@@ -1,4 +1,4 @@
-package com.mardous.booming.data.model
+package com.ssilencce.data.model
 
 import androidx.media3.common.C
 

@@ -15,15 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.theme
+package com.ssilencce.core.model.theme
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.PlayerColorSchemeList
-import com.mardous.booming.core.model.player.PlayerColorSchemeMode
-import com.mardous.booming.core.model.player.PlayerTransition
+import com.ssilencce.R
+import com.ssilencce.core.model.player.PlayerColorSchemeList
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.player.PlayerTransition
 
 enum class NowPlayingScreen(
     @param:StringRes

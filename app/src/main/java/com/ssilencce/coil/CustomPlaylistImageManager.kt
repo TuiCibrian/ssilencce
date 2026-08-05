@@ -1,4 +1,4 @@
-package com.mardous.booming.coil
+package com.ssilencce.coil
 
 import android.content.Context
 import android.net.Uri
@@ -10,8 +10,8 @@ import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
-import com.mardous.booming.extensions.resources.toJPG
-import com.mardous.booming.util.FileUtil
+import com.ssilencce.extensions.resources.toJPG
+import com.ssilencce.util.FileUtil
 import java.io.File
 
 class CustomPlaylistImageManager(private val context: Context) {

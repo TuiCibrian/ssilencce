@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.years
+package com.ssilencce.ui.screen.library.years
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -26,15 +26,15 @@ import android.view.View
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.sort.YearSortMode
-import com.mardous.booming.data.model.ReleaseYear
-import com.mardous.booming.ui.IYearCallback
-import com.mardous.booming.ui.adapters.YearAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.ui.screen.library.ReloadType
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.sort.YearSortMode
+import com.ssilencce.data.model.ReleaseYear
+import com.ssilencce.ui.IYearCallback
+import com.ssilencce.ui.adapters.YearAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.screen.library.ReloadType
 
 class YearsListFragment : AbsRecyclerViewCustomGridSizeFragment<YearAdapter, GridLayoutManager>(),
     IYearCallback {

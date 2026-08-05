@@ -15,6 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model
+package com.ssilencce.core.model
 
 class Cutoff(val description: String, val interval: Long)

@@ -1,23 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Booming" parent="Base.Theme.Booming"/>
+    <style name="Theme.Ssilencce" parent="Base.Theme.Ssilencce"/>
 
-    <style name="Theme.Booming.Light" parent="Base.Theme.Booming.Light"/>
+    <style name="Theme.Ssilencce.Light" parent="Base.Theme.Ssilencce.Light"/>
 
-    <style name="Theme.Booming.Black" parent="Base.Theme.Booming.Black"/>
+    <style name="Theme.Ssilencce.Black" parent="Base.Theme.Ssilencce.Black"/>
 
-    <style name="Theme.Booming.FollowSystem" parent="Base.Theme.Booming.Adaptive"/>
+    <style name="Theme.Ssilencce.FollowSystem" parent="Base.Theme.Ssilencce.Adaptive"/>
 
-    <style name="Theme.Booming.SplashScreen" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenAnimatedIcon">@drawable/boomingmusic_logo_splash</item>
+    <style name="Theme.Ssilencce.SplashScreen" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenAnimatedIcon">@drawable/app_logo_splash</item>
+        <item name="windowSplashScreenBackground">@color/splash_background_color</item>
     </style>
 
-    <style name="Widget.Booming.Expressive.Button" parent="Widget.Material3Expressive.Button">
+    <style name="Widget.Ssilencce.Expressive.Button" parent="Widget.Material3Expressive.Button">
         <item name="iconGravity">textStart</item>
     </style>
 
-    <style name="Widget.Booming.Expressive.Button.Tonal" parent="Widget.Material3Expressive.Button.TonalButton">
+    <style name="Widget.Ssilencce.Expressive.Button.Tonal" parent="Widget.Material3Expressive.Button.TonalButton">
         <item name="iconGravity">textStart</item>
     </style>
 

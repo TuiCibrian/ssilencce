@@ -1,6 +1,6 @@
 @file:SuppressLint("LocalContextGetResourceValueCall")
 
-package com.mardous.booming.ui.component.compose.menu
+package com.ssilencce.ui.component.compose.menu
 
 import android.annotation.SuppressLint
 import androidx.compose.runtime.Immutable

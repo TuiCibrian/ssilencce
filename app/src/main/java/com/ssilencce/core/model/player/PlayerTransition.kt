@@ -1,8 +1,8 @@
-package com.mardous.booming.core.model.player
+package com.ssilencce.core.model.player
 
 import androidx.viewpager.widget.ViewPager
-import com.mardous.booming.R
-import com.mardous.booming.ui.component.transform.*
+import com.ssilencce.R
+import com.ssilencce.ui.component.transform.*
 
 enum class PlayerTransition(val nameRes: Int) {
     Simple(R.string.simple),

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.findViewTreeLifecycleOwner
@@ -25,14 +25,14 @@ import coil3.load
 import coil3.request.ImageRequest
 import coil3.toBitmap
 import com.google.android.material.card.MaterialCardView
-import com.mardous.booming.coil.placeholderDrawableRes
-import com.mardous.booming.core.model.PaletteColor
-import com.mardous.booming.core.palette.PaletteProcessor
-import com.mardous.booming.extensions.resources.getPrimaryTextColor
-import com.mardous.booming.extensions.resources.isColorLight
-import com.mardous.booming.extensions.resources.toColorStateList
-import com.mardous.booming.extensions.resources.withAlpha
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.coil.placeholderDrawableRes
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.core.palette.PaletteProcessor
+import com.ssilencce.extensions.resources.getPrimaryTextColor
+import com.ssilencce.extensions.resources.isColorLight
+import com.ssilencce.extensions.resources.toColorStateList
+import com.ssilencce.extensions.resources.withAlpha
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch

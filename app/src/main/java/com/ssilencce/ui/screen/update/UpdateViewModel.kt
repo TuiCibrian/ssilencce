@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.update
+package com.ssilencce.ui.screen.update
 
 import android.app.DownloadManager
 import android.content.Context
@@ -8,10 +8,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.map
 import androidx.lifecycle.viewModelScope
-import com.mardous.booming.core.model.task.Event
-import com.mardous.booming.data.remote.github.GitHubService
-import com.mardous.booming.data.remote.github.model.GitHubRelease
-import com.mardous.booming.util.Preferences
+import com.ssilencce.core.model.task.Event
+import com.ssilencce.data.remote.github.GitHubService
+import com.ssilencce.data.remote.github.model.GitHubRelease
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

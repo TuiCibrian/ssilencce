@@ -12,7 +12,7 @@
  * See the GNU General Public License for more details.
  *
  */
-package com.mardous.booming.data.local.room
+package com.ssilencce.data.local.room
 
 import androidx.room.Dao
 import androidx.room.Query

@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.scrobbling
+package com.ssilencce.ui.screen.scrobbling
 
 import android.app.Dialog
 import android.os.Bundle
@@ -57,21 +57,21 @@ import androidx.compose.ui.unit.dp
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
-import com.mardous.booming.R
-import com.mardous.booming.data.model.network.LoginParams
-import com.mardous.booming.data.model.network.LoginState
-import com.mardous.booming.data.model.network.ScrobblingService
-import com.mardous.booming.data.model.network.canLogIn
-import com.mardous.booming.data.model.network.isFailure
-import com.mardous.booming.data.model.network.isLoading
-import com.mardous.booming.extensions.extraNotNull
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.extensions.openUrl
-import com.mardous.booming.extensions.withArgs
-import com.mardous.booming.ui.component.compose.BottomSheetDialogSurface
-import com.mardous.booming.ui.component.compose.TipView
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.ui.theme.BoomingMusicTheme
+import com.ssilencce.R
+import com.ssilencce.data.model.network.LoginParams
+import com.ssilencce.data.model.network.LoginState
+import com.ssilencce.data.model.network.ScrobblingService
+import com.ssilencce.data.model.network.canLogIn
+import com.ssilencce.data.model.network.isFailure
+import com.ssilencce.data.model.network.isLoading
+import com.ssilencce.extensions.extraNotNull
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.extensions.openUrl
+import com.ssilencce.extensions.withArgs
+import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
+import com.ssilencce.ui.component.compose.TipView
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
@@ -97,7 +97,7 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
             )
             setContent {
-                BoomingMusicTheme {
+                SsilencceTheme {
                     LoginScreen(service, viewModel)
                 }
             }

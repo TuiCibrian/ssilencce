@@ -15,39 +15,39 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.media3.common.MediaItem
-import com.mardous.booming.core.model.filesystem.FileSystemQuery
-import com.mardous.booming.data.SearchFilter
-import com.mardous.booming.data.local.room.PlayCountEntity
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.local.room.SongEntity
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.ContentType
-import com.mardous.booming.data.model.Folder
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.data.model.Playlist
-import com.mardous.booming.data.model.ReleaseYear
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.Suggestion
-import com.mardous.booming.data.model.network.LoginParams
-import com.mardous.booming.data.model.network.LoginState
-import com.mardous.booming.data.model.network.ScrobblingResult
-import com.mardous.booming.data.model.network.ScrobblingService
-import com.mardous.booming.data.model.search.SearchQuery
-import com.mardous.booming.data.remote.deezer.model.DeezerAlbum
-import com.mardous.booming.data.remote.deezer.model.DeezerArtist
-import com.mardous.booming.data.remote.deezer.model.DeezerTrack
-import com.mardous.booming.data.remote.lastfm.model.LastFmAlbum
-import com.mardous.booming.data.remote.lastfm.model.LastFmArtist
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzRecording
-import com.mardous.booming.data.remote.musicbrainz.model.MusicBrainzSearchResponse
+import com.ssilencce.core.model.filesystem.FileSystemQuery
+import com.ssilencce.data.SearchFilter
+import com.ssilencce.data.local.room.PlayCountEntity
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.local.room.SongEntity
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.Folder
+import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.Playlist
+import com.ssilencce.data.model.ReleaseYear
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.Suggestion
+import com.ssilencce.data.model.network.LoginParams
+import com.ssilencce.data.model.network.LoginState
+import com.ssilencce.data.model.network.ScrobblingResult
+import com.ssilencce.data.model.network.ScrobblingService
+import com.ssilencce.data.model.search.SearchQuery
+import com.ssilencce.data.remote.deezer.model.DeezerAlbum
+import com.ssilencce.data.remote.deezer.model.DeezerArtist
+import com.ssilencce.data.remote.deezer.model.DeezerTrack
+import com.ssilencce.data.remote.lastfm.model.LastFmAlbum
+import com.ssilencce.data.remote.lastfm.model.LastFmArtist
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRecording
+import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzSearchResponse
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 

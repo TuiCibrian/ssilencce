@@ -1,13 +1,13 @@
-package com.mardous.booming.playback.shuffle
+package com.ssilencce.playback.shuffle
 
 import android.util.Log
-import com.mardous.booming.core.model.shuffle.GroupShuffleMode
-import com.mardous.booming.core.model.shuffle.SpecialShuffleMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.SongProvider
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.model.ExpandedSong
-import com.mardous.booming.data.model.Song
+import com.ssilencce.core.model.shuffle.GroupShuffleMode
+import com.ssilencce.core.model.shuffle.SpecialShuffleMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.SongProvider
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.model.ExpandedSong
+import com.ssilencce.data.model.Song
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent

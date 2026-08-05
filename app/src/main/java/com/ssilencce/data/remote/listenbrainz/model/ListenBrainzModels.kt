@@ -1,4 +1,4 @@
-package com.mardous.booming.data.remote.listenbrainz.model
+package com.ssilencce.data.remote.listenbrainz.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

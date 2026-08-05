@@ -1,7 +1,7 @@
-package com.mardous.booming.core.model.player
+package com.ssilencce.core.model.player
 
 import androidx.compose.runtime.Immutable
-import com.mardous.booming.extensions.media.asReadableDuration
+import com.ssilencce.extensions.media.asReadableDuration
 
 @Immutable
 class ProgressState(val progress: Long, val total: Long) {

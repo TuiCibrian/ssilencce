@@ -1,6 +1,6 @@
-package com.mardous.booming.data.remote.deezer.model
+package com.ssilencce.data.remote.deezer.model
 
-import com.mardous.booming.util.ImageSize
+import com.ssilencce.util.ImageSize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

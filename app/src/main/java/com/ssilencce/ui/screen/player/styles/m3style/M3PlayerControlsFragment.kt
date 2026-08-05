@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.player.styles.m3style
+package com.ssilencce.ui.screen.player.styles.m3style
 
 import android.animation.Animator
 import android.animation.TimeInterpolator
@@ -26,18 +26,18 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.mardous.booming.R
-import com.mardous.booming.core.model.player.PlayerColorScheme
-import com.mardous.booming.core.model.player.PlayerTintTarget
-import com.mardous.booming.core.model.player.iconButtonTintTarget
-import com.mardous.booming.core.model.player.tintTarget
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentM3PlayerPlaybackControlsBinding
-import com.mardous.booming.ui.component.base.AbsPlayerControlsFragment
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
-import com.mardous.booming.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
-import com.mardous.booming.ui.component.views.MusicSlider
-import com.mardous.booming.ui.screen.player.PlayerAnimator
+import com.ssilencce.R
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerTintTarget
+import com.ssilencce.core.model.player.iconButtonTintTarget
+import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentM3PlayerPlaybackControlsBinding
+import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_NEXT
+import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
+import com.ssilencce.ui.component.views.MusicSlider
+import com.ssilencce.ui.screen.player.PlayerAnimator
 import java.util.LinkedList
 
 /**

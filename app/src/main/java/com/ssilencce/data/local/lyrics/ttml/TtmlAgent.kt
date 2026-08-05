@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.lyrics.ttml
+package com.ssilencce.data.local.lyrics.ttml
 
 data class TtmlAgent(
     val id: String,

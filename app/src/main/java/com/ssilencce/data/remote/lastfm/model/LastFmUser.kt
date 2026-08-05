@@ -1,4 +1,4 @@
-package com.mardous.booming.data.remote.lastfm.model
+package com.ssilencce.data.remote.lastfm.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

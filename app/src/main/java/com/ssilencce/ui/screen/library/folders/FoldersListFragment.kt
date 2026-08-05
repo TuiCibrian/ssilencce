@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.folders
+package com.ssilencce.ui.screen.library.folders
 
 import android.annotation.SuppressLint
 import android.os.Bundle
@@ -26,25 +26,25 @@ import android.view.View
 import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.model.GridViewType
-import com.mardous.booming.core.model.action.isPresent
-import com.mardous.booming.core.model.filesystem.FileSystemItem
-import com.mardous.booming.core.model.filesystem.FileSystemQuery
-import com.mardous.booming.core.sort.FileSortMode
-import com.mardous.booming.data.model.Folder
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.files.getCanonicalPathSafe
-import com.mardous.booming.extensions.navigation.folderDetailArgs
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.ui.IBackConsumer
-import com.mardous.booming.ui.IFileCallback
-import com.mardous.booming.ui.adapters.FileAdapter
-import com.mardous.booming.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
-import com.mardous.booming.ui.screen.library.ReloadType
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.core.model.GridViewType
+import com.ssilencce.core.model.action.isPresent
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.core.model.filesystem.FileSystemQuery
+import com.ssilencce.core.sort.FileSortMode
+import com.ssilencce.data.model.Folder
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.files.getCanonicalPathSafe
+import com.ssilencce.extensions.navigation.folderDetailArgs
+import com.ssilencce.extensions.showToast
+import com.ssilencce.ui.IBackConsumer
+import com.ssilencce.ui.IFileCallback
+import com.ssilencce.ui.adapters.FileAdapter
+import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.screen.library.ReloadType
+import com.ssilencce.util.Preferences
 import java.io.File
 
 class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, GridLayoutManager>(),

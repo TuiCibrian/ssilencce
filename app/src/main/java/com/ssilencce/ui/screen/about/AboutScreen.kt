@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.about
+package com.ssilencce.ui.screen.about
 
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -76,31 +76,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
-import com.mardous.booming.App
-import com.mardous.booming.BuildConfig
-import com.mardous.booming.R
-import com.mardous.booming.core.model.about.AboutItemData
-import com.mardous.booming.core.model.about.Contribution
-import com.mardous.booming.extensions.MIME_TYPE_PLAIN_TEXT
-import com.mardous.booming.extensions.openUrl
-import com.mardous.booming.extensions.toChooser
-import com.mardous.booming.extensions.tryStartActivity
-import com.mardous.booming.ui.component.compose.CollapsibleAppBarScaffold
-import com.mardous.booming.ui.component.compose.ShapedText
-import com.mardous.booming.util.Constants.APP_GITHUB_URL
-import com.mardous.booming.util.Constants.AUTHOR_GITHUB_URL
-import com.mardous.booming.util.Constants.COMMUNITY_LINK
-import com.mardous.booming.util.Constants.DONATION_LINK
-import com.mardous.booming.util.Constants.DOWNLOAD_URL
-import com.mardous.booming.util.Constants.FAQ_LINK
-import com.mardous.booming.util.Constants.ISSUE_TRACKER_LINK
-import com.mardous.booming.util.Constants.PRIVACY_POLICY_LINK
-import com.mardous.booming.util.Constants.RELEASES_LINK
-import com.mardous.booming.util.Constants.SUPPORT_EMAIL
-import com.mardous.booming.util.Constants.TELEGRAM_LINK
-import com.mardous.booming.util.Constants.TERMS_OF_SERVICE_LINK
-import com.mardous.booming.util.Constants.TRANSLATIONS_LINK
-import com.mardous.booming.util.Constants.WEBSITE_LINK
+import com.ssilencce.App
+import com.ssilencce.BuildConfig
+import com.ssilencce.R
+import com.ssilencce.core.model.about.AboutItemData
+import com.ssilencce.core.model.about.Contribution
+import com.ssilencce.extensions.MIME_TYPE_PLAIN_TEXT
+import com.ssilencce.extensions.openUrl
+import com.ssilencce.extensions.toChooser
+import com.ssilencce.extensions.tryStartActivity
+import com.ssilencce.ui.component.compose.CollapsibleAppBarScaffold
+import com.ssilencce.ui.component.compose.ShapedText
+import com.ssilencce.util.Constants.APP_GITHUB_URL
+import com.ssilencce.util.Constants.AUTHOR_GITHUB_URL
+import com.ssilencce.util.Constants.COMMUNITY_LINK
+import com.ssilencce.util.Constants.DONATION_LINK
+import com.ssilencce.util.Constants.DOWNLOAD_URL
+import com.ssilencce.util.Constants.FAQ_LINK
+import com.ssilencce.util.Constants.ISSUE_TRACKER_LINK
+import com.ssilencce.util.Constants.PRIVACY_POLICY_LINK
+import com.ssilencce.util.Constants.RELEASES_LINK
+import com.ssilencce.util.Constants.SUPPORT_EMAIL
+import com.ssilencce.util.Constants.TELEGRAM_LINK
+import com.ssilencce.util.Constants.TERMS_OF_SERVICE_LINK
+import com.ssilencce.util.Constants.TRANSLATIONS_LINK
+import com.ssilencce.util.Constants.WEBSITE_LINK
 import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import dev.jeziellago.compose.markdowntext.MarkdownText
@@ -189,7 +189,7 @@ fun AboutScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
         ) {
-            item { BoomingMusicHeader(version = appVersion) }
+            item { AppHeader(version = appVersion) }
 
             item { AboutSectionTitle(stringResource(R.string.author)) }
 
@@ -203,7 +203,7 @@ fun AboutScreen(
                                 .putExtra(Intent.EXTRA_EMAIL, arrayOf(SUPPORT_EMAIL))
                                 .putExtra(
                                     Intent.EXTRA_SUBJECT,
-                                    "Booming Music - Support & questions"
+                                    "ssilencce - Support & questions"
                                 )
                         )
                     },
@@ -226,7 +226,7 @@ fun AboutScreen(
 }
 
 @Composable
-private fun BoomingMusicHeader(version: String) {
+private fun AppHeader(version: String) {
     val context = LocalContext.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -237,7 +237,7 @@ private fun BoomingMusicHeader(version: String) {
             color = LocalContentColor.current.copy(alpha = 0.1f)
         ) {
             Icon(
-                painter = painterResource(R.drawable.boomingmusic_logo_monochrome),
+                painter = painterResource(R.drawable.app_logo_monochrome),
                 tint = LocalContentColor.current,
                 contentDescription = null,
                 modifier = Modifier.size(88.dp)

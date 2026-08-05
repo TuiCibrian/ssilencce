@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.shuffle
+package com.ssilencce.core.model.shuffle
 
 enum class GroupShuffleMode {
     ByGroup,

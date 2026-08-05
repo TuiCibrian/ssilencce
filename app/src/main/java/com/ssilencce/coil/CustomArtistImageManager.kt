@@ -1,4 +1,4 @@
-package com.mardous.booming.coil
+package com.ssilencce.coil
 
 import android.content.Context
 import android.net.Uri
@@ -9,11 +9,11 @@ import coil3.SingletonImageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.toBitmap
-import com.mardous.booming.coil.model.ArtistImage
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.extensions.resources.toJPG
-import com.mardous.booming.extensions.utilities.sanitize
-import com.mardous.booming.util.FileUtil
+import com.ssilencce.coil.model.ArtistImage
+import com.ssilencce.data.model.Artist
+import com.ssilencce.extensions.resources.toJPG
+import com.ssilencce.extensions.utilities.sanitize
+import com.ssilencce.util.FileUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch

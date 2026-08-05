@@ -1,9 +1,9 @@
-package com.mardous.booming.core.model.equalizer
+package com.ssilencce.core.model.equalizer
 
 import android.os.Build
 import androidx.annotation.ChecksSdkIntAtLeast
 import androidx.annotation.StringRes
-import com.mardous.booming.R
+import com.ssilencce.R
 import java.util.UUID
 
 enum class EqEngineMode(

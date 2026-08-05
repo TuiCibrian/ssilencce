@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.audio
+package com.ssilencce.core.audio
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -34,13 +34,13 @@ import androidx.media.AudioManagerCompat.getStreamMaxVolume
 import androidx.media.AudioManagerCompat.getStreamMinVolume
 import androidx.mediarouter.media.MediaControlIntent
 import androidx.mediarouter.media.MediaRouter
-import com.mardous.booming.core.model.audiodevice.AudioDevice
-import com.mardous.booming.core.model.audiodevice.AudioDeviceType
-import com.mardous.booming.core.model.audiodevice.BitPerfectState
-import com.mardous.booming.core.model.audiodevice.getDeviceType
-import com.mardous.booming.core.model.audiodevice.getMediaRouteType
-import com.mardous.booming.core.model.equalizer.VolumeState
-import com.mardous.booming.util.oem.SystemMediaControlResolver
+import com.ssilencce.core.model.audiodevice.AudioDevice
+import com.ssilencce.core.model.audiodevice.AudioDeviceType
+import com.ssilencce.core.model.audiodevice.BitPerfectState
+import com.ssilencce.core.model.audiodevice.getDeviceType
+import com.ssilencce.core.model.audiodevice.getMediaRouteType
+import com.ssilencce.core.model.equalizer.VolumeState
+import com.ssilencce.util.oem.SystemMediaControlResolver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 

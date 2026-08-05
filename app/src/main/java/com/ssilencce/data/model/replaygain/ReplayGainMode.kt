@@ -1,4 +1,4 @@
-package com.mardous.booming.data.model.replaygain
+package com.ssilencce.data.model.replaygain
 
 enum class ReplayGainMode {
     Album, Track, Off;

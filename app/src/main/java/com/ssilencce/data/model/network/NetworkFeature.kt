@@ -1,13 +1,13 @@
-package com.mardous.booming.data.model.network
+package com.ssilencce.data.model.network
 
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.core.content.getSystemService
-import com.mardous.booming.R
-import com.mardous.booming.util.Preferences
-import com.mardous.booming.util.UpdateSearchMode
+import com.ssilencce.R
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.UpdateSearchMode
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 import org.koin.core.component.inject

@@ -15,14 +15,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.extensions
+package com.ssilencce.extensions
 
 import android.content.Context
 import android.content.Intent
 import androidx.core.app.ShareCompat
 import androidx.core.net.toUri
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Song
+import com.ssilencce.R
+import com.ssilencce.data.model.Song
 
 const val MIME_TYPE_AUDIO = "audio/*"
 const val MIME_TYPE_PLAIN_TEXT = "text/plain"

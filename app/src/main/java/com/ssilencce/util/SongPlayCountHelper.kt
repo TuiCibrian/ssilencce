@@ -1,6 +1,6 @@
-package com.mardous.booming.util
+package com.ssilencce.util
 
-import com.mardous.booming.data.model.Song
+import com.ssilencce.data.model.Song
 
 class SongPlayCountHelper {
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters
+package com.ssilencce.ui.adapters
 
 import android.view.*
 import android.widget.ImageView
@@ -24,20 +24,20 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentActivity
 import androidx.recyclerview.widget.RecyclerView
-import com.mardous.booming.R
-import com.mardous.booming.coil.albumImage
-import com.mardous.booming.coil.artistImage
-import com.mardous.booming.coil.playlistImage
-import com.mardous.booming.coil.songImage
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.data.model.Artist
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.media.*
-import com.mardous.booming.ui.ISearchCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.menu.OnClickMenu
+import com.ssilencce.R
+import com.ssilencce.coil.albumImage
+import com.ssilencce.coil.artistImage
+import com.ssilencce.coil.playlistImage
+import com.ssilencce.coil.songImage
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.model.Album
+import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.*
+import com.ssilencce.ui.ISearchCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.menu.OnClickMenu
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 

@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.local.repository
+package com.ssilencce.data.local.repository
 
 import android.content.Context
 import android.database.Cursor
@@ -23,19 +23,19 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
-import com.mardous.booming.R
-import com.mardous.booming.core.sort.PlaylistSortMode
-import com.mardous.booming.data.local.room.PlaylistDao
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.local.room.PlaylistWithSongs
-import com.mardous.booming.data.local.room.SongEntity
-import com.mardous.booming.data.mapper.toSongEntity
-import com.mardous.booming.data.mapper.toSongs
-import com.mardous.booming.data.model.Playlist
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.utilities.mapIfValid
-import com.mardous.booming.extensions.utilities.takeOrDefault
-import com.mardous.booming.util.cursor.SortedCursorUtil
+import com.ssilencce.R
+import com.ssilencce.core.sort.PlaylistSortMode
+import com.ssilencce.data.local.room.PlaylistDao
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.local.room.SongEntity
+import com.ssilencce.data.mapper.toSongEntity
+import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.model.Playlist
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.utilities.mapIfValid
+import com.ssilencce.extensions.utilities.takeOrDefault
+import com.ssilencce.util.cursor.SortedCursorUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

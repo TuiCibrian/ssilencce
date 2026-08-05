@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.screen.library.folders
+package com.ssilencce.ui.screen.library.folders
 
 import android.os.Bundle
 import android.view.Menu
@@ -26,25 +26,25 @@ import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.mardous.booming.R
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.mapper.searchFilter
-import com.mardous.booming.data.model.Folder
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.databinding.FragmentDetailListBinding
-import com.mardous.booming.extensions.applyHorizontalWindowInsets
-import com.mardous.booming.extensions.materialSharedAxis
-import com.mardous.booming.extensions.media.songCountStr
-import com.mardous.booming.extensions.media.songsDurationStr
-import com.mardous.booming.extensions.navigation.searchArgs
-import com.mardous.booming.extensions.setSupportActionBar
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.core.model.shuffle.OpenShuffleMode
-import com.mardous.booming.ui.ISongCallback
-import com.mardous.booming.ui.adapters.song.SongAdapter
-import com.mardous.booming.ui.component.base.AbsMainActivityFragment
-import com.mardous.booming.ui.component.menu.onSongMenu
-import com.mardous.booming.ui.component.menu.onSongsMenu
+import com.ssilencce.R
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.mapper.searchFilter
+import com.ssilencce.data.model.Folder
+import com.ssilencce.data.model.Song
+import com.ssilencce.databinding.FragmentDetailListBinding
+import com.ssilencce.extensions.applyHorizontalWindowInsets
+import com.ssilencce.extensions.materialSharedAxis
+import com.ssilencce.extensions.media.songCountStr
+import com.ssilencce.extensions.media.songsDurationStr
+import com.ssilencce.extensions.navigation.searchArgs
+import com.ssilencce.extensions.setSupportActionBar
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.adapters.song.SongAdapter
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.menu.onSongMenu
+import com.ssilencce.ui.component.menu.onSongsMenu
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 

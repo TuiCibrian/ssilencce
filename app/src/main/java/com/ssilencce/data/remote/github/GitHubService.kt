@@ -14,11 +14,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package com.mardous.booming.data.remote.github
+package com.ssilencce.data.remote.github
 
 import android.content.Context
-import com.mardous.booming.BuildConfig
-import com.mardous.booming.data.remote.github.model.GitHubRelease
+import com.ssilencce.BuildConfig
+import com.ssilencce.data.remote.github.model.GitHubRelease
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get

@@ -1,4 +1,4 @@
-package com.mardous.booming.core.model.equalizer.autoeq
+package com.ssilencce.core.model.equalizer.autoeq
 
 import kotlinx.serialization.Serializable
 import kotlin.math.log10

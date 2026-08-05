@@ -1,7 +1,7 @@
-package com.mardous.booming.coil.model
+package com.ssilencce.coil.model
 
-import com.mardous.booming.data.local.room.PlaylistEntity
-import com.mardous.booming.data.model.Song
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.model.Song
 
 class PlaylistImage(val playlistEntity: PlaylistEntity, val songs: List<Song>) {
     override fun toString(): String {

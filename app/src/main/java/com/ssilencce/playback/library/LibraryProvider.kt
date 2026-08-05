@@ -1,25 +1,25 @@
-package com.mardous.booming.playback.library
+package com.ssilencce.playback.library
 
 import android.content.Context
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
-import com.mardous.booming.R
-import com.mardous.booming.coil.CoverProvider.Companion.ALBUM_ARTIST_COVER_PATH
-import com.mardous.booming.coil.CoverProvider.Companion.ALBUM_COVER_PATH
-import com.mardous.booming.coil.CoverProvider.Companion.ARTIST_COVER_PATH
-import com.mardous.booming.coil.CoverProvider.Companion.GENRE_COVER_PATH
-import com.mardous.booming.coil.CoverProvider.Companion.PLAYLIST_COVER_PATH
-import com.mardous.booming.coil.CoverProvider.Companion.getImageUri
-import com.mardous.booming.core.model.CategoryInfo
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.mapper.toSongs
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.extensions.media.albumInfo
-import com.mardous.booming.extensions.media.artistInfo
-import com.mardous.booming.extensions.media.asNumberOfSongs
-import com.mardous.booming.extensions.media.songCountStr
-import com.mardous.booming.playback.toMediaItems
-import com.mardous.booming.util.Preferences
+import com.ssilencce.R
+import com.ssilencce.coil.CoverProvider.Companion.ALBUM_ARTIST_COVER_PATH
+import com.ssilencce.coil.CoverProvider.Companion.ALBUM_COVER_PATH
+import com.ssilencce.coil.CoverProvider.Companion.ARTIST_COVER_PATH
+import com.ssilencce.coil.CoverProvider.Companion.GENRE_COVER_PATH
+import com.ssilencce.coil.CoverProvider.Companion.PLAYLIST_COVER_PATH
+import com.ssilencce.coil.CoverProvider.Companion.getImageUri
+import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.albumInfo
+import com.ssilencce.extensions.media.artistInfo
+import com.ssilencce.extensions.media.asNumberOfSongs
+import com.ssilencce.extensions.media.songCountStr
+import com.ssilencce.playback.toMediaItems
+import com.ssilencce.util.Preferences
 
 class LibraryProvider(private val repository: Repository) {
 

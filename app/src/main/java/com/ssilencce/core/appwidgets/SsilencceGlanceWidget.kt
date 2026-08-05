@@ -1,4 +1,4 @@
-package com.mardous.booming.core.appwidgets
+package com.ssilencce.core.appwidgets
 
 import android.content.Context
 import android.view.KeyEvent
@@ -33,13 +33,13 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
-import com.mardous.booming.R
-import com.mardous.booming.core.appwidgets.state.PlaybackState
-import com.mardous.booming.core.appwidgets.state.PlaybackStateDefinition
-import com.mardous.booming.extensions.utilities.DEFAULT_INFO_DELIMITER
-import com.mardous.booming.ui.screen.MainActivity
+import com.ssilencce.R
+import com.ssilencce.core.appwidgets.state.PlaybackState
+import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
+import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
+import com.ssilencce.ui.screen.MainActivity
 
-class BoomingGlanceWidget : GlanceAppWidget() {
+class SsilencceGlanceWidget : GlanceAppWidget() {
 
     companion object {
         private val SMALL_LAYOUT_SIZE = DpSize(width = 120.dp, height = 60.dp)

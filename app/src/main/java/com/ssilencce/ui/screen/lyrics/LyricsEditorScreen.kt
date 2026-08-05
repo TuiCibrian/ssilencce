@@ -16,7 +16,7 @@
  */
 
 @file:SuppressLint("LocalContextGetResourceValueCall")
-package com.mardous.booming.ui.screen.lyrics
+package com.ssilencce.ui.screen.lyrics
 
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -93,25 +93,25 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.mardous.booming.R
-import com.mardous.booming.data.model.Song
-import com.mardous.booming.data.model.lyrics.LyricsMode
-import com.mardous.booming.data.model.lyrics.LyricsSource
-import com.mardous.booming.data.model.lyrics.RawLyrics
-import com.mardous.booming.data.model.network.NetworkFeature
-import com.mardous.booming.extensions.hasR
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.media.isArtistNameUnknown
-import com.mardous.booming.extensions.openUrl
-import com.mardous.booming.extensions.showToast
-import com.mardous.booming.extensions.webSearch
-import com.mardous.booming.ui.component.compose.ButtonGroup
-import com.mardous.booming.ui.component.compose.DialogListItemWithRadio
-import com.mardous.booming.ui.component.compose.MediaImage
-import com.mardous.booming.ui.component.compose.ObserveAsEvent
-import com.mardous.booming.ui.component.compose.menu.MenuItem
-import com.mardous.booming.ui.component.compose.menu.OverflowMenu
-import com.mardous.booming.ui.component.compose.menu.TopAppBarMenu
+import com.ssilencce.R
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.lyrics.LyricsMode
+import com.ssilencce.data.model.lyrics.LyricsSource
+import com.ssilencce.data.model.lyrics.RawLyrics
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.extensions.hasR
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.media.isArtistNameUnknown
+import com.ssilencce.extensions.openUrl
+import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.webSearch
+import com.ssilencce.ui.component.compose.ButtonGroup
+import com.ssilencce.ui.component.compose.DialogListItemWithRadio
+import com.ssilencce.ui.component.compose.MediaImage
+import com.ssilencce.ui.component.compose.ObserveAsEvent
+import com.ssilencce.ui.component.compose.menu.MenuItem
+import com.ssilencce.ui.component.compose.menu.OverflowMenu
+import com.ssilencce.ui.component.compose.menu.TopAppBarMenu
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinActivityViewModel

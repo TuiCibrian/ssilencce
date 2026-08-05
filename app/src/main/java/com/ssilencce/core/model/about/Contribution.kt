@@ -15,10 +15,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.core.model.about
+package com.ssilencce.core.model.about
 
 import android.content.Context
-import com.mardous.booming.extensions.readStringFromAsset
+import com.ssilencce.extensions.readStringFromAsset
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json

@@ -1,10 +1,10 @@
-package com.mardous.booming.data.local.lyrics.lrc
+package com.ssilencce.data.local.lyrics.lrc
 
 import android.util.Log
-import com.mardous.booming.data.LyricsParser
-import com.mardous.booming.data.model.lyrics.LyricsActor
-import com.mardous.booming.data.model.lyrics.LyricsFile
-import com.mardous.booming.data.model.lyrics.SyncedLyrics
+import com.ssilencce.data.LyricsParser
+import com.ssilencce.data.model.lyrics.LyricsActor
+import com.ssilencce.data.model.lyrics.LyricsFile
+import com.ssilencce.data.model.lyrics.SyncedLyrics
 import java.io.Reader
 import java.util.Locale
 

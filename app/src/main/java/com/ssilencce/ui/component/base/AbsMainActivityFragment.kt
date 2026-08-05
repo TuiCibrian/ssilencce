@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.component.base
+package com.ssilencce.ui.component.base
 
 import android.content.SharedPreferences
 import android.os.Bundle
@@ -30,19 +30,19 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.mardous.booming.R
-import com.mardous.booming.core.model.MediaEvent
-import com.mardous.booming.extensions.applyWindowInsets
-import com.mardous.booming.extensions.dip
-import com.mardous.booming.extensions.isLandscape
-import com.mardous.booming.ui.screen.MainActivity
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.util.OPEN_ON_PLAY
-import com.mardous.booming.util.PLAY_ON_STARTUP_MODE
-import com.mardous.booming.util.PlayOnStartupMode
-import com.mardous.booming.util.PlayOnStartupMode.Companion.WITH_EXPANDED_PLAYER
-import com.mardous.booming.util.Preferences.requireString
+import com.ssilencce.R
+import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.extensions.applyWindowInsets
+import com.ssilencce.extensions.dip
+import com.ssilencce.extensions.isLandscape
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.util.OPEN_ON_PLAY
+import com.ssilencce.util.PLAY_ON_STARTUP_MODE
+import com.ssilencce.util.PlayOnStartupMode
+import com.ssilencce.util.PlayOnStartupMode.Companion.WITH_EXPANDED_PLAYER
+import com.ssilencce.util.Preferences.requireString
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel

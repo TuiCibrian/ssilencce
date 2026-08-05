@@ -1,7 +1,7 @@
-package com.mardous.booming.core.model.theme
+package com.ssilencce.core.model.theme
 
 import androidx.annotation.DrawableRes
-import com.mardous.booming.R
+import com.ssilencce.R
 
 enum class NowPlayingButtonStyle(
     @param:DrawableRes val play: Int,

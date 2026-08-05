@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.data.remote.lastfm.model
+package com.ssilencce.data.remote.lastfm.model
 
 import kotlinx.serialization.Serializable
 

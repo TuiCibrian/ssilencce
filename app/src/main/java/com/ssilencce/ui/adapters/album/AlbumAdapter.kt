@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming.ui.adapters.album
+package com.ssilencce.ui.adapters.album
 
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -24,25 +24,25 @@ import android.view.ViewGroup
 import androidx.annotation.LayoutRes
 import androidx.core.view.isGone
 import androidx.fragment.app.FragmentActivity
-import com.mardous.booming.R
-import com.mardous.booming.coil.DEFAULT_ALBUM_IMAGE
-import com.mardous.booming.core.model.sort.SortKey
-import com.mardous.booming.core.sort.AlbumSortMode
-import com.mardous.booming.core.sort.SongSortMode
-import com.mardous.booming.data.model.Album
-import com.mardous.booming.extensions.isActivated
-import com.mardous.booming.extensions.loadPaletteImage
-import com.mardous.booming.extensions.media.albumInfo
-import com.mardous.booming.extensions.media.asSectionName
-import com.mardous.booming.extensions.media.displayArtistName
-import com.mardous.booming.extensions.media.songCountStr
-import com.mardous.booming.extensions.utilities.buildInfoString
-import com.mardous.booming.core.model.shuffle.OpenShuffleMode
-import com.mardous.booming.ui.IAlbumCallback
-import com.mardous.booming.ui.component.base.AbsMultiSelectAdapter
-import com.mardous.booming.ui.component.base.MediaEntryViewHolder
-import com.mardous.booming.ui.component.menu.OnClickMenu
-import com.mardous.booming.ui.screen.player.PlayerViewModel
+import com.ssilencce.R
+import com.ssilencce.coil.DEFAULT_ALBUM_IMAGE
+import com.ssilencce.core.model.sort.SortKey
+import com.ssilencce.core.sort.AlbumSortMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.model.Album
+import com.ssilencce.extensions.isActivated
+import com.ssilencce.extensions.loadPaletteImage
+import com.ssilencce.extensions.media.albumInfo
+import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.media.songCountStr
+import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.ui.IAlbumCallback
+import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
+import com.ssilencce.ui.component.base.MediaEntryViewHolder
+import com.ssilencce.ui.component.menu.OnClickMenu
+import com.ssilencce.ui.screen.player.PlayerViewModel
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty

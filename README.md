@@ -1,17 +1,17 @@
 <div align="center">
 
-<img src="metadata/en-US/images/icon.png" width="160" height="160" alt="Booming Music icon">
+<img src="metadata/en-US/images/icon.png" width="160" height="160" alt="ssilencce icon">
 
-# 🎵 Booming Music
+# 🎵 ssilencce
 
 ### Modern design. Pure sound. Fully yours.
 
-[![Latest Release](https://img.shields.io/github/v/release/mardous/BoomingMusic?style=for-the-badge&label=Release&logo=github)](https://github.com/mardous/BoomingMusic/releases/latest)
-[![F-Droid version](https://img.shields.io/f-droid/v/com.mardous.booming?style=for-the-badge&label=F-Droid&logo=fdroid)](https://f-droid.org/packages/com.mardous.booming/)
-[![Downloads](https://img.shields.io/github/downloads/mardous/BoomingMusic/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/mardous/BoomingMusic/releases)
-[![License: GPL v3](https://img.shields.io/github/license/mardous/BoomingMusic?style=for-the-badge&color=orange&label=License&logo=gnu)](LICENSE.txt)
+[![Latest Release](https://img.shields.io/github/v/release/OWNER/REPO?style=for-the-badge&label=Release&logo=github)](https://github.com/OWNER/REPO/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/OWNER/REPO/total?style=for-the-badge&logo=github&label=Downloads)](https://github.com/OWNER/REPO/releases)
+[![License: GPL v3](https://img.shields.io/github/license/OWNER/REPO?style=for-the-badge&color=orange&label=License&logo=gnu)](LICENSE.txt)
 [![Contributor Covenant](https://img.shields.io/badge/Contributor_Covenant-2.1-4baaaa.svg?style=for-the-badge&logo=contributorcovenant)](CODE_OF_CONDUCT.md)
-[![Telegram Channel](https://img.shields.io/badge/Telegram-Join_Chat-blue?style=for-the-badge&logo=telegram)](https://t.me/mardousdev)
+[![F-Droid version](https://img.shields.io/f-droid/v/com.ssilencce?style=for-the-badge&label=F-Droid&logo=fdroid)](https://f-droid.org/packages/com.ssilencce/)
+<!-- Update the F-Droid badge once the fork is published on a store. -->
 
 </div>
 
@@ -22,9 +22,7 @@
 - [📥 Download & Install](#-download--install)
 - [💻 Tech Stack](#-tech-stack)
 - [🧩 Roadmap](#-roadmap)
-- [🔗 Useful Links](#-useful-links)
 - [🤝 Contributing](#-contributing)
-- [💖 Support Development](#-support-development)
 - [🙌 Credits](#-credits)
 - [⚖️ License](#-license)
 
@@ -49,45 +47,16 @@
 - 🖼️ **Automatic Artist Images** – Download artist artwork for a polished library look.
 - 🚫 **Library Filtering** – Easily exclude or include folders with blacklist/whitelist options.
 
-## 📸 Screenshots
-
-<div align="center">
-<table>
-<tr>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/1.jpg" alt="For You" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/2.jpg" alt="Songs" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/3.jpg" alt="Albums" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/4.jpg" alt="Album View" width="180"/></td>
-</tr>
-<tr>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/5.jpg" alt="Search" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/6.jpg" alt="Normal" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/7.jpg" alt="Full" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/8.jpg" alt="Gradient" width="180"/></td>
-</tr>
-<tr>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/9.jpg" alt="Plain" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/10.jpg" alt="M3" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/11.jpg" alt="Expressive" width="180"/></td>
-<td align="center" width="25%"><img src="metadata/en-US/images/phoneScreenshots/12.jpg" alt="Peek" width="180"/></td>
-</tr>
-</table>
-</div>
-
 ## 📥 Download & Install
 
-Booming Music is available for download from various sources:
+ssilencce is a fork of [Booming Music](https://github.com/mardous/BoomingMusic). Download the latest APK from:
 
 <div align="center">
 
-|                                                                                   Source                                                                                    | Details                                   |
-|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------------------|
-|                               [<img src="assets/badge-playstore.png" alt="Play Store" height="40">](https://github.com/mardous/BoomingMusic)                                | Coming soon!                              |                                     |
-|                      [<img src="assets/badge-github.png" alt="GitHub Releases" height="40">](https://github.com/mardous/BoomingMusic/releases/latest)                       | Direct APK download                       |
-|                              [<img src="assets/badge-fdroid.png" alt="F-Droid" height="40">](https://f-droid.org/packages/com.mardous.booming)                              | Fully FOSS version                        |
-|                       [<img src="assets/badge-izzyondroid.png" alt="IzzyOnDroid" height="40">](https://apt.izzysoft.de/packages/com.mardous.booming/)                       | Just like F-Droid but with faster updates |                         |
-| [<img src="assets/badge-obtainium.png" alt="Obtainium" height="40">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/mardous/BoomingMusic/) | Automatic updates from GitHub             |
-|                         [<img src="assets/badge-openapk.png" alt="OpenAPK" height="40">](https://www.openapk.net/boomingmusic/com.mardous.booming/)                         | Alternative APK source                    |
+|                                                                                    Source                                                                                    | Details                       |
+|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------:|:------------------------------|
+|                      [<img src="assets/badge-github.png" alt="GitHub Releases" height="40">](https://github.com/OWNER/REPO/releases/latest)                       | Direct APK download           |
+| [<img src="assets/badge-obtainium.png" alt="Obtainium" height="40">](https://apps.obtainium.imranr.dev/redirect?r=obtainium://add/https://github.com/OWNER/REPO/) | Automatic updates from GitHub |
 
 </div>
 
@@ -114,29 +83,9 @@ Booming Music is available for download from various sources:
 - [ ] 💿 Enhanced artist pages (separate albums and singles visually)
 - [ ] 🌐 Jellyfin & Navidrome integration
 
-## 🔗 Useful Links
-
-- 🔐 **[Requested Permissions](https://github.com/mardous/BoomingMusic/wiki/Advanced-Info#-permissions)**  
-  What the app needs and why
-
-- 🚘 **[Android Auto Setup](https://github.com/mardous/BoomingMusic/wiki/Advanced-Info#-android-auto-setup)**  
-  How to enable and troubleshoot
-
-- 🎧 **[Supported Formats](https://github.com/mardous/BoomingMusic/wiki/Advanced-Info#-supported-formats)**  
-  Compatible audio formats
-
-- 💬 **[Community](https://github.com/mardous/BoomingMusic/wiki/Community)**  
-  Users and contributors
-
-- 🌐 **[Translations](https://hosted.weblate.org/projects/booming-music/)**  
-  Help us translate Booming Music into your language
-
-- ❓ **[FAQ](https://github.com/mardous/BoomingMusic/wiki/FAQ)**  
-  Common questions
-
 ## 🤝 Contributing
 
-Booming Music is open-source — contributions are **always welcome!**
+ssilencce is open-source — contributions are **always welcome!**
 Check the [Contributing Guide](CONTRIBUTING.md) for details.
 
 If you enjoy the app or want to support its development, give the repo a ⭐ — it really helps!
@@ -144,47 +93,6 @@ You can also:
 - Open issues
 - Submit pull requests
 - Suggest new ideas
-
-**Translations:** Managed on [Hosted Weblate](https://hosted.weblate.org/projects/booming-music/).
-
-[![Translation Status](https://hosted.weblate.org/widget/booming-music/horizontal-auto.svg)](https://hosted.weblate.org/projects/booming-music/)
-
-## 💖 Support Development
-
-Booming Music is an open-source project developed and maintained with passion in my spare time.
-If you enjoy the app and the free features it offers, please consider supporting me to help cover
-development costs and dedicate more time to new features.
-
-Your support is greatly appreciated and keeps me motivated to continue improving Booming Music!
-
-<div align="center">
-
-<a href="https://ko-fi.com/christiaam" target="_blank">
-<img src="https://storage.ko-fi.com/cdn/brandasset/v2/support_me_on_kofi_red.png" alt="Support me on Ko-fi" style="border: 0px; height: 40px;" />
-</a>
-
-### ❤️ Supporters
-
-<table>
-  <tr>
-    <td>
-      <b>mbeezy</b><br/>
-      <b><a href="https://github.com/Qoojoe">KKTweex</a></b><br/>
-      <b><a href="https://github.com/FabiRich">FabiRich</a></b><br/>
-      <b><a href="https://github.com/Bloodaxe95">Bloodaxe</a></b><br/>
-      <b>Bernhard</b>
-    </td>
-    <td>
-      <b>Andreas Hirth</b><br/>
-      <b>Revolver327</b><br/>
-      <b>Peter Smith</b><br/>
-      <b>Michele Simoncelli</b><br/>
-      <b>Kristof Lengyel</b>
-    </td>
-  </tr>
-</table>
-
-</div>
 
 ## 🙌 Credits
 
@@ -202,6 +110,7 @@ Also thanks to:
 GNU General Public License - Version 3
 
 Copyright (C) 2025 Christians Martínez Alvarado
+Copyright (C) 2026 Diego Cibrian
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

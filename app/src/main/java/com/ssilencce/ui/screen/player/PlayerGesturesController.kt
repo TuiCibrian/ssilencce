@@ -1,4 +1,4 @@
-package com.mardous.booming.ui.screen.player
+package com.ssilencce.ui.screen.player
 
 import android.annotation.SuppressLint
 import android.content.Context

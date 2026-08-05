@@ -15,66 +15,66 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package com.mardous.booming
+package com.ssilencce
 
 import androidx.preference.PreferenceManager
 import androidx.room.Room
-import com.mardous.booming.coil.CustomArtistImageManager
-import com.mardous.booming.coil.CustomPlaylistImageManager
-import com.mardous.booming.core.BoomingDatabase
-import com.mardous.booming.core.audio.AudioOutputObserver
-import com.mardous.booming.data.local.EditTarget
-import com.mardous.booming.data.local.MediaStoreWriter
-import com.mardous.booming.data.local.repository.AlbumRepository
-import com.mardous.booming.data.local.repository.ArtistRepository
-import com.mardous.booming.data.local.repository.GenreRepository
-import com.mardous.booming.data.local.repository.LyricsRepository
-import com.mardous.booming.data.local.repository.NetworkRepository
-import com.mardous.booming.data.local.repository.NetworkRepositoryImpl
-import com.mardous.booming.data.local.repository.PlaylistRepository
-import com.mardous.booming.data.local.repository.RealAlbumRepository
-import com.mardous.booming.data.local.repository.RealArtistRepository
-import com.mardous.booming.data.local.repository.RealGenreRepository
-import com.mardous.booming.data.local.repository.RealLyricsRepository
-import com.mardous.booming.data.local.repository.RealPlaylistRepository
-import com.mardous.booming.data.local.repository.RealRepository
-import com.mardous.booming.data.local.repository.RealSearchRepository
-import com.mardous.booming.data.local.repository.RealSmartRepository
-import com.mardous.booming.data.local.repository.RealSongRepository
-import com.mardous.booming.data.local.repository.RealSpecialRepository
-import com.mardous.booming.data.local.repository.Repository
-import com.mardous.booming.data.local.repository.SearchRepository
-import com.mardous.booming.data.local.repository.SmartRepository
-import com.mardous.booming.data.local.repository.SongRepository
-import com.mardous.booming.data.local.repository.SpecialRepository
-import com.mardous.booming.data.model.Genre
-import com.mardous.booming.data.remote.deezer.DeezerService
-import com.mardous.booming.data.remote.github.GitHubService
-import com.mardous.booming.data.remote.jsonHttpClient
-import com.mardous.booming.data.remote.lastfm.LastFmService
-import com.mardous.booming.data.remote.listenbrainz.ListenBrainzService
-import com.mardous.booming.data.remote.lyrics.LyricsDownloadService
-import com.mardous.booming.data.remote.musicbrainz.MusicBrainzService
-import com.mardous.booming.data.remote.provideOkHttp
-import com.mardous.booming.playback.SleepTimer
-import com.mardous.booming.playback.equalizer.EqualizerManager
-import com.mardous.booming.playback.processor.BalanceAudioProcessor
-import com.mardous.booming.playback.processor.ReplayGainAudioProcessor
-import com.mardous.booming.ui.screen.equalizer.EqualizerViewModel
-import com.mardous.booming.ui.screen.info.InfoViewModel
-import com.mardous.booming.ui.screen.library.LibraryViewModel
-import com.mardous.booming.ui.screen.library.albums.AlbumDetailViewModel
-import com.mardous.booming.ui.screen.library.artists.ArtistDetailViewModel
-import com.mardous.booming.ui.screen.library.folders.FolderDetailViewModel
-import com.mardous.booming.ui.screen.library.genres.GenreDetailViewModel
-import com.mardous.booming.ui.screen.library.playlists.PlaylistDetailViewModel
-import com.mardous.booming.ui.screen.library.search.SearchViewModel
-import com.mardous.booming.ui.screen.library.years.YearDetailViewModel
-import com.mardous.booming.ui.screen.lyrics.LyricsViewModel
-import com.mardous.booming.ui.screen.player.PlayerViewModel
-import com.mardous.booming.ui.screen.sleeptimer.SleepTimerViewModel
-import com.mardous.booming.ui.screen.tageditor.TagEditorViewModel
-import com.mardous.booming.ui.screen.update.UpdateViewModel
+import com.ssilencce.coil.CustomArtistImageManager
+import com.ssilencce.coil.CustomPlaylistImageManager
+import com.ssilencce.core.SsilencceDatabase
+import com.ssilencce.core.audio.AudioOutputObserver
+import com.ssilencce.data.local.EditTarget
+import com.ssilencce.data.local.MediaStoreWriter
+import com.ssilencce.data.local.repository.AlbumRepository
+import com.ssilencce.data.local.repository.ArtistRepository
+import com.ssilencce.data.local.repository.GenreRepository
+import com.ssilencce.data.local.repository.LyricsRepository
+import com.ssilencce.data.local.repository.NetworkRepository
+import com.ssilencce.data.local.repository.NetworkRepositoryImpl
+import com.ssilencce.data.local.repository.PlaylistRepository
+import com.ssilencce.data.local.repository.RealAlbumRepository
+import com.ssilencce.data.local.repository.RealArtistRepository
+import com.ssilencce.data.local.repository.RealGenreRepository
+import com.ssilencce.data.local.repository.RealLyricsRepository
+import com.ssilencce.data.local.repository.RealPlaylistRepository
+import com.ssilencce.data.local.repository.RealRepository
+import com.ssilencce.data.local.repository.RealSearchRepository
+import com.ssilencce.data.local.repository.RealSmartRepository
+import com.ssilencce.data.local.repository.RealSongRepository
+import com.ssilencce.data.local.repository.RealSpecialRepository
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.repository.SearchRepository
+import com.ssilencce.data.local.repository.SmartRepository
+import com.ssilencce.data.local.repository.SongRepository
+import com.ssilencce.data.local.repository.SpecialRepository
+import com.ssilencce.data.model.Genre
+import com.ssilencce.data.remote.deezer.DeezerService
+import com.ssilencce.data.remote.github.GitHubService
+import com.ssilencce.data.remote.jsonHttpClient
+import com.ssilencce.data.remote.lastfm.LastFmService
+import com.ssilencce.data.remote.listenbrainz.ListenBrainzService
+import com.ssilencce.data.remote.lyrics.LyricsDownloadService
+import com.ssilencce.data.remote.musicbrainz.MusicBrainzService
+import com.ssilencce.data.remote.provideOkHttp
+import com.ssilencce.playback.SleepTimer
+import com.ssilencce.playback.equalizer.EqualizerManager
+import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.screen.info.InfoViewModel
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.screen.library.albums.AlbumDetailViewModel
+import com.ssilencce.ui.screen.library.artists.ArtistDetailViewModel
+import com.ssilencce.ui.screen.library.folders.FolderDetailViewModel
+import com.ssilencce.ui.screen.library.genres.GenreDetailViewModel
+import com.ssilencce.ui.screen.library.playlists.PlaylistDetailViewModel
+import com.ssilencce.ui.screen.library.search.SearchViewModel
+import com.ssilencce.ui.screen.library.years.YearDetailViewModel
+import com.ssilencce.ui.screen.lyrics.LyricsViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.sleeptimer.SleepTimerViewModel
+import com.ssilencce.ui.screen.tageditor.TagEditorViewModel
+import com.ssilencce.ui.screen.update.UpdateViewModel
 import org.koin.android.ext.koin.androidApplication
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
@@ -148,39 +148,39 @@ private val mainModule = module {
 
 private val roomModule = module {
     single {
-        Room.databaseBuilder(androidContext(), BoomingDatabase::class.java, "music_database.db")
+        Room.databaseBuilder(androidContext(), SsilencceDatabase::class.java, "music_database.db")
             .addMigrations(
-                BoomingDatabase.MIGRATION_1_2,
-                BoomingDatabase.MIGRATION_2_3,
-                BoomingDatabase.MIGRATION_3_4,
-                BoomingDatabase.MIGRATION_4_5,
-                BoomingDatabase.MIGRATION_5_6
+                SsilencceDatabase.MIGRATION_1_2,
+                SsilencceDatabase.MIGRATION_2_3,
+                SsilencceDatabase.MIGRATION_3_4,
+                SsilencceDatabase.MIGRATION_4_5,
+                SsilencceDatabase.MIGRATION_5_6
             )
             .build()
     }
 
     factory {
-        get<BoomingDatabase>().playlistDao()
+        get<SsilencceDatabase>().playlistDao()
     }
 
     factory {
-        get<BoomingDatabase>().playCountDao()
+        get<SsilencceDatabase>().playCountDao()
     }
 
     factory {
-        get<BoomingDatabase>().historyDao()
+        get<SsilencceDatabase>().historyDao()
     }
 
     factory {
-        get<BoomingDatabase>().queueDao()
+        get<SsilencceDatabase>().queueDao()
     }
 
     factory {
-        get<BoomingDatabase>().inclExclDao()
+        get<SsilencceDatabase>().inclExclDao()
     }
 
     factory {
-        get<BoomingDatabase>().lyricsDao()
+        get<SsilencceDatabase>().lyricsDao()
     }
 }
 
