@@ -110,6 +110,38 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 ### res/ (resources)
 - drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (~25), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
 
+## Agent Skills
+
+Preconfigured skills are installed under `.agents/skills/` (managed by the `skills` CLI, tracked in `skills-lock.json`) and `.opencode/skills/` (OpenSpec workflow). **AGENTS.md overrides every skill**: where a skill conflicts with these guidelines, the rules here win.
+
+### Installed skills catalog
+
+- **Android architecture & Gradle** (new-silvermoon): `android-architecture`, `android-data-layer`, `android-viewmodel`, `android-coroutines`, `android-gradle-logic`, `android-retrofit`, `coil-compose`, `compose-ui`, `android-accessibility`, `compose-performance-audit`, `gradle-build-performance`, `xml-to-compose-migration`
+- **Engineering** (mattpocock): `code-review`
+- **Security** (semgrep / getsentry): `code-security`, `gha-security-review`
+- **Docs** (github/awesome-copilot): `documentation-writer`
+- **Utilities** (kept from earlier set): `find-docs`, `find-skills`, `android-kotlin-core`, `android-testing-unit`
+- **OpenSpec** (fission-ai): `.opencode/skills/`: `openspec-apply-change`, `openspec-archive-change`, `openspec-explore`, `openspec-propose`, `openspec-sync-specs`, `openspec-update-change`; `.agents/skills/`: `openspec-new-change`, `openspec-continue-change`, `openspec-onboard`, `openspec-verify-change`
+
+Load a skill with the `skill` tool when a task matches its description; do not read `SKILL.md` files by hand unless verifying setup.
+
+### Stack exceptions (generic-pattern advice does not apply)
+
+Generic Android skills assume Hilt + Retrofit; this repo deliberately differs (ADRs are the source of truth). When a skill proposes a pattern that contradicts the stack, the stack wins:
+
+- **Dependency Injection:** Koin, not Hilt (ADR-006). Do not generate Hilt `@Module`/`@HiltViewModel`/`@AndroidEntryPoint` code; Koin modules live in `MainModule.kt`.
+- **Networking:** Ktor, not Retrofit idioms (ADR-020). Do not generate Retrofit `interface Api { @GET ... }` services; Ktor services live under `data/remote/`.
+- **Navigation:** Jetpack Navigation 2.9.8 + safeargs (ADR-027), not `navigation3`.
+- **Layering:** Clean-architecture advice is a guide, not a mandate — single-module app with a pragmatic repository layer (ADR-010).
+
+### Issue tracker
+
+Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context; ADRs under `docs/architecture/`. See `docs/agents/domain.md`.
+
 ## Rules for AI Agents
 
 1. **Git Integrity:** The agent must not execute commands that compromise the Git branch or alter history unless specifically demanded by the human user. In such cases, the user assumes responsibility for reviewing the changes.
