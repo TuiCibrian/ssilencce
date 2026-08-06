@@ -1,9 +1,17 @@
-# Musicolet Features Missing from ssilencce
+# Musicolet vs ssilencce — Feature Gaps & Superiorities
 
-Complete list of user-facing features present in Musicolet (see `docs/MUSICOLET_FEATURES.md`)
-but absent from ssilencce (see `docs/FEATURES.md`). Items marked **(partial)** exist in
-ssilencce in a limited or different form; the gap is described. Items in the appendix are
-not applicable to an open-source app.
+Complete comparison of user-facing features between Musicolet (see `docs/MUSICOLET_FEATURES.md`)
+and ssilencce (see `docs/FEATURES.md`).
+
+- **Part 1 — Features missing from ssilencce:** present in Musicolet, absent from ssilencce.
+- **Part 2 — Shared features, better in Musicolet:** present in both apps, but Musicolet's
+  implementation is more capable; the specific absent sub-features are cross-referenced to
+  Part 1 instead of being repeated.
+
+# Part 1 — Musicolet Features Missing from ssilencce
+
+Items marked **(partial)** exist in ssilencce in a limited or different form; the gap is
+described. Items in the appendix are not applicable to an open-source app.
 
 ## 1. Playback
 
@@ -189,8 +197,187 @@ not applicable to an open-source app.
 - **"Our other apps" / Facebook / X / Instagram / Reddit / Telegram / YouTube / WhatsApp links** — store-identity features.
 - **PairIP protection / obfuscation** — closed-source packaging concerns.
 
-## Notes
+## Notes (Part 1)
 
 - Source of gaps: `docs/FEATURES.md` (ssilencce, v-current) vs `docs/MUSICOLET_FEATURES.md` (Musicolet 6.14 build 530).
 - "PRO" markers indicate features that are paid in Musicolet; they still count as gaps for ssilencce.
 - ssilencce-only features (Media3 engine, smart shuffle modes, lyrics syllable/karaoke mode, AutoEq import, online lyrics providers, sync'd lyrics via TTML, Android Auto with media IDs, crash handler with reports, etc.) are intentionally not listed here.
+
+# Part 2 — Shared Features, Better in Musicolet
+
+Features that both apps have, but where Musicolet's implementation is more capable.
+"Better" is judged strictly on documented capabilities, not subjective quality. Where a
+specific absent sub-feature was already listed in Part 1, it is referenced instead of repeated.
+
+## 1. Sleep timer
+
+- Musicolet: HH:MM form, stop after N songs, stop after this song, gradual fade-out, timer
+  history with 1-tap reuse, reset, "stop only music if UI is foreground".
+- ssilencce: countdown, fade-out, quit-after-end.
+- See Part 1 §1 (timer history, stop-after-N, HH:MM).
+
+## 2. Audio focus handling
+
+- Musicolet: 4 levels — normal, ignore focus, ask before taking focus, resume after call.
+- ssilencce: optional ignore-audio-focus toggle only.
+
+## 3. Pause/resume on BT & USB
+
+- Musicolet: "only resume if paused by disconnect", "prevent unwanted autoplay" with strict
+  mode for buggy devices/cars, resume on wired/BT connect.
+- ssilencce: resume on connect, pause on disconnect, pause at zero volume.
+- See Part 1 §1 (resume policies, strict mode).
+
+## 4. FF/Rewind & track navigation
+
+- Musicolet: configurable FF/Rewind durations, next/prev button override to FF/Rewind for
+  headsets/remotes, FF/Rewind visible only for long audio.
+- ssilencce: configurable seek interval (5–60 s), rewind with back button.
+- See Part 1 §1 (override, long-audio-only).
+
+## 5. Playback speed & pitch
+
+- Musicolet: up to 4 decimal places, per-song play speed, simple or advanced mode.
+- ssilencce: global tempo (speed/pitch) control only.
+- See Part 1 §1 (per-song speed).
+
+## 6. Session survival
+
+- Musicolet: `TaskSaviour` service restores playback after the app process is killed;
+  "start playback when app starts".
+- ssilencce: queue/position restored on app start.
+- See Part 1 §1 (survival after process kill).
+
+## 7. Equalizer
+
+- Musicolet: own engine or System equalizer, configurable band count (3/5/10/15/31),
+  preamp, per-output-device profiles, per-Bluetooth-device EQ, EQ presets save/delete.
+- ssilencce: two engines (classic Equalizer + DynamicsProcessing) with fixed band counts,
+  bass boost, virtualizer, loudness, compressor, limiter, profiles with per-output-device
+  associations and JSON/AutoEq import-export (Musicolet lacks import/export).
+- See Part 1 §4 (band count, per-BT device).
+
+## 8. ReplayGain
+
+- Musicolet: read *and calculate* RG tags, album/track normalization, RG preamp + non-RG
+  preamp, use-embedded-tags option, skip-or-reload, "convert RG to constant volume",
+  headroom handling.
+- ssilencce: read-only (standard, iTunes and Opus R128 tags), album/track modes, preamp,
+  peak limiting on 16/24-bit PCM.
+- See Part 1 §4 (calculation, non-RG preamp, constant-volume conversion).
+
+## 9. Shuffle & repeat modes
+
+- Musicolet: on/off/randomize, shuffle behaviors (per-queue, below-current-song), shuffle
+  queue visible & reorderable, "shuffle and then…", "shuffle and play", repeat
+  load-next-and-pause.
+- ssilencce: repeat/shuffle on/off plus unique smart shuffle modes (most played, favorites,
+  forgotten, recently added, by-group, album/artist strategies).
+- See Part 1 §3 (randomize, behaviors, shuffle queue).
+
+## 10. Sorting
+
+- Musicolet: 14+ keys (title, filename, track number, album, artist, duration, year, date
+  added, date last played, date modified, most/least played, path), ignore-keyword whitelist,
+  experimental alphanumeric sorting.
+- ssilencce: locale-aware collator, article-ignoring (The/A/El…), per-entity sort keys.
+- See Part 1 §5 (extra keys, whitelist, alphanumeric).
+
+## 11. Play statistics
+
+- Musicolet: Most Played with periods (week/month/12 months/year/all time), artist stats
+  with play percentage, manual and automatic CSV export.
+- ssilencce: per-song play/skip counters, time played, top-100 flows, top albums/artists.
+- See Part 1 §5 (periods, CSV).
+
+## 12. Playback history
+
+- Musicolet: per-song playback history with clear-history for one/many songs.
+- ssilencce: history tab with configurable cutoff interval, no per-song clearing.
+- See Part 1 §2 (clear history).
+
+## 13. Queue screen
+
+- Musicolet: multiple queues with counter (position + total), scroll-to-current,
+  swipe-right-to-remove, drag-reorder incl. multiple selected songs, album-art show/hide,
+  quick search box.
+- ssilencce: Compose queue UI with highlighted current song, search, drag reordering and
+  filters.
+- See Part 1 §2 (multi-queue, counter, swipe-remove).
+
+## 14. Android Auto
+
+- Musicolet: browses folders, album-artists, composers and playlists; FF/Rewind, favorite,
+  current queue, shuffle controls; exported ContentProvider serving album art.
+- ssilencce: hierarchical browsing via media IDs and automotive descriptor.
+- See Part 1 §5 (browse types).
+
+## 15. Media notifications
+
+- Musicolet: small / big simple / big advance styles, configurable compact/expanded button
+  arrangement, upcoming songs, favorite button, replace-close-with-add-to-playlist,
+  always-expanded, broadcast art to system lock screen.
+- ssilencce: standard media notification from `PlaybackService`.
+- See Part 1 §12 (styles, upcoming songs, buttons).
+
+## 16. Widgets
+
+- Musicolet: 3 widgets (4×1, 4×1 Advanced, 4×3), horizontal resize, transparency, per-widget
+  themes ("match system", "adapt from album art", "adapt from wallpaper"), per-widget
+  configuration, empty-state layouts.
+- ssilencce: 3 Glance widgets (responsive, card, full) with dynamic colors, layout style,
+  third-line content, corner radius.
+- See Part 1 Appendix A (themes, transparency, empty states).
+
+## 17. Tag editor
+
+- Musicolet: multi-song batch editing of every field across all formats (ID3v1/v2, MP4,
+  FLAC/Vorbis, OGG/Opus, WAV, AIFF, WMA, DFF, DSF), batch artwork replace/delete.
+- ssilencce: full field editing with batch save (limited), covers via Photo Picker,
+  MusicBrainz search (Musicolet lacks MusicBrainz integration).
+- See Part 1 §7 (full batch).
+
+## 18. Backup & restore
+
+- Musicolet: single ZIP with choose-what-to-restore, automatic backup with custom folder,
+  share the ZIP, verification, restore warnings.
+- ssilencce: ZIP backups of playlists, settings, lyrics cache and custom artist images.
+- See Part 1 §15 (selective restore, automatic backup, verification).
+
+## 19. Playlist import/export
+
+- Musicolet: M3U/M3U8/PLS export and import with conflict handling (replace/keep/rename).
+- ssilencce: `.m3u` export, device playlist import.
+- See Part 1 §16 (M3U8/PLS, conflicts).
+
+## 20. Album art handling
+
+- Musicolet: change/remove per song or batch, `folder.jpg`/`cover.jpg`/`<album>.jpg`
+  fallback, fullscreen zoom viewer, save to gallery, set as lock-screen wallpaper, disable
+  loading everywhere.
+- ssilencce: embedded/folder/MediaStore art with online covers (Deezer) and artist images
+  (Musicolet lacks online covers), ignore-MediaStore option.
+- See Part 1 §7 (zoom viewer, gallery, wallpaper, disable-loading).
+
+## 21. App shortcuts
+
+- Musicolet: play/search/shuffle plus launcher shortcuts for specific albums, artists,
+  folders and playlists, ask-before-adding option.
+- ssilencce: 4 built-in dynamic shortcuts (last added, top tracks, favorites, shuffle all).
+- See Part 1 §11 (per-entity shortcuts).
+
+## 22. Search integration
+
+- Musicolet: quick search box at the bottom of every list, search history, system search
+  with `MEDIA_PLAY_FROM_SEARCH`.
+- ssilencce: global search with voice input, debounce, grouped results, filters, scoped
+  searches, `searchable.xml`.
+- See Part 1 §5 (per-list quick search).
+
+## Notes (Part 2)
+
+- Where ssilencce clearly wins or matches (lyrics with syllable/karaoke mode and online
+  providers, Material You theming, scrobbling, smart shuffle, crash handler, EQ import/export),
+  the feature is excluded from this list or the advantage is called out inline.
+- "Better" is a capability comparison from the two reference documents, not an opinion on
+  implementation quality.
