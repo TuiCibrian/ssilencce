@@ -5013,7 +5013,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** AndroidX View/ViewBinding, Material Components, custom views (MusicSlider, BaselineGridTextView, WidthFitSquareLayout).
   - **Consumed by:** All legacy fragments/adapters/activities (Abs*Fragment, adapters, dialog bindings).
   - **Related files:** res/values/, ui/component/views/, ui/adapters/.
-  - **Notes:** layout-land/ variants; Compose migration in progress (rule 14: new UI in Compose).
+  - **Notes:** layout-land/ variants; Compose migration in progress (rule 12: new UI in Compose).
 
 
 - `res/values/` — Strings (main file plus ~40 locale translations), colors (night/v31), dimens (land/large/sw600dp/xlarge), styles/themes, arrays, attrs, bools, ids, integers.

@@ -25,7 +25,7 @@ features (lyrics, equalizer, queue) are naturally Compose-shaped.
     song detail bottom sheet, shuffle-mode bottom sheet, add-to-playlist dialog,
   - preference dialogs: `SingleSelectionDialog`, `SongClickActionPreferenceDialog`,
     `ClearQueueActionPreferenceDialog`, `ActionOnCoverPreferenceDialog`.
-- Enforce by rule (AGENTS.md rule 14): *new UI additions must be Jetpack Compose*.
+- Enforce by rule (AGENTS.md rule 12): *new UI additions must be Jetpack Compose*.
 - Bridge state reactively: ViewModels are shared between legacy fragments and Compose screens
   (Koin activity-scoped); SharedPreferences becomes observable in Compose via
   `observeKeyAsState`; one-shot events use the `Event` wrapper + `ObserveAsEvent`.

@@ -26,11 +26,11 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 
 - **Build:** `./gradlew :app:assembleGithubDebug` — requires **JDK 21** (`jvmToolchain(21)`); single-module project (`:app`); AGP 9.3.1, Kotlin 2.3.21, compileSdk 37 / minSdk 26 / targetSdk 36.
 - **Lint:** `./gradlew :app:lintGithubDebug` — `lint { abortOnError = true }`, lint errors fail the build.
-- **Tests:** No test source sets are configured; do not add test configurations (rule 12).
+- **Tests:** No test source sets are configured; do not add test configurations (rule 10).
 - **Signing:** Release reads `keystore.properties` (keyAlias/keyPassword/storePassword/storeFile); if missing it silently falls back to the debug keystore.
 - **Last.fm keys:** Injected via `LASTFM_API_KEY`/`LASTFM_SECRET` from `local.properties` or environment; only for `github`/`playstore` flavors (`fdroid` gets none).
 - **Flavor source sets:** `github` and `fdroid` add `src/shared/java`; `playstore` uses its own stub (`PaxsenixSearchHelper` always returns null, no Lyrically API access).
-- **Versioning:** `versionCode`/`versionName` derive from the `Version` classes in `app/build.gradle.kts`; `check(versionCode == currentVersionCode)` fails the build if they diverge. Never change the version (rule 10).
+- **Versioning:** `versionCode`/`versionName` derive from the `Version` classes in `app/build.gradle.kts`; `check(versionCode == currentVersionCode)` fails the build if they diverge. Never change the version (rule 8).
 - **CI:** `RELEASE_TYPE=CI` disables ABI splits and appends the git hash to the version name; APK names follow `ssilencce-<version>-<flavor>-<abi>.apk`.
 
 ## Fork Notes
@@ -38,7 +38,7 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 - This repository is **ssilencce**, a fork of Booming Music; `applicationId` and `namespace` are now `com.ssilencce`.
 - Changing the `applicationId` lets the app install alongside the upstream app, but the ID is permanent once published on a store (e.g. Play Store). Changing the `namespace` additionally requires updating all `com.ssilencce.R` imports and manifest component references.
 - **Built-in updater (github flavor):** `public.properties` → `github.GITHUB_API_URL` points at the upstream repo `mardous/BoomingMusic`. Before publishing the fork, point it at the fork repository; otherwise the updater offers upstream APKs signed with a different key (install failure).
-- Use your own release keystore; do not touch `metadata/`, README, or contributor info without explicit request (rules 1, 11).
+- Use your own release keystore; do not touch `metadata/`, README, or contributor info without explicit request (rule 9).
 
 ## Repository Code Map
 
@@ -112,21 +112,18 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ## Rules for AI Agents
 
-1. **Documentation and Workflows:** The agent must not modify documentation files like `README.md` or GitHub templates/workflows unless explicitly requested.
-2. **Git Integrity:** The agent must not execute commands that compromise the Git branch or alter history unless specifically demanded by the human user. In such cases, the user assumes responsibility for reviewing the changes.
-3. **Commits and Pushing:** The agent must not perform commits or push changes unless explicitly instructed to do so.
-4. **Localization Strings:** When modifying or adding strings, only use the main strings file (located in the `values` folder). The agent is prohibited from directly modifying strings files for other languages.
-5. **Commit Message Format:** Commits must follow the format: `type(scope): short description`. 
-   - *Example:* `feat(player): add blur radius setting`
-6. **Code Comments:** Add comments only for non-obvious or complex code. Avoid commenting simple lines to keep the code readable and non-redundant.
-7. **Human Collaboration:** Always follow the rules and guidelines provided by the human collaborator.
-8. **Performance and Battery Life:** Prioritize performance and battery consumption in all changes. Always consider the impact on the user experience. The agent must inform the human collaborator if a requested change might compromise these aspects.
-9. **No Assumptions:** If in doubt, the agent must always consult the human collaborator instead of making assumptions about the code's logic or functionality.
-10. **Version Number:** It is strictly forbidden for the agent to alter the application's version number. This task is reserved for the primary development team.
-11. **Contributors and Collaborators:** The agent must not modify any information about project contributors or collaborators.
-12. **Test Configuration:** Do not attempt to add test configurations unless they are already present in the project or specifically requested by the human user.
-13. **Language:** All code, comments, and documentation produced by the agent must be in English.
-14. **UI Development:** New UI changes or additions must prioritize Jetpack Compose. The project is currently migrating from the legacy View/XML system to Compose.
+1. **Git Integrity:** The agent must not execute commands that compromise the Git branch or alter history unless specifically demanded by the human user. In such cases, the user assumes responsibility for reviewing the changes.
+2. **Commits and Pushing:** The agent must not perform commits or push changes unless explicitly instructed to do so.
+3. **Localization Strings:** When modifying or adding strings, only use the main strings file (located in the `values` folder). The agent is prohibited from directly modifying strings files for other languages.
+4. **Code Comments:** Add comments only for non-obvious or complex code. Avoid commenting simple lines to keep the code readable and non-redundant.
+5. **Human Collaboration:** Always follow the rules and guidelines provided by the human collaborator.
+6. **Performance and Battery Life:** Prioritize performance and battery consumption in all changes. Always consider the impact on the user experience. The agent must inform the human collaborator if a requested change might compromise these aspects.
+7. **No Assumptions:** If in doubt, the agent must always consult the human collaborator instead of making assumptions about the code's logic or functionality.
+8. **Version Number:** It is strictly forbidden for the agent to alter the application's version number. This task is reserved for the primary development team.
+9. **Contributors and Collaborators:** The agent must not modify any information about project contributors or collaborators.
+10. **Test Configuration:** Do not attempt to add test configurations unless they are already present in the project or specifically requested by the human user.
+11. **Language:** All code, comments, and documentation produced by the agent must be in English.
+12. **UI Development:** New UI changes or additions must prioritize Jetpack Compose. The project is currently migrating from the legacy View/XML system to Compose.
 
 <!-- context7 -->
 Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service — even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer — your training data may not reflect recent changes. Prefer this over web search for library docs.

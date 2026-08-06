@@ -21,7 +21,7 @@ string) has historically caused drift and broken update checks.
     where type offsets are Alpha=0, Beta=1, RC=2, Stable=3.
 - Enforce consistency at configuration time: `check(versionCode == currentVersionCode)` fails
   the build if `versionCode` and the derived code diverge.
-- Reserve version changes for the core team (AGENTS.md rule 10); agents and contributors must
+- Reserve version changes for the core team (AGENTS.md rule 8); agents and contributors must
   never bump the version.
 - Current version at the time of writing: `Version.Beta(1, 4, 0, 3)` → `1400103`.
 
