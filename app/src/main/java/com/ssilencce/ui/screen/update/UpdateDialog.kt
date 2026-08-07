@@ -17,8 +17,9 @@ import com.ssilencce.extensions.resources.setMarkdownText
 import com.ssilencce.extensions.showToast
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
-class UpdateDialog : BottomSheetDialogFragment(), View.OnClickListener {
-
+class UpdateDialog :
+    BottomSheetDialogFragment(),
+    View.OnClickListener {
     private var _binding: DialogUpdateInfoBinding? = null
     private val binding get() = _binding!!
     private val viewModel by activityViewModel<UpdateViewModel>()
@@ -37,10 +38,11 @@ class UpdateDialog : BottomSheetDialogFragment(), View.OnClickListener {
             } else {
                 binding.versionInfo.isVisible = false
             }
-            val dialog = BottomSheetDialog(requireContext()).also {
-                it.setContentView(binding.root)
-                it.behavior.state = BottomSheetBehavior.STATE_EXPANDED
-            }
+            val dialog =
+                BottomSheetDialog(requireContext()).also {
+                    it.setContentView(binding.root)
+                    it.behavior.state = BottomSheetBehavior.STATE_EXPANDED
+                }
             return dialog
         }
         return MaterialAlertDialogBuilder(requireContext())

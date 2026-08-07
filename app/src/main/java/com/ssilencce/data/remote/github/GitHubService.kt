@@ -26,32 +26,45 @@ import io.ktor.client.request.headers
 import io.ktor.client.statement.HttpResponse
 import kotlin.time.ExperimentalTime
 
-class GitHubService(private val context: Context, private val client: HttpClient, private val authToken: String? = null) {
-
-    private suspend fun get(url: String): HttpResponse {
-        return client.get(url) {
+class GitHubService(
+    private val context: Context,
+    private val client: HttpClient,
+    private val authToken: String? = null,
+) {
+    private suspend fun get(url: String): HttpResponse =
+        client.get(url) {
             authToken?.let {
                 headers { append("Authorization", "token $it") }
             }
         }
-    }
 
-    private suspend fun fetchStableRelease(user: String, repo: String): GitHubRelease =
-        get("${GITHUB_API_URL}repos/$user/$repo/releases/latest").body()
+    private suspend fun fetchStableRelease(
+        user: String,
+        repo: String,
+    ): GitHubRelease = get("${GITHUB_API_URL}repos/$user/$repo/releases/latest").body()
 
-    private suspend fun fetchAllReleases(user: String, repo: String, page: Int = 1, limit: Int = 20): List<GitHubRelease> =
-        get("${GITHUB_API_URL}repos/$user/$repo/releases?page=$page&per_page=$limit").body()
+    private suspend fun fetchAllReleases(
+        user: String,
+        repo: String,
+        page: Int = 1,
+        limit: Int = 20,
+    ): List<GitHubRelease> = get("${GITHUB_API_URL}repos/$user/$repo/releases?page=$page&per_page=$limit").body()
 
     @OptIn(ExperimentalTime::class)
-    suspend fun latestRelease(user: String = DEFAULT_USER, repo: String = DEFAULT_REPO, allowExperimental: Boolean = true): GitHubRelease {
+    suspend fun latestRelease(
+        user: String = DEFAULT_USER,
+        repo: String = DEFAULT_REPO,
+        allowExperimental: Boolean = true,
+    ): GitHubRelease {
         val stableRelease = fetchStableRelease(user, repo)
         if (stableRelease.hasApk && stableRelease.isNewer(context)) {
             return stableRelease
         }
         if (allowExperimental) {
-            val allReleases = fetchAllReleases(user, repo)
-                .filter { it.isPrerelease }
-                .sortedByDescending { it.publishedAt }
+            val allReleases =
+                fetchAllReleases(user, repo)
+                    .filter { it.isPrerelease }
+                    .sortedByDescending { it.publishedAt }
             return allReleases.firstOrNull()
                 ?: stableRelease
         }

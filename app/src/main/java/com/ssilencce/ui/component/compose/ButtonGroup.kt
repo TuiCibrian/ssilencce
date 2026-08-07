@@ -27,7 +27,7 @@ fun <T> ButtonGroup(
     buttonIconResolver: @Composable (T, Boolean) -> Painter? = { _, _ -> null },
     buttonTextResolver: @Composable (T) -> String = { it.toString() },
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     Row(
         modifier = modifier,
@@ -40,9 +40,10 @@ fun <T> ButtonGroup(
                 enabled = enabled,
                 checked = isChecked,
                 onCheckedChange = { onSelected(item) },
-                modifier = Modifier
-                    .weight(buttonWeight)
-                    .semantics { role = Role.RadioButton },
+                modifier =
+                    Modifier
+                        .weight(buttonWeight)
+                        .semantics { role = Role.RadioButton },
                 shapes =
                     when (index) {
                         0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
@@ -61,7 +62,7 @@ fun <T> ButtonGroup(
                 Text(
                     text = buttonTextResolver(item),
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

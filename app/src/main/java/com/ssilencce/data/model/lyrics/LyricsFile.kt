@@ -8,10 +8,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 class LyricsFile(
     val path: String,
-    val format: Format
+    val format: Format,
 ) : Parcelable {
-    enum class Format(val value: String) {
+    enum class Format(
+        val value: String,
+    ) {
         TTML("ttml"),
-        LRC("lrc")
+        LRC("lrc"),
     }
 }

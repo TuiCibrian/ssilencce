@@ -88,7 +88,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 data class SongInfoUiState(
     val isLoading: Boolean,
     val isSuccess: Boolean,
-    val info: SongInfo = SongInfo.Empty
+    val info: SongInfo = SongInfo.Empty,
 ) {
     companion object {
         val Empty = SongInfoUiState(isLoading = false, isSuccess = false)
@@ -96,7 +96,6 @@ data class SongInfoUiState(
 }
 
 class SongDetailFragment : BottomSheetDialogFragment() {
-
     private val navArgs: SongDetailFragmentArgs by navArgs()
     private val viewModel: InfoViewModel by viewModel()
 
@@ -116,11 +115,11 @@ class SongDetailFragment : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -131,9 +130,10 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                             goToDestination(
                                 requireActivity(),
                                 R.id.nav_lyrics_editor,
-                                LyricsEditorFragmentArgs.Builder(song)
+                                LyricsEditorFragmentArgs
+                                    .Builder(song)
                                     .build()
-                                    .toBundle()
+                                    .toBundle(),
                             )
                         },
                         onTagEditorClick = {
@@ -141,15 +141,14 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                                 Intent(requireContext(), SongTagEditorActivity::class.java)
                             tagEditor.putExtra(
                                 AbsTagEditorActivity.EXTRA_TARGET,
-                                EditTarget.song(song)
+                                EditTarget.song(song),
                             )
                             startActivity(tagEditor)
-                        }
+                        },
                     )
                 }
             }
         }
-    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
@@ -157,7 +156,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
         viewModel: InfoViewModel,
         song: Song,
         onTagEditorClick: () -> Unit,
-        onLyricsEditorClick: () -> Unit
+        onLyricsEditorClick: () -> Unit,
     ) {
         val context = LocalContext.current
         val uiState by viewModel.songInfoUiState.collectAsState()
@@ -168,18 +167,19 @@ class SongDetailFragment : BottomSheetDialogFragment() {
 
         BottomSheetDialogSurface {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .nestedScroll(rememberNestedScrollInteropConnection())
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .nestedScroll(rememberNestedScrollInteropConnection()),
             ) {
                 BottomSheetDefaults.DragHandle(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
                 ) {
                     item {
                         // Header containing basic song's info
@@ -189,24 +189,26 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                             trailingContent = {
                                 AnimatedVisibility(
                                     visible = uiState.isLoading,
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    modifier = Modifier.padding(start = 8.dp),
                                 ) {
                                     CircularWavyProgressIndicator(
-                                        stroke = Stroke(
-                                            width = with(LocalDensity.current) { 3.dp.toPx() },
-                                            cap = StrokeCap.Round
-                                        ),
-                                        trackStroke = Stroke(
-                                            width = with(LocalDensity.current) { 3.dp.toPx() },
-                                            cap = StrokeCap.Round
-                                        ),
+                                        stroke =
+                                            Stroke(
+                                                width = with(LocalDensity.current) { 3.dp.toPx() },
+                                                cap = StrokeCap.Round,
+                                            ),
+                                        trackStroke =
+                                            Stroke(
+                                                width = with(LocalDensity.current) { 3.dp.toPx() },
+                                                cap = StrokeCap.Round,
+                                            ),
                                         wavelength = 10.dp,
-                                        modifier = Modifier.size(32.dp)
+                                        modifier = Modifier.size(32.dp),
                                     )
                                 }
                             },
                             imageModel = song,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
 
@@ -214,17 +216,17 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                         // Related actions
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
                             FilledTonalButton(
                                 onClick = onLyricsEditorClick,
                                 enabled = uiState.isLoading.not(),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_lyrics_outline_24dp),
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.action_lyrics_editor))
@@ -233,12 +235,12 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                             Button(
                                 onClick = onTagEditorClick,
                                 enabled = uiState.isLoading.not(),
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_edit_24dp),
                                     contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(16.dp),
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(stringResource(R.string.action_tag_editor))
@@ -265,7 +267,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                                 ErrorView(
                                     iconRes = R.drawable.ic_error_24dp,
                                     text = stringResource(R.string.could_not_load_the_song_information),
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
                             }
                         }
@@ -276,105 +278,114 @@ class SongDetailFragment : BottomSheetDialogFragment() {
     }
 
     @Composable
-    private fun MetadataInfoSection(songInfo: SongInfo, modifier: Modifier = Modifier) {
+    private fun MetadataInfoSection(
+        songInfo: SongInfo,
+        modifier: Modifier = Modifier,
+    ) {
         InfoSection(
             icon = painterResource(R.drawable.ic_info_24dp),
             title = stringResource(R.string.metadata_label),
-            modifier = modifier
+            modifier = modifier,
         ) {
             InfoView(
                 title = stringResource(R.string.album),
-                content = songInfo.album
+                content = songInfo.album,
             )
 
             InfoView(
                 title = stringResource(R.string.artist),
-                content = songInfo.albumArtist
+                content = songInfo.albumArtist,
             )
 
             InfoView(
                 title = stringResource(R.string.genre),
-                content = songInfo.genre
+                content = songInfo.genre,
             )
 
             InfoView(
                 title = stringResource(R.string.year),
-                content = songInfo.albumYear
+                content = songInfo.albumYear,
             )
 
             InfoView(
                 title = stringResource(R.string.track),
-                content = songInfo.trackNumber
+                content = songInfo.trackNumber,
             )
 
             InfoView(
                 title = stringResource(R.string.disc),
-                content = songInfo.discNumber
+                content = songInfo.discNumber,
             )
 
             InfoView(
                 title = stringResource(R.string.composer),
-                content = songInfo.composer
+                content = songInfo.composer,
             )
 
             InfoView(
                 title = stringResource(R.string.conductor),
-                content = songInfo.conductor
+                content = songInfo.conductor,
             )
 
             InfoView(
                 title = stringResource(R.string.publisher),
-                content = songInfo.publisher
+                content = songInfo.publisher,
             )
 
             InfoView(
                 title = stringResource(R.string.lyricist),
-                content = songInfo.lyricist
+                content = songInfo.lyricist,
             )
 
             InfoView(
                 title = stringResource(R.string.arranger),
-                content = songInfo.arranger
+                content = songInfo.arranger,
             )
         }
     }
 
     @Composable
-    fun PlayInfoSection(songInfo: SongInfo, modifier: Modifier = Modifier) {
+    fun PlayInfoSection(
+        songInfo: SongInfo,
+        modifier: Modifier = Modifier,
+    ) {
         InfoSection(
             icon = painterResource(R.drawable.ic_play_circle_24dp),
             title = stringResource(R.string.play_info),
-            modifier = modifier
+            modifier = modifier,
         ) {
             InfoView(
                 title = stringResource(R.string.played),
-                content = songInfo.playCount
+                content = songInfo.playCount,
             )
 
             InfoView(
                 title = stringResource(R.string.skipped),
-                content = songInfo.skipCount
+                content = songInfo.skipCount,
             )
 
             InfoView(
                 title = stringResource(R.string.last_played),
-                content = songInfo.lastPlayedDate
+                content = songInfo.lastPlayedDate,
             )
         }
     }
 
     @Composable
-    private fun FileInfoSection(songInfo: SongInfo, modifier: Modifier = Modifier) {
+    private fun FileInfoSection(
+        songInfo: SongInfo,
+        modifier: Modifier = Modifier,
+    ) {
         InfoSection(
             icon = painterResource(R.drawable.ic_audio_file_24dp),
             title = stringResource(R.string.file_label),
-            modifier = modifier
+            modifier = modifier,
         ) {
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 itemVerticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 8.dp)
+                modifier = Modifier.padding(bottom = 8.dp),
             ) {
                 songInfo.audioHeaderInfo?.let {
                     if (!it.format.isNullOrBlank()) {
@@ -382,26 +393,27 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                             text = it.format,
                             style = MaterialTheme.typography.bodySmall,
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            shape = CircleShape
+                            shape = CircleShape,
                         )
                     }
                     if (it.lossless) {
                         ShapedText(
                             text = stringResource(R.string.label_loss_less),
                             style = MaterialTheme.typography.bodySmall,
-                            shape = CircleShape
+                            shape = CircleShape,
                         )
                     }
                     if (!it.bitrate.isNullOrBlank()) {
                         ShapedText(
-                            text = if (it.variableBitrate) {
-                                "${it.bitrate} • ${stringResource(R.string.label_variable_bitrate)}"
-                            } else {
-                                it.bitrate
-                            },
+                            text =
+                                if (it.variableBitrate) {
+                                    "${it.bitrate} • ${stringResource(R.string.label_variable_bitrate)}"
+                                } else {
+                                    it.bitrate
+                                },
                             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                             style = MaterialTheme.typography.bodySmall,
-                            shape = CircleShape
+                            shape = CircleShape,
                         )
                     }
                     if (!it.sampleRate.isNullOrBlank()) {
@@ -409,7 +421,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                             text = it.sampleRate,
                             containerColor = MaterialTheme.colorScheme.primaryContainer,
                             style = MaterialTheme.typography.bodySmall,
-                            shape = CircleShape
+                            shape = CircleShape,
                         )
                     }
                 }
@@ -417,39 +429,39 @@ class SongDetailFragment : BottomSheetDialogFragment() {
 
             InfoView(
                 title = stringResource(R.string.length),
-                content = songInfo.trackLength
+                content = songInfo.trackLength,
             )
 
             InfoView(
                 title = stringResource(R.string.size),
-                content = songInfo.fileSize
+                content = songInfo.fileSize,
             )
 
             songInfo.audioHeaderInfo?.let { headerInfo ->
                 InfoView(
                     title = stringResource(R.string.label_channels),
-                    content = headerInfo.channels
+                    content = headerInfo.channels,
                 )
             }
 
             InfoView(
                 title = stringResource(R.string.label_file_path),
-                content = songInfo.filePath
+                content = songInfo.filePath,
             )
 
             InfoView(
                 title = stringResource(R.string.label_last_modified),
-                content = songInfo.dateModified
+                content = songInfo.dateModified,
             )
 
             InfoView(
                 title = stringResource(R.string.comment),
-                content = songInfo.comment
+                content = songInfo.comment,
             )
 
             InfoView(
                 title = stringResource(R.string.replay_gain),
-                content = songInfo.replayGain
+                content = songInfo.replayGain,
             )
         }
     }
@@ -458,12 +470,12 @@ class SongDetailFragment : BottomSheetDialogFragment() {
     private fun InfoView(
         title: String,
         content: String?,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         if (!content.isNullOrEmpty()) {
             Row(
                 modifier = modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = title,
@@ -471,7 +483,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 )
 
                 Text(
@@ -480,7 +492,7 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.End,
                     color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1.5f)
+                    modifier = Modifier.weight(1.5f),
                 )
             }
         }
@@ -491,16 +503,16 @@ class SongDetailFragment : BottomSheetDialogFragment() {
         icon: Painter,
         title: String,
         modifier: Modifier = Modifier,
-        content: @Composable ColumnScope.() -> Unit
+        content: @Composable ColumnScope.() -> Unit,
     ) {
         TitledCard(
             title = title,
             icon = icon,
-            modifier = modifier
+            modifier = modifier,
         ) { contentPadding ->
             Column(
                 verticalArrangement = Arrangement.spacedBy(4.dp),
-                modifier = Modifier.padding(contentPadding)
+                modifier = Modifier.padding(contentPadding),
             ) {
                 content()
             }

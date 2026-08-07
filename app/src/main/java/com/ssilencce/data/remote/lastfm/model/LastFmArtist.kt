@@ -3,10 +3,16 @@ package com.ssilencce.data.remote.lastfm.model
 import kotlinx.serialization.Serializable
 
 @Serializable
-class LastFmArtist(val artist: Artist?) {
+class LastFmArtist(
+    val artist: Artist?,
+) {
     @Serializable
-    class Artist(val bio: Bio?)
+    class Artist(
+        val bio: Bio?,
+    )
 
     @Serializable
-    class Bio(val content: String?)
+    class Bio(
+        val content: String?,
+    )
 }

@@ -30,18 +30,17 @@ import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 class SsilencceRenderersFactory(
     context: Context,
     private val balanceProcessor: BalanceAudioProcessor,
-    private val replayGainProcessor: ReplayGainAudioProcessor
+    private val replayGainProcessor: ReplayGainAudioProcessor,
 ) : DefaultRenderersFactory(context) {
-
     override fun buildAudioSink(
         context: Context,
         enableFloatOutput: Boolean,
-        enableAudioOutputPlaybackParams: Boolean
-    ): AudioSink {
-        return DefaultAudioSink.Builder(context)
+        enableAudioOutputPlaybackParams: Boolean,
+    ): AudioSink =
+        DefaultAudioSink
+            .Builder(context)
             .setAudioProcessors(arrayOf(balanceProcessor, replayGainProcessor))
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
             .build()
-    }
 }

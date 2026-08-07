@@ -16,9 +16,8 @@ data class EqProfile(
     @SerialName("associations")
     val associations: Set<AudioDeviceType> = emptySet(),
     val isCustom: Boolean = false,
-    val isAutoEq: Boolean = false
+    val isAutoEq: Boolean = false,
 ) {
-
     val isValid: Boolean
         get() = name.isNotBlank() && levels.isNotEmpty()
 

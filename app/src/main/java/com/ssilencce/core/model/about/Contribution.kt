@@ -32,22 +32,28 @@ class Contribution(
     @SerialName("contrib_image")
     val image: String? = null,
     @SerialName("contrib_url")
-    val url: String? = null
+    val url: String? = null,
 ) {
-
     val imageUrl: String?
-        get() = image?.let {
-            if (!it.startsWith("https://")) {
-                "file:///android_asset/images/$image"
-            } else it
-        }
+        get() =
+            image?.let {
+                if (!it.startsWith("https://")) {
+                    "file:///android_asset/images/$image"
+                } else {
+                    it
+                }
+            }
 
     companion object {
-        fun loadContributions(context: Context, assetName: String): List<Contribution> {
+        fun loadContributions(
+            context: Context,
+            assetName: String,
+        ): List<Contribution> {
             return try {
-                val json = Json {
-                    ignoreUnknownKeys = true
-                }
+                val json =
+                    Json {
+                        ignoreUnknownKeys = true
+                    }
                 val contributionsContent = context.readStringFromAsset(assetName)
                 if (contributionsContent.isNullOrEmpty()) {
                     return emptyList()

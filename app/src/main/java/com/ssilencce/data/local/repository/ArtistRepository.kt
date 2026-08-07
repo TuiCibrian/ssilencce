@@ -31,122 +31,143 @@ import com.ssilencce.util.Preferences
 
 interface ArtistRepository {
     fun artists(): List<Artist>
+
     fun artists(query: String): List<Artist>
+
     fun artist(artistId: Long): Artist
+
     fun albumArtists(): List<Artist>
+
     fun albumArtist(artistName: String): Artist
+
     fun albumArtists(query: String): List<Artist>
+
     fun similarAlbumArtists(artist: Artist): List<Artist>
 }
 
 class RealArtistRepository(
     private val songRepository: RealSongRepository,
-    private val albumRepository: RealAlbumRepository
+    private val albumRepository: RealAlbumRepository,
 ) : ArtistRepository {
-
     private val filterSingles: Boolean
         get() = Preferences.ignoreSingles
 
     override fun artists(): List<Artist> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER)
-        )
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER),
+            )
         val minimumSongCount = Preferences.minimumSongCountForArtist
-        val artists = splitIntoArtists(albumRepository.splitIntoAlbums(songs)).filter {
-            it.songCount >= minimumSongCount
-        }
+        val artists =
+            splitIntoArtists(albumRepository.splitIntoAlbums(songs)).filter {
+                it.songCount >= minimumSongCount
+            }
         return sortArtists(artists)
     }
 
     override fun artist(artistId: Long): Artist {
         if (artistId == Artist.VARIOUS_ARTISTS_ID) {
             // Get Various Artists
-            val songs = songRepository.songs(
-                songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER)
-            )
-            val albums = with(AlbumSortMode.ArtistAlbums) {
-                albumRepository.splitIntoAlbums(songs)
-                    .filter { Artist.VARIOUS_ARTISTS_DISPLAY_NAME.equals(it.albumArtistName, ignoreCase = true) }
-                    .sorted()
-            }
+            val songs =
+                songRepository.songs(
+                    songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER),
+                )
+            val albums =
+                with(AlbumSortMode.ArtistAlbums) {
+                    albumRepository
+                        .splitIntoAlbums(songs)
+                        .filter { Artist.VARIOUS_ARTISTS_DISPLAY_NAME.equals(it.albumArtistName, ignoreCase = true) }
+                        .sorted()
+                }
             return Artist(Artist.VARIOUS_ARTISTS_ID, albums, filterSingles)
         }
 
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(
-                AudioColumns.ARTIST_ID + "=?",
-                arrayOf(artistId.toString()),
-                DEFAULT_SORT_ORDER
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(
+                    AudioColumns.ARTIST_ID + "=?",
+                    arrayOf(artistId.toString()),
+                    DEFAULT_SORT_ORDER,
+                ),
             )
-        )
         return Artist(
             id = artistId,
-            albums = albumRepository.splitIntoAlbums(
-                songs = songs,
-                sortMode = AlbumSortMode.ArtistAlbums
-            ),
-            filterSingles = filterSingles
+            albums =
+                albumRepository.splitIntoAlbums(
+                    songs = songs,
+                    sortMode = AlbumSortMode.ArtistAlbums,
+                ),
+            filterSingles = filterSingles,
         )
     }
 
     override fun artists(query: String): List<Artist> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(AudioColumns.ARTIST + " LIKE ?", arrayOf("%$query%"), DEFAULT_SORT_ORDER)
-        )
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(AudioColumns.ARTIST + " LIKE ?", arrayOf("%$query%"), DEFAULT_SORT_ORDER),
+            )
         val artists = splitIntoArtists(albumRepository.splitIntoAlbums(songs))
         return sortArtists(artists)
     }
 
     override fun albumArtists(): List<Artist> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(null, null, "lower(${AudioColumns.ALBUM_ARTIST})")
-        )
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(null, null, "lower(${AudioColumns.ALBUM_ARTIST})"),
+            )
         val minimumSongCount = Preferences.minimumSongCountForArtist
-        val albumArtists = splitIntoAlbumArtists(albumRepository.splitIntoAlbums(songs)).filter {
-            it.songCount >= minimumSongCount
-        }
+        val albumArtists =
+            splitIntoAlbumArtists(albumRepository.splitIntoAlbums(songs)).filter {
+                it.songCount >= minimumSongCount
+            }
         return sortArtists(albumArtists)
     }
 
     override fun albumArtist(artistName: String): Artist {
         if (Artist.VARIOUS_ARTISTS_DISPLAY_NAME.equals(artistName, ignoreCase = true)) {
             // Get Various Artists
-            val songs = songRepository.songs(
-                songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER)
-            )
-            val albums = with(AlbumSortMode.ArtistAlbums) {
-                albumRepository.splitIntoAlbums(songs)
-                    .filter { Artist.VARIOUS_ARTISTS_DISPLAY_NAME.equals(it.albumArtistName, ignoreCase = true) }
-                    .sorted()
-            }
+            val songs =
+                songRepository.songs(
+                    songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER),
+                )
+            val albums =
+                with(AlbumSortMode.ArtistAlbums) {
+                    albumRepository
+                        .splitIntoAlbums(songs)
+                        .filter { Artist.VARIOUS_ARTISTS_DISPLAY_NAME.equals(it.albumArtistName, ignoreCase = true) }
+                        .sorted()
+                }
             return Artist(Artist.VARIOUS_ARTISTS_ID, albums, filterSingles, isAlbumArtist = true)
         }
 
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(
-                "lower(${AudioColumns.ALBUM_ARTIST})=?",
-                arrayOf(artistName.lowercase()),
-                DEFAULT_SORT_ORDER
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(
+                    "lower(${AudioColumns.ALBUM_ARTIST})=?",
+                    arrayOf(artistName.lowercase()),
+                    DEFAULT_SORT_ORDER,
+                ),
             )
-        )
         return Artist(
             artistName = artistName,
-            albums = albumRepository.splitIntoAlbums(
-                songs = songs,
-                sortMode = AlbumSortMode.ArtistAlbums
-            ),
-            filterSingles = filterSingles
+            albums =
+                albumRepository.splitIntoAlbums(
+                    songs = songs,
+                    sortMode = AlbumSortMode.ArtistAlbums,
+                ),
+            filterSingles = filterSingles,
         )
     }
 
     override fun albumArtists(query: String): List<Artist> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(
-                "${AudioColumns.ALBUM_ARTIST} LIKE ?",
-                arrayOf("%$query%"),
-                DEFAULT_SORT_ORDER
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(
+                    "${AudioColumns.ALBUM_ARTIST} LIKE ?",
+                    arrayOf("%$query%"),
+                    DEFAULT_SORT_ORDER,
+                ),
             )
-        )
         val artists = splitIntoAlbumArtists(albumRepository.splitIntoAlbums(songs))
         return sortArtists(artists)
     }
@@ -162,38 +183,41 @@ class RealArtistRepository(
             selectionBuilder.append(",?")
         }
         selectionBuilder.append(")")
-        val songs = songRepository.makeSongCursor(
-            MediaQueryDispatcher()
-                .setProjection(RealSongRepository.getBaseProjection())
-                .setSelection(selectionBuilder.toString())
-                .setSelectionArguments(genreNames.toTypedArray())
-                .addSelection("(${AudioColumns.ALBUM_ARTIST} NOT NULL AND ${AudioColumns.ALBUM_ARTIST} != ?)")
-                .addArguments(artist.name)
-        ).let {
-            songRepository.songs(it)
-        }
+        val songs =
+            songRepository
+                .makeSongCursor(
+                    MediaQueryDispatcher()
+                        .setProjection(RealSongRepository.getBaseProjection())
+                        .setSelection(selectionBuilder.toString())
+                        .setSelectionArguments(genreNames.toTypedArray())
+                        .addSelection("(${AudioColumns.ALBUM_ARTIST} NOT NULL AND ${AudioColumns.ALBUM_ARTIST} != ?)")
+                        .addArguments(artist.name),
+                ).let {
+                    songRepository.songs(it)
+                }
         return splitIntoAlbumArtists(albumRepository.splitIntoAlbums(songs, sorted = false)).take(MAX_SIMILAR_ARTISTS)
     }
 
     private fun splitIntoArtists(albums: List<Album>): List<Artist> {
         val filterSingles = this.filterSingles
-        return albums.groupBy { it.artistId }
+        return albums
+            .groupBy { it.artistId }
             .map {
                 Artist(
                     id = it.key,
                     albums = with(AlbumSortMode.ArtistAlbums) { it.value.sorted() },
-                    filterSingles = filterSingles
+                    filterSingles = filterSingles,
                 )
             }
     }
 
     fun splitIntoAlbumArtists(albums: List<Album>): List<Artist> {
         val filterSingles = this.filterSingles
-        return albums.groupBy { it.albumArtistName?.collapseSpaces()?.lowercase() }
+        return albums
+            .groupBy { it.albumArtistName?.collapseSpaces()?.lowercase() }
             .filterNot {
                 it.key.isNullOrEmpty()
-            }
-            .map { entry ->
+            }.map { entry ->
                 val currentAlbums = entry.value
                 if (currentAlbums.isNotEmpty()) {
                     val artistName = currentAlbums[0].albumArtistName?.collapseSpaces()
@@ -209,9 +233,7 @@ class RealArtistRepository(
             }
     }
 
-    private fun sortArtists(artists: List<Artist>): List<Artist> {
-        return with(ArtistSortMode.AllArtists) { artists.sorted() }
-    }
+    private fun sortArtists(artists: List<Artist>): List<Artist> = with(ArtistSortMode.AllArtists) { artists.sorted() }
 
     companion object {
         private const val MAX_SIMILAR_ARTISTS = 10

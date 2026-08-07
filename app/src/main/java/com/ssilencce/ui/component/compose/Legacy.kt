@@ -10,12 +10,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun BottomSheetDialogSurface(
     modifier: Modifier = Modifier,
-    content: @Composable (() -> Unit)
+    content: @Composable (() -> Unit),
 ) {
     Surface(
         modifier = modifier,
         color = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-        content = content
+        content = content,
     )
 }

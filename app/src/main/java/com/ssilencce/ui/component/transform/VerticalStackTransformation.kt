@@ -4,7 +4,10 @@ import android.view.View
 import androidx.viewpager.widget.ViewPager
 
 class VerticalStackTransformer : ViewPager.PageTransformer {
-    override fun transformPage(page: View, position: Float) {
+    override fun transformPage(
+        page: View,
+        position: Float,
+    ) {
         page.apply {
             if (position >= 0) {
                 scaleX = (0.9f - 0.05f * position)
@@ -13,6 +16,5 @@ class VerticalStackTransformer : ViewPager.PageTransformer {
                 translationY = -30 * position
             }
         }
-
     }
 }

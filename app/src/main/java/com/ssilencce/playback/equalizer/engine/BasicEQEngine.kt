@@ -7,11 +7,13 @@ import com.ssilencce.core.model.equalizer.EqProfile
 import com.ssilencce.core.model.equalizer.LimiterState
 import kotlin.math.roundToInt
 
-class BasicEQEngine(sessionId: Int) : EQEngine(sessionId) {
-
-    private var equalizer: Equalizer? = execOpCatchingWithTag("Create Equalizer") {
-        Equalizer(0, sessionId)
-    }
+class BasicEQEngine(
+    sessionId: Int,
+) : EQEngine(sessionId) {
+    private var equalizer: Equalizer? =
+        execOpCatchingWithTag("Create Equalizer") {
+            Equalizer(0, sessionId)
+        }
 
     override val isEnabled: Boolean
         get() = execOpCatching(equalizer, false) { it.enabled }
@@ -20,24 +22,27 @@ class BasicEQEngine(sessionId: Int) : EQEngine(sessionId) {
     override val isLimiterSupported: Boolean = false
 
     override val bandCapabilities: EqBandCapabilities
-        get() = execOpCatching(equalizer, EqBandCapabilities.Empty) { eq ->
-            val bandCount = eq.numberOfBands.toInt()
-            val bandLevelRange = eq.bandLevelRange.map { (it / MILLIBELS_FACTOR).toFloat() }
-            val bandFrequenciesInHz = (0 until bandCount).map {
-                val centerFreqInMilliHertz = eq.getCenterFreq(it.toShort())
-                (centerFreqInMilliHertz / MILLIHERTZ_FACTOR) // convert to Hz
+        get() =
+            execOpCatching(equalizer, EqBandCapabilities.Empty) { eq ->
+                val bandCount = eq.numberOfBands.toInt()
+                val bandLevelRange = eq.bandLevelRange.map { (it / MILLIBELS_FACTOR).toFloat() }
+                val bandFrequenciesInHz =
+                    (0 until bandCount).map {
+                        val centerFreqInMilliHertz = eq.getCenterFreq(it.toShort())
+                        (centerFreqInMilliHertz / MILLIHERTZ_FACTOR) // convert to Hz
+                    }
+                EqBandCapabilities(
+                    bandRange = bandLevelRange[0]..bandLevelRange[1],
+                    bandConfigurations =
+                        setOf(
+                            EqBandCapabilities.BandConfiguration(
+                                bandCount = bandCount,
+                                bandFrequenciesInHz = bandFrequenciesInHz.toIntArray(),
+                            ),
+                        ),
+                    maxBandCountInNormalMode = bandCount,
+                )
             }
-            EqBandCapabilities(
-                bandRange = bandLevelRange[0]..bandLevelRange[1],
-                bandConfigurations = setOf(
-                    EqBandCapabilities.BandConfiguration(
-                        bandCount = bandCount,
-                        bandFrequenciesInHz = bandFrequenciesInHz.toIntArray()
-                    )
-                ),
-                maxBandCountInNormalMode = bandCount
-            )
-        }
 
     override fun setEnabled(isEnabled: Boolean) {
         execOpCatching(equalizer, Unit) { eq ->
@@ -59,7 +64,10 @@ class BasicEQEngine(sessionId: Int) : EQEngine(sessionId) {
         }
     }
 
-    override fun setBandGain(bandIndex: Int, bandGainInDecibels: Float) {
+    override fun setBandGain(
+        bandIndex: Int,
+        bandGainInDecibels: Float,
+    ) {
         execOpCatching(equalizer, Unit) { eq ->
             val bandGainInMillibels = (bandGainInDecibels * MILLIBELS_FACTOR).roundToInt()
             eq.setBandLevel(bandIndex.toShort(), bandGainInMillibels.toShort())

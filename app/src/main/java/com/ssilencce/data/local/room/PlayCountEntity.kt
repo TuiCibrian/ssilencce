@@ -50,5 +50,5 @@ data class PlayCountEntity(
     @ColumnInfo(name = "play_count")
     var playCount: Int,
     @ColumnInfo(name = "skip_count")
-    var skipCount: Int
+    var skipCount: Int,
 )

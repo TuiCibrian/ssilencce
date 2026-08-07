@@ -29,13 +29,15 @@ import kotlinx.serialization.Serializable
 @Keep
 @Parcelize
 @Serializable
-class CategoryInfo(val category: Category, var visible: Boolean) : Parcelable {
-
+class CategoryInfo(
+    val category: Category,
+    var visible: Boolean,
+) : Parcelable {
     @Serializable
     enum class Category(
         @IdRes val id: Int,
         @StringRes val titleRes: Int,
-        @DrawableRes val iconRes: Int
+        @DrawableRes val iconRes: Int,
     ) {
         Home(R.id.nav_home, R.string.home_label, R.drawable.icon_home),
         Songs(R.id.nav_songs, R.string.songs_label, R.drawable.icon_music),
@@ -44,7 +46,7 @@ class CategoryInfo(val category: Category, var visible: Boolean) : Parcelable {
         Playlists(R.id.nav_playlists, R.string.playlists_label, R.drawable.icon_playlist),
         Genres(R.id.nav_genres, R.string.genres_label, R.drawable.icon_genre),
         Years(R.id.nav_years, R.string.release_years_label, R.drawable.icon_year),
-        Folders(R.id.nav_folders, R.string.folders_label, R.drawable.icon_folder)
+        Folders(R.id.nav_folders, R.string.folders_label, R.drawable.icon_folder),
     }
 
     companion object {

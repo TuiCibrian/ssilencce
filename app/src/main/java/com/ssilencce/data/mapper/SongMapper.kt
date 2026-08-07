@@ -23,24 +23,20 @@ import com.ssilencce.data.local.room.PlaylistEntity
 import com.ssilencce.data.local.room.SongEntity
 import com.ssilencce.data.model.Song
 
-fun List<SongEntity>.toSongs(): List<Song> {
-    return map { it.toSong() }
-}
+fun List<SongEntity>.toSongs(): List<Song> = map { it.toSong() }
 
-fun List<Song>.toSongsEntity(playlistEntity: PlaylistEntity): List<SongEntity> {
-    return map {
+fun List<Song>.toSongsEntity(playlistEntity: PlaylistEntity): List<SongEntity> =
+    map {
         it.toSongEntity(playlistEntity.playListId)
     }
-}
 
-fun List<Song>.toSongsEntity(playlistId: Long): List<SongEntity> {
-    return map {
+fun List<Song>.toSongsEntity(playlistId: Long): List<SongEntity> =
+    map {
         it.toSongEntity(playlistId)
     }
-}
 
-fun Song.toHistoryEntity(timePlayed: Long): HistoryEntity {
-    return HistoryEntity(
+fun Song.toHistoryEntity(timePlayed: Long): HistoryEntity =
+    HistoryEntity(
         id = id,
         data = data,
         title = title,
@@ -56,12 +52,11 @@ fun Song.toHistoryEntity(timePlayed: Long): HistoryEntity {
         artistName = artistName,
         albumArtistName = albumArtistName,
         genreName = genreName,
-        timePlayed = timePlayed
+        timePlayed = timePlayed,
     )
-}
 
-fun Song.toSongEntity(playListId: Long): SongEntity {
-    return SongEntity(
+fun Song.toSongEntity(playListId: Long): SongEntity =
+    SongEntity(
         playlistCreatorId = playListId,
         id = id,
         data = data,
@@ -77,12 +72,11 @@ fun Song.toSongEntity(playListId: Long): SongEntity {
         artistId = artistId,
         artistName = artistName,
         albumArtist = albumArtistName,
-        genreName = genreName
+        genreName = genreName,
     )
-}
 
-fun SongEntity.toSong(): Song {
-    return Song(
+fun SongEntity.toSong(): Song =
+    Song(
         id = id,
         data = data,
         title = title,
@@ -97,12 +91,11 @@ fun SongEntity.toSong(): Song {
         artistId = artistId,
         artistName = artistName,
         albumArtistName = albumArtist,
-        genreName = genreName
+        genreName = genreName,
     )
-}
 
-fun PlayCountEntity.toSong(): Song {
-    return Song(
+fun PlayCountEntity.toSong(): Song =
+    Song(
         id = id,
         data = data,
         title = title,
@@ -117,12 +110,11 @@ fun PlayCountEntity.toSong(): Song {
         artistId = artistId,
         artistName = artistName,
         albumArtistName = albumArtistName,
-        genreName = genreName
+        genreName = genreName,
     )
-}
 
-fun HistoryEntity.toSong(): Song {
-    return Song(
+fun HistoryEntity.toSong(): Song =
+    Song(
         id = id,
         data = data,
         title = title,
@@ -137,12 +129,15 @@ fun HistoryEntity.toSong(): Song {
         artistId = artistId,
         artistName = artistName,
         albumArtistName = albumArtistName,
-        genreName = genreName
+        genreName = genreName,
     )
-}
 
-fun Song.toPlayCount(timePlayed: Long = -1, playCount: Int = 0, skipCount: Int = 0): PlayCountEntity {
-    return PlayCountEntity(
+fun Song.toPlayCount(
+    timePlayed: Long = -1,
+    playCount: Int = 0,
+    skipCount: Int = 0,
+): PlayCountEntity =
+    PlayCountEntity(
         id = id,
         data = data,
         title = title,
@@ -160,6 +155,5 @@ fun Song.toPlayCount(timePlayed: Long = -1, playCount: Int = 0, skipCount: Int =
         genreName = genreName,
         timePlayed = timePlayed,
         playCount = playCount,
-        skipCount = skipCount
+        skipCount = skipCount,
     )
-}

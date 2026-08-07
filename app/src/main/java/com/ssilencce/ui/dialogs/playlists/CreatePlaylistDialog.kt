@@ -41,7 +41,6 @@ import com.ssilencce.ui.screen.library.LibraryViewModel
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class CreatePlaylistDialog : DialogFragment() {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val songs: List<Song> by extraNotNull(EXTRA_SONGS, arrayListOf())
 
@@ -51,7 +50,7 @@ class CreatePlaylistDialog : DialogFragment() {
     private var callback: PlaylistCreatedCallback? = null
     private var selectedCoverUri: Uri? = null
 
-    private val imagePickerLauncher = 
+    private val imagePickerLauncher =
         registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             if (uri != null) {
                 selectedCoverUri = uri
@@ -61,14 +60,15 @@ class CreatePlaylistDialog : DialogFragment() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         _binding = DialogCreatePlaylistBinding.inflate(layoutInflater)
-        
-        val message = if (songs.isEmpty()) {
-            getString(R.string.create_a_playlist)
-        } else if (songs.size == 1) {
-            getString(R.string.create_a_playlist_with_one_song)
-        } else {
-            getString(R.string.create_a_playlist_with_x_songs, songs.size)
-        }
+
+        val message =
+            if (songs.isEmpty()) {
+                getString(R.string.create_a_playlist)
+            } else if (songs.size == 1) {
+                getString(R.string.create_a_playlist_with_one_song)
+            } else {
+                getString(R.string.create_a_playlist_with_x_songs, songs.size)
+            }
 
         setupViews()
 
@@ -78,8 +78,9 @@ class CreatePlaylistDialog : DialogFragment() {
             .setView(binding.root)
             .setPositiveButton(R.string.create_action, null)
             .setNegativeButton(android.R.string.cancel, null)
-            .create().apply {
-                setOnShowListener { 
+            .create()
+            .apply {
+                setOnShowListener {
                     getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
                         createPlaylist()
                     }
@@ -91,7 +92,7 @@ class CreatePlaylistDialog : DialogFragment() {
         // Set up cover image selection
         binding.selectCoverFab.setOnClickListener {
             imagePickerLauncher.launch(
-                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly),
             )
         }
 
@@ -108,38 +109,44 @@ class CreatePlaylistDialog : DialogFragment() {
     }
 
     private fun createPlaylist() {
-        val playlistName = binding.playlistNameEditText.text?.toString()?.trim()
+        val playlistName =
+            binding.playlistNameEditText.text
+                ?.toString()
+                ?.trim()
         if (playlistName.isNullOrBlank()) {
             binding.playlistNameLayout.error = getString(R.string.playlist_name_cannot_be_empty)
             return
         }
 
-        val description = binding.playlistDescriptionEditText.text?.toString()?.trim()
+        val description =
+            binding.playlistDescriptionEditText.text
+                ?.toString()
+                ?.trim()
         val customCoverUri = selectedCoverUri?.toString()
 
         // Use the new createCustomPlaylist method
-        libraryViewModel.createCustomPlaylist(
-            playlistName = playlistName,
-            customCoverUri = customCoverUri,
-            description = if (description.isNullOrEmpty()) null else description,
-            songs = songs
-        ).observe(this) { result ->
-            if (result.isWorking) {
-                return@observe
-            }
+        libraryViewModel
+            .createCustomPlaylist(
+                playlistName = playlistName,
+                customCoverUri = customCoverUri,
+                description = if (description.isNullOrEmpty()) null else description,
+                songs = songs,
+            ).observe(this) { result ->
+                if (result.isWorking) {
+                    return@observe
+                }
 
-            if (result.playlistCreated) {
-                showToast(getString(R.string.created_playlist_x, result.playlistName))
-                callback?.playlistCreated()
-                dismiss()
-            } else {
-                showToast(getString(R.string.playlist_exists, result.playlistName))
+                if (result.playlistCreated) {
+                    showToast(getString(R.string.created_playlist_x, result.playlistName))
+                    callback?.playlistCreated()
+                    dismiss()
+                } else {
+                    showToast(getString(R.string.playlist_exists, result.playlistName))
+                }
             }
-        }
     }
 
-    fun callback(playlistCreatedCallback: PlaylistCreatedCallback) =
-        apply { this.callback = playlistCreatedCallback }
+    fun callback(playlistCreatedCallback: PlaylistCreatedCallback) = apply { this.callback = playlistCreatedCallback }
 
     interface PlaylistCreatedCallback {
         fun playlistCreated()

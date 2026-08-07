@@ -7,21 +7,24 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.painter.Painter
 
 @Immutable
-sealed class MenuItem(val enabled: Boolean, val visible: Boolean) {
+sealed class MenuItem(
+    val enabled: Boolean,
+    val visible: Boolean,
+) {
     sealed class Button(
         val text: String,
         val icon: Painter? = null,
         val dangerous: Boolean = false,
         val onClick: () -> Unit,
         enabled: Boolean = true,
-        visible: Boolean = true
+        visible: Boolean = true,
     ) : MenuItem(enabled, visible) {
         class Action(
             text: String,
             icon: Painter,
             onClick: () -> Unit,
             enabled: Boolean = true,
-            visible: Boolean = true
+            visible: Boolean = true,
         ) : Button(text, icon, false, onClick, enabled, visible)
 
         class DropDown(
@@ -30,7 +33,7 @@ sealed class MenuItem(val enabled: Boolean, val visible: Boolean) {
             dangerous: Boolean = false,
             onClick: () -> Unit,
             enabled: Boolean = true,
-            visible: Boolean = true
+            visible: Boolean = true,
         ) : Button(text, icon, dangerous, onClick, enabled, visible)
 
         class Checkable(
@@ -40,7 +43,7 @@ sealed class MenuItem(val enabled: Boolean, val visible: Boolean) {
             val isSingleSelection: Boolean = false,
             val onCheckedChange: (Boolean) -> Unit,
             enabled: Boolean = true,
-            visible: Boolean = true
+            visible: Boolean = true,
         ) : Button(text, icon, false, { onCheckedChange(!isChecked) }, enabled, visible)
     }
 

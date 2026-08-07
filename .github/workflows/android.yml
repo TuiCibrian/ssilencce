@@ -41,6 +41,9 @@ jobs:
       - name: Run Lint
         run: ./gradlew lint
 
+      - name: Run ktlint
+        run: ./gradlew ktlintCheck
+
   build:
     runs-on: ubuntu-latest
     steps:

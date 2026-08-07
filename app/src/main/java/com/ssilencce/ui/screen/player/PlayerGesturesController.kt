@@ -13,70 +13,72 @@ import kotlin.math.abs
 class PlayerGesturesController(
     context: Context,
     private val acceptedGestures: Set<GestureType>,
-    private val listener: Listener
+    private val listener: Listener,
 ) : View.OnTouchListener {
-
     private var viewRect: Rect? = null
 
-    private val onGestureListener = object : GestureDetector.SimpleOnGestureListener() {
-        override fun onSingleTapConfirmed(event: MotionEvent): Boolean {
-            return consumeGesture(GestureType.Tap)
-        }
+    private val onGestureListener =
+        object : GestureDetector.SimpleOnGestureListener() {
+            override fun onSingleTapConfirmed(event: MotionEvent): Boolean = consumeGesture(GestureType.Tap)
 
-        override fun onDoubleTap(event: MotionEvent): Boolean {
-            val width = viewRect?.width() ?: 0
-            val x = event.x
+            override fun onDoubleTap(event: MotionEvent): Boolean {
+                val width = viewRect?.width() ?: 0
+                val x = event.x
 
-            val type = if (x < width * LEFT_EDGE_DOUBLE_TAP_THRESHOLD) {
-                GestureType.DoubleTap.TYPE_LEFT_EDGE
-            } else if (x > width * RIGHT_EDGE_DOUBLE_TAP_THRESHOLD) {
-                GestureType.DoubleTap.TYPE_RIGHT_EDGE
-            } else {
-                GestureType.DoubleTap.TYPE_CENTER
+                val type =
+                    if (x < width * LEFT_EDGE_DOUBLE_TAP_THRESHOLD) {
+                        GestureType.DoubleTap.TYPE_LEFT_EDGE
+                    } else if (x > width * RIGHT_EDGE_DOUBLE_TAP_THRESHOLD) {
+                        GestureType.DoubleTap.TYPE_RIGHT_EDGE
+                    } else {
+                        GestureType.DoubleTap.TYPE_CENTER
+                    }
+
+                return consumeGesture(GestureType.DoubleTap(type))
             }
 
-            return consumeGesture(GestureType.DoubleTap(type))
-        }
+            override fun onLongPress(e: MotionEvent) {
+                consumeGesture(GestureType.LongPress)
+            }
 
-        override fun onLongPress(e: MotionEvent) {
-            consumeGesture(GestureType.LongPress)
-        }
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float,
+            ): Boolean =
+                try {
+                    val diffY = e2.y - e1!!.y
+                    val diffX = e2.x - e1.x
 
-        override fun onFling(
-            e1: MotionEvent?,
-            e2: MotionEvent,
-            velocityX: Float,
-            velocityY: Float
-        ): Boolean {
-            return try {
-                val diffY = e2.y - e1!!.y
-                val diffX = e2.x - e1.x
-
-                if (abs(diffX) > abs(diffY)) {
-                    // Horizontal swipe
-                    if (abs(diffX) > 0 && abs(velocityX) > 0) {
-                        if (diffX > 0) {
-                            consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_RIGHT))
+                    if (abs(diffX) > abs(diffY)) {
+                        // Horizontal swipe
+                        if (abs(diffX) > 0 && abs(velocityX) > 0) {
+                            if (diffX > 0) {
+                                consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_RIGHT))
+                            } else {
+                                consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_LEFT))
+                            }
                         } else {
-                            consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_LEFT))
+                            false
                         }
-                    } else false
-                } else {
-                    // Vertical swipe
-                    if (abs(diffY) > 0 && abs(velocityY) > 0) {
-                        if (diffY < 0) {
-                            consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_UP))
+                    } else {
+                        // Vertical swipe
+                        if (abs(diffY) > 0 && abs(velocityY) > 0) {
+                            if (diffY < 0) {
+                                consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_UP))
+                            } else {
+                                consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_BOTTOM))
+                            }
                         } else {
-                            consumeGesture(GestureType.Fling(GestureType.Fling.DIRECTION_BOTTOM))
+                            false
                         }
-                    } else false
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to detect fling gesture", e)
+                    false
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to detect fling gesture", e)
-                false
-            }
         }
-    }
 
     private var gestureDetector: GestureDetector? = null
 
@@ -85,9 +87,13 @@ class PlayerGesturesController(
     }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(v: View, event: MotionEvent?): Boolean {
-        if (event == null)
+    override fun onTouch(
+        v: View,
+        event: MotionEvent?,
+    ): Boolean {
+        if (event == null) {
             return false
+        }
 
         viewRect = Rect(0, 0, v.width, v.height)
         return gestureDetector?.onTouchEvent(event) == true
@@ -106,13 +112,13 @@ class PlayerGesturesController(
     }
 
     sealed class GestureType {
-
         object Tap : GestureType()
 
         object LongPress : GestureType()
 
-        class DoubleTap(val type: Int) : GestureType() {
-
+        class DoubleTap(
+            val type: Int,
+        ) : GestureType() {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other == null || javaClass != other.javaClass) return false
@@ -120,11 +126,10 @@ class PlayerGesturesController(
                 return tap.type == this.type
             }
 
-            override fun hashCode(): Int {
-                return HashCodeBuilder()
+            override fun hashCode(): Int =
+                HashCodeBuilder()
                     .append(type)
                     .toHashCode()
-            }
 
             companion object {
                 const val TYPE_CENTER = 0
@@ -133,8 +138,9 @@ class PlayerGesturesController(
             }
         }
 
-        class Fling(val direction: Int) : GestureType() {
-
+        class Fling(
+            val direction: Int,
+        ) : GestureType() {
             override fun equals(other: Any?): Boolean {
                 if (this === other) return true
                 if (other == null || javaClass != other.javaClass) return false
@@ -142,11 +148,10 @@ class PlayerGesturesController(
                 return fling.direction == this.direction
             }
 
-            override fun hashCode(): Int {
-                return HashCodeBuilder()
+            override fun hashCode(): Int =
+                HashCodeBuilder()
                     .append(direction)
                     .toHashCode()
-            }
 
             companion object {
                 const val DIRECTION_LEFT = 0

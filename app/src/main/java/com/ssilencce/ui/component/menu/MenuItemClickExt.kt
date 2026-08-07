@@ -22,6 +22,7 @@ import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.ssilencce.R
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.local.EditTarget
 import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.mapper.toSongs
@@ -37,7 +38,6 @@ import com.ssilencce.extensions.navigation.genreDetailArgs
 import com.ssilencce.extensions.navigation.songDetailArgs
 import com.ssilencce.extensions.showToast
 import com.ssilencce.extensions.toChooser
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.component.base.AbsTagEditorActivity
 import com.ssilencce.ui.dialogs.playlists.AddToPlaylistDialog
 import com.ssilencce.ui.dialogs.playlists.DeletePlaylistDialog
@@ -56,7 +56,7 @@ import org.koin.androidx.viewmodel.ext.android.getActivityViewModel
 
 fun Song.onSongMenu(
     fragment: Fragment,
-    menuItem: MenuItem
+    menuItem: MenuItem,
 ): Boolean {
     if (id == -1L) {
         return false
@@ -77,7 +77,8 @@ fun Song.onSongMenu(
         }
 
         R.id.action_add_to_playlist -> {
-            AddToPlaylistDialog.create(this)
+            AddToPlaylistDialog
+                .create(this)
                 .show(fragment.childFragmentManager, "ADD_PLAYLIST")
             true
         }
@@ -105,15 +106,17 @@ fun Song.onSongMenu(
 
         R.id.action_share -> {
             fragment.startActivity(
-                fragment.requireContext()
+                fragment
+                    .requireContext()
                     .getShareSongIntent(this)
-                    .toChooser(fragment.getString(R.string.action_share))
+                    .toChooser(fragment.getString(R.string.action_share)),
             )
             true
         }
 
         R.id.action_details -> {
-            fragment.findActivityNavController(R.id.fragment_container)
+            fragment
+                .findActivityNavController(R.id.fragment_container)
                 .navigate(R.id.nav_song_details, songDetailArgs(this))
             true
         }
@@ -131,11 +134,16 @@ fun Song.onSongMenu(
             true
         }
 
-        else -> false
+        else -> {
+            false
+        }
     }
 }
 
-fun List<Song>.onSongsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
+fun List<Song>.onSongsMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean {
     if (isEmpty()) {
         return false
     }
@@ -175,16 +183,18 @@ fun List<Song>.onSongsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
         }
 
         R.id.action_add_to_playlist -> {
-            AddToPlaylistDialog.create(this)
+            AddToPlaylistDialog
+                .create(this)
                 .show(fragment.childFragmentManager, "ADD_PLAYLIST")
             true
         }
 
         R.id.action_share -> {
             fragment.startActivity(
-                fragment.requireContext()
+                fragment
+                    .requireContext()
                     .getShareSongsIntent(this)
-                    .toChooser(fragment.getString(R.string.action_share))
+                    .toChooser(fragment.getString(R.string.action_share)),
             )
             true
         }
@@ -194,14 +204,20 @@ fun List<Song>.onSongsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
             true
         }
 
-        else -> false
+        else -> {
+            false
+        }
     }
 }
 
-fun Album.onAlbumMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
-    return when (menuItem.itemId) {
+fun Album.onAlbumMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean =
+    when (menuItem.itemId) {
         R.id.action_go_to_artist -> {
-            fragment.findActivityNavController(R.id.fragment_container)
+            fragment
+                .findActivityNavController(R.id.fragment_container)
                 .navigate(R.id.nav_artist_detail, artistDetailArgs(this))
             true
         }
@@ -214,11 +230,15 @@ fun Album.onAlbumMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
             true
         }
 
-        else -> songs.onSongsMenu(fragment, menuItem)
+        else -> {
+            songs.onSongsMenu(fragment, menuItem)
+        }
     }
-}
 
-fun List<Album>.onAlbumsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
+fun List<Album>.onAlbumsMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean {
     fragment.lifecycleScope.launch(Dispatchers.IO) {
         val songs = flatMap { it.songs }
         withContext(Dispatchers.Main) {
@@ -228,8 +248,11 @@ fun List<Album>.onAlbumsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
     return true
 }
 
-fun Artist.onArtistMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
-    return when (menuItem.itemId) {
+fun Artist.onArtistMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean =
+    when (menuItem.itemId) {
         R.id.action_tag_editor -> {
             val tagEditorIntent = Intent(fragment.requireContext(), ArtistTagEditorActivity::class.java)
             tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.artist(this))
@@ -237,11 +260,15 @@ fun Artist.onArtistMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
             true
         }
 
-        else -> songs.onSongsMenu(fragment, menuItem)
+        else -> {
+            songs.onSongsMenu(fragment, menuItem)
+        }
     }
-}
 
-fun List<Artist>.onArtistsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
+fun List<Artist>.onArtistsMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean {
     fragment.lifecycleScope.launch(Dispatchers.IO) {
         val songs = flatMap { it.songs }
         withContext(Dispatchers.Main) {
@@ -251,15 +278,20 @@ fun List<Artist>.onArtistsMenu(fragment: Fragment, menuItem: MenuItem): Boolean 
     return true
 }
 
-fun PlaylistWithSongs.onPlaylistMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
-    if (this == PlaylistWithSongs.Empty)
+fun PlaylistWithSongs.onPlaylistMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean {
+    if (this == PlaylistWithSongs.Empty) {
         return false
+    }
 
     when (menuItem.itemId) {
         // R.id.action_rename_playlist removed as obsolete
 
         R.id.action_edit_playlist -> {
-            EditPlaylistDialog.create(playlistEntity)
+            EditPlaylistDialog
+                .create(playlistEntity)
                 .show(fragment.childFragmentManager, "EDIT_PLAYLIST")
             return true
         }
@@ -279,10 +311,14 @@ fun PlaylistWithSongs.onPlaylistMenu(fragment: Fragment, menuItem: MenuItem): Bo
     return songs.toSongs().onSongsMenu(fragment, menuItem)
 }
 
-fun List<PlaylistWithSongs>.onPlaylistsMenu(fragment: Fragment, menuItem: MenuItem): Boolean {
+fun List<PlaylistWithSongs>.onPlaylistsMenu(
+    fragment: Fragment,
+    menuItem: MenuItem,
+): Boolean {
     when (menuItem.itemId) {
         R.id.action_delete_playlist -> {
-            DeletePlaylistDialog.create(this)
+            DeletePlaylistDialog
+                .create(this)
                 .show(fragment.childFragmentManager, "DELETE_PLAYLISTS")
             return true
         }
@@ -302,4 +338,3 @@ fun List<PlaylistWithSongs>.onPlaylistsMenu(fragment: Fragment, menuItem: MenuIt
     }
     return flatMap { it.songs.toSongs() }.onSongsMenu(fragment, menuItem)
 }
-

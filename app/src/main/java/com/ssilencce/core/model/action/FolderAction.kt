@@ -20,13 +20,16 @@ package com.ssilencce.core.model.action
 import androidx.annotation.IdRes
 import com.ssilencce.R
 
-enum class FolderAction(@IdRes val id: Int, val preferenceValue: String) {
+enum class FolderAction(
+    @IdRes val id: Int,
+    val preferenceValue: String,
+) {
     Play(R.id.action_play, "play"),
     ShufflePlay(R.id.action_shuffle_play, "shuffle_play"),
     QueueNext(R.id.action_play_next, "queue_next"),
     Queue(R.id.action_add_to_playing_queue, "queue"),
     AddToPlaylist(R.id.action_add_to_playlist, "add_to_playlist"),
-    Delete(R.id.action_delete_from_device, "delete")
+    Delete(R.id.action_delete_from_device, "delete"),
 }
 
 fun Collection<FolderAction>.isPresent(id: Int) = any { it.id == id }

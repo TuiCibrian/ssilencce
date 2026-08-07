@@ -34,7 +34,6 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class EqualizerFragment : Fragment() {
-
     private val arguments: EqualizerFragmentArgs by navArgs()
 
     private val libraryViewModel: LibraryViewModel by activityViewModel()
@@ -44,22 +43,24 @@ class EqualizerFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     EqualizerScreen(
                         libraryViewModel = libraryViewModel,
                         eqViewModel = equalizerViewModel,
-                        onBackClick = { findNavController().navigateUp() }
+                        onBackClick = { findNavController().navigateUp() },
                     )
                 }
             }
         }
-    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         materialSharedAxis(view)
     }

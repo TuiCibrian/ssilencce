@@ -14,29 +14,33 @@ import java.io.InputStream
 import java.io.OutputStream
 
 object PlaybackStateDefinition : GlanceStateDefinition<PlaybackState> {
-
     private const val DATASTORE_FILE_NAME = "playback_state_v1.json"
 
-    private val json = Json {
-        coerceInputValues = true
-        ignoreUnknownKeys = true
-        isLenient = true
-    }
+    private val json =
+        Json {
+            coerceInputValues = true
+            ignoreUnknownKeys = true
+            isLenient = true
+        }
 
     private val Context.playbackStateDataStore: DataStore<PlaybackState> by dataStore(
         fileName = DATASTORE_FILE_NAME,
-        serializer = PlaybackStateSerializer(json)
+        serializer = PlaybackStateSerializer(json),
     )
 
-    override suspend fun getDataStore(context: Context, fileKey: String): DataStore<PlaybackState> {
-        return context.playbackStateDataStore
-    }
+    override suspend fun getDataStore(
+        context: Context,
+        fileKey: String,
+    ): DataStore<PlaybackState> = context.playbackStateDataStore
 
-    override fun getLocation(context: Context, fileKey: String): File {
-        return File(context.filesDir, "datastore/$DATASTORE_FILE_NAME")
-    }
+    override fun getLocation(
+        context: Context,
+        fileKey: String,
+    ): File = File(context.filesDir, "datastore/$DATASTORE_FILE_NAME")
 
-    private class PlaybackStateSerializer(private val json: Json) : Serializer<PlaybackState> {
+    private class PlaybackStateSerializer(
+        private val json: Json,
+    ) : Serializer<PlaybackState> {
         override val defaultValue: PlaybackState
             get() = PlaybackState()
 
@@ -52,7 +56,10 @@ object PlaybackStateDefinition : GlanceStateDefinition<PlaybackState> {
             }
         }
 
-        override suspend fun writeTo(t: PlaybackState, output: OutputStream) {
+        override suspend fun writeTo(
+            t: PlaybackState,
+            output: OutputStream,
+        ) {
             output.bufferedWriter().use {
                 it.write(json.encodeToString(t))
             }

@@ -46,9 +46,10 @@ import kotlinx.coroutines.flow.filter
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import kotlin.math.abs
 
-class MiniPlayerFragment : Fragment(R.layout.fragment_mini_player),
-    View.OnClickListener, SkipButtonTouchHandler.Callback {
-
+class MiniPlayerFragment :
+    Fragment(R.layout.fragment_mini_player),
+    View.OnClickListener,
+    SkipButtonTouchHandler.Callback {
     private val playerViewModel: PlayerViewModel by activityViewModel()
 
     private var _binding: FragmentMiniPlayerBinding? = null
@@ -58,16 +59,20 @@ class MiniPlayerFragment : Fragment(R.layout.fragment_mini_player),
     private lateinit var secondaryColorSpan: ForegroundColorSpan
 
     private val buttonStyle: NowPlayingButtonStyle
-        get() = if (Preferences.adaptiveControls) {
-            Preferences.nowPlayingScreen.buttonStyle
-        } else {
-            NowPlayingButtonStyle.Normal
-        }
+        get() =
+            if (Preferences.adaptiveControls) {
+                Preferences.nowPlayingScreen.buttonStyle
+            } else {
+                NowPlayingButtonStyle.Normal
+            }
 
     private var disposable: Disposable? = null
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMiniPlayerBinding.bind(view)
         binding.progressBar.installWavyAnimatorCleanup()
@@ -83,7 +88,7 @@ class MiniPlayerFragment : Fragment(R.layout.fragment_mini_player),
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             combine(
                 playerViewModel.progressFlow,
-                playerViewModel.durationFlow
+                playerViewModel.durationFlow,
             ) { progress, duration -> ProgressState(progress, duration) }
                 .filter { progress -> progress.mayUpdateUI }
                 .collectLatest {
@@ -168,7 +173,10 @@ class MiniPlayerFragment : Fragment(R.layout.fragment_mini_player),
         _binding = null
     }
 
-    private fun updatePlayPause(isPlaying: Boolean, buttonStyle: NowPlayingButtonStyle) {
+    private fun updatePlayPause(
+        isPlaying: Boolean,
+        buttonStyle: NowPlayingButtonStyle,
+    ) {
         if (isPlaying) {
             binding.actionPlayPause.setIconResource(buttonStyle.pause)
         } else {
@@ -177,18 +185,27 @@ class MiniPlayerFragment : Fragment(R.layout.fragment_mini_player),
         setUpProgressStyle()
     }
 
-    private var flingPlayBackController = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-            override fun onFling(e1: MotionEvent?, e2: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                if (abs(velocityX) > abs(velocityY)) {
-                    if (velocityX < 0) {
-                        playerViewModel.seekToNext()
-                        return true
-                    } else if (velocityX > 0) {
-                        playerViewModel.seekToPrevious()
-                        return true
+    private var flingPlayBackController =
+        GestureDetector(
+            context,
+            object : GestureDetector.SimpleOnGestureListener() {
+                override fun onFling(
+                    e1: MotionEvent?,
+                    e2: MotionEvent,
+                    velocityX: Float,
+                    velocityY: Float,
+                ): Boolean {
+                    if (abs(velocityX) > abs(velocityY)) {
+                        if (velocityX < 0) {
+                            playerViewModel.seekToNext()
+                            return true
+                        } else if (velocityX > 0) {
+                            playerViewModel.seekToPrevious()
+                            return true
+                        }
                     }
+                    return false
                 }
-                return false
-            }
-        })
+            },
+        )
 }

@@ -44,9 +44,8 @@ import kotlin.reflect.KProperty
 class SearchAdapter(
     activity: FragmentActivity,
     dataSet: List<Any>,
-    private val callback: ISearchCallback? = null
+    private val callback: ISearchCallback? = null,
 ) : AbsMultiSelectAdapter<SearchAdapter.ViewHolder, Song>(activity, R.menu.menu_media_selection) {
-
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Any>, _: List<Any> ->
         notifyDataSetChanged()
     }
@@ -56,11 +55,12 @@ class SearchAdapter(
         return item as? Song
     }
 
-    override fun getName(item: Song): String {
-        return item.title
-    }
+    override fun getName(item: Song): String = item.title
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<Song>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Song>,
+    ) {
         callback?.onMultipleItemAction(menuItem, selection)
     }
 
@@ -72,16 +72,23 @@ class SearchAdapter(
         return if (dataSet[position] is Genre) GENRE else HEADER
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         if (viewType == HEADER) {
             return ViewHolder(
-                LayoutInflater.from(parent.context).inflate(R.layout.sub_header, parent, false), viewType
+                LayoutInflater.from(parent.context).inflate(R.layout.sub_header, parent, false),
+                viewType,
             )
         }
         return ViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_list, parent, false), viewType)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         when (getItemViewType(position)) {
             ALBUM -> {
                 val album = dataSet[position] as Album
@@ -126,17 +133,20 @@ class SearchAdapter(
                 holder.text?.text = genre.songCount.asNumberOfSongs(holder.itemView.context)
             }
 
-            else -> holder.title?.text = dataSet[position].toString()
+            else -> {
+                holder.title?.text = dataSet[position].toString()
+            }
         }
     }
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    inner class ViewHolder(itemView: View, private val itemViewType: Int) :
-        RecyclerView.ViewHolder(itemView), View.OnClickListener, View.OnLongClickListener {
-        
+    inner class ViewHolder(
+        itemView: View,
+        private val itemViewType: Int,
+    ) : RecyclerView.ViewHolder(itemView),
+        View.OnClickListener,
+        View.OnLongClickListener {
         val image: ImageView? = itemView.findViewById(R.id.image)
         val title: TextView? = itemView.findViewById(R.id.title)
         val text: TextView? = itemView.findViewById(R.id.text)
@@ -161,8 +171,14 @@ class SearchAdapter(
         override fun onClick(view: View) {
             val item = dataSet[bindingAdapterPosition]
             when (itemViewType) {
-                ALBUM -> callback?.albumClick(item as Album, sharedElements)
-                ARTIST -> callback?.artistClick(item as Artist, sharedElements)
+                ALBUM -> {
+                    callback?.albumClick(item as Album, sharedElements)
+                }
+
+                ARTIST -> {
+                    callback?.artistClick(item as Artist, sharedElements)
+                }
+
                 SONG -> {
                     val song = item as Song
                     if (isInQuickSelectMode) {
@@ -171,54 +187,68 @@ class SearchAdapter(
                         callback?.songClick(song, dataSet)
                     }
                 }
-                GENRE -> callback?.genreClick(item as Genre)
-                PLAYLIST -> callback?.playlistClick(item as PlaylistWithSongs)
+
+                GENRE -> {
+                    callback?.genreClick(item as Genre)
+                }
+
+                PLAYLIST -> {
+                    callback?.playlistClick(item as PlaylistWithSongs)
+                }
             }
         }
 
-        override fun onLongClick(view: View): Boolean {
-            return when (itemViewType) {
-                SONG -> toggleChecked(bindingAdapterPosition)
-                else -> menu?.let {
-                    it.callOnClick()
-                    true
-                } ?: false
-            }
-        }
+        override fun onLongClick(view: View): Boolean =
+            when (itemViewType) {
+                SONG -> {
+                    toggleChecked(bindingAdapterPosition)
+                }
 
-        private val menuRes = when (itemViewType) {
-            SONG -> R.menu.menu_item_song
-            ALBUM -> R.menu.menu_item_album
-            ARTIST -> R.menu.menu_item_artist
-            PLAYLIST -> R.menu.menu_item_playlist
-            else -> 0
-        }
+                else -> {
+                    menu?.let {
+                        it.callOnClick()
+                        true
+                    } ?: false
+                }
+            }
+
+        private val menuRes =
+            when (itemViewType) {
+                SONG -> R.menu.menu_item_song
+                ALBUM -> R.menu.menu_item_album
+                ARTIST -> R.menu.menu_item_artist
+                PLAYLIST -> R.menu.menu_item_playlist
+                else -> 0
+            }
 
         init {
             menu?.apply {
-                visibility = if (menuRes != 0) {
-                    setOnClickListener(object : OnClickMenu() {
-                        override val popupMenuRes: Int
-                            get() = menuRes
+                visibility =
+                    if (menuRes != 0) {
+                        setOnClickListener(
+                            object : OnClickMenu() {
+                                override val popupMenuRes: Int
+                                    get() = menuRes
 
-                        override fun onPreparePopup(menu: Menu) {
-                            menu.removeItem(R.id.action_play)
-                        }
+                                override fun onPreparePopup(menu: Menu) {
+                                    menu.removeItem(R.id.action_play)
+                                }
 
-                        override fun onMenuItemClick(item: MenuItem): Boolean {
-                            when (val data = dataSet[bindingAdapterPosition]) {
-                                is Song -> return callback?.songMenuItemClick(data, item) ?: false
-                                is Album -> return callback?.albumMenuItemClick(data, item, sharedElements) ?: false
-                                is Artist -> return callback?.artistMenuItemClick(data, item, sharedElements) ?: false
-                                is PlaylistWithSongs -> return callback?.playlistMenuItemClick(data, item) ?: false
-                            }
-                            return false
-                        }
-                    })
-                    View.VISIBLE
-                } else {
-                    View.GONE
-                }
+                                override fun onMenuItemClick(item: MenuItem): Boolean {
+                                    when (val data = dataSet[bindingAdapterPosition]) {
+                                        is Song -> return callback?.songMenuItemClick(data, item) ?: false
+                                        is Album -> return callback?.albumMenuItemClick(data, item, sharedElements) ?: false
+                                        is Artist -> return callback?.artistMenuItemClick(data, item, sharedElements) ?: false
+                                        is PlaylistWithSongs -> return callback?.playlistMenuItemClick(data, item) ?: false
+                                    }
+                                    return false
+                                }
+                            },
+                        )
+                        View.VISIBLE
+                    } else {
+                        View.GONE
+                    }
             }
 
             if (itemViewType == GENRE) {

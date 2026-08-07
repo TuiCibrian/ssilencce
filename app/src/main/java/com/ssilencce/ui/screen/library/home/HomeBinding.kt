@@ -19,7 +19,9 @@ package com.ssilencce.ui.screen.library.home
 
 import com.ssilencce.databinding.FragmentHomeBinding
 
-class HomeBinding(homeBinding: FragmentHomeBinding) {
+class HomeBinding(
+    homeBinding: FragmentHomeBinding,
+) {
     val root = homeBinding.root
     val container = homeBinding.container
     val appBarLayout = homeBinding.appBarLayout

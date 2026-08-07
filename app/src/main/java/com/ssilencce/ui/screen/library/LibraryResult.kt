@@ -25,7 +25,7 @@ data class HandleIntentResult(
     val handled: Boolean,
     val songs: List<Song> = emptyList(),
     val position: Int = 0,
-    val failed: Boolean = false
+    val failed: Boolean = false,
 )
 
 data class AddToPlaylistResult(
@@ -33,19 +33,26 @@ data class AddToPlaylistResult(
     val isWorking: Boolean = false,
     val playlistCreated: Boolean = false,
     val isFavoritePlaylist: Boolean = false,
-    val insertedSongs: Int = 0
+    val insertedSongs: Int = 0,
 )
 
-class ImportablePlaylistResult(val playlistName: String, val songs: List<Song>)
+class ImportablePlaylistResult(
+    val playlistName: String,
+    val songs: List<Song>,
+)
 
-class ImportResult(val resultMessage: String) {
+class ImportResult(
+    val resultMessage: String,
+) {
     companion object {
-        fun success(ctx: Context, res: ImportablePlaylistResult): ImportResult {
-            return ImportResult(ctx.getString(R.string.imported_playlist_x, res.playlistName))
-        }
+        fun success(
+            ctx: Context,
+            res: ImportablePlaylistResult,
+        ): ImportResult = ImportResult(ctx.getString(R.string.imported_playlist_x, res.playlistName))
 
-        fun error(ctx: Context, res: ImportablePlaylistResult): ImportResult {
-            return ImportResult(ctx.getString(R.string.could_not_import_the_playlist_x, res.playlistName))
-        }
+        fun error(
+            ctx: Context,
+            res: ImportablePlaylistResult,
+        ): ImportResult = ImportResult(ctx.getString(R.string.could_not_import_the_playlist_x, res.playlistName))
     }
 }

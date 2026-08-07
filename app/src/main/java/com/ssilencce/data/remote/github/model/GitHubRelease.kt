@@ -53,9 +53,9 @@ class GitHubRelease(
     @SerialName("prerelease")
     val isPrerelease: Boolean,
     @SerialName("assets")
-    val downloads: List<ReleaseAsset>
-) : Parcelable, KoinComponent {
-
+    val downloads: List<ReleaseAsset>,
+) : Parcelable,
+    KoinComponent {
     companion object {
         private const val IGNORED_RELEASE = "ignored_release"
     }
@@ -74,9 +74,7 @@ class GitHubRelease(
         return false
     }
 
-    private fun isIgnored(): Boolean {
-        return get<SharedPreferences>().getString(IGNORED_RELEASE, null) == tag
-    }
+    private fun isIgnored(): Boolean = get<SharedPreferences>().getString(IGNORED_RELEASE, null) == tag
 
     fun setIgnored() {
         get<SharedPreferences>().edit { putString(IGNORED_RELEASE, tag) }
@@ -104,7 +102,8 @@ class GitHubRelease(
     fun getDownloadRequest(context: Context): DownloadManager.Request? {
         val apkAsset = getBestApkAsset()
         if (apkAsset != null) {
-            return DownloadManager.Request(apkAsset.downloadUrl.toUri())
+            return DownloadManager
+                .Request(apkAsset.downloadUrl.toUri())
                 .setTitle(apkAsset.name)
                 .setDescription(context.getString(R.string.downloading_update))
                 .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, apkAsset.name)
@@ -150,9 +149,8 @@ class GitHubRelease(
         val state: String,
         val size: Long,
         @SerialName("browser_download_url")
-        val downloadUrl: String
+        val downloadUrl: String,
     ) : Parcelable {
-
         val isApk: Boolean
             get() = contentType == APK_MIME_TYPE && name.contains(BuildConfig.FLAVOR)
 

@@ -21,12 +21,10 @@ import com.ssilencce.data.remote.lyrics.model.ITunesSearchResponse
 import io.ktor.client.HttpClient
 
 class PaxsenixSearchHelper(
-    private val client: HttpClient
+    private val client: HttpClient,
 ) {
     suspend fun getAppleMusicSearchResponse(
         songTitle: String,
-        artistName: String
-    ): ITunesSearchResponse? {
-        return null
-    }
+        artistName: String,
+    ): ITunesSearchResponse? = null
 }

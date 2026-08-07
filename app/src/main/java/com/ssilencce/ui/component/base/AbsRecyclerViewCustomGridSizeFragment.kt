@@ -28,9 +28,7 @@ import com.ssilencce.R
 import com.ssilencce.core.model.GridViewType
 import com.ssilencce.extensions.isLandscape
 
-abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<*>, LM : RecyclerView.LayoutManager> :
-    AbsRecyclerViewFragment<Adt, LM>() {
-
+abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<*>, LM : RecyclerView.LayoutManager> : AbsRecyclerViewFragment<Adt, LM>() {
     protected var gridSize: Int
         get() = getSavedGridSize()
         set(newGridSize) {
@@ -56,47 +54,71 @@ abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<
         get() = gridSize > maxGridSizeForList
 
     protected open val maxGridSize: Int
-        get() = if (isLandscape) {
-            resources.getInteger(R.integer.max_columns_land)
-        } else resources.getInteger(R.integer.max_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.max_columns_land)
+            } else {
+                resources.getInteger(R.integer.max_columns)
+            }
 
     protected open val maxGridSizeForList: Int
-        get() = if (isLandscape) {
-            resources.getInteger(R.integer.default_list_columns_land)
-        } else resources.getInteger(R.integer.default_list_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.default_list_columns_land)
+            } else {
+                resources.getInteger(R.integer.default_list_columns)
+            }
 
     protected open val defaultGridSize: Int
-        get() = if (isLandscape) resources.getInteger(R.integer.default_grid_columns_land)
-        else resources.getInteger(R.integer.default_grid_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.default_grid_columns_land)
+            } else {
+                resources.getInteger(R.integer.default_grid_columns)
+            }
 
     private var currentLayoutRes = 0
 
     @get:LayoutRes
     protected open val itemLayoutRes: Int
-        get() = if (isGridMode) {
-            viewType.layoutRes
-        } else R.layout.item_list
+        get() =
+            if (isGridMode) {
+                viewType.layoutRes
+            } else {
+                R.layout.item_list
+            }
 
     protected val isLandscape: Boolean
         get() = resources.isLandscape
 
-    protected fun notifyLayoutResChanged(@LayoutRes res: Int) {
+    protected fun notifyLayoutResChanged(
+        @LayoutRes res: Int,
+    ) {
         currentLayoutRes = res
         applyRecyclerViewPaddingForLayoutRes(recyclerView, currentLayoutRes)
     }
 
-    private fun applyRecyclerViewPaddingForLayoutRes(recyclerView: RecyclerView, @LayoutRes itemLayoutRes: Int) {
+    private fun applyRecyclerViewPaddingForLayoutRes(
+        recyclerView: RecyclerView,
+        @LayoutRes itemLayoutRes: Int,
+    ) {
         val miniPlayerHeight = libraryViewModel.getMiniPlayerMargin().value?.totalMargin ?: 0
         val padding = GridViewType.getMarginForLayout(itemLayoutRes)
         recyclerView.setPadding(padding, padding, padding, padding + miniPlayerHeight)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         applyRecyclerViewPaddingForLayoutRes(recyclerView, currentLayoutRes)
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         menu.findItem(R.id.action_view_type).run {
             this.isEnabled = isGridMode
@@ -124,10 +146,17 @@ abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<
     }
 
     protected abstract fun getSavedViewType(): GridViewType
+
     protected abstract fun saveViewType(viewType: GridViewType)
+
     protected abstract fun getSavedGridSize(): Int
+
     protected abstract fun saveGridSize(newGridSize: Int)
-    protected abstract fun onGridSizeChanged(isLand: Boolean, gridColumns: Int)
+
+    protected abstract fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    )
 
     private fun setUpGridSizeMenu(gridSizeMenu: Menu) {
         when (this.gridSize) {

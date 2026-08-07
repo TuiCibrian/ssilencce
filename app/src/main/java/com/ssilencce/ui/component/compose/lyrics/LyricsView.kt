@@ -88,7 +88,7 @@ fun LyricsView(
     isPowerSaveMode: Boolean,
     hasBackgroundEffects: Boolean,
     modifier: Modifier = Modifier,
-    onSeekTo: (Long) -> Unit
+    onSeekTo: (Long) -> Unit,
 ) {
     val density = LocalDensity.current
     val textStyle = settings.syncedStyle
@@ -114,33 +114,47 @@ fun LyricsView(
                 val activeItem = layoutInfo.visibleItemsInfo.find { it.index == state.currentLineIndex }
                 if (activeItem != null) {
                     val itemSize = activeItem.size
-                    val targetOffset = if (settings.isCenterCurrentLine) {
-                        (viewportHeight / 2) - (itemSize / 2) - bottomPadding
-                    } else {
-                        0f
-                    }
+                    val targetOffset =
+                        if (settings.isCenterCurrentLine) {
+                            (viewportHeight / 2) - (itemSize / 2) - bottomPadding
+                        } else {
+                            0f
+                        }
                     listState.animateScrollBy(
                         value = activeItem.offset - targetOffset,
-                        animationSpec = tween(
-                            durationMillis = run {
-                                (state.lyrics?.lines?.getOrNull(state.currentLineIndex + 1)?.start ?: 0) -
-                                        (state.lyrics?.lines?.getOrNull(state.currentLineIndex)?.start ?: 0)
-                            }.let {
-                                (it / 2).coerceIn(100, 1000).toInt()
-                            },
-                            easing = FastOutSlowInEasing
-                        )
+                        animationSpec =
+                            tween(
+                                durationMillis =
+                                    run {
+                                        (
+                                            state.lyrics
+                                                ?.lines
+                                                ?.getOrNull(state.currentLineIndex + 1)
+                                                ?.start ?: 0
+                                        ) -
+                                            (
+                                                state.lyrics
+                                                    ?.lines
+                                                    ?.getOrNull(state.currentLineIndex)
+                                                    ?.start ?: 0
+                                            )
+                                    }.let {
+                                        (it / 2).coerceIn(100, 1000).toInt()
+                                    },
+                                easing = FastOutSlowInEasing,
+                            ),
                     )
                 } else {
                     val fontSize = with(density) { textStyle.fontSize.toPx() * 2 }
-                    val targetOffset = if (settings.isCenterCurrentLine) {
-                        (viewportHeight / 2) - fontSize - bottomPadding
-                    } else {
-                        0
-                    }
+                    val targetOffset =
+                        if (settings.isCenterCurrentLine) {
+                            (viewportHeight / 2) - fontSize - bottomPadding
+                        } else {
+                            0
+                        }
                     listState.animateScrollToItem(
                         index = state.currentLineIndex,
-                        scrollOffset = -targetOffset.toInt()
+                        scrollOffset = -targetOffset.toInt(),
                     )
                 }
                 disableBlurEffect = disableAdvancedEffects
@@ -152,10 +166,11 @@ fun LyricsView(
         state = listState,
         contentPadding = contentPadding,
         verticalArrangement = Arrangement.spacedBy(settings.lineSpacing.dp),
-        modifier = modifier
-            .nestedScroll(rememberNestedScrollInteropConnection())
-            .fadingEdges(edges = fadingEdges)
-            .fillMaxSize()
+        modifier =
+            modifier
+                .nestedScroll(rememberNestedScrollInteropConnection())
+                .fadingEdges(edges = fadingEdges)
+                .fillMaxSize(),
     ) {
         val lines = state.lyrics?.lines ?: emptyList()
         itemsIndexed(lines, key = { _, line -> line.id }) { index, line ->
@@ -176,9 +191,10 @@ fun LyricsView(
                 line = line,
                 textStyle = textStyle,
                 lineSpacing = lineSpacing,
-                modifier = Modifier
-                    .animateItem(placementSpec = tween(durationMillis = 500)),
-                onClick = { onSeekTo(line.start - (state.lyrics?.offset ?: 0)) }
+                modifier =
+                    Modifier
+                        .animateItem(placementSpec = tween(durationMillis = 500)),
+                onClick = { onSeekTo(line.start - (state.lyrics?.offset ?: 0)) },
             )
         }
 
@@ -187,14 +203,15 @@ fun LyricsView(
             item("LyricsProvider") {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .fillParentMaxWidth()
-                        .padding(top = 56.dp)
+                    modifier =
+                        Modifier
+                            .fillParentMaxWidth()
+                            .padding(top = 56.dp),
                 ) {
                     Text(
                         text = stringResource(R.string.lyrics_by_x, provider),
                         style = MaterialTheme.typography.labelSmall,
-                        color = contentColor.copy(alpha = .5f)
+                        color = contentColor.copy(alpha = .5f),
                     )
                 }
             }
@@ -221,54 +238,59 @@ private fun LyricsLineView(
     textStyle: TextStyle,
     lineSpacing: Dp,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val scale by animateFloatAsState(
         targetValue = if (selectedLine) 1.1f else 1f,
         animationSpec = tween(durationMillis = 700),
-        label = "current-line-scale-animation"
+        label = "current-line-scale-animation",
     )
 
     val isRtl = line.content.content.isRtl()
-    val textAlign = if (isCenterHorizontally) {
-        TextAlign.Center
-    } else {
-        when (line.actor) {
-            LyricsActor.Voice2,
-            LyricsActor.Voice2Background -> TextAlign.End
+    val textAlign =
+        if (isCenterHorizontally) {
+            TextAlign.Center
+        } else {
+            when (line.actor) {
+                LyricsActor.Voice2,
+                LyricsActor.Voice2Background,
+                -> TextAlign.End
 
-            LyricsActor.Group,
-            LyricsActor.GroupBackground,
-            LyricsActor.Duet,
-            LyricsActor.DuetBackground -> TextAlign.Center
+                LyricsActor.Group,
+                LyricsActor.GroupBackground,
+                LyricsActor.Duet,
+                LyricsActor.DuetBackground,
+                -> TextAlign.Center
 
-            else -> TextAlign.Start
+                else -> TextAlign.Start
+            }
         }
-    }
 
-    val transformOrigin = when (textAlign) {
-        TextAlign.End -> if (isRtl) TransformOrigin(0f, 1f) else TransformOrigin(1f, 1f)
-        TextAlign.Start -> if (isRtl) TransformOrigin(1f, 1f) else TransformOrigin(0f, 1f)
-        else -> TransformOrigin.Center
-    }
+    val transformOrigin =
+        when (textAlign) {
+            TextAlign.End -> if (isRtl) TransformOrigin(0f, 1f) else TransformOrigin(1f, 1f)
+            TextAlign.Start -> if (isRtl) TransformOrigin(1f, 1f) else TransformOrigin(0f, 1f)
+            else -> TransformOrigin.Center
+        }
 
-    val paddingValues = when (textAlign) {
-        TextAlign.End -> PaddingValues(start = 32.dp, end = 8.dp)
-        TextAlign.Start -> PaddingValues(start = 8.dp, end = 32.dp)
-        else -> PaddingValues(horizontal = 32.dp)
-    }
+    val paddingValues =
+        when (textAlign) {
+            TextAlign.End -> PaddingValues(start = 32.dp, end = 8.dp)
+            TextAlign.Start -> PaddingValues(start = 8.dp, end = 32.dp)
+            else -> PaddingValues(horizontal = 32.dp)
+        }
 
     val layoutDirection = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         Box(
-            modifier = modifier
-                .fillMaxWidth()
-                .clickable(
-                    indication = null,
-                    interactionSource = null,
-                    onClick = onClick
-                )
-                .padding(paddingValues)
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        indication = null,
+                        interactionSource = null,
+                        onClick = onClick,
+                    ).padding(paddingValues),
         ) {
             if (line.isEmpty) {
                 BubblesLine(
@@ -278,29 +300,32 @@ private fun LyricsLineView(
                     progressMillis = progressMillis,
                     startMillis = line.start,
                     endMillis = line.end,
-                    modifier = Modifier.align(
-                        when (textAlign) {
-                            TextAlign.End -> Alignment.CenterEnd
-                            TextAlign.Center -> Alignment.Center
-                            else -> Alignment.CenterStart
-                        }
-                    )
+                    modifier =
+                        Modifier.align(
+                            when (textAlign) {
+                                TextAlign.End -> Alignment.CenterEnd
+                                TextAlign.Center -> Alignment.Center
+                                else -> Alignment.CenterStart
+                            },
+                        ),
                 )
             } else {
                 Column(
-                    horizontalAlignment = when (textAlign) {
-                        TextAlign.End -> Alignment.End
-                        TextAlign.Center -> Alignment.CenterHorizontally
-                        else -> Alignment.Start
-                    },
+                    horizontalAlignment =
+                        when (textAlign) {
+                            TextAlign.End -> Alignment.End
+                            TextAlign.Center -> Alignment.CenterHorizontally
+                            else -> Alignment.Start
+                        },
                     verticalArrangement = Arrangement.spacedBy(2.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .graphicsLayer {
-                            this.transformOrigin = transformOrigin
-                            scaleX = scale
-                            scaleY = scale
-                        }
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                this.transformOrigin = transformOrigin
+                                scaleX = scale
+                                scaleY = scale
+                            },
                 ) {
                     LyricsLineContentView(
                         index = index,
@@ -320,7 +345,7 @@ private fun LyricsLineView(
                         startMillis = line.start,
                         endMillis = line.end,
                         style = textStyle,
-                        align = textAlign
+                        align = textAlign,
                     )
 
                     if (line.content.hasBackgroundSyllables) {
@@ -344,11 +369,12 @@ private fun LyricsLineView(
                             progressMillis = progressMillis,
                             startMillis = line.start,
                             endMillis = line.end,
-                            style = textStyle.copy(
-                                fontSize = textStyle.fontSize / 1.40f,
-                                fontWeight = FontWeight.Normal
-                            ),
-                            align = textAlign
+                            style =
+                                textStyle.copy(
+                                    fontSize = textStyle.fontSize / 1.40f,
+                                    fontWeight = FontWeight.Normal,
+                                ),
+                            align = textAlign,
                         )
                     }
                 }
@@ -377,30 +403,38 @@ fun LyricsLineContentView(
     endMillis: Long,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
-    val progressFraction = when {
-        progressMillis < startMillis -> 0f
-        progressMillis > endMillis -> 1f
-        else -> ((progressMillis - startMillis).toFloat() / (endMillis - startMillis).toFloat()).coerceIn(0f, 1f)
-    }
+    val progressFraction =
+        when {
+            progressMillis < startMillis -> 0f
+            progressMillis > endMillis -> 1f
+            else -> ((progressMillis - startMillis).toFloat() / (endMillis - startMillis).toFloat()).coerceIn(0f, 1f)
+        }
 
     val effectDuration = ((endMillis - startMillis) / 2).coerceAtMost(500).toInt()
     val blurRadius by animateFloatAsState(
-        targetValue = if (index == selectedIndex) 0f else
-                (abs(index - selectedIndex).toFloat() + 1.5f).coerceIn(0f, 10f),
-        animationSpec = tween(effectDuration)
+        targetValue =
+            if (index == selectedIndex) {
+                0f
+            } else {
+                (abs(index - selectedIndex).toFloat() + 1.5f).coerceIn(0f, 10f)
+            },
+        animationSpec = tween(effectDuration),
     )
 
-    val blurEffect = remember(enableBlurEffect, blurRadius) {
-        if (hasS() && enableBlurEffect && blurRadius > 0f) {
-            BlurEffect(
-                radiusX = blurRadius,
-                radiusY = blurRadius,
-                edgeTreatment = TileMode.Clamp
-            )
-        } else null
-    }
+    val blurEffect =
+        remember(enableBlurEffect, blurRadius) {
+            if (hasS() && enableBlurEffect && blurRadius > 0f) {
+                BlurEffect(
+                    radiusX = blurRadius,
+                    radiusY = blurRadius,
+                    edgeTreatment = TileMode.Clamp,
+                )
+            } else {
+                null
+            }
+        }
 
     val mainSyllables = content.getSyllables(backgroundContent)
     val mainText = content.getText(backgroundContent)
@@ -419,9 +453,10 @@ fun LyricsLineContentView(
         progressMillis = progressMillis,
         style = style,
         align = align,
-        modifier = modifier.graphicsLayer {
-            renderEffect = blurEffect
-        }
+        modifier =
+            modifier.graphicsLayer {
+                renderEffect = blurEffect
+            },
     )
 
     if (transliterationContent != null && !transliterationContent.isEmpty) {
@@ -437,14 +472,16 @@ fun LyricsLineContentView(
             effectDuration = effectDuration,
             progressFraction = progressFraction,
             progressMillis = progressMillis,
-            style = style.copy(
-                fontSize = style.fontSize / 1.40,
-                fontWeight = FontWeight.Normal
-            ),
+            style =
+                style.copy(
+                    fontSize = style.fontSize / 1.40,
+                    fontWeight = FontWeight.Normal,
+                ),
             align = align,
-            modifier = modifier.graphicsLayer {
-                renderEffect = blurEffect
-            }
+            modifier =
+                modifier.graphicsLayer {
+                    renderEffect = blurEffect
+                },
         )
     }
 
@@ -464,14 +501,16 @@ fun LyricsLineContentView(
             effectDuration = effectDuration,
             progressFraction = progressFraction,
             progressMillis = progressMillis,
-            style = style.copy(
-                fontSize = style.fontSize / fontSizeDivider,
-                fontWeight = FontWeight.Normal
-            ),
+            style =
+                style.copy(
+                    fontSize = style.fontSize / fontSizeDivider,
+                    fontWeight = FontWeight.Normal,
+                ),
             align = align,
-            modifier = modifier.graphicsLayer {
-                renderEffect = blurEffect
-            }
+            modifier =
+                modifier.graphicsLayer {
+                    renderEffect = blurEffect
+                },
         )
     }
 }
@@ -491,7 +530,7 @@ private fun LineTextView(
     progressMillis: Long,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (enableSyllable && syllables.isNotEmpty()) {
         WordSyncedText(
@@ -503,7 +542,7 @@ private fun LineTextView(
             contentColor = contentColor,
             style = style,
             align = align,
-            modifier = modifier
+            modifier = modifier,
         )
     } else if (plainText.isNotBlank()) {
         LineSyncedView(
@@ -516,7 +555,7 @@ private fun LineTextView(
             color = contentColor,
             style = style,
             align = align,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -532,44 +571,46 @@ private fun LineSyncedView(
     color: Color,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var textHeight by remember { mutableFloatStateOf(0f) }
 
     val animatedAlpha by animateFloatAsState(
         targetValue = if (selectedLine) 1f else .4f,
         animationSpec = tween(400),
-        label = "current-line-alpha-animation"
+        label = "current-line-alpha-animation",
     )
 
     val animatedOrigin by animateFloatAsState(
         targetValue = if (selectedLine) progressFraction * textHeight else 0f,
-        label = "line-gradient-origin"
+        label = "line-gradient-origin",
     )
 
     val shadowRadius by animateFloatAsState(
         targetValue = if (selectedLine) 10f * progressFraction else 0f,
-        animationSpec = tween(effectDuration)
+        animationSpec = tween(effectDuration),
     )
 
-    val shadow = if (shadowEffect && selectedLine) {
-        Shadow(
-            color = color.copy(alpha = .5f),
-            blurRadius = shadowRadius
-        )
-    } else {
-        Shadow.None
-    }
+    val shadow =
+        if (shadowEffect && selectedLine) {
+            Shadow(
+                color = color.copy(alpha = .5f),
+                blurRadius = shadowRadius,
+            )
+        } else {
+            Shadow.None
+        }
 
     val textStyle by remember(color, selectedLine, progressiveColoring, animatedOrigin) {
         derivedStateOf {
             if (progressiveColoring) {
                 style.copy(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(color, color.copy(alpha = .4f)),
-                        startY = animatedOrigin - 10f,
-                        endY = animatedOrigin + 10f
-                    )
+                    brush =
+                        Brush.verticalGradient(
+                            colors = listOf(color, color.copy(alpha = .4f)),
+                            startY = animatedOrigin - 10f,
+                            endY = animatedOrigin + 10f,
+                        ),
                 )
             } else {
                 style.copy(color = color.copy(alpha = animatedAlpha))
@@ -581,10 +622,11 @@ private fun LineSyncedView(
         text = content,
         style = textStyle.copy(shadow = shadow),
         textAlign = align,
-        modifier = modifier
-            .onGloballyPositioned {
-                textHeight = it.size.height.toFloat()
-            }
+        modifier =
+            modifier
+                .onGloballyPositioned {
+                    textHeight = it.size.height.toFloat()
+                },
     )
 }
 
@@ -598,7 +640,7 @@ private fun WordSyncedText(
     contentColor: Color,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     if (karaokeStyle) {
         KaraokeLineView(
@@ -609,7 +651,7 @@ private fun WordSyncedText(
             contentColor = contentColor,
             style = style,
             align = align,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         SpannedWordText(
@@ -620,7 +662,7 @@ private fun WordSyncedText(
             contentColor = contentColor,
             style = style,
             align = align,
-            modifier = modifier
+            modifier = modifier,
         )
     }
 }
@@ -636,7 +678,7 @@ private fun BubblesLine(
     progressMillis: Long,
     startMillis: Long,
     endMillis: Long,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     var bubblesContainerHeight by remember {
         mutableFloatStateOf(0f)
@@ -652,9 +694,10 @@ private fun BubblesLine(
     val density = LocalDensity.current
     val height = with(density) { (fontSize / 1.35).toDp() }
 
-    val infiniteTransition = rememberInfiniteTransition(
-        label = "bubbles-transition"
-    )
+    val infiniteTransition =
+        rememberInfiniteTransition(
+            label = "bubbles-transition",
+        )
 
     val firstBubbleProgress by remember(progressFraction) {
         derivedStateOf {
@@ -665,11 +708,12 @@ private fun BubblesLine(
     val firstBubbleTranslationX by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "first-bubble-translation-x"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2000, easing = EaseInOut),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "first-bubble-translation-x",
     )
 
     val secondBubbleProgress by remember(progressFraction) {
@@ -681,15 +725,17 @@ private fun BubblesLine(
     val secondBubbleTranslationX by infiniteTransition.animateFloat(
         initialValue = -2f,
         targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse,
-            initialStartOffset = StartOffset(
-                offsetMillis = 500,
-                offsetType = StartOffsetType.FastForward
-            )
-        ),
-        label = "first-bubble-translation-x"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2000, easing = EaseInOut),
+                repeatMode = RepeatMode.Reverse,
+                initialStartOffset =
+                    StartOffset(
+                        offsetMillis = 500,
+                        offsetType = StartOffsetType.FastForward,
+                    ),
+            ),
+        label = "first-bubble-translation-x",
     )
 
     val thirdBubbleProgress by remember(progressFraction) {
@@ -701,46 +747,51 @@ private fun BubblesLine(
     val thirdBubbleTranslationX by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = -3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 2000, easing = EaseInOut),
-            repeatMode = RepeatMode.Reverse,
-            initialStartOffset = StartOffset(
-                offsetMillis = 1000,
-                offsetType = StartOffsetType.FastForward
-            )
-        ),
-        label = "first-bubble-translation-x"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(durationMillis = 2000, easing = EaseInOut),
+                repeatMode = RepeatMode.Reverse,
+                initialStartOffset =
+                    StartOffset(
+                        offsetMillis = 1000,
+                        offsetType = StartOffsetType.FastForward,
+                    ),
+            ),
+        label = "first-bubble-translation-x",
     )
 
     val scale by animateFloatAsState(
         targetValue = if (progressFraction < .97f) 1f else 1.2f,
-        label = "bubbles-scale-before-next-line"
+        label = "bubbles-scale-before-next-line",
     )
 
     Box(
-        modifier = modifier
-            .padding(vertical = 4.dp)
-            .height(height)
-            .onGloballyPositioned {
-                bubblesContainerHeight = it.size.height.toFloat()
-            },
+        modifier =
+            modifier
+                .padding(vertical = 4.dp)
+                .height(height)
+                .onGloballyPositioned {
+                    bubblesContainerHeight = it.size.height.toFloat()
+                },
     ) {
         AnimatedVisibility(
             visible = selectedLine,
             enter = scaleIn(),
             exit = scaleOut(),
-            modifier = Modifier
-                .fillMaxHeight()
-                .graphicsLayer {
-                    scaleX = scale
-                    scaleY = scale
-                }
+            modifier =
+                Modifier
+                    .fillMaxHeight()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    },
         ) {
             Row(
-                modifier = Modifier
-                    .fillMaxHeight(),
+                modifier =
+                    Modifier
+                        .fillMaxHeight(),
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
-                verticalAlignment = Alignment.Bottom
+                verticalAlignment = Alignment.Bottom,
             ) {
                 Bubble(
                     bubbleHeight = height,
@@ -748,7 +799,7 @@ private fun BubblesLine(
                     animationProgress = firstBubbleProgress,
                     translationX = firstBubbleTranslationX,
                     translationOffset = secondBubbleTranslationX,
-                    color = color
+                    color = color,
                 )
 
                 Bubble(
@@ -757,7 +808,7 @@ private fun BubblesLine(
                     animationProgress = secondBubbleProgress,
                     translationX = secondBubbleTranslationX,
                     translationOffset = thirdBubbleTranslationX,
-                    color = color
+                    color = color,
                 )
 
                 Bubble(
@@ -766,7 +817,7 @@ private fun BubblesLine(
                     animationProgress = thirdBubbleProgress,
                     translationX = thirdBubbleTranslationX,
                     translationOffset = firstBubbleTranslationX,
-                    color = color
+                    color = color,
                 )
             }
         }
@@ -781,40 +832,42 @@ private fun Bubble(
     translationX: Float,
     translationOffset: Float,
     color: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier = modifier
-            .size(bubbleHeight * .7f)
-            .graphicsLayer {
-                this.translationY =
-                    -containerHeight / 6 *
-                            (sin(20 * (animationProgress - .25f) / PI.toFloat()) / 2 + .5f) +
-                            translationX * translationOffset / 2
+        modifier =
+            modifier
+                .size(bubbleHeight * .7f)
+                .graphicsLayer {
+                    this.translationY =
+                        -containerHeight / 6 *
+                        (sin(20 * (animationProgress - .25f) / PI.toFloat()) / 2 + .5f) +
+                        translationX * translationOffset / 2
 
-                this.translationX = translationX
-                val scale = .5f + animationProgress / 2
-                scaleX = scale
-                scaleY = scale
-            }
-            .drawBehind {
-                drawCircle(
-                    radius = size.width,
-                    brush = Brush.radialGradient(
-                        0f to Color.Transparent,
-                        .5f to Color.Transparent,
-                        .5f to color.copy(alpha = animationProgress / 2 - .25f),
-                        .6f to color.copy(alpha = animationProgress / 3 - .25f),
-                        .8f to Color.Transparent,
-                        radius = size.width
+                    this.translationX = translationX
+                    val scale = .5f + animationProgress / 2
+                    scaleX = scale
+                    scaleY = scale
+                }.drawBehind {
+                    drawCircle(
+                        radius = size.width,
+                        brush =
+                            Brush.radialGradient(
+                                0f to Color.Transparent,
+                                .5f to Color.Transparent,
+                                .5f to color.copy(alpha = animationProgress / 2 - .25f),
+                                .6f to color.copy(alpha = animationProgress / 3 - .25f),
+                                .8f to Color.Transparent,
+                                radius = size.width,
+                            ),
                     )
-                )
 
-                drawCircle(
-                    color = color.copy(
-                        alpha = .25f + animationProgress
+                    drawCircle(
+                        color =
+                            color.copy(
+                                alpha = .25f + animationProgress,
+                            ),
                     )
-                )
-            }
+                },
     )
 }

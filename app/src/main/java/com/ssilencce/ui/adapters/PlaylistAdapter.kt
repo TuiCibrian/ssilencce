@@ -36,7 +36,6 @@ import com.ssilencce.ui.screen.player.PlayerViewModel
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 
-
 /**
  * @author Christians M. A. (mardous)
  */
@@ -45,9 +44,8 @@ class PlaylistAdapter(
     dataSet: List<PlaylistWithSongs>,
     @LayoutRes
     private val itemLayoutRes: Int,
-    private val callback: IPlaylistCallback? = null
+    private val callback: IPlaylistCallback? = null,
 ) : AbsMultiSelectAdapter<PlaylistAdapter.ViewHolder, PlaylistWithSongs>(activity, R.menu.menu_playlists_selection) {
-
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Any>, _: List<Any> ->
         notifyDataSetChanged()
     }
@@ -56,17 +54,20 @@ class PlaylistAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false).let { itemView ->
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder =
+        LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false).let { itemView ->
             createViewHolder(itemView)
         }
-    }
 
-    private fun createViewHolder(view: View): ViewHolder {
-        return ViewHolder(view)
-    }
+    private fun createViewHolder(view: View): ViewHolder = ViewHolder(view)
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val playlist = dataSet[position]
         val isChecked = isChecked(playlist)
         holder.itemView.isActivated = isChecked
@@ -83,36 +84,33 @@ class PlaylistAdapter(
         holder.image?.playlistImage(playlist)
     }
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].playlistEntity.playListId
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].playlistEntity.playListId
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getIdentifier(position: Int): PlaylistWithSongs {
-        return dataSet[position]
-    }
+    override fun getIdentifier(position: Int): PlaylistWithSongs = dataSet[position]
 
-    override fun getName(item: PlaylistWithSongs): String {
-        return item.playlistEntity.playlistName
-    }
+    override fun getName(item: PlaylistWithSongs): String = item.playlistEntity.playlistName
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<PlaylistWithSongs>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<PlaylistWithSongs>,
+    ) {
         callback?.playlistsMenuItemClick(selection, menuItem)
     }
 
-    inner class ViewHolder(itemView: View) : MediaEntryViewHolder(itemView) {
-
+    inner class ViewHolder(
+        itemView: View,
+    ) : MediaEntryViewHolder(itemView) {
         init {
-            menu?.setOnClickListener(object : OnClickMenu() {
-                override val popupMenuRes: Int
-                    get() = R.menu.menu_item_playlist
+            menu?.setOnClickListener(
+                object : OnClickMenu() {
+                    override val popupMenuRes: Int
+                        get() = R.menu.menu_item_playlist
 
-                override fun onMenuItemClick(item: MenuItem): Boolean =
-                    callback?.playlistMenuItemClick(playlist, item) ?: false
-            })
+                    override fun onMenuItemClick(item: MenuItem): Boolean = callback?.playlistMenuItemClick(playlist, item) ?: false
+                },
+            )
             play?.setOnClickListener {
                 getViewModel<PlayerViewModel>()?.openPlaylist(playlist.playlistEntity)
             }
@@ -129,8 +127,6 @@ class PlaylistAdapter(
             }
         }
 
-        override fun onLongClick(view: View): Boolean {
-            return toggleChecked(bindingAdapterPosition)
-        }
+        override fun onLongClick(view: View): Boolean = toggleChecked(bindingAdapterPosition)
     }
 }

@@ -43,7 +43,6 @@ class YearAdapter(
     private val itemLayoutRes: Int,
     private val callback: IYearCallback?,
 ) : AbsMultiSelectAdapter<YearAdapter.ViewHolder, ReleaseYear>(activity, R.menu.menu_media_selection) {
-
     var dataSet: List<ReleaseYear> by Delegates.observable(dataSet) { _: KProperty<*>, _: List<ReleaseYear>, _: List<ReleaseYear> ->
         notifyDataSetChanged()
     }
@@ -52,12 +51,18 @@ class YearAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
         return ViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val year = dataSet[position]
         val isChecked = isChecked(year)
         holder.isActivated = isChecked
@@ -71,24 +76,22 @@ class YearAdapter(
 
     override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].year.toLong()
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].year.toLong()
 
-    override fun getIdentifier(position: Int): ReleaseYear {
-        return dataSet[position]
-    }
+    override fun getIdentifier(position: Int): ReleaseYear = dataSet[position]
 
-    override fun getName(item: ReleaseYear): String {
-        return item.name
-    }
+    override fun getName(item: ReleaseYear): String = item.name
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<ReleaseYear>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<ReleaseYear>,
+    ) {
         callback?.yearsMenuItemClick(selection, menuItem)
     }
 
-    inner class ViewHolder(itemView: View) : MediaEntryViewHolder(itemView) {
-
+    inner class ViewHolder(
+        itemView: View,
+    ) : MediaEntryViewHolder(itemView) {
         private val currentYear: ReleaseYear
             get() = dataSet[bindingAdapterPosition]
 
@@ -109,18 +112,18 @@ class YearAdapter(
             // We could create a new menu for this, but I prefer to reuse the
             // Artist model menu, which includes the basic elements needed for
             // this case. We just need to remove the action_tag_editor item.
-            menu?.setOnClickListener(object : OnClickMenu() {
-                override val popupMenuRes: Int
-                    get() = R.menu.menu_item_artist
+            menu?.setOnClickListener(
+                object : OnClickMenu() {
+                    override val popupMenuRes: Int
+                        get() = R.menu.menu_item_artist
 
-                override fun onPreparePopup(menu: Menu) {
-                    menu.removeItem(R.id.action_tag_editor)
-                }
+                    override fun onPreparePopup(menu: Menu) {
+                        menu.removeItem(R.id.action_tag_editor)
+                    }
 
-                override fun onMenuItemClick(item: MenuItem): Boolean {
-                    return callback?.yearMenuItemClick(currentYear, item) ?: false
-                }
-            })
+                    override fun onMenuItemClick(item: MenuItem): Boolean = callback?.yearMenuItemClick(currentYear, item) ?: false
+                },
+            )
         }
     }
 }

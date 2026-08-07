@@ -33,15 +33,12 @@ class SmartSearchFilter internal constructor(
     private val name: String,
     private val projection: Array<String>?,
     private vararg val selections: FilterSelection,
-) : SearchFilter, Parcelable, KoinComponent {
+) : SearchFilter,
+    Parcelable,
+    KoinComponent {
+    override fun getName(): CharSequence = name
 
-    override fun getName(): CharSequence {
-        return name
-    }
-
-    override fun getCompatibleModes(): List<SearchQuery.FilterMode> {
-        return selections.map { it.mode }
-    }
+    override fun getCompatibleModes(): List<SearchQuery.FilterMode> = selections.map { it.mode }
 
     /**
      * Parse the input query using the appropriate operator for the given mode and return a set
@@ -52,7 +49,10 @@ class SmartSearchFilter internal constructor(
      * operators list. In other case, an exception will be thrown.
      * @param query What the user is searching.
      */
-    override suspend fun getResults(searchMode: SearchQuery.FilterMode, query: String): List<Any> {
+    override suspend fun getResults(
+        searchMode: SearchQuery.FilterMode,
+        query: String,
+    ): List<Any> {
         // Check if we can use the specified SearchMode.
         val selectingWith = selections.firstOrNull { it.mode == searchMode }
         checkNotNull(selectingWith) { "Unsupported search mode: $searchMode" }
@@ -74,9 +74,10 @@ class SmartSearchFilter internal constructor(
         queryDispatcher.addArguments("%$query%")
 
         val songRepository: RealSongRepository = get()
-        val songs = songRepository.makeSongCursor(queryDispatcher).let {
-            songRepository.songs(it)
-        }
+        val songs =
+            songRepository.makeSongCursor(queryDispatcher).let {
+                songRepository.songs(it)
+            }
         return when (selectingWith.mode) {
             SearchQuery.FilterMode.Albums -> get<RealAlbumRepository>().splitIntoAlbums(songs, false)
             else -> songs

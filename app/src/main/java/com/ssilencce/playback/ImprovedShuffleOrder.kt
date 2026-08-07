@@ -14,27 +14,30 @@ import kotlin.random.Random
 @OptIn(ExperimentalAtomicApi::class)
 class ImprovedShuffleOrder private constructor(
     private val shuffled: IntArray,
-    private val random: Random
+    private val random: Random,
 ) : ShuffleOrder {
-
     private val indexInShuffled = IntArray(shuffled.size)
 
     private val _playerIndex = AtomicInt(C.INDEX_UNSET)
     var playerIndex: Int
         get() = _playerIndex.load()
-        set(value) { _playerIndex.exchange(value) }
+        set(value) {
+            _playerIndex.exchange(value)
+        }
 
     private constructor(shuffled: IntArray, seed: Long) :
-            this(shuffled.copyOf(), Random(seed))
+        this(shuffled.copyOf(), Random(seed))
 
     private constructor(firstIndex: Int, length: Int, random: Random) :
-            this(calculateListWithFirstIndex(calculateShuffledList(0, length, random), firstIndex), random)
+        this(calculateListWithFirstIndex(calculateShuffledList(0, length, random), firstIndex), random)
 
     private constructor(playerIndex: Int, firstIndex: Int, length: Int, random: Random) :
-            this(firstIndex, length, random) { this.playerIndex = playerIndex }
+        this(firstIndex, length, random) {
+        this.playerIndex = playerIndex
+    }
 
     constructor(firstIndex: Int, length: Int, randomSeed: Long) :
-            this(firstIndex, length, Random(randomSeed))
+        this(firstIndex, length, Random(randomSeed))
 
     init {
         for (i in shuffled.indices) {
@@ -42,9 +45,7 @@ class ImprovedShuffleOrder private constructor(
         }
     }
 
-    override fun getLength(): Int {
-        return shuffled.size
-    }
+    override fun getLength(): Int = shuffled.size
 
     override fun getNextIndex(index: Int): Int {
         val shuffledIndex = indexInShuffled[index] + 1
@@ -56,15 +57,14 @@ class ImprovedShuffleOrder private constructor(
         return if (shuffledIndex >= 0) shuffled[shuffledIndex] else C.INDEX_UNSET
     }
 
-    override fun getLastIndex(): Int {
-        return if (shuffled.isNotEmpty()) shuffled[shuffled.size - 1] else C.INDEX_UNSET
-    }
+    override fun getLastIndex(): Int = if (shuffled.isNotEmpty()) shuffled[shuffled.size - 1] else C.INDEX_UNSET
 
-    override fun getFirstIndex(): Int {
-        return if (shuffled.isNotEmpty()) shuffled[0] else C.INDEX_UNSET
-    }
+    override fun getFirstIndex(): Int = if (shuffled.isNotEmpty()) shuffled[0] else C.INDEX_UNSET
 
-    override fun cloneAndInsert(insertionIndex: Int, insertionCount: Int): ShuffleOrder {
+    override fun cloneAndInsert(
+        insertionIndex: Int,
+        insertionCount: Int,
+    ): ShuffleOrder {
         if (length == 0 && insertionCount > 0) {
             var startIndex = _playerIndex.exchange(C.INDEX_UNSET)
             if (startIndex == C.INDEX_UNSET) {
@@ -103,7 +103,10 @@ class ImprovedShuffleOrder private constructor(
         return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()))
     }
 
-    override fun cloneAndRemove(indexFrom: Int, indexToExclusive: Int): ShuffleOrder {
+    override fun cloneAndRemove(
+        indexFrom: Int,
+        indexToExclusive: Int,
+    ): ShuffleOrder {
         val numberOfElementsToRemove = indexToExclusive - indexFrom
         if (numberOfElementsToRemove == shuffled.size) {
             return ImprovedShuffleOrder(playerIndex, 0, 0, Random(random.nextLong()))
@@ -115,16 +118,24 @@ class ImprovedShuffleOrder private constructor(
                 foundElementsCount++
             } else {
                 newShuffled[i - foundElementsCount] =
-                    if (shuffled[i] >= indexFrom) shuffled[i] - numberOfElementsToRemove
-                    else shuffled[i]
+                    if (shuffled[i] >= indexFrom) {
+                        shuffled[i] - numberOfElementsToRemove
+                    } else {
+                        shuffled[i]
+                    }
             }
         }
         return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()))
     }
 
-    override fun cloneAndMove(indexFrom: Int, indexToExclusive: Int, newIndexFrom: Int): ShuffleOrder {
-        if (length == 0 || (indexToExclusive - indexFrom) <= 0)
+    override fun cloneAndMove(
+        indexFrom: Int,
+        indexToExclusive: Int,
+        newIndexFrom: Int,
+    ): ShuffleOrder {
+        if (length == 0 || (indexToExclusive - indexFrom) <= 0) {
             return this
+        }
 
         // TODO could this logic be improved?
         val newShuffled = shuffled.toMutableList()
@@ -135,25 +146,20 @@ class ImprovedShuffleOrder private constructor(
         return ImprovedShuffleOrder(newShuffled.toIntArray(), random)
     }
 
-    override fun cloneAndClear(): ShuffleOrder {
-        return cloneAndRemove(0, shuffled.size)
-    }
+    override fun cloneAndClear(): ShuffleOrder = cloneAndRemove(0, shuffled.size)
 
     @Serializable
     class SerializedOrder(
         @SerialName("data")
         val data: IntArray?,
         @SerialName("seed")
-        val seed: Long
+        val seed: Long,
     ) {
-
-        override fun toString(): String {
-            return Json.encodeToString(this)
-        }
+        override fun toString(): String = Json.encodeToString(this)
 
         fun toShuffleOrder(
             firstIndex: Int = C.INDEX_UNSET,
-            length: Int = C.LENGTH_UNSET
+            length: Int = C.LENGTH_UNSET,
         ): ImprovedShuffleOrder {
             if (data == null) {
                 if (firstIndex == C.INDEX_UNSET || length == C.INDEX_UNSET) {
@@ -166,18 +172,18 @@ class ImprovedShuffleOrder private constructor(
         }
 
         companion object {
-            fun serializedFromOrder(order: ImprovedShuffleOrder): SerializedOrder {
-                return SerializedOrder(order.shuffled, order.random.nextLong())
-            }
+            fun serializedFromOrder(order: ImprovedShuffleOrder): SerializedOrder = SerializedOrder(order.shuffled, order.random.nextLong())
 
-            fun serializedFromJson(content: String): SerializedOrder {
-                return Json.decodeFromString<SerializedOrder>(content)
-            }
+            fun serializedFromJson(content: String): SerializedOrder = Json.decodeFromString<SerializedOrder>(content)
         }
     }
 
     companion object {
-        private fun calculateShuffledList(offset: Int, length: Int, random: Random): IntArray {
+        private fun calculateShuffledList(
+            offset: Int,
+            length: Int,
+            random: Random,
+        ): IntArray {
             val shuffled = IntArray(length)
             var swapIndex: Int
             for (i in shuffled.indices) {
@@ -188,7 +194,10 @@ class ImprovedShuffleOrder private constructor(
             return shuffled
         }
 
-        private fun calculateListWithFirstIndex(shuffled: IntArray, firstIndex: Int): IntArray {
+        private fun calculateListWithFirstIndex(
+            shuffled: IntArray,
+            firstIndex: Int,
+        ): IntArray {
             if (shuffled.isEmpty() && firstIndex == 0) return shuffled
             if (shuffled.size <= firstIndex) throw IllegalArgumentException("${shuffled.size} <= $firstIndex")
             val fi = shuffled.indexOf(firstIndex)

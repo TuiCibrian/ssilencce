@@ -24,9 +24,9 @@ fun Color.darken(maxTone: Double = 30.0): Color {
 
 fun Color.onThis(
     isPrimary: Boolean = true,
-    isDisabled: Boolean = false
-): Color {
-    return if (isPrimary) {
+    isDisabled: Boolean = false,
+): Color =
+    if (isPrimary) {
         if (isDark()) {
             if (isDisabled) Color(0x61FFFFFF) else onSurfaceDark
         } else {
@@ -39,14 +39,15 @@ fun Color.onThis(
             if (isDisabled) Color(0x42000000) else onSurfaceVariantLight
         }
     }
-}
 
 fun Bitmap.extractGradientColors(fallbackColorArgb: Int): List<Color> {
-    val extractedColors = Palette.from(this)
-        .maximumColorCount(16)
-        .generate()
-        .swatches
-        .associate { it.rgb to it.population }
+    val extractedColors =
+        Palette
+            .from(this)
+            .maximumColorCount(16)
+            .generate()
+            .swatches
+            .associate { it.rgb to it.population }
 
     val orderedColors = Score.score(extractedColors, 4, fallbackColorArgb, true)
     return if (orderedColors.isNotEmpty()) {

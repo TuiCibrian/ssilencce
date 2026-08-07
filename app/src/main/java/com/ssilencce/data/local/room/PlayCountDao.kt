@@ -44,22 +44,27 @@ interface PlayCountDao {
     suspend fun findSongExistInPlayCount(songId: Long): PlayCountEntity?
 
     @Transaction
-    suspend fun insertOrIncrementPlayCount(song: Song, timePlayed: Long) {
-        val playCountEntity = findSongExistInPlayCount(song.id)
-            ?: song.toPlayCount(timePlayed = timePlayed)
+    suspend fun insertOrIncrementPlayCount(
+        song: Song,
+        timePlayed: Long,
+    ) {
+        val playCountEntity =
+            findSongExistInPlayCount(song.id)
+                ?: song.toPlayCount(timePlayed = timePlayed)
 
         upsertSongInPlayCount(
             playCountEntity.copy(
                 playCount = playCountEntity.playCount + 1,
-                timePlayed = timePlayed
-            )
+                timePlayed = timePlayed,
+            ),
         )
     }
 
     @Transaction
     suspend fun insertOrIncrementSkipCount(song: Song) {
-        val playCountEntity = findSongExistInPlayCount(song.id)
-            ?: song.toPlayCount()
+        val playCountEntity =
+            findSongExistInPlayCount(song.id)
+                ?: song.toPlayCount()
 
         upsertSongInPlayCount(playCountEntity.copy(skipCount = playCountEntity.skipCount + 1))
     }

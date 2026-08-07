@@ -6,7 +6,7 @@ data class PlayInfoResult(
     val playCount: Int,
     val skipCount: Int,
     val lastPlayDate: Long,
-    val mostPlayedTracks: List<PlayCountEntity>
+    val mostPlayedTracks: List<PlayCountEntity>,
 )
 
 data class AudioHeaderInfo(
@@ -15,7 +15,7 @@ data class AudioHeaderInfo(
     val sampleRate: String? = null,
     val channels: String? = null,
     val variableBitrate: Boolean,
-    val lossless: Boolean
+    val lossless: Boolean,
 )
 
 data class SongInfo(
@@ -41,12 +41,13 @@ data class SongInfo(
     val arranger: String? = null,
     val genre: String? = null,
     val replayGain: String? = null,
-    val comment: String? = null
+    val comment: String? = null,
 ) {
     // True only when every optional metadata field is absent; gates the metadata section in the UI.
     // lyricist and arranger are included alongside composer/conductor/publisher for consistency:
     // the section should appear whenever any credit or descriptive tag has content.
-    val isMissingMetadata: Boolean = album.isNullOrEmpty() && albumArtist.isNullOrEmpty() &&
+    val isMissingMetadata: Boolean =
+        album.isNullOrEmpty() && albumArtist.isNullOrEmpty() &&
             albumYear.isNullOrEmpty() && trackNumber.isNullOrEmpty() && discNumber.isNullOrEmpty() &&
             composer.isNullOrEmpty() && conductor.isNullOrEmpty() && publisher.isNullOrEmpty() &&
             lyricist.isNullOrEmpty() && arranger.isNullOrEmpty() && genre.isNullOrEmpty()

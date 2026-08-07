@@ -31,9 +31,8 @@ data class PlaylistEntity(
     @ColumnInfo(name = "custom_cover_uri")
     val customCoverUri: String? = null,
     @ColumnInfo(name = "description")
-    val description: String? = null
+    val description: String? = null,
 ) : Parcelable {
-
     companion object {
         val Empty = PlaylistEntity(-1, "", null, null)
     }

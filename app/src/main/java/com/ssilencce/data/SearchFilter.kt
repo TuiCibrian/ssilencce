@@ -8,5 +8,8 @@ interface SearchFilter : Parcelable {
 
     fun getCompatibleModes(): List<SearchQuery.FilterMode>
 
-    suspend fun getResults(searchMode: SearchQuery.FilterMode, query: String): List<Any>
+    suspend fun getResults(
+        searchMode: SearchQuery.FilterMode,
+        query: String,
+    ): List<Any>
 }

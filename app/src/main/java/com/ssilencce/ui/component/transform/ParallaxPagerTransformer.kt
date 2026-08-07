@@ -21,10 +21,15 @@ import androidx.viewpager.widget.ViewPager
  * Created by xgc1986 on 2/Apr/2016
  */
 
-class ParallaxPagerTransformer(private val id: Int) : ViewPager.PageTransformer {
+class ParallaxPagerTransformer(
+    private val id: Int,
+) : ViewPager.PageTransformer {
     private var speed = 0.2f
 
-    override fun transformPage(page: View, position: Float) {
+    override fun transformPage(
+        page: View,
+        position: Float,
+    ) {
         val parallaxView = page.findViewById<View>(id)
         page.apply {
             if (parallaxView != null) {

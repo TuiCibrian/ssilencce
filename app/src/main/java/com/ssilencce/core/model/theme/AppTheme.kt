@@ -31,17 +31,18 @@ class AppTheme private constructor(
     @StyleRes
     val themeRes: Int,
     val applyDynamicColors: Boolean,
-    val seedColor: Int? = null
+    val seedColor: Int? = null,
 ) {
-
     val isBlackTheme: Boolean
         get() = id == GeneralTheme.BLACK
 
-    enum class Mode(@StyleRes val themeRes: Int) {
+    enum class Mode(
+        @StyleRes val themeRes: Int,
+    ) {
         Light(R.style.Theme_Ssilencce_Light),
         Dark(R.style.Theme_Ssilencce),
         Black(R.style.Theme_Ssilencce_Black),
-        FollowSystem(R.style.Theme_Ssilencce_FollowSystem)
+        FollowSystem(R.style.Theme_Ssilencce_FollowSystem),
     }
 
     companion object {
@@ -53,7 +54,7 @@ class AppTheme private constructor(
                     return AppTheme(
                         id = generalTheme,
                         themeRes = themeMode.themeRes,
-                        applyDynamicColors = true
+                        applyDynamicColors = true,
                     )
                 }
                 if (context is ContextThemeWrapper) {
@@ -61,14 +62,14 @@ class AppTheme private constructor(
                         id = generalTheme,
                         themeRes = themeMode.themeRes,
                         applyDynamicColors = true,
-                        seedColor = ContextCompat.getColor(context, R.color.md_theme_primary)
+                        seedColor = ContextCompat.getColor(context, R.color.md_theme_primary),
                     )
                 }
             }
             return AppTheme(
                 id = generalTheme,
                 themeRes = themeMode.themeRes,
-                applyDynamicColors = false
+                applyDynamicColors = false,
             )
         }
     }

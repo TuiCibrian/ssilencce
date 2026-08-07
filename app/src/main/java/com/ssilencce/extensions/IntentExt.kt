@@ -36,9 +36,10 @@ fun String.openWeb(): Intent =
     Intent(Intent.ACTION_VIEW, this.toUri())
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
 
-fun Context.getShareSongIntent(song: Song): Intent {
-    return try {
-        ShareCompat.IntentBuilder(this)
+fun Context.getShareSongIntent(song: Song): Intent =
+    try {
+        ShareCompat
+            .IntentBuilder(this)
             .setType(MIME_TYPE_AUDIO)
             .setStream(song.uri)
             .setChooserTitle(R.string.action_share)
@@ -48,15 +49,16 @@ fun Context.getShareSongIntent(song: Song): Intent {
         showToast("Could not share this file.")
         Intent()
     }
-}
 
 fun Context.getShareSongsIntent(songs: List<Song>): Intent {
     if (songs.size == 1) {
         return getShareSongIntent(songs.first())
     } else if (songs.isNotEmpty()) {
-        val intent = ShareCompat.IntentBuilder(this)
-            .setType(MIME_TYPE_AUDIO)
-            .setChooserTitle(R.string.action_share)
+        val intent =
+            ShareCompat
+                .IntentBuilder(this)
+                .setType(MIME_TYPE_AUDIO)
+                .setChooserTitle(R.string.action_share)
         for (song in songs.filterNot { it == Song.emptySong }) {
             intent.addStream(song.uri)
         }
@@ -65,5 +67,4 @@ fun Context.getShareSongsIntent(songs: List<Song>): Intent {
     return Intent()
 }
 
-fun Intent.toChooser(chooserTitle: CharSequence? = null): Intent =
-    Intent.createChooser(this, chooserTitle)
+fun Intent.toChooser(chooserTitle: CharSequence? = null): Intent = Intent.createChooser(this, chooserTitle)

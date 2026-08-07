@@ -24,5 +24,5 @@ import androidx.room.PrimaryKey
 class InclExclEntity(
     @PrimaryKey
     val path: String,
-    val type: Int
+    val type: Int,
 )

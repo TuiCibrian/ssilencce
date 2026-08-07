@@ -29,34 +29,35 @@ import org.koin.core.component.get
 /**
  * @author Christians M. A. (mardous)
  */
-class MediaQueryDispatcher(val uri: Uri = getAudioContentUri()) : KoinComponent {
-
+class MediaQueryDispatcher(
+    val uri: Uri = getAudioContentUri(),
+) : KoinComponent {
     private var projection: Array<String>? = null
     private var selection: String? = null
     private var selectionArguments: Array<String>? = null
     private var sortOrder: String? = null
 
-    fun withColumns(vararg projection: String): MediaQueryDispatcher =
-        apply { this.projection = arrayOf(*projection) }
+    fun withColumns(vararg projection: String): MediaQueryDispatcher = apply { this.projection = arrayOf(*projection) }
 
-    fun setProjection(projection: Array<String>?): MediaQueryDispatcher =
-        apply { this.projection = projection }
+    fun setProjection(projection: Array<String>?): MediaQueryDispatcher = apply { this.projection = projection }
 
-    fun setSelection(selection: String?): MediaQueryDispatcher =
-        apply { this.selection = selection }
+    fun setSelection(selection: String?): MediaQueryDispatcher = apply { this.selection = selection }
 
-    fun setSelectionArguments(selectionArguments: Array<String>?): MediaQueryDispatcher =
-        apply { this.selectionArguments = selectionArguments }
+    fun setSelectionArguments(selectionArguments: Array<String>?): MediaQueryDispatcher = apply { this.selectionArguments = selectionArguments }
 
-    fun setSortOrder(sortOrder: String?): MediaQueryDispatcher =
-        apply { this.sortOrder = sortOrder }
+    fun setSortOrder(sortOrder: String?): MediaQueryDispatcher = apply { this.sortOrder = sortOrder }
 
-    fun addSelection(selection: String?, mode: String = "AND"): MediaQueryDispatcher =
+    fun addSelection(
+        selection: String?,
+        mode: String = "AND",
+    ): MediaQueryDispatcher =
         apply {
             if (!selection.isNullOrBlank()) {
                 if (this.selection.isNullOrEmpty()) {
                     this.selection = selection
-                } else this.selection += " $mode $selection"
+                } else {
+                    this.selection += " $mode $selection"
+                }
             }
         }
 
@@ -66,7 +67,9 @@ class MediaQueryDispatcher(val uri: Uri = getAudioContentUri()) : KoinComponent 
                 val currentSelectionArguments = this.selectionArguments
                 if (currentSelectionArguments.isNullOrEmpty()) {
                     this.selectionArguments = arrayOf(*newArguments)
-                } else this.selectionArguments = currentSelectionArguments + newArguments
+                } else {
+                    this.selectionArguments = currentSelectionArguments + newArguments
+                }
             }
         }
 

@@ -24,11 +24,13 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.adapters.DraggableItemAdapter
 
 class CategoryInfoAdapter(
-    categoryInfos: MutableList<CategoryInfo>
+    categoryInfos: MutableList<CategoryInfo>,
 ) : DraggableItemAdapter<CategoryInfo>(categoryInfos) {
-
     @SuppressLint("ClickableViewAccessibility")
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         super.onBindViewHolder(holder, position)
         val categoryInfo = items[position]
 
@@ -50,9 +52,7 @@ class CategoryInfoAdapter(
         }
     }
 
-    private fun canCheckCategory(categoryInfo: CategoryInfo): Boolean {
-        return items.count { it.visible } < CategoryInfo.MAX_VISIBLE_CATEGORIES || categoryInfo.visible
-    }
+    private fun canCheckCategory(categoryInfo: CategoryInfo): Boolean = items.count { it.visible } < CategoryInfo.MAX_VISIBLE_CATEGORIES || categoryInfo.visible
 
     private fun isLastCheckedCategory(categoryInfo: CategoryInfo): Boolean {
         if (categoryInfo.visible) {
@@ -62,5 +62,4 @@ class CategoryInfoAdapter(
         }
         return true
     }
-
 }

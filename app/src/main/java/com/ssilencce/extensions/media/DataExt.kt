@@ -41,20 +41,20 @@ fun Album.albumArtistName() = if (albumArtistName.isNullOrBlank()) artistName el
 
 fun Album.displayArtistName() = albumArtistName().displayArtistName()
 
-fun Album.albumInfo(): String = when {
-    year > 0 -> buildInfoString(displayArtistName(), year.toString())
-    else -> displayArtistName()
-}
+fun Album.albumInfo(): String =
+    when {
+        year > 0 -> buildInfoString(displayArtistName(), year.toString())
+        else -> displayArtistName()
+    }
 
 fun Album.songCountStr(context: Context) = songCount.asNumberOfSongs(context)
 
-fun Artist.artistInfo(context: Context): String {
-    return if (albumCount > 0) {
+fun Artist.artistInfo(context: Context): String =
+    if (albumCount > 0) {
         buildInfoString(albumCountStr(context), songCountStr(context))
     } else {
         buildInfoString(songCountStr(context))
     }
-}
 
 fun Artist.albumCountStr(context: Context) = context.plurals(R.plurals.x_albums, albumCount)
 
@@ -68,13 +68,17 @@ fun List<Song>.getSpannedTitles(context: Context): List<CharSequence> {
 
     return map {
         buildSpannedString {
-            append(SpannableString(it.title).also { title ->
-                title.setSpan(primaryColorSpan, 0, title.length, 0)
-            })
+            append(
+                SpannableString(it.title).also { title ->
+                    title.setSpan(primaryColorSpan, 0, title.length, 0)
+                },
+            )
             append(DEFAULT_INFO_DELIMITER)
-            append(SpannableString(it.displayArtistName()).also { artistName ->
-                artistName.setSpan(secondaryColorSpan, 0, artistName.length, 0)
-            })
+            append(
+                SpannableString(it.displayArtistName()).also { artistName ->
+                    artistName.setSpan(secondaryColorSpan, 0, artistName.length, 0)
+                },
+            )
         }
     }
 }
@@ -96,19 +100,26 @@ fun Song.albumArtistName() = if (albumArtistName.isNullOrBlank()) artistName els
 fun Song.songDurationStr() = duration.asReadableDuration()
 
 fun Song.searchQuery(engine: WebSearchEngine): String {
-    val searchQuery = when (engine) {
-        WebSearchEngine.Google, WebSearchEngine.YouTube ->
-            if (isArtistNameUnknown()) title else "$artistName $title"
+    val searchQuery =
+        when (engine) {
+            WebSearchEngine.Google, WebSearchEngine.YouTube -> {
+                if (isArtistNameUnknown()) title else "$artistName $title"
+            }
 
-        WebSearchEngine.LastFm, WebSearchEngine.Wikipedia ->
-            if (isArtistNameUnknown()) title else if (albumArtistName.isNullOrEmpty()) artistName.extractMainArtistName() else albumArtistName!!
-    }
+            WebSearchEngine.LastFm, WebSearchEngine.Wikipedia -> {
+                if (isArtistNameUnknown()) {
+                    title
+                } else if (albumArtistName.isNullOrEmpty()) {
+                    artistName.extractMainArtistName()
+                } else {
+                    albumArtistName!!
+                }
+            }
+        }
     return engine.getURLForQuery(searchQuery)
 }
 
-fun Song.songInfo(): String {
-    return buildInfoString(songDurationStr(), displayArtistName())
-}
+fun Song.songInfo(): String = buildInfoString(songDurationStr(), displayArtistName())
 
 fun Song.replayGainStr(context: Context): String? {
     val rg = ReplayGainTagExtractor.getReplayGain(this)
@@ -117,8 +128,9 @@ fun Song.replayGainStr(context: Context): String? {
         builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.track), rg.trackGain))
     }
     if (rg.albumGain != 0f) {
-        if (builder.isNotEmpty())
+        if (builder.isNotEmpty()) {
             builder.append(" - ")
+        }
 
         builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.album), rg.albumGain))
     }

@@ -26,25 +26,25 @@ fun ShapedText(
     shape: Shape = MaterialTheme.shapes.small,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .clip(shape)
-            .background(containerColor)
-            .clickable(
-                enabled = enabled && onClick != null,
-                onClick = { onClick?.invoke() }
-            )
-            .padding(horizontal = 10.dp, vertical = 8.dp)
+        modifier =
+            modifier
+                .clip(shape)
+                .background(containerColor)
+                .clickable(
+                    enabled = enabled && onClick != null,
+                    onClick = { onClick?.invoke() },
+                ).padding(horizontal = 10.dp, vertical = 8.dp),
     ) {
         Text(
             text = text,
             style = style,
             color = color,
             maxLines = 1,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

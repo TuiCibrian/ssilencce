@@ -18,5 +18,6 @@
 package com.ssilencce.data.model.network
 
 enum class ScrobblingService {
-    Lastfm, ListenBrainz
+    Lastfm,
+    ListenBrainz,
 }

@@ -22,13 +22,15 @@ val DEFAULT_YEAR_IMAGE: Int = R.drawable.ic_event_24dp
 
 private typealias RequestBuilder = ImageRequest.Builder
 
-fun RequestBuilder.placeholderDrawableRes(context: Context, foregroundRes: Int) =
-    placeholder(context.getPlaceholderDrawable(foregroundRes))
-        .error(context.getPlaceholderDrawable(foregroundRes))
+fun RequestBuilder.placeholderDrawableRes(
+    context: Context,
+    foregroundRes: Int,
+) = placeholder(context.getPlaceholderDrawable(foregroundRes))
+    .error(context.getPlaceholderDrawable(foregroundRes))
 
 fun ImageView.songImage(
     song: Song?,
-    builder: ImageRequest.Builder.() -> Unit = {}
+    builder: ImageRequest.Builder.() -> Unit = {},
 ) = load(song) {
     placeholderDrawableRes(context, DEFAULT_SONG_IMAGE)
     builder()
@@ -36,7 +38,7 @@ fun ImageView.songImage(
 
 fun ImageView.albumImage(
     album: Album?,
-    builder: ImageRequest.Builder.() -> Unit = {}
+    builder: ImageRequest.Builder.() -> Unit = {},
 ) = load(album) {
     placeholderDrawableRes(context, DEFAULT_ALBUM_IMAGE)
     builder()
@@ -44,7 +46,7 @@ fun ImageView.albumImage(
 
 fun ImageView.artistImage(
     artist: Artist?,
-    builder: ImageRequest.Builder.() -> Unit = {}
+    builder: ImageRequest.Builder.() -> Unit = {},
 ) = load(artist) {
     placeholderDrawableRes(context, DEFAULT_ARTIST_IMAGE)
     builder()
@@ -52,7 +54,7 @@ fun ImageView.artistImage(
 
 fun ImageView.playlistImage(
     playlist: PlaylistWithSongs?,
-    builder: ImageRequest.Builder.() -> Unit = {}
+    builder: ImageRequest.Builder.() -> Unit = {},
 ) = load(playlist) {
     placeholderDrawableRes(context, DEFAULT_PLAYLIST_IMAGE)
     builder()

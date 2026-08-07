@@ -18,7 +18,6 @@
 package com.ssilencce.core.model.filesystem
 
 interface FileSystemItem {
-
     val fileId: Long
         get() = filePath.hashCode().toLong()
 

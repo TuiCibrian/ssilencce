@@ -104,19 +104,26 @@ import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
-sealed class AddToPlaylistUiState(open val isLoading: Boolean) {
+sealed class AddToPlaylistUiState(
+    open val isLoading: Boolean,
+) {
     data object Loading : AddToPlaylistUiState(true)
-    data class Empty(val searchQuery: String?) : AddToPlaylistUiState(false)
+
+    data class Empty(
+        val searchQuery: String?,
+    ) : AddToPlaylistUiState(false)
+
     data class Ready(
         val playlists: List<PlaylistWithSongs>,
-        override val isLoading: Boolean = false
+        override val isLoading: Boolean = false,
     ) : AddToPlaylistUiState(isLoading)
 
-    data class Completed(val isSuccess: Boolean) : AddToPlaylistUiState(false)
+    data class Completed(
+        val isSuccess: Boolean,
+    ) : AddToPlaylistUiState(false)
 }
 
 class AddToPlaylistDialog : BottomSheetDialogFragment() {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val songs by extraNotNull<List<Song>>(EXTRA_SONGS)
 
@@ -131,11 +138,11 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -143,26 +150,27 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                         songs = songs,
                         onCreatePlaylistClick = {
                             val dialog = CreatePlaylistDialog.create(songs)
-                            dialog.callback(object : CreatePlaylistDialog.PlaylistCreatedCallback {
-                                override fun playlistCreated() {
-                                    dismiss()
-                                }
-                            })
+                            dialog.callback(
+                                object : CreatePlaylistDialog.PlaylistCreatedCallback {
+                                    override fun playlistCreated() {
+                                        dismiss()
+                                    }
+                                },
+                            )
                             dialog.show(childFragmentManager, "CREATE_PLAYLIST")
                         },
-                        onDismiss = { dismiss() }
+                        onDismiss = { dismiss() },
                     )
                 }
             }
         }
-    }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     private fun AddToPlaylistScreen(
         songs: List<Song>,
         onCreatePlaylistClick: () -> Unit,
-        onDismiss: () -> Unit
+        onDismiss: () -> Unit,
     ) {
         val context = LocalContext.current
         val uiState by libraryViewModel.addToPlaylistUiState.collectAsState()
@@ -172,7 +180,7 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
 
         val listBottomPadding by animateDpAsState(
             targetValue = if (checkedPlaylists.isNotEmpty()) 116.dp else 16.dp,
-            animationSpec = tween(1000)
+            animationSpec = tween(1000),
         )
 
         LaunchedEffect(searchQuery) {
@@ -189,53 +197,55 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
 
         BottomSheetDialogSurface {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .nestedScroll(rememberNestedScrollInteropConnection())
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .nestedScroll(rememberNestedScrollInteropConnection()),
             ) {
                 BottomSheetDefaults.DragHandle(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
                 Box {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(
-                            start = 16.dp,
-                            end = 16.dp,
-                            bottom = listBottomPadding
-                        ),
-                        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                        contentPadding =
+                            PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                bottom = listBottomPadding,
+                            ),
+                        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                     ) {
                         item {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth(),
                             ) {
                                 Column(
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier.weight(1f),
                                 ) {
                                     Text(
                                         text = stringResource(R.string.select_playlists_title),
                                         style = MaterialTheme.typography.headlineSmallEmphasized,
-                                        maxLines = 1
+                                        maxLines = 1,
                                     )
 
                                     Text(
                                         text = songs.songCountStr(context),
                                         style = MaterialTheme.typography.titleSmall,
-                                        maxLines = 1
+                                        maxLines = 1,
                                     )
                                 }
 
                                 Button(
                                     onClick = onCreatePlaylistClick,
                                     contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                                    enabled = uiState?.isLoading?.not() ?: false
+                                    enabled = uiState?.isLoading?.not() ?: false,
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_playlist_add_24dp),
-                                        contentDescription = null
+                                        contentDescription = null,
                                     )
                                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                                     Text(stringResource(R.string.new_playlist_action))
@@ -254,7 +264,7 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                 leadingIcon = {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_search_24dp),
-                                        contentDescription = null
+                                        contentDescription = null,
                                     )
                                 },
                                 trailingIcon = {
@@ -262,20 +272,21 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                         IconButton(onClick = { searchQuery = "" }) {
                                             Icon(
                                                 painter = painterResource(R.drawable.ic_cancel_24dp),
-                                                contentDescription = null
+                                                contentDescription = null,
                                             )
                                         }
                                     }
                                 },
                                 shape = CircleShape,
-                                colors = TextFieldDefaults.colors(
-                                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    errorIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent
-                                ),
-                                modifier = Modifier.fillMaxWidth()
+                                colors =
+                                    TextFieldDefaults.colors(
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                        focusedIndicatorColor = Color.Transparent,
+                                        unfocusedIndicatorColor = Color.Transparent,
+                                        errorIndicatorColor = Color.Transparent,
+                                        disabledIndicatorColor = Color.Transparent,
+                                    ),
+                                modifier = Modifier.fillMaxWidth(),
                             )
                         }
 
@@ -286,9 +297,10 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                 item {
                                     Box(
                                         contentAlignment = Alignment.Center,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(top = 72.dp)
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .padding(top = 72.dp),
                                     ) {
                                         CircularWavyProgressIndicator()
                                     }
@@ -300,15 +312,16 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                     EmptyView(
                                         icon = painterResource(R.drawable.ic_queue_music_24dp),
                                         title = stringResource(R.string.no_playlists_label),
-                                        subtitle = if (state.searchQuery.isNullOrBlank()) {
-                                            stringResource(R.string.no_playlists_create_new)
-                                        } else {
-                                            stringResource(
-                                                R.string.no_playlists_that_match_x,
-                                                state.searchQuery
-                                            )
-                                        },
-                                        modifier = Modifier.fillParentMaxSize()
+                                        subtitle =
+                                            if (state.searchQuery.isNullOrBlank()) {
+                                                stringResource(R.string.no_playlists_create_new)
+                                            } else {
+                                                stringResource(
+                                                    R.string.no_playlists_that_match_x,
+                                                    state.searchQuery,
+                                                )
+                                            },
+                                        modifier = Modifier.fillParentMaxSize(),
                                     )
                                 }
                             }
@@ -317,16 +330,17 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                 if (state.isLoading) {
                                     item {
                                         LinearWavyProgressIndicator(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(bottom = 16.dp)
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .padding(bottom = 16.dp),
                                         )
                                     }
                                 }
 
                                 itemsIndexed(
                                     state.playlists,
-                                    { _, playlist -> playlist.playlistEntity.playListId }
+                                    { _, playlist -> playlist.playlistEntity.playListId },
                                 ) { index, playlist ->
                                     val isSelected = checkedPlaylists.contains(playlist.playlistEntity.playListId)
                                     PlaylistItem(
@@ -341,7 +355,7 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                                         count = state.playlists.size,
                                         selected = isSelected,
                                         enabled = !state.isLoading,
-                                        playlist = playlist
+                                        playlist = playlist,
                                     )
                                 }
                             }
@@ -361,38 +375,40 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                         visible = checkedPlaylists.isNotEmpty(),
                         enter = fadeIn() + slideInVertically { it },
                         exit = fadeOut() + slideOutVertically { it },
-                        modifier = Modifier
-                            .padding(bottom = 16.dp)
-                            .align(Alignment.BottomCenter)
+                        modifier =
+                            Modifier
+                                .padding(bottom = 16.dp)
+                                .align(Alignment.BottomCenter),
                     ) {
                         ElevatedCard(
-                            shape = CircleShape
+                            shape = CircleShape,
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(8.dp)
+                                modifier = Modifier.padding(8.dp),
                             ) {
                                 Text(
-                                    text = pluralStringResource(
-                                        R.plurals.x_playlists_selected,
-                                        checkedPlaylists.size,
-                                        checkedPlaylists.size
-                                    ),
+                                    text =
+                                        pluralStringResource(
+                                            R.plurals.x_playlists_selected,
+                                            checkedPlaylists.size,
+                                            checkedPlaylists.size,
+                                        ),
                                     style = MaterialTheme.typography.labelLarge,
                                     maxLines = 2,
-                                    modifier = Modifier.padding(start = 8.dp)
+                                    modifier = Modifier.padding(start = 8.dp),
                                 )
 
                                 Button(
                                     onClick = {
                                         libraryViewModel.addToPlaylists(checkedPlaylists, songs)
                                     },
-                                    contentPadding = ButtonDefaults.MediumContentPadding
+                                    contentPadding = ButtonDefaults.MediumContentPadding,
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_check_24dp),
-                                        contentDescription = null
+                                        contentDescription = null,
                                     )
                                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                                     Text(stringResource(R.string.add_action))
@@ -414,11 +430,11 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
         selected: Boolean,
         enabled: Boolean,
         playlist: PlaylistWithSongs,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         val imageCornerRadius by animateDpAsState(
             targetValue = if (selected) 50.dp else 8.dp,
-            animationSpec = tween(500)
+            animationSpec = tween(500),
         )
         SegmentedListItem(
             checked = selected,
@@ -430,28 +446,30 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
                 MediaImage(
                     model = playlist,
                     placeholderIcon = R.drawable.ic_queue_music_24dp,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .clip(RoundedCornerShape(imageCornerRadius))
+                    modifier =
+                        Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(imageCornerRadius)),
                 )
             },
             trailingContent = {
                 Checkbox(
                     checked = selected,
                     enabled = enabled,
-                    onCheckedChange = null
+                    onCheckedChange = null,
                 )
             },
-            colors = ListItemDefaults.segmentedColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-            ),
+            colors =
+                ListItemDefaults.segmentedColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                ),
             enabled = enabled,
-            modifier = modifier
+            modifier = modifier,
         ) {
             Text(
                 text = playlist.playlistEntity.playlistName,
                 style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1
+                maxLines = 1,
             )
         }
     }
@@ -467,10 +485,9 @@ class AddToPlaylistDialog : BottomSheetDialogFragment() {
     companion object {
         fun create(song: Song) = create(listOf(song))
 
-        fun create(songs: List<Song>): AddToPlaylistDialog {
-            return AddToPlaylistDialog().withArgs {
+        fun create(songs: List<Song>): AddToPlaylistDialog =
+            AddToPlaylistDialog().withArgs {
                 putParcelableArrayList(EXTRA_SONGS, ArrayList(songs))
             }
-        }
     }
 }

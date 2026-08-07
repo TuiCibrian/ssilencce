@@ -24,7 +24,6 @@ import org.koin.core.component.get
 import java.io.File
 
 object FileUtil : KoinComponent {
-
     const val PLAYLISTS_DIRECTORY_NAME = "Playlists"
 
     // Directories that are accessible only for ssilencce
@@ -32,25 +31,20 @@ object FileUtil : KoinComponent {
     private const val CUSTOM_PLAYLIST_IMAGES_DIRECTORY_NAME = "custom_playlist_images"
     private const val THUMBS_DIRECTORY_NAME = "Thumbs"
 
-    fun externalStorageDirectory(dirType: String? = null): File {
-        return if (dirType == null) {
+    fun externalStorageDirectory(dirType: String? = null): File =
+        if (dirType == null) {
             Environment.getExternalStorageDirectory()
         } else {
             Environment.getExternalStoragePublicDirectory(dirType)
         }
-    }
 
-    fun playlistsDirectory() =
-        externalStorageDirectory().resolve(PLAYLISTS_DIRECTORY_NAME).ensureDirectory()
+    fun playlistsDirectory() = externalStorageDirectory().resolve(PLAYLISTS_DIRECTORY_NAME).ensureDirectory()
 
-    fun customArtistImagesDirectory() =
-        get<Context>().filesDir.resolve(CUSTOM_ARTIST_IMAGES_DIRECTORY_NAME).ensureDirectory()
+    fun customArtistImagesDirectory() = get<Context>().filesDir.resolve(CUSTOM_ARTIST_IMAGES_DIRECTORY_NAME).ensureDirectory()
 
-    fun customPlaylistImagesDirectory() =
-        get<Context>().filesDir.resolve(CUSTOM_PLAYLIST_IMAGES_DIRECTORY_NAME).ensureDirectory()
+    fun customPlaylistImagesDirectory() = get<Context>().filesDir.resolve(CUSTOM_PLAYLIST_IMAGES_DIRECTORY_NAME).ensureDirectory()
 
-    fun thumbsDirectory() =
-        get<Context>().externalCacheDir?.resolve(THUMBS_DIRECTORY_NAME).ensureDirectory()
+    fun thumbsDirectory() = get<Context>().externalCacheDir?.resolve(THUMBS_DIRECTORY_NAME).ensureDirectory()
 
     fun getDefaultStartDirectory(): File {
         val musicDir = externalStorageDirectory(Environment.DIRECTORY_MUSIC)

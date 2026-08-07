@@ -18,28 +18,28 @@ fun DialogCheckBox(
     text: String,
     isChecked: Boolean,
     onValueChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .toggleable(
-                value = isChecked,
-                onValueChange = onValueChange
-            )
-            .padding(vertical = 8.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .toggleable(
+                    value = isChecked,
+                    onValueChange = onValueChange,
+                ).padding(vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Checkbox(
             checked = isChecked,
-            onCheckedChange = null
+            onCheckedChange = null,
         )
 
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
     }
 }

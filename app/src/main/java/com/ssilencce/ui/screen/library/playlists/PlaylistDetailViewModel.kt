@@ -7,13 +7,11 @@ import com.ssilencce.data.local.room.SongEntity
 
 class PlaylistDetailViewModel(
     private val playlistRepository: PlaylistRepository,
-    private var playlistId: Long
+    private var playlistId: Long,
 ) : ViewModel() {
-    fun getSongs(): LiveData<List<SongEntity>> =
-        playlistRepository.playlistSongsObservable(playlistId)
+    fun getSongs(): LiveData<List<SongEntity>> = playlistRepository.playlistSongsObservable(playlistId)
 
-    fun playlistExists(): LiveData<Boolean> =
-        playlistRepository.checkPlaylistExists(playlistId)
+    fun playlistExists(): LiveData<Boolean> = playlistRepository.checkPlaylistExists(playlistId)
 
     fun getPlaylist() = playlistRepository.playlistWithSongsObservable(playlistId)
 }

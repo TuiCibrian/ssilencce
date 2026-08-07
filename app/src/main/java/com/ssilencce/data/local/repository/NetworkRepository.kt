@@ -47,16 +47,58 @@ import kotlin.io.encoding.Base64
 
 interface NetworkRepository {
     fun getLoginState(service: ScrobblingService): Flow<LoginState>
-    suspend fun loginToService(service: ScrobblingService, params: LoginParams)
+
+    suspend fun loginToService(
+        service: ScrobblingService,
+        params: LoginParams,
+    )
+
     suspend fun logoutFromService(service: ScrobblingService)
-    suspend fun scrobble(service: ScrobblingService, song: Song, timestamp: Long): ScrobblingResult
-    suspend fun updateNowPlaying(service: ScrobblingService, song: Song): ScrobblingResult
-    suspend fun artistInfo(name: String, lang: String?, cache: String?): LastFmArtist?
-    suspend fun albumInfo(artist: String, album: String, lang: String?): LastFmAlbum?
-    suspend fun deezerTrack(artist: String, title: String): DeezerTrack?
-    suspend fun deezerArtist(name: String, limit: Int, index: Int): DeezerArtist?
-    suspend fun deezerAlbum(artist: String, name: String): DeezerAlbum?
-    suspend fun musicBrainzRecording(title: String, artist: String): MusicBrainzSearchResponse?
+
+    suspend fun scrobble(
+        service: ScrobblingService,
+        song: Song,
+        timestamp: Long,
+    ): ScrobblingResult
+
+    suspend fun updateNowPlaying(
+        service: ScrobblingService,
+        song: Song,
+    ): ScrobblingResult
+
+    suspend fun artistInfo(
+        name: String,
+        lang: String?,
+        cache: String?,
+    ): LastFmArtist?
+
+    suspend fun albumInfo(
+        artist: String,
+        album: String,
+        lang: String?,
+    ): LastFmAlbum?
+
+    suspend fun deezerTrack(
+        artist: String,
+        title: String,
+    ): DeezerTrack?
+
+    suspend fun deezerArtist(
+        name: String,
+        limit: Int,
+        index: Int,
+    ): DeezerArtist?
+
+    suspend fun deezerAlbum(
+        artist: String,
+        name: String,
+    ): DeezerAlbum?
+
+    suspend fun musicBrainzRecording(
+        title: String,
+        artist: String,
+    ): MusicBrainzSearchResponse?
+
     suspend fun musicBrainzRecordingDetails(id: String): MusicBrainzRecording?
 }
 
@@ -66,9 +108,8 @@ class NetworkRepositoryImpl(
     private val lastFmService: LastFmService,
     private val listenBrainzService: ListenBrainzService,
     private val deezerService: DeezerService,
-    private val musicBrainzService: MusicBrainzService
+    private val musicBrainzService: MusicBrainzService,
 ) : NetworkRepository {
-
     private val lastFmLoginStateFlow = MutableStateFlow<LoginState>(LoginState.Empty)
     private val lastFmLoginState get() = lastFmLoginStateFlow.value
 
@@ -80,37 +121,46 @@ class NetworkRepositoryImpl(
     init {
         val lastFmSessionInfo = getLastFmSessionInfo()
         if (lastFmSessionInfo != null) {
-            lastFmLoginStateFlow.value = LoginState.LoggedIn(
-                username = lastFmSessionInfo.user.name,
-                url = lastFmSessionInfo.user.url
-            )
+            lastFmLoginStateFlow.value =
+                LoginState.LoggedIn(
+                    username = lastFmSessionInfo.user.name,
+                    url = lastFmSessionInfo.user.url,
+                )
         }
 
         val listenBrainzSessionInfo = getListenBrainzSessionInfo()
         if (listenBrainzSessionInfo != null) {
-            listenBrainzLoginStateFlow.value = LoginState.LoggedIn(
-                username = listenBrainzSessionInfo.user,
-                url = listenBrainzSessionInfo.url
-            )
+            listenBrainzLoginStateFlow.value =
+                LoginState.LoggedIn(
+                    username = listenBrainzSessionInfo.user,
+                    url = listenBrainzSessionInfo.url,
+                )
         }
     }
 
-    override fun getLoginState(service: ScrobblingService): Flow<LoginState> {
-        return when (service) {
+    override fun getLoginState(service: ScrobblingService): Flow<LoginState> =
+        when (service) {
             ScrobblingService.Lastfm -> lastFmLoginStateFlow
             ScrobblingService.ListenBrainz -> listenBrainzLoginStateFlow
         }
-    }
 
-    override suspend fun loginToService(service: ScrobblingService, params: LoginParams) {
+    override suspend fun loginToService(
+        service: ScrobblingService,
+        params: LoginParams,
+    ) {
         when (service) {
-            ScrobblingService.Lastfm -> loginToLastFm(
-                params["username"].orEmpty(),
-                params["password"].orEmpty()
-            )
-            ScrobblingService.ListenBrainz -> loginToListenBrainz(
-                params["token"].orEmpty()
-            )
+            ScrobblingService.Lastfm -> {
+                loginToLastFm(
+                    params["username"].orEmpty(),
+                    params["password"].orEmpty(),
+                )
+            }
+
+            ScrobblingService.ListenBrainz -> {
+                loginToListenBrainz(
+                    params["token"].orEmpty(),
+                )
+            }
         }
     }
 
@@ -124,88 +174,103 @@ class NetworkRepositoryImpl(
     override suspend fun scrobble(
         service: ScrobblingService,
         song: Song,
-        timestamp: Long
-    ): ScrobblingResult {
-        return when (service) {
+        timestamp: Long,
+    ): ScrobblingResult =
+        when (service) {
             ScrobblingService.Lastfm -> scrobbleToLastfm(song, timestamp)
             ScrobblingService.ListenBrainz -> scrobbleToListenBrainz(song, timestamp)
         }
-    }
 
     override suspend fun updateNowPlaying(
         service: ScrobblingService,
-        song: Song
-    ): ScrobblingResult {
-        return when (service) {
+        song: Song,
+    ): ScrobblingResult =
+        when (service) {
             ScrobblingService.Lastfm -> updateNowPlayingOnLastfm(song)
             ScrobblingService.ListenBrainz -> updateNowPlayingOnListenBrainz(song)
         }
-    }
 
-    override suspend fun artistInfo(name: String, lang: String?, cache: String?): LastFmArtist? {
-        return try {
+    override suspend fun artistInfo(
+        name: String,
+        lang: String?,
+        cache: String?,
+    ): LastFmArtist? =
+        try {
             lastFmService.artistInfo(name, lang, cache)
         } catch (e: Exception) {
             Log.e(TAG, "Last.fm: artist info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun albumInfo(artist: String, album: String, lang: String?): LastFmAlbum? {
-        return try {
+    override suspend fun albumInfo(
+        artist: String,
+        album: String,
+        lang: String?,
+    ): LastFmAlbum? =
+        try {
             lastFmService.albumInfo(album, artist, lang)
         } catch (e: Exception) {
             Log.e(TAG, "Last.fm: album info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun deezerTrack(artist: String, title: String): DeezerTrack? {
-        return try {
+    override suspend fun deezerTrack(
+        artist: String,
+        title: String,
+    ): DeezerTrack? =
+        try {
             deezerService.track(artist, title)
         } catch (e: Exception) {
             Log.e(TAG, "Deezer: track info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun deezerArtist(name: String, limit: Int, index: Int): DeezerArtist? {
-        return try {
+    override suspend fun deezerArtist(
+        name: String,
+        limit: Int,
+        index: Int,
+    ): DeezerArtist? =
+        try {
             deezerService.artist(name, limit, index)
         } catch (e: Exception) {
             Log.e(TAG, "Deezer: artist info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun deezerAlbum(artist: String, name: String): DeezerAlbum? {
-        return try {
+    override suspend fun deezerAlbum(
+        artist: String,
+        name: String,
+    ): DeezerAlbum? =
+        try {
             deezerService.album(artist, name)
         } catch (e: Exception) {
             Log.e(TAG, "Deezer: album info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun musicBrainzRecording(title: String, artist: String): MusicBrainzSearchResponse? {
-        return try {
+    override suspend fun musicBrainzRecording(
+        title: String,
+        artist: String,
+    ): MusicBrainzSearchResponse? =
+        try {
             musicBrainzService.searchRecording(title, artist)
         } catch (e: Exception) {
             Log.e(TAG, "MusicBrainz: recording info couldn't be retrieved!", e)
             null
         }
-    }
 
-    override suspend fun musicBrainzRecordingDetails(id: String): MusicBrainzRecording? {
-        return try {
+    override suspend fun musicBrainzRecordingDetails(id: String): MusicBrainzRecording? =
+        try {
             musicBrainzService.getRecordingDetails(id)
         } catch (e: Exception) {
             Log.e(TAG, "MusicBrainz: recording details couldn't be retrieved!", e)
             null
         }
-    }
 
-    private suspend fun loginToLastFm(username: String, password: String) {
+    private suspend fun loginToLastFm(
+        username: String,
+        password: String,
+    ) {
         val currentState = this.lastFmLoginState
         if (currentState is LoginState.LoggingIn) return
         if (currentState is LoginState.LoggedIn) {
@@ -220,46 +285,52 @@ class NetworkRepositoryImpl(
                 if (session != null && session.key.isNotBlank()) {
                     val isSuccess = setLastfmSessionInfo(userResponse.user, session.key)
                     if (isSuccess) {
-                        lastFmLoginStateFlow.value = LoginState.LoggedIn(
-                            userResponse.user.name,
-                            userResponse.user.url
-                        )
+                        lastFmLoginStateFlow.value =
+                            LoginState.LoggedIn(
+                                userResponse.user.name,
+                                userResponse.user.url,
+                            )
                         return
                     }
                 }
                 lastFmLoginStateFlow.value = LoginState.Failure(context.getString(R.string.error_lastfm_generic))
             } else if (sessionResponse is LastFmError) {
                 val failure = LastFmFailure.fromCode(sessionResponse.error)
-                lastFmLoginStateFlow.value = LoginState.Failure(
-                    context.getString(failure.messageRes)
-                )
+                lastFmLoginStateFlow.value =
+                    LoginState.Failure(
+                        context.getString(failure.messageRes),
+                    )
                 return
             }
         } catch (e: Exception) {
             when (e) {
                 is ClientRequestException -> {
-                    val failure = try {
-                        val responseAsText = e.response.bodyAsText()
-                        val lastFmError = Json.decodeFromString<LastFmError>(responseAsText)
-                        LastFmFailure.fromCode(lastFmError.error)
-                    } catch (_: Exception) {
-                        LastFmFailure.Unknown
-                    }
+                    val failure =
+                        try {
+                            val responseAsText = e.response.bodyAsText()
+                            val lastFmError = Json.decodeFromString<LastFmError>(responseAsText)
+                            LastFmFailure.fromCode(lastFmError.error)
+                        } catch (_: Exception) {
+                            LastFmFailure.Unknown
+                        }
                     lastFmLoginStateFlow.value = LoginState.Failure(context.getString(failure.messageRes))
                 }
 
                 is ConnectException,
-                is SocketTimeoutException -> {
-                    lastFmLoginStateFlow.value = LoginState.Failure(
-                        context.getString(R.string.error_network_timeout)
-                    )
+                is SocketTimeoutException,
+                -> {
+                    lastFmLoginStateFlow.value =
+                        LoginState.Failure(
+                            context.getString(R.string.error_network_timeout),
+                        )
                 }
 
                 else -> {
                     Log.e(TAG, "Last.fm: log-in error", e)
-                    lastFmLoginStateFlow.value = LoginState.Failure(
-                        context.getString(R.string.error_lastfm_generic)
-                    )
+                    lastFmLoginStateFlow.value =
+                        LoginState.Failure(
+                            context.getString(R.string.error_lastfm_generic),
+                        )
                 }
             }
         }
@@ -276,38 +347,44 @@ class NetworkRepositoryImpl(
         }
     }
 
-    private suspend fun scrobbleToLastfm(song: Song, timestamp: Long): ScrobblingResult {
-        val sessionInfo = getLastFmSessionInfoOrLogout()
-            ?: return ScrobblingResult.Failure(context.getString(R.string.error_lastfm_auth))
+    private suspend fun scrobbleToLastfm(
+        song: Song,
+        timestamp: Long,
+    ): ScrobblingResult {
+        val sessionInfo =
+            getLastFmSessionInfoOrLogout()
+                ?: return ScrobblingResult.Failure(context.getString(R.string.error_lastfm_auth))
 
         try {
-            val response = lastFmService.scrobble(
-                artist = song.displayArtistName(),
-                track = song.title,
-                album = song.albumName,
-                timestamp = timestamp,
-                sk = sessionInfo.key
-            )
+            val response =
+                lastFmService.scrobble(
+                    artist = song.displayArtistName(),
+                    track = song.title,
+                    album = song.albumName,
+                    timestamp = timestamp,
+                    sk = sessionInfo.key,
+                )
 
-            val result = when (response) {
-                is ScrobbleResponse -> {
-                    val scrobbleData = response.scrobbles.scrobble.firstOrNull()
-                    val ignoredMessage = scrobbleData?.ignoredMessage
-                    if (response.scrobbles.attr.accepted > 0 && ignoredMessage?.code == "0") {
-                        ScrobblingResult.Success(song.id)
-                    } else {
-                        ScrobblingResult.Failure(ignoredMessage?.text)
+            val result =
+                when (response) {
+                    is ScrobbleResponse -> {
+                        val scrobbleData = response.scrobbles.scrobble.firstOrNull()
+                        val ignoredMessage = scrobbleData?.ignoredMessage
+                        if (response.scrobbles.attr.accepted > 0 && ignoredMessage?.code == "0") {
+                            ScrobblingResult.Success(song.id)
+                        } else {
+                            ScrobblingResult.Failure(ignoredMessage?.text)
+                        }
+                    }
+
+                    is LastFmError -> {
+                        response.toScrobblingResult()
+                    }
+
+                    else -> {
+                        ScrobblingResult.Failure()
                     }
                 }
-
-                is LastFmError -> {
-                    response.toScrobblingResult()
-                }
-
-                else -> {
-                    ScrobblingResult.Failure()
-                }
-            }
 
             return result
         } catch (e: Exception) {
@@ -317,35 +394,38 @@ class NetworkRepositoryImpl(
     }
 
     private suspend fun updateNowPlayingOnLastfm(song: Song): ScrobblingResult {
-        val sessionInfo = getLastFmSessionInfoOrLogout()
-            ?: return ScrobblingResult.Failure()
+        val sessionInfo =
+            getLastFmSessionInfoOrLogout()
+                ?: return ScrobblingResult.Failure()
 
         try {
-            val response = lastFmService.updateNowPlaying(
-                artist = song.displayArtistName(),
-                track = song.title,
-                sk = sessionInfo.key
-            )
+            val response =
+                lastFmService.updateNowPlaying(
+                    artist = song.displayArtistName(),
+                    track = song.title,
+                    sk = sessionInfo.key,
+                )
 
-            val result = when (response) {
-                is NowPlayingResponse -> {
-                    val nowPlayingData = response.nowplaying
-                    val ignoredMessage = nowPlayingData.ignoredMessage
-                    if (ignoredMessage.code == "0") {
-                        ScrobblingResult.Success(song.id)
-                    } else {
-                        ScrobblingResult.Failure(ignoredMessage.text)
+            val result =
+                when (response) {
+                    is NowPlayingResponse -> {
+                        val nowPlayingData = response.nowplaying
+                        val ignoredMessage = nowPlayingData.ignoredMessage
+                        if (ignoredMessage.code == "0") {
+                            ScrobblingResult.Success(song.id)
+                        } else {
+                            ScrobblingResult.Failure(ignoredMessage.text)
+                        }
+                    }
+
+                    is LastFmError -> {
+                        response.toScrobblingResult()
+                    }
+
+                    else -> {
+                        ScrobblingResult.Failure()
                     }
                 }
-
-                is LastFmError -> {
-                    response.toScrobblingResult()
-                }
-
-                else -> {
-                    ScrobblingResult.Failure()
-                }
-            }
             return result
         } catch (e: Exception) {
             Log.e(TAG, "Last.fm: updateNowPlaying call failed!", e)
@@ -355,8 +435,9 @@ class NetworkRepositoryImpl(
 
     private fun getLastFmSessionInfoOrLogout(): LastFmSessionInfo? {
         val currentLoginState = lastFmLoginState
-        if (currentLoginState is LoginState.LoggingIn)
+        if (currentLoginState is LoginState.LoggingIn) {
             return null
+        }
 
         val sessionInfo = getLastFmSessionInfo()
         if (sessionInfo == null) {
@@ -371,13 +452,17 @@ class NetworkRepositoryImpl(
     private fun LastFmError.toScrobblingResult(): ScrobblingResult {
         val errorCode = LastFmFailure.fromCode(this.error)
         if (errorCode == LastFmFailure.Auth ||
-            errorCode == LastFmFailure.InvalidCredentials) {
+            errorCode == LastFmFailure.InvalidCredentials
+        ) {
             logoutFromLastFm()
         }
         return ScrobblingResult.Failure(context.getString(errorCode.messageRes))
     }
 
-    private fun setLastfmSessionInfo(user: LastFmUser, sessionKey: String): Boolean {
+    private fun setLastfmSessionInfo(
+        user: LastFmUser,
+        sessionKey: String,
+    ): Boolean {
         try {
             val encryptedKey = CryptoUtil.encrypt(sessionKey)
             val sessionInfo = Json.encodeToString(LastFmSessionInfo(user, encryptedKey))
@@ -422,25 +507,29 @@ class NetworkRepositoryImpl(
             val response = listenBrainzService.validateToken(token)
             if (response.valid && response.userName != null) {
                 if (setListenBrainzToken(token, response.userName)) {
-                    listenBrainzLoginStateFlow.value = LoginState.LoggedIn(
-                        username = response.userName,
-                        url = "https://listenbrainz.org/user/${response.userName}/"
-                    )
+                    listenBrainzLoginStateFlow.value =
+                        LoginState.LoggedIn(
+                            username = response.userName,
+                            url = "https://listenbrainz.org/user/${response.userName}/",
+                        )
                 } else {
-                    listenBrainzLoginStateFlow.value = LoginState.Failure(
-                        context.getString(R.string.error_listenbrainz_generic)
-                    )
+                    listenBrainzLoginStateFlow.value =
+                        LoginState.Failure(
+                            context.getString(R.string.error_listenbrainz_generic),
+                        )
                 }
             } else {
-                listenBrainzLoginStateFlow.value = LoginState.Failure(
-                    context.getString(R.string.error_listenbrainz_invalid_token)
-                )
+                listenBrainzLoginStateFlow.value =
+                    LoginState.Failure(
+                        context.getString(R.string.error_listenbrainz_invalid_token),
+                    )
             }
         } catch (e: Exception) {
             Log.e(TAG, "ListenBrainz: login error", e)
-            listenBrainzLoginStateFlow.value = LoginState.Failure(
-                context.getString(R.string.error_listenbrainz_invalid_token)
-            )
+            listenBrainzLoginStateFlow.value =
+                LoginState.Failure(
+                    context.getString(R.string.error_listenbrainz_invalid_token),
+                )
         }
     }
 
@@ -455,31 +544,41 @@ class NetworkRepositoryImpl(
         }
     }
 
-    private suspend fun scrobbleToListenBrainz(song: Song, timestamp: Long): ScrobblingResult {
-        val sessionInfo = getListenBrainzSessionInfo()
-            ?: return ScrobblingResult.Failure()
+    private suspend fun scrobbleToListenBrainz(
+        song: Song,
+        timestamp: Long,
+    ): ScrobblingResult {
+        val sessionInfo =
+            getListenBrainzSessionInfo()
+                ?: return ScrobblingResult.Failure()
         try {
-            val additionalInfo = if (!BuildConfig.DEBUG) {
-                ListenBrainzTrackAdditionalInfo(
-                    player = appName,
-                    playerVersion = BuildConfig.VERSION_NAME
-                )
-            } else null
-
-            val submission = ListenBrainzSubmission(
-                listenType = "single",
-                payload = listOf(
-                    ListenBrainzListen(
-                        listenedAt = timestamp,
-                        trackMetadata = ListenBrainzTrackMetadata(
-                            artistName = song.displayArtistName(),
-                            trackName = song.title,
-                            releaseName = song.albumName,
-                            additionalInfo = additionalInfo
-                        )
+            val additionalInfo =
+                if (!BuildConfig.DEBUG) {
+                    ListenBrainzTrackAdditionalInfo(
+                        player = appName,
+                        playerVersion = BuildConfig.VERSION_NAME,
                     )
+                } else {
+                    null
+                }
+
+            val submission =
+                ListenBrainzSubmission(
+                    listenType = "single",
+                    payload =
+                        listOf(
+                            ListenBrainzListen(
+                                listenedAt = timestamp,
+                                trackMetadata =
+                                    ListenBrainzTrackMetadata(
+                                        artistName = song.displayArtistName(),
+                                        trackName = song.title,
+                                        releaseName = song.albumName,
+                                        additionalInfo = additionalInfo,
+                                    ),
+                            ),
+                        ),
                 )
-            )
             val response = listenBrainzService.submitListen(sessionInfo.token, submission)
             return if (response.status == "ok") {
                 ScrobblingResult.Success(song.id)
@@ -493,29 +592,36 @@ class NetworkRepositoryImpl(
     }
 
     private suspend fun updateNowPlayingOnListenBrainz(song: Song): ScrobblingResult {
-        val sessionInfo = getListenBrainzSessionInfo()
-            ?: return ScrobblingResult.Failure()
+        val sessionInfo =
+            getListenBrainzSessionInfo()
+                ?: return ScrobblingResult.Failure()
         try {
-            val additionalInfo = if (!BuildConfig.DEBUG) {
-                ListenBrainzTrackAdditionalInfo(
-                    player = appName,
-                    playerVersion = BuildConfig.VERSION_NAME
-                )
-            } else null
-
-            val submission = ListenBrainzSubmission(
-                listenType = "playing_now",
-                payload = listOf(
-                    ListenBrainzListen(
-                        trackMetadata = ListenBrainzTrackMetadata(
-                            artistName = song.displayArtistName(),
-                            trackName = song.title,
-                            releaseName = song.albumName,
-                            additionalInfo = additionalInfo
-                        )
+            val additionalInfo =
+                if (!BuildConfig.DEBUG) {
+                    ListenBrainzTrackAdditionalInfo(
+                        player = appName,
+                        playerVersion = BuildConfig.VERSION_NAME,
                     )
+                } else {
+                    null
+                }
+
+            val submission =
+                ListenBrainzSubmission(
+                    listenType = "playing_now",
+                    payload =
+                        listOf(
+                            ListenBrainzListen(
+                                trackMetadata =
+                                    ListenBrainzTrackMetadata(
+                                        artistName = song.displayArtistName(),
+                                        trackName = song.title,
+                                        releaseName = song.albumName,
+                                        additionalInfo = additionalInfo,
+                                    ),
+                            ),
+                        ),
                 )
-            )
             val response = listenBrainzService.submitListen(sessionInfo.token, submission)
             return if (response.status == "ok") {
                 ScrobblingResult.Success(song.id)
@@ -528,8 +634,11 @@ class NetworkRepositoryImpl(
         }
     }
 
-    private fun setListenBrainzToken(token: String, userName: String): Boolean {
-        return try {
+    private fun setListenBrainzToken(
+        token: String,
+        userName: String,
+    ): Boolean =
+        try {
             val encryptedToken = CryptoUtil.encrypt(token)
             val sessionInfo = Json.encodeToString(ListenBrainzSessionInfo(userName, encryptedToken))
             val encodedValue = Base64.encode(sessionInfo.toByteArray())
@@ -541,7 +650,6 @@ class NetworkRepositoryImpl(
             Log.e(TAG, "Couldn't save ListenBrainz token.", e)
             false
         }
-    }
 
     private fun getListenBrainzSessionInfo(): ListenBrainzSessionInfo? {
         val encodedValue = preferences.getString(LISTEN_BRAINZ_SESSION_INFO, null)
@@ -562,14 +670,14 @@ class NetworkRepositoryImpl(
         @SerialName("user")
         val user: LastFmUser,
         @SerialName("session")
-        val key: String
+        val key: String,
     )
 
     @Serializable
     private data class ListenBrainzSessionInfo(
         @SerialName("user_name")
         val user: String,
-        val token: String
+        val token: String,
     ) {
         val url = "https://listenbrainz.org/user/$user/"
     }

@@ -81,277 +81,282 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
-val networkModule = module {
-    factory {
-        jsonHttpClient(okHttpClient = get())
+val networkModule =
+    module {
+        factory {
+            jsonHttpClient(okHttpClient = get())
+        }
+        factory {
+            provideOkHttp(context = get())
+        }
+        single {
+            GitHubService(context = androidContext(), client = get())
+        }
+        single {
+            DeezerService(client = get())
+        }
+        single {
+            LastFmService(client = get())
+        }
+        single {
+            ListenBrainzService(client = get())
+        }
+        single {
+            MusicBrainzService(client = get())
+        }
+        single {
+            LyricsDownloadService(client = get())
+        }
     }
-    factory {
-        provideOkHttp(context = get())
-    }
-    single {
-        GitHubService(context = androidContext(), client = get())
-    }
-    single {
-        DeezerService(client = get())
-    }
-    single {
-        LastFmService(client = get())
-    }
-    single {
-        ListenBrainzService(client = get())
-    }
-    single {
-        MusicBrainzService(client = get())
-    }
-    single {
-        LyricsDownloadService(client = get())
-    }
-}
 
-private val mainModule = module {
-    single {
-        androidContext().contentResolver
-    }
-    single {
-        PreferenceManager.getDefaultSharedPreferences(androidContext())
-    }
-    single {
-        SleepTimer(context = androidContext())
-    }
-    single {
-        BalanceAudioProcessor()
-    }
-    single {
-        ReplayGainAudioProcessor()
-    }
-    single {
-        EqualizerManager(
-            context = androidContext(),
-            balanceProcessor = get(),
-            replayGainProcessor = get(),
-            audioOutputObserver = get()
-        )
-    }
-    single {
-        MediaStoreWriter(context = androidContext(), contentResolver = get())
-    }
-    single {
-        CustomArtistImageManager(context = androidContext())
-    }
-    single {
-        CustomPlaylistImageManager(context = androidContext())
-    }
-    single {
-        AudioOutputObserver(context = androidContext())
-    }
-}
-
-private val roomModule = module {
-    single {
-        Room.databaseBuilder(androidContext(), SsilencceDatabase::class.java, "music_database.db")
-            .addMigrations(
-                SsilencceDatabase.MIGRATION_1_2,
-                SsilencceDatabase.MIGRATION_2_3,
-                SsilencceDatabase.MIGRATION_3_4,
-                SsilencceDatabase.MIGRATION_4_5,
-                SsilencceDatabase.MIGRATION_5_6
+private val mainModule =
+    module {
+        single {
+            androidContext().contentResolver
+        }
+        single {
+            PreferenceManager.getDefaultSharedPreferences(androidContext())
+        }
+        single {
+            SleepTimer(context = androidContext())
+        }
+        single {
+            BalanceAudioProcessor()
+        }
+        single {
+            ReplayGainAudioProcessor()
+        }
+        single {
+            EqualizerManager(
+                context = androidContext(),
+                balanceProcessor = get(),
+                replayGainProcessor = get(),
+                audioOutputObserver = get(),
             )
-            .build()
+        }
+        single {
+            MediaStoreWriter(context = androidContext(), contentResolver = get())
+        }
+        single {
+            CustomArtistImageManager(context = androidContext())
+        }
+        single {
+            CustomPlaylistImageManager(context = androidContext())
+        }
+        single {
+            AudioOutputObserver(context = androidContext())
+        }
     }
 
-    factory {
-        get<SsilencceDatabase>().playlistDao()
+private val roomModule =
+    module {
+        single {
+            Room
+                .databaseBuilder(androidContext(), SsilencceDatabase::class.java, "music_database.db")
+                .addMigrations(
+                    SsilencceDatabase.MIGRATION_1_2,
+                    SsilencceDatabase.MIGRATION_2_3,
+                    SsilencceDatabase.MIGRATION_3_4,
+                    SsilencceDatabase.MIGRATION_4_5,
+                    SsilencceDatabase.MIGRATION_5_6,
+                ).build()
+        }
+
+        factory {
+            get<SsilencceDatabase>().playlistDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().playCountDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().historyDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().queueDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().inclExclDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().lyricsDao()
+        }
     }
 
-    factory {
-        get<SsilencceDatabase>().playCountDao()
+private val dataModule =
+    module {
+        single {
+            RealRepository(
+                context = androidContext(),
+                songRepository = get(),
+                albumRepository = get(),
+                artistRepository = get(),
+                genreRepository = get(),
+                smartRepository = get(),
+                specialRepository = get(),
+                playlistRepository = get(),
+                searchRepository = get(),
+                networkRepository = get(),
+            )
+        } bind Repository::class
+
+        single {
+            RealSongRepository(context = get(), inclExclDao = get())
+        } bind SongRepository::class
+
+        single {
+            RealAlbumRepository(songRepository = get())
+        } bind AlbumRepository::class
+
+        single {
+            RealArtistRepository(songRepository = get(), albumRepository = get())
+        } bind ArtistRepository::class
+
+        single {
+            RealPlaylistRepository(
+                context = androidContext(),
+                songRepository = get(),
+                playlistDao = get(),
+            )
+        } bind PlaylistRepository::class
+
+        single {
+            RealGenreRepository(contentResolver = get(), songRepository = get())
+        } bind GenreRepository::class
+
+        single {
+            RealSearchRepository(
+                albumRepository = get(),
+                songRepository = get(),
+                artistRepository = get(),
+                playlistRepository = get(),
+                genreRepository = get(),
+                specialRepository = get(),
+            )
+        } bind SearchRepository::class
+
+        single {
+            RealSmartRepository(
+                context = androidContext(),
+                songRepository = get(),
+                albumRepository = get(),
+                artistRepository = get(),
+                historyDao = get(),
+                playCountDao = get(),
+            )
+        } bind SmartRepository::class
+
+        single {
+            RealSpecialRepository(songRepository = get())
+        } bind SpecialRepository::class
+
+        single {
+            RealLyricsRepository(
+                context = androidContext(),
+                preferences = get(),
+                lyricsDownloadService = get(),
+                lyricsDao = get(),
+            )
+        } bind LyricsRepository::class
+
+        single {
+            NetworkRepositoryImpl(
+                context = androidContext(),
+                preferences = get(),
+                lastFmService = get(),
+                listenBrainzService = get(),
+                deezerService = get(),
+                musicBrainzService = get(),
+            )
+        } bind NetworkRepository::class
     }
 
-    factory {
-        get<SsilencceDatabase>().historyDao()
+private val viewModule =
+    module {
+        viewModel {
+            LibraryViewModel(repository = get(), inclExclDao = get(), customPlaylistImageManager = get())
+        }
+
+        viewModel {
+            PlayerViewModel(preferences = get(), repository = get())
+        }
+
+        viewModel {
+            EqualizerViewModel(
+                contentResolver = get(),
+                equalizerManager = get(),
+                audioOutputObserver = get(),
+                mediaStoreWriter = get(),
+            )
+        }
+
+        viewModel {
+            SleepTimerViewModel(
+                application = androidApplication(),
+                sleepTimer = get(),
+            )
+        }
+
+        viewModel { (albumId: Long) ->
+            AlbumDetailViewModel(
+                application = androidApplication(),
+                repository = get(),
+                albumId = albumId,
+            )
+        }
+
+        viewModel { (artistId: Long, artistName: String?) ->
+            ArtistDetailViewModel(
+                application = androidApplication(),
+                repository = get(),
+                artistId = artistId,
+                artistName = artistName,
+            )
+        }
+
+        viewModel { (playlistId: Long) ->
+            PlaylistDetailViewModel(playlistRepository = get(), playlistId = playlistId)
+        }
+
+        viewModel { (genre: Genre) ->
+            GenreDetailViewModel(repository = get(), genre = genre)
+        }
+
+        viewModel { (year: Int) ->
+            YearDetailViewModel(repository = get(), year = year)
+        }
+
+        viewModel { (path: String) ->
+            FolderDetailViewModel(repository = get(), folderPath = path)
+        }
+
+        viewModel {
+            SearchViewModel(repository = get())
+        }
+
+        viewModel { (target: EditTarget) ->
+            TagEditorViewModel(
+                repository = get(),
+                customArtistImageManager = get(),
+                target = target,
+            )
+        }
+
+        viewModel {
+            LyricsViewModel(application = androidApplication(), preferences = get(), repository = get())
+        }
+
+        viewModel {
+            InfoViewModel(repository = get())
+        }
+
+        viewModel {
+            UpdateViewModel(updateService = get())
+        }
     }
-
-    factory {
-        get<SsilencceDatabase>().queueDao()
-    }
-
-    factory {
-        get<SsilencceDatabase>().inclExclDao()
-    }
-
-    factory {
-        get<SsilencceDatabase>().lyricsDao()
-    }
-}
-
-private val dataModule = module {
-    single {
-        RealRepository(
-            context = androidContext(),
-            songRepository = get(),
-            albumRepository = get(),
-            artistRepository = get(),
-            genreRepository = get(),
-            smartRepository = get(),
-            specialRepository = get(),
-            playlistRepository = get(),
-            searchRepository = get(),
-            networkRepository = get()
-        )
-    } bind Repository::class
-
-    single {
-        RealSongRepository(context = get(), inclExclDao = get())
-    } bind SongRepository::class
-
-    single {
-        RealAlbumRepository(songRepository = get())
-    } bind AlbumRepository::class
-
-    single {
-        RealArtistRepository(songRepository = get(), albumRepository = get())
-    } bind ArtistRepository::class
-
-    single {
-        RealPlaylistRepository(
-            context = androidContext(),
-            songRepository = get(),
-            playlistDao = get()
-        )
-    } bind PlaylistRepository::class
-
-    single {
-        RealGenreRepository(contentResolver = get(), songRepository = get())
-    } bind GenreRepository::class
-
-    single {
-        RealSearchRepository(
-            albumRepository = get(),
-            songRepository = get(),
-            artistRepository = get(),
-            playlistRepository = get(),
-            genreRepository = get(),
-            specialRepository = get()
-        )
-    } bind SearchRepository::class
-
-    single {
-        RealSmartRepository(
-            context = androidContext(),
-            songRepository = get(),
-            albumRepository = get(),
-            artistRepository = get(),
-            historyDao = get(),
-            playCountDao = get()
-        )
-    } bind SmartRepository::class
-
-    single {
-        RealSpecialRepository(songRepository = get())
-    } bind SpecialRepository::class
-
-    single {
-        RealLyricsRepository(
-            context = androidContext(),
-            preferences = get(),
-            lyricsDownloadService = get(),
-            lyricsDao = get()
-        )
-    } bind LyricsRepository::class
-
-    single {
-        NetworkRepositoryImpl(
-            context = androidContext(),
-            preferences = get(),
-            lastFmService = get(),
-            listenBrainzService = get(),
-            deezerService = get(),
-            musicBrainzService = get()
-        )
-    } bind NetworkRepository::class
-}
-
-private val viewModule = module {
-    viewModel {
-        LibraryViewModel(repository = get(), inclExclDao = get(), customPlaylistImageManager = get())
-    }
-
-    viewModel {
-        PlayerViewModel(preferences = get(), repository = get())
-    }
-
-    viewModel {
-        EqualizerViewModel(
-            contentResolver = get(),
-            equalizerManager = get(),
-            audioOutputObserver = get(),
-            mediaStoreWriter = get()
-        )
-    }
-
-    viewModel {
-        SleepTimerViewModel(
-            application = androidApplication(),
-            sleepTimer = get()
-        )
-    }
-
-    viewModel { (albumId: Long) ->
-        AlbumDetailViewModel(
-            application = androidApplication(),
-            repository = get(),
-            albumId = albumId
-        )
-    }
-
-    viewModel { (artistId: Long, artistName: String?) ->
-        ArtistDetailViewModel(
-            application = androidApplication(),
-            repository = get(),
-            artistId = artistId,
-            artistName = artistName
-        )
-    }
-
-    viewModel { (playlistId: Long) ->
-        PlaylistDetailViewModel(playlistRepository = get(), playlistId = playlistId)
-    }
-
-    viewModel { (genre: Genre) ->
-        GenreDetailViewModel(repository = get(), genre = genre)
-    }
-
-    viewModel { (year: Int) ->
-        YearDetailViewModel(repository = get(), year = year)
-    }
-
-    viewModel { (path: String) ->
-        FolderDetailViewModel(repository = get(), folderPath = path)
-    }
-
-    viewModel {
-        SearchViewModel(repository = get())
-    }
-
-    viewModel { (target: EditTarget) ->
-        TagEditorViewModel(
-            repository = get(),
-            customArtistImageManager = get(),
-            target = target
-        )
-    }
-
-    viewModel {
-        LyricsViewModel(application = androidApplication(), preferences = get(), repository = get())
-    }
-
-    viewModel {
-        InfoViewModel(repository = get())
-    }
-
-    viewModel {
-        UpdateViewModel(updateService = get())
-    }
-}
 
 val appModules = listOf(networkModule, mainModule, roomModule, dataModule, viewModule)

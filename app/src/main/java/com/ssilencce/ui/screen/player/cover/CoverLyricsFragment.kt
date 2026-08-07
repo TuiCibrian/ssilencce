@@ -19,18 +19,17 @@ import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class CoverLyricsFragment : Fragment() {
-
     private val lyricsViewModel: LyricsViewModel by activityViewModel()
     private val playerViewModel: PlayerViewModel by activityViewModel()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -43,9 +42,9 @@ class CoverLyricsFragment : Fragment() {
                             } else {
                                 goToDestination(requireActivity(), R.id.nav_lyrics)
                             }
-                        })
+                        },
+                    )
                 }
             }
         }
-    }
 }

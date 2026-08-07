@@ -60,7 +60,7 @@ fun KaraokeLineView(
     contentColor: Color,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val isRtlContent = remember(syllables) { syllables.any { it.content.isRtl() } }
 
@@ -70,55 +70,68 @@ fun KaraokeLineView(
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val availableWidthPx = with(density) { maxWidth.toPx() }
 
-        val spaceWidth = remember(textMeasurer, style) {
-            textMeasurer.measure(" ", style).size.width.toFloat()
-        }
+        val spaceWidth =
+            remember(textMeasurer, style) {
+                textMeasurer
+                    .measure(" ", style)
+                    .size.width
+                    .toFloat()
+            }
 
-        val initialLayouts = remember(syllables, style, spaceWidth) {
-            measureSyllablesAndDetermineAnimation(
-                syllables = syllables,
-                textMeasurer = textMeasurer,
-                style = style,
-                spaceWidth = spaceWidth
-            )
-        }
+        val initialLayouts =
+            remember(syllables, style, spaceWidth) {
+                measureSyllablesAndDetermineAnimation(
+                    syllables = syllables,
+                    textMeasurer = textMeasurer,
+                    style = style,
+                    spaceWidth = spaceWidth,
+                )
+            }
 
-        val wrappedLines = remember(initialLayouts, availableWidthPx) {
-            calculateGreedyWrappedLines(
-                syllableLayouts = initialLayouts,
-                availableWidthPx = availableWidthPx,
-                textMeasurer = textMeasurer,
-                style = style
-            )
-        }
+        val wrappedLines =
+            remember(initialLayouts, availableWidthPx) {
+                calculateGreedyWrappedLines(
+                    syllableLayouts = initialLayouts,
+                    availableWidthPx = availableWidthPx,
+                    textMeasurer = textMeasurer,
+                    style = style,
+                )
+            }
 
-        val lineHeight = remember(style) {
-            textMeasurer.measure("M", style).size.height.toFloat()
-        }
+        val lineHeight =
+            remember(style) {
+                textMeasurer
+                    .measure("M", style)
+                    .size.height
+                    .toFloat()
+            }
 
-        val finalLineLayouts = remember(wrappedLines, availableWidthPx, lineHeight, align, isRtlContent) {
-            calculateStaticLineLayout(
-                wrappedLines = wrappedLines,
-                align = align,
-                canvasWidth = availableWidthPx,
-                lineHeight = lineHeight,
-                isRtl = isRtlContent
-            )
-        }
+        val finalLineLayouts =
+            remember(wrappedLines, availableWidthPx, lineHeight, align, isRtlContent) {
+                calculateStaticLineLayout(
+                    wrappedLines = wrappedLines,
+                    align = align,
+                    canvasWidth = availableWidthPx,
+                    lineHeight = lineHeight,
+                    isRtl = isRtlContent,
+                )
+            }
 
-        val rowRenderData = remember(finalLineLayouts, density) {
-            calculateRowRenderData(finalLineLayouts, density.density)
-        }
+        val rowRenderData =
+            remember(finalLineLayouts, density) {
+                calculateRowRenderData(finalLineLayouts, density.density)
+            }
 
-        val totalHeight = remember(wrappedLines, lineHeight) {
-            lineHeight * wrappedLines.size
-        }
+        val totalHeight =
+            remember(wrappedLines, lineHeight) {
+                lineHeight * wrappedLines.size
+            }
 
         val lineEnd = rowRenderData.last().lastWordEnd
         val lineHasAlreadyPassed = currentMillis >= lineEnd && !selectedLine
         val animatedAlpha by animateFloatAsState(
             targetValue = if (lineHasAlreadyPassed) .4f else 1f,
-            animationSpec = tween(400)
+            animationSpec = tween(400),
         )
 
         Canvas(modifier = Modifier.size(maxWidth, (totalHeight.toInt() + 8).toDp())) {
@@ -130,7 +143,7 @@ fun KaraokeLineView(
                 contentColor = contentColor,
                 animatedAlpha = animatedAlpha,
                 shadowEffect = shadowEffect,
-                rtlContent = isRtlContent
+                rtlContent = isRtlContent,
             )
         }
     }
@@ -157,7 +170,7 @@ private fun measureSyllablesAndDetermineAnimation(
     syllables: List<SyncedLyrics.Word>,
     textMeasurer: TextMeasurer,
     style: TextStyle,
-    spaceWidth: Float
+    spaceWidth: Float,
 ): List<SyllableLayout> {
     val words = groupIntoWords(syllables)
 
@@ -167,7 +180,11 @@ private fun measureSyllablesAndDetermineAnimation(
 
             var layoutWidth = layoutResult.size.width.toFloat()
             if (syllable.content.endsWith(" ")) {
-                val trimmedWidth = textMeasurer.measure(syllable.content.trimEnd(), style).size.width.toFloat()
+                val trimmedWidth =
+                    textMeasurer
+                        .measure(syllable.content.trimEnd(), style)
+                        .size.width
+                        .toFloat()
                 if (layoutWidth <= trimmedWidth) {
                     val spaceCount = syllable.content.length - syllable.content.trimEnd().length
                     layoutWidth = trimmedWidth + (spaceWidth * spaceCount)
@@ -179,7 +196,7 @@ private fun measureSyllablesAndDetermineAnimation(
                 textLayoutResult = layoutResult,
                 wordId = wordIndex,
                 width = layoutWidth,
-                firstBaseline = layoutResult.firstBaseline
+                firstBaseline = layoutResult.firstBaseline,
             )
         }
     }
@@ -189,7 +206,7 @@ private fun calculateGreedyWrappedLines(
     syllableLayouts: List<SyllableLayout>,
     availableWidthPx: Float,
     textMeasurer: TextMeasurer,
-    style: TextStyle
+    style: TextStyle,
 ): List<WrappedLine> {
     val lines = mutableListOf<WrappedLine>()
     val currentLine = mutableListOf<SyllableLayout>()
@@ -255,7 +272,9 @@ private fun calculateGreedyWrappedLines(
 }
 
 private fun trimDisplayLineTrailingSpaces(
-    displayLineSyllables: List<SyllableLayout>, textMeasurer: TextMeasurer, style: TextStyle
+    displayLineSyllables: List<SyllableLayout>,
+    textMeasurer: TextMeasurer,
+    style: TextStyle,
 ): WrappedLine {
     if (displayLineSyllables.isEmpty()) {
         return WrappedLine(emptyList(), 0f)
@@ -280,11 +299,12 @@ private fun trimDisplayLineTrailingSpaces(
     if (trimmedContent.length < originalContent.length) {
         if (trimmedContent.isNotEmpty()) {
             val trimmedLayoutResult = textMeasurer.measure(trimmedContent, style)
-            val trimmedLayout = lastLayout.copy(
-                word = lastLayout.word.copy(content = trimmedContent),
-                textLayoutResult = trimmedLayoutResult,
-                width = trimmedLayoutResult.size.width.toFloat()
-            )
+            val trimmedLayout =
+                lastLayout.copy(
+                    word = lastLayout.word.copy(content = trimmedContent),
+                    textLayoutResult = trimmedLayoutResult,
+                    width = trimmedLayoutResult.size.width.toFloat(),
+                )
             processedSyllables[processedSyllables.lastIndex] = trimmedLayout
         } else {
             processedSyllables.removeAt(processedSyllables.lastIndex)
@@ -300,28 +320,30 @@ private fun calculateStaticLineLayout(
     align: TextAlign,
     canvasWidth: Float,
     lineHeight: Float,
-    isRtl: Boolean
-): List<List<SyllableLayout>> {
-    return wrappedLines.mapIndexed { lineIndex, wrappedLine ->
+    isRtl: Boolean,
+): List<List<SyllableLayout>> =
+    wrappedLines.mapIndexed { lineIndex, wrappedLine ->
         val maxBaselineInLine = wrappedLine.syllables.maxOfOrNull { it.firstBaseline } ?: 0f
         val rowTopY = lineIndex * lineHeight
 
-        val startX = when (align) {
-            TextAlign.Start -> if (isRtl) canvasWidth - wrappedLine.totalWidth else 0f
-            TextAlign.End -> if (isRtl) 0f else canvasWidth - wrappedLine.totalWidth
-            TextAlign.Right -> canvasWidth - wrappedLine.totalWidth
-            TextAlign.Center -> (canvasWidth - wrappedLine.totalWidth) / 2f
-            else -> 0f
-        }
+        val startX =
+            when (align) {
+                TextAlign.Start -> if (isRtl) canvasWidth - wrappedLine.totalWidth else 0f
+                TextAlign.End -> if (isRtl) 0f else canvasWidth - wrappedLine.totalWidth
+                TextAlign.Right -> canvasWidth - wrappedLine.totalWidth
+                TextAlign.Center -> (canvasWidth - wrappedLine.totalWidth) / 2f
+                else -> 0f
+            }
 
         var currentX = if (isRtl) startX + wrappedLine.totalWidth else startX
 
         wrappedLine.syllables.map { initialLayout ->
-            val positionX = if (isRtl) {
-                currentX - initialLayout.width
-            } else {
-                currentX
-            }
+            val positionX =
+                if (isRtl) {
+                    currentX - initialLayout.width
+                } else {
+                    currentX
+                }
             val verticalOffset = maxBaselineInLine - initialLayout.firstBaseline
             val positionY = rowTopY + verticalOffset
             val positionedLayout = initialLayout.copy(position = Offset(positionX, positionY))
@@ -335,11 +357,10 @@ private fun calculateStaticLineLayout(
             positionedLayout
         }
     }
-}
 
 private fun calculateRowRenderData(
     lineLayouts: List<List<SyllableLayout>>,
-    density: Float
+    density: Float,
 ): List<RowRenderData> {
     return lineLayouts.mapNotNull { rowLayouts ->
         if (rowLayouts.isEmpty()) return@mapNotNull null
@@ -361,12 +382,13 @@ private fun calculateRowRenderData(
             totalWidth = totalWidth,
             firstWordStart = rowLayouts.first().word.start,
             lastWordEnd = rowLayouts.last().word.end,
-            layerBounds = Rect(
-                left = totalMinX - horizontalPadding,
-                top = minY - verticalPadding - edgePaddingPx,
-                right = totalMaxX + horizontalPadding,
-                bottom = minY + totalHeight + verticalPadding + edgePaddingPx
-            )
+            layerBounds =
+                Rect(
+                    left = totalMinX - horizontalPadding,
+                    top = minY - verticalPadding - edgePaddingPx,
+                    right = totalMaxX + horizontalPadding,
+                    bottom = minY + totalHeight + verticalPadding + edgePaddingPx,
+                ),
         )
     }
 }
@@ -379,7 +401,7 @@ private fun DrawScope.drawLyricsLine(
     contentColor: Color,
     animatedAlpha: Float,
     shadowEffect: Boolean,
-    rtlContent: Boolean
+    rtlContent: Boolean,
 ) {
     val overallFirstWordStart = rowRenderData.firstOrNull()?.firstWordStart ?: 0L
     val overallLastWordEnd = rowRenderData.lastOrNull()?.lastWordEnd ?: 0L
@@ -391,7 +413,7 @@ private fun DrawScope.drawLyricsLine(
             drawRowText(
                 rowLayouts = rowData.rowLayouts,
                 drawColor = contentColor.copy(alpha = animatedAlpha),
-                shadowEffect = false
+                shadowEffect = false,
             )
             return@forEach
         }
@@ -400,7 +422,7 @@ private fun DrawScope.drawLyricsLine(
             drawRowText(
                 rowLayouts = rowData.rowLayouts,
                 drawColor = contentColor,
-                shadowEffect = shadowEffect && effectivelySelected
+                shadowEffect = shadowEffect && effectivelySelected,
             )
             return@forEach
         }
@@ -412,22 +434,23 @@ private fun DrawScope.drawLyricsLine(
             drawRowText(
                 rowLayouts = rowData.rowLayouts,
                 drawColor = contentColor,
-                shadowEffect = shadowEffect && effectivelySelected
+                shadowEffect = shadowEffect && effectivelySelected,
             )
 
-            val progressBrush = createLineGradientBrush(
-                rowData = rowData,
-                currentTimeMs = currentTimeMs,
-                rtlContent = rtlContent,
-                activeColor = contentColor,
-                inactiveColor = contentColor.copy(alpha = 0.4f)
-            )
+            val progressBrush =
+                createLineGradientBrush(
+                    rowData = rowData,
+                    currentTimeMs = currentTimeMs,
+                    rtlContent = rtlContent,
+                    activeColor = contentColor,
+                    inactiveColor = contentColor.copy(alpha = 0.4f),
+                )
 
             drawRect(
                 brush = progressBrush,
                 topLeft = layerBounds.topLeft,
                 size = layerBounds.size,
-                blendMode = BlendMode.DstIn
+                blendMode = BlendMode.DstIn,
             )
             canvas.restore()
         }
@@ -437,20 +460,25 @@ private fun DrawScope.drawLyricsLine(
 private fun DrawScope.drawRowText(
     rowLayouts: List<SyllableLayout>,
     drawColor: Color,
-    shadowEffect: Boolean
+    shadowEffect: Boolean,
 ) {
     rowLayouts.forEach { syllableLayout ->
-        val shadow = if (shadowEffect) Shadow(
-            color = drawColor.copy(alpha = 0.4f),
-            offset = Offset(0f, 2f * density),
-            blurRadius = 4f * density
-        ) else Shadow.None
+        val shadow =
+            if (shadowEffect) {
+                Shadow(
+                    color = drawColor.copy(alpha = 0.4f),
+                    offset = Offset(0f, 2f * density),
+                    blurRadius = 4f * density,
+                )
+            } else {
+                Shadow.None
+            }
 
         drawText(
             textLayoutResult = syllableLayout.textLayoutResult,
             color = drawColor,
             topLeft = syllableLayout.position,
-            shadow = shadow
+            shadow = shadow,
         )
     }
 }
@@ -460,7 +488,7 @@ private fun createLineGradientBrush(
     currentTimeMs: Long,
     rtlContent: Boolean,
     activeColor: Color,
-    inactiveColor: Color
+    inactiveColor: Color,
 ): Brush {
     val minFadeWidth = 20f
 
@@ -474,38 +502,45 @@ private fun createLineGradientBrush(
         return SolidColor(if (isFinished) activeColor else inactiveColor)
     }
 
-    val lineProgress = run {
-        if (currentTimeMs <= rowData.firstWordStart) return@run if (rtlContent) 1f else 0f
-        if (currentTimeMs >= rowData.lastWordEnd) return@run if (rtlContent) 0f else 1f
+    val lineProgress =
+        run {
+            if (currentTimeMs <= rowData.firstWordStart) return@run if (rtlContent) 1f else 0f
+            if (currentTimeMs >= rowData.lastWordEnd) return@run if (rtlContent) 0f else 1f
 
-        val activeWordLayout = lineLayout.find {
-            currentTimeMs in it.word.start until it.word.end
-        }
-
-        val currentPixelPosition = when {
-            activeWordLayout != null -> {
-                val duration = activeWordLayout.word.duration
-                val wordProgress = if (duration > 0) {
-                    ((currentTimeMs - activeWordLayout.word.start).toFloat() / duration).coerceIn(0f, 1f)
-                } else 1f
-
-                if (rtlContent) {
-                    activeWordLayout.position.x + activeWordLayout.width * (1f - wordProgress)
-                } else {
-                    activeWordLayout.position.x + activeWordLayout.width * wordProgress
+            val activeWordLayout =
+                lineLayout.find {
+                    currentTimeMs in it.word.start until it.word.end
                 }
-            }
-            else -> {
-                val lastFinished = lineLayout.lastOrNull { currentTimeMs >= it.word.end }
-                if (rtlContent) {
-                    lastFinished?.position?.x ?: totalMaxX
-                } else {
-                    lastFinished?.let { it.position.x + it.width } ?: totalMinX
+
+            val currentPixelPosition =
+                when {
+                    activeWordLayout != null -> {
+                        val duration = activeWordLayout.word.duration
+                        val wordProgress =
+                            if (duration > 0) {
+                                ((currentTimeMs - activeWordLayout.word.start).toFloat() / duration).coerceIn(0f, 1f)
+                            } else {
+                                1f
+                            }
+
+                        if (rtlContent) {
+                            activeWordLayout.position.x + activeWordLayout.width * (1f - wordProgress)
+                        } else {
+                            activeWordLayout.position.x + activeWordLayout.width * wordProgress
+                        }
+                    }
+
+                    else -> {
+                        val lastFinished = lineLayout.lastOrNull { currentTimeMs >= it.word.end }
+                        if (rtlContent) {
+                            lastFinished?.position?.x ?: totalMaxX
+                        } else {
+                            lastFinished?.let { it.position.x + it.width } ?: totalMinX
+                        }
+                    }
                 }
-            }
+            ((currentPixelPosition - totalMinX) / totalWidth).coerceIn(0f, 1f)
         }
-        ((currentPixelPosition - totalMinX) / totalWidth).coerceIn(0f, 1f)
-    }
 
     val fadeRange = (minFadeWidth / totalWidth).coerceAtMost(1f)
     val fadeCenterStart = -fadeRange / 2f
@@ -514,26 +549,27 @@ private fun createLineGradientBrush(
     val fadeStart = fadeCenter - fadeRange / 2f
     val fadeEnd = fadeCenter + fadeRange / 2f
 
-    val colorStops = if (rtlContent) {
-        arrayOf(
-            0.0f to inactiveColor,
-            fadeStart.coerceIn(0f, 1f) to inactiveColor,
-            fadeEnd.coerceIn(0f, 1f) to activeColor,
-            1.0f to activeColor
-        )
-    } else {
-        arrayOf(
-            0.0f to activeColor,
-            fadeStart.coerceIn(0f, 1f) to activeColor,
-            fadeEnd.coerceIn(0f, 1f) to inactiveColor,
-            1.0f to inactiveColor
-        )
-    }
+    val colorStops =
+        if (rtlContent) {
+            arrayOf(
+                0.0f to inactiveColor,
+                fadeStart.coerceIn(0f, 1f) to inactiveColor,
+                fadeEnd.coerceIn(0f, 1f) to activeColor,
+                1.0f to activeColor,
+            )
+        } else {
+            arrayOf(
+                0.0f to activeColor,
+                fadeStart.coerceIn(0f, 1f) to activeColor,
+                fadeEnd.coerceIn(0f, 1f) to inactiveColor,
+                1.0f to inactiveColor,
+            )
+        }
 
     return Brush.horizontalGradient(
         colorStops = colorStops,
         startX = totalMinX,
-        endX = totalMaxX
+        endX = totalMaxX,
     )
 }
 
@@ -547,13 +583,13 @@ internal data class SyllableLayout(
     val wordId: Int,
     val width: Float,
     val position: Offset = Offset.Zero,
-    val firstBaseline: Float = 0f
+    val firstBaseline: Float = 0f,
 )
 
 @Stable
 internal data class WrappedLine(
     val syllables: List<SyllableLayout>,
-    val totalWidth: Float
+    val totalWidth: Float,
 )
 
 @Stable
@@ -564,5 +600,5 @@ internal data class RowRenderData(
     val totalWidth: Float,
     val firstWordStart: Long,
     val lastWordEnd: Long,
-    val layerBounds: Rect
+    val layerBounds: Rect,
 )

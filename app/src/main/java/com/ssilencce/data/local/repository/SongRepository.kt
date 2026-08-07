@@ -46,52 +46,58 @@ import okhttp3.internal.toLongOrDefault
 
 interface SongRepository {
     fun songs(): List<Song>
+
     fun songs(query: String): List<Song>
+
     fun songs(cursor: Cursor?): List<Song>
+
     suspend fun songsByUri(uri: Uri): List<Song>
+
     suspend fun songsByMediaItems(mediaItems: List<MediaItem>): Pair<List<Song>, List<MediaItem>>
+
     suspend fun songByMediaItem(mediaItem: MediaItem?): Song
-    fun songByFilePath(filePath: String, ignoreBlacklist: Boolean = false): Song
+
+    fun songByFilePath(
+        filePath: String,
+        ignoreBlacklist: Boolean = false,
+    ): Song
+
     fun song(cursor: Cursor?): Song
+
     fun song(songId: Long): Song
+
     suspend fun initializeBlacklist()
 }
 
 @SuppressLint("InlinedApi")
 class RealSongRepository(
     private val context: Context,
-    private val inclExclDao: InclExclDao
+    private val inclExclDao: InclExclDao,
 ) : SongRepository {
-
     override fun songs(): List<Song> {
         val songs = songs(makeSongCursor(null, null))
         return with(SongSortMode.AllSongs) { songs.sorted() }
     }
 
-    override fun songs(query: String): List<Song> {
-        return songs(
+    override fun songs(query: String): List<Song> =
+        songs(
             makeSongCursor(
                 selection = "${AudioColumns.TITLE} LIKE ? OR ${AudioColumns.ARTIST} LIKE ? OR ${AudioColumns.ALBUM} LIKE ?",
-                selectionValues = arrayOf("%$query%", "%$query%", "%$query%")
-            )
+                selectionValues = arrayOf("%$query%", "%$query%", "%$query%"),
+            ),
         )
-    }
 
-    override fun songs(cursor: Cursor?): List<Song> {
-        return cursor.use {
+    override fun songs(cursor: Cursor?): List<Song> =
+        cursor.use {
             it.mapIfValid { getSongFromCursorImpl(this) }
         }
-    }
 
-    override fun song(cursor: Cursor?): Song {
-        return cursor.use {
+    override fun song(cursor: Cursor?): Song =
+        cursor.use {
             it.takeOrDefault(Song.emptySong) { getSongFromCursorImpl(this) }
         }
-    }
 
-    override fun song(songId: Long): Song {
-        return song(makeSongCursor("${AudioColumns._ID}=?", arrayOf(songId.toString())))
-    }
+    override fun song(songId: Long): Song = song(makeSongCursor("${AudioColumns._ID}=?", arrayOf(songId.toString())))
 
     override suspend fun songsByUri(uri: Uri): List<Song> {
         var songs: List<Song> = emptyList()
@@ -109,8 +115,11 @@ class RealSongRepository(
                     try {
                         if (hasQ()) {
                             val context = context.applicationContext
-                            val id = MediaStore.getMediaUri(context, uri)
-                                ?.lastPathSegment?.toLongOrNull()
+                            val id =
+                                MediaStore
+                                    .getMediaUri(context, uri)
+                                    ?.lastPathSegment
+                                    ?.toLongOrNull()
                             if (id != null) {
                                 songs = listOf(song(id))
                             }
@@ -149,31 +158,38 @@ class RealSongRepository(
         if (mediaItems.isEmpty()) return (emptyList<Song>() to mediaItems)
 
         // Preload whitelist and blacklist if enabled to avoid redundant Room queries in the loop
-        val whitelistedPaths = if (Preferences.whitelistEnabled) {
-            inclExclDao.whitelistPaths().map { it.path }
-        } else null
+        val whitelistedPaths =
+            if (Preferences.whitelistEnabled) {
+                inclExclDao.whitelistPaths().map { it.path }
+            } else {
+                null
+            }
 
-        val blacklistedPaths = if (Preferences.blacklistEnabled) {
-            inclExclDao.blackListPaths().map { it.path }
-        } else null
+        val blacklistedPaths =
+            if (Preferences.blacklistEnabled) {
+                inclExclDao.blackListPaths().map { it.path }
+            } else {
+                null
+            }
 
         val ids = mediaItems.map { it.mediaId }
-        val allSongs = buildList {
-            ids.chunked(900).forEach { chunk ->
-                val selection = "${AudioColumns._ID} IN (${chunk.joinToString(",") { "?" }})"
-                val selectionArgs = chunk.toTypedArray()
-                addAll(
-                    songs(
-                        makeSongCursor(
-                            selection = selection,
-                            selectionValues = selectionArgs,
-                            whitelistedPaths = whitelistedPaths,
-                            blacklistedPaths = blacklistedPaths
-                        )
+        val allSongs =
+            buildList {
+                ids.chunked(900).forEach { chunk ->
+                    val selection = "${AudioColumns._ID} IN (${chunk.joinToString(",") { "?" }})"
+                    val selectionArgs = chunk.toTypedArray()
+                    addAll(
+                        songs(
+                            makeSongCursor(
+                                selection = selection,
+                                selectionValues = selectionArgs,
+                                whitelistedPaths = whitelistedPaths,
+                                blacklistedPaths = blacklistedPaths,
+                            ),
+                        ),
                     )
-                )
+                }
             }
-        }
 
         val songMap = allSongs.associateBy { it.id.toString() }
 
@@ -196,34 +212,38 @@ class RealSongRepository(
         if (mediaItem != null) {
             var song = mediaItem.localConfiguration?.tag
             if (song == null || song !is Song) {
-                song = song(
-                    makeSongCursor(
-                        selection = "${AudioColumns._ID}=?",
-                        selectionValues = arrayOf(mediaItem.mediaId)
+                song =
+                    song(
+                        makeSongCursor(
+                            selection = "${AudioColumns._ID}=?",
+                            selectionValues = arrayOf(mediaItem.mediaId),
+                        ),
                     )
-                )
             }
             return song
         }
         return Song.emptySong
     }
 
-    override fun songByFilePath(filePath: String, ignoreBlacklist: Boolean): Song {
-        return song(
+    override fun songByFilePath(
+        filePath: String,
+        ignoreBlacklist: Boolean,
+    ): Song =
+        song(
             makeSongCursor(
                 selection = "${AudioColumns.DATA}=?",
                 selectionValues = arrayOf(filePath),
-                ignoreBlacklist = ignoreBlacklist
-            )
+                ignoreBlacklist = ignoreBlacklist,
+            ),
         )
-    }
 
     override suspend fun initializeBlacklist() {
-        val excludedPaths = listOf(
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS),
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_NOTIFICATIONS),
-            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RINGTONES)
-        )
+        val excludedPaths =
+            listOf(
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_ALARMS),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_NOTIFICATIONS),
+                Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_RINGTONES),
+            )
         for (path in excludedPaths) {
             inclExclDao.insertPath(InclExclEntity(path.getCanonicalPathSafe(), InclExclDao.BLACKLIST))
         }
@@ -233,7 +253,7 @@ class RealSongRepository(
         queryDispatcher: MediaQueryDispatcher,
         ignoreBlacklist: Boolean = false,
         whitelistedPaths: List<String>? = null,
-        blacklistedPaths: List<String>? = null
+        blacklistedPaths: List<String>? = null,
     ): Cursor? {
         val minimumSongDuration = Preferences.minimumSongDuration
         if (minimumSongDuration > 0) {
@@ -274,14 +294,15 @@ class RealSongRepository(
         sortOrder: String? = null,
         ignoreBlacklist: Boolean = false,
         whitelistedPaths: List<String>? = null,
-        blacklistedPaths: List<String>? = null
+        blacklistedPaths: List<String>? = null,
     ): Cursor? {
-        val queryDispatcher = MediaQueryDispatcher()
-            .setProjection(getBaseProjection())
-            .setSelection(BASE_SELECTION)
-            .setSelectionArguments(selectionValues)
-            .addSelection(selection)
-            .setSortOrder(sortOrder ?: MediaStore.Audio.Media.DEFAULT_SORT_ORDER)
+        val queryDispatcher =
+            MediaQueryDispatcher()
+                .setProjection(getBaseProjection())
+                .setSelection(BASE_SELECTION)
+                .setSelectionArguments(selectionValues)
+                .addSelection(selection)
+                .setSortOrder(sortOrder ?: MediaStore.Audio.Media.DEFAULT_SORT_ORDER)
         return makeSongCursor(queryDispatcher, ignoreBlacklist, whitelistedPaths, blacklistedPaths)
     }
 
@@ -292,13 +313,9 @@ class RealSongRepository(
             append(")")
         }
 
-    private fun generateBlacklistSelection(pathCount: Int): String =
-        (1..pathCount).joinToString(" AND ") { "${AudioColumns.DATA} NOT LIKE ?" }
+    private fun generateBlacklistSelection(pathCount: Int): String = (1..pathCount).joinToString(" AND ") { "${AudioColumns.DATA} NOT LIKE ?" }
 
-
-    private fun addLibrarySelectionValues(paths: List<String>): Array<String> {
-        return Array(paths.size) { index -> "${paths[index]}%" }
-    }
+    private fun addLibrarySelectionValues(paths: List<String>): Array<String> = Array(paths.size) { index -> "${paths[index]}%" }
 
     private fun getSongIdFromMediaProvider(uri: Uri): Long {
         val docId = DocumentsContract.getDocumentId(uri)
@@ -309,19 +326,23 @@ class RealSongRepository(
     private fun getDisplayNameAndSize(uri: Uri): Pair<String, Long>? {
         return MediaQueryDispatcher(uri)
             .withColumns(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE)
-            .dispatch()?.use { cursor ->
+            .dispatch()
+            ?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val name =
                         cursor.getString(cursor.getColumnIndexOrThrow(OpenableColumns.DISPLAY_NAME))
                     val size = cursor.getLong(cursor.getColumnIndexOrThrow(OpenableColumns.SIZE))
                     return name to size
-                } else null
+                } else {
+                    null
+                }
             }
     }
 
     private fun findSongFromFileProviderUri(uri: Uri): Song {
-        val (name, size) = getDisplayNameAndSize(uri)
-            ?: return Song.emptySong
+        val (name, size) =
+            getDisplayNameAndSize(uri)
+                ?: return Song.emptySong
 
         val selection = "${AudioColumns.DISPLAY_NAME} = ? AND ${AudioColumns.SIZE} = ?"
         val selectionArgs = arrayOf(name, size.toString())
@@ -363,7 +384,7 @@ class RealSongRepository(
             artistName,
             albumArtistName,
             genreName,
-            volumeName
+            volumeName,
         )
     }
 
@@ -374,26 +395,30 @@ class RealSongRepository(
         const val SEARCH_SELECTION = "${AudioColumns.TITLE} LIKE ? OR ${AudioColumns.ARTIST} LIKE ? OR ${AudioColumns.ALBUM} LIKE ?"
 
         @SuppressLint("InlinedApi")
-        private val BASE_PROJECTION = arrayOf(
-            AudioColumns._ID, //0
-            AudioColumns.DATA, //1
-            AudioColumns.TITLE, //2
-            AudioColumns.TRACK, //3
-            AudioColumns.YEAR, //4
-            AudioColumns.SIZE, //5
-            AudioColumns.DURATION, //6
-            AudioColumns.DATE_ADDED, //7
-            AudioColumns.DATE_MODIFIED, //8
-            AudioColumns.ALBUM_ID, //9
-            AudioColumns.ALBUM, //10
-            AudioColumns.ARTIST_ID, //11
-            AudioColumns.ARTIST, //12
-            AudioColumns.ALBUM_ARTIST, //13
-        )
+        private val BASE_PROJECTION =
+            arrayOf(
+                AudioColumns._ID, // 0
+                AudioColumns.DATA, // 1
+                AudioColumns.TITLE, // 2
+                AudioColumns.TRACK, // 3
+                AudioColumns.YEAR, // 4
+                AudioColumns.SIZE, // 5
+                AudioColumns.DURATION, // 6
+                AudioColumns.DATE_ADDED, // 7
+                AudioColumns.DATE_MODIFIED, // 8
+                AudioColumns.ALBUM_ID, // 9
+                AudioColumns.ALBUM, // 10
+                AudioColumns.ARTIST_ID, // 11
+                AudioColumns.ARTIST, // 12
+                AudioColumns.ALBUM_ARTIST, // 13
+            )
 
-        fun getAudioContentUri(): Uri = if (hasQ())
-            MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
-        else MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+        fun getAudioContentUri(): Uri =
+            if (hasQ()) {
+                MediaStore.Audio.Media.getContentUri(MediaStore.VOLUME_EXTERNAL)
+            } else {
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+            }
 
         fun getBaseProjection(idColumn: String = AudioColumns._ID): Array<String> {
             var baseProjection = BASE_PROJECTION
@@ -409,7 +434,9 @@ class RealSongRepository(
             return baseProjection
         }
 
-        fun generateSearchPattern(term: String, selection: String = SEARCH_SELECTION) =
-            selection to Array(selection.count { it == '?' }) { "%$term%" }
+        fun generateSearchPattern(
+            term: String,
+            selection: String = SEARCH_SELECTION,
+        ) = selection to Array(selection.count { it == '?' }) { "%$term%" }
     }
 }

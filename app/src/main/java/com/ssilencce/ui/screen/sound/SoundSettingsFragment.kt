@@ -36,7 +36,6 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
  * @author Christians M. A. (mardous)
  */
 class SoundSettingsFragment : BottomSheetDialogFragment() {
-
     private val viewModel: EqualizerViewModel by viewModel()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -52,11 +51,11 @@ class SoundSettingsFragment : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -64,5 +63,4 @@ class SoundSettingsFragment : BottomSheetDialogFragment() {
                 }
             }
         }
-    }
 }

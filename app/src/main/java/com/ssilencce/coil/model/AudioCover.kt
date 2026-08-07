@@ -12,10 +12,10 @@ class AudioCover(
     val lastModified: Long,
     val isIgnoreMediaStore: Boolean,
     val isUseFolderArt: Boolean,
-    val isAlbum: Boolean
+    val isAlbum: Boolean,
 ) {
-    override fun toString(): String {
-        return buildString {
+    override fun toString(): String =
+        buildString {
             append("AudioCover{")
             append("albumId=$albumId,")
             append("uri=$uri,")
@@ -29,5 +29,4 @@ class AudioCover(
             append("isAlbum=$isAlbum")
             append("}")
         }
-    }
 }

@@ -23,7 +23,6 @@ import kotlinx.serialization.Serializable
 
 @Parcelize
 sealed interface RawLyrics : Parcelable {
-
     val lyrics: String?
 
     fun accept(other: RawLyrics?): RawLyrics
@@ -31,9 +30,8 @@ sealed interface RawLyrics : Parcelable {
     @Parcelize
     @Serializable
     data class Embedded(
-        override val lyrics: String?
+        override val lyrics: String?,
     ) : RawLyrics {
-
         val hasLyrics get() = !lyrics.isNullOrEmpty()
 
         override fun accept(other: RawLyrics?): Embedded {
@@ -42,7 +40,6 @@ sealed interface RawLyrics : Parcelable {
             }
             return this
         }
-
     }
 
     @Parcelize
@@ -50,9 +47,8 @@ sealed interface RawLyrics : Parcelable {
     data class Remote(
         val plain: Content? = null,
         val synced: Content? = null,
-        private val instrumental: Boolean = false
+        private val instrumental: Boolean = false,
     ) : RawLyrics {
-
         val hasPlain get() = plain?.isEmpty == false
         val hasSynced get() = synced?.isEmpty == false
         val hasBoth get() = hasPlain && hasSynced
@@ -67,7 +63,10 @@ sealed interface RawLyrics : Parcelable {
             return this
         }
 
-        fun accept(plain: Content?, synced: Content?): Remote {
+        fun accept(
+            plain: Content?,
+            synced: Content?,
+        ): Remote {
             var result = this
             if (!hasPlain && plain?.isEmpty == false) {
                 result = result.copy(plain = plain)
@@ -84,7 +83,7 @@ sealed interface RawLyrics : Parcelable {
                 return Stored(
                     lyrics = contentToStore.lyrics,
                     provider = contentToStore.source,
-                    instrumental = instrumental
+                    instrumental = instrumental,
                 )
             }
             return null
@@ -94,7 +93,7 @@ sealed interface RawLyrics : Parcelable {
         @Serializable
         class Content(
             val source: String? = null,
-            val lyrics: String? = null
+            val lyrics: String? = null,
         ) : Parcelable {
             val isEmpty get() = lyrics.isNullOrEmpty()
         }
@@ -104,7 +103,7 @@ sealed interface RawLyrics : Parcelable {
     @Serializable
     data class File(
         val file: LyricsFile,
-        override val lyrics: String
+        override val lyrics: String,
     ) : RawLyrics {
         override fun accept(other: RawLyrics?): File = this
     }
@@ -114,10 +113,9 @@ sealed interface RawLyrics : Parcelable {
     data class Stored(
         override val lyrics: String? = null,
         val provider: String? = null,
-        val instrumental: Boolean = false
+        val instrumental: Boolean = false,
     ) : RawLyrics {
         override fun accept(other: RawLyrics?): RawLyrics = this
-
     }
 
     @Parcelize
@@ -126,9 +124,10 @@ sealed interface RawLyrics : Parcelable {
         val originalLyrics: RawLyrics,
         val newContent: String,
         val newContentProvider: String? = null,
-        val instrumental: Boolean = false
+        val instrumental: Boolean = false,
     ) : RawLyrics {
         override val lyrics: String get() = newContent
+
         override fun accept(other: RawLyrics?): RawLyrics = this
     }
 }

@@ -3,16 +3,16 @@ package com.ssilencce.util
 import com.ssilencce.data.model.Song
 
 class SongPlayCountHelper {
-
     private val stopWatch = StopWatch()
     var song = Song.emptySong
         private set
 
-    fun shouldBumpPlayCount(): Boolean {
-        return song.duration * 0.5 < stopWatch.elapsedTime
-    }
+    fun shouldBumpPlayCount(): Boolean = song.duration * 0.5 < stopWatch.elapsedTime
 
-    fun notifySongChanged(song: Song, isPlaying: Boolean) {
+    fun notifySongChanged(
+        song: Song,
+        isPlaying: Boolean,
+    ) {
         synchronized(this) {
             stopWatch.reset()
             if (isPlaying) {

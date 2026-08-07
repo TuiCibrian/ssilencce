@@ -53,9 +53,11 @@ val Context.fileProviderAuthority: String
     get() = "$packageName.provider"
 
 fun Float.dp(context: Context) = dp(context.resources)
+
 fun Int.dp(context: Context) = dp(context.resources)
 
 fun Float.dp(resources: Resources): Int = (this * resources.displayMetrics.density + 0.5f).toInt()
+
 fun Int.dp(resources: Resources): Int = (this * resources.displayMetrics.density + 0.5f).toInt()
 
 val Configuration.isLandscape: Boolean
@@ -86,15 +88,19 @@ fun Context.intRes(id: Int) = resources.getInteger(id)
 
 fun Context.openUrl(url: String) =
     tryStartActivity(
-        intent = Intent(Intent.ACTION_VIEW, url.toUri())
-            .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        intent =
+            Intent(Intent.ACTION_VIEW, url.toUri())
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     ) {
         if (it is ActivityNotFoundException) {
             showToast("No browser installed.")
         }
     }
 
-fun Context.tryStartActivity(intent: Intent, onError: (Throwable) -> Unit = {}) = try {
+fun Context.tryStartActivity(
+    intent: Intent,
+    onError: (Throwable) -> Unit = {},
+) = try {
     startActivity(intent)
 } catch (t: Throwable) {
     onError(t)
@@ -105,7 +111,7 @@ fun Context.webSearch(vararg keys: String?) {
     tryStartActivity(
         Intent(Intent.ACTION_WEB_SEARCH)
             .putExtra(SearchManager.QUERY, query)
-            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
     ) {
         openUrl("https://google.com/search?q=${query.encodeURLParameter(spaceToPlus = true)}")
     }
@@ -121,16 +127,24 @@ fun Context.onUI(action: () -> Unit) {
     }
 }
 
-fun Context.showToast(textId: Int, duration: Int = Toast.LENGTH_SHORT) {
-    if (textId == 0)
+fun Context.showToast(
+    textId: Int,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
+    if (textId == 0) {
         return
+    }
 
     showToast(getString(textId), duration)
 }
 
-fun Context.showToast(text: String?, duration: Int = Toast.LENGTH_SHORT) {
-    if (text.isNullOrEmpty())
+fun Context.showToast(
+    text: String?,
+    duration: Int = Toast.LENGTH_SHORT,
+) {
+    if (text.isNullOrEmpty()) {
         return
+    }
 
     if (Looper.myLooper() != Looper.getMainLooper()) {
         onUI { Toast.makeText(applicationContext, text, duration).show() }
@@ -139,14 +153,17 @@ fun Context.showToast(text: String?, duration: Int = Toast.LENGTH_SHORT) {
     }
 }
 
-fun Context.readStringFromAsset(assetName: String): String? =
-    runCatching { assets.open(assetName).use { it.readString() } }.getOrNull()
+fun Context.readStringFromAsset(assetName: String): String? = runCatching { assets.open(assetName).use { it.readString() } }.getOrNull()
 
-fun Context.getTintedDrawable(@DrawableRes resId: Int, @ColorInt color: Int): Drawable? =
-    getDrawableCompat(resId).getTinted(color)
+fun Context.getTintedDrawable(
+    @DrawableRes resId: Int,
+    @ColorInt color: Int,
+): Drawable? = getDrawableCompat(resId).getTinted(color)
 
-fun Context.getShapeAppearanceModel(shapeAppearanceId: Int, shapeAppearanceOverlayId: Int = 0) =
-    ShapeAppearanceModel.builder(this, shapeAppearanceId, shapeAppearanceOverlayId).build()
+fun Context.getShapeAppearanceModel(
+    shapeAppearanceId: Int,
+    shapeAppearanceOverlayId: Int = 0,
+) = ShapeAppearanceModel.builder(this, shapeAppearanceId, shapeAppearanceOverlayId).build()
 
 fun Context.getNavigationBarHeight(): Int {
     var result = 0
@@ -157,20 +174,24 @@ fun Context.getNavigationBarHeight(): Int {
     return result
 }
 
-fun Context.plurals(@PluralsRes resId: Int, quantity: Int): String {
-    return try {
+fun Context.plurals(
+    @PluralsRes resId: Int,
+    quantity: Int,
+): String =
+    try {
         resources.getQuantityString(resId, quantity, quantity)
     } catch (e: Resources.NotFoundException) {
         e.printStackTrace()
         quantity.toString()
     }
-}
 
 /**
  * Try to resolve the given color attribute against *this* [Context]'s theme.
  */
 @ColorInt
-fun Context.resolveColor(@AttrRes colorAttr: Int, @ColorInt fallback: Int = Color.TRANSPARENT) =
-    MaterialColors.getColor(this, colorAttr, fallback)
+fun Context.resolveColor(
+    @AttrRes colorAttr: Int,
+    @ColorInt fallback: Int = Color.TRANSPARENT,
+) = MaterialColors.getColor(this, colorAttr, fallback)
 
 fun Context.createAppTheme() = AppTheme.createAppTheme(this)

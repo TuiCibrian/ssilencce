@@ -19,14 +19,16 @@ package com.ssilencce.data.local.lyrics.ttml
 
 data class TtmlAgent(
     val id: String,
-    val type: Type
+    val type: Type,
 ) {
     constructor(id: String, type: String) :
-            this(id, Type.entries.firstOrNull { it.id == type } ?: Type.Other)
+        this(id, Type.entries.firstOrNull { it.id == type } ?: Type.Other)
 
-    enum class Type(val id: String) {
+    enum class Type(
+        val id: String,
+    ) {
         Person("person"),
         Group("group"),
-        Other("other")
+        Other("other"),
     }
 }

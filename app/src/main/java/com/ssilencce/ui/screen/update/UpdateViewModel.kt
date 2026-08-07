@@ -17,11 +17,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Date
 
-class UpdateViewModel(private val updateService: GitHubService): ViewModel() {
-
-    private val ioHandler = CoroutineExceptionHandler { _, throwable ->
-        Log.e("UpdateViewModel", "Update search failed!", throwable)
-    }
+class UpdateViewModel(
+    private val updateService: GitHubService,
+) : ViewModel() {
+    private val ioHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            Log.e("UpdateViewModel", "Update search failed!", throwable)
+        }
 
     private val _updateSearch = MutableLiveData(UpdateSearchResult())
     val updateEventObservable = _updateSearch.map { Event(it) }
@@ -29,31 +31,36 @@ class UpdateViewModel(private val updateService: GitHubService): ViewModel() {
 
     val latestRelease get() = updateEvent?.peekContent()?.data
 
-    fun searchForUpdate(fromUser: Boolean, allowExperimental: Boolean = Preferences.experimentalUpdates) =
-        viewModelScope.launch(Dispatchers.IO) {
-            val current = updateEvent?.peekContent() ?: UpdateSearchResult(executedAtMillis = Preferences.lastUpdateSearch)
-            if (current.shouldStartNewSearchFor(fromUser, allowExperimental)) {
-                _updateSearch.postValue(
-                    current.copy(
-                        state = UpdateSearchResult.State.Searching,
-                        wasFromUser = fromUser,
-                        wasExperimentalQuery = allowExperimental
-                    )
-                )
+    fun searchForUpdate(
+        fromUser: Boolean,
+        allowExperimental: Boolean = Preferences.experimentalUpdates,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        val current = updateEvent?.peekContent() ?: UpdateSearchResult(executedAtMillis = Preferences.lastUpdateSearch)
+        if (current.shouldStartNewSearchFor(fromUser, allowExperimental)) {
+            _updateSearch.postValue(
+                current.copy(
+                    state = UpdateSearchResult.State.Searching,
+                    wasFromUser = fromUser,
+                    wasExperimentalQuery = allowExperimental,
+                ),
+            )
 
-                val result = runCatching {
+            val result =
+                runCatching {
                     updateService.latestRelease(allowExperimental = allowExperimental)
                 }
-                val executedAtMillis = Date().time.also {
+            val executedAtMillis =
+                Date().time.also {
                     Preferences.lastUpdateSearch = it
                 }
-                val newState = if (result.isSuccess) {
+            val newState =
+                if (result.isSuccess) {
                     UpdateSearchResult(
                         state = UpdateSearchResult.State.Completed,
                         data = result.getOrThrow(),
                         executedAtMillis = executedAtMillis,
                         wasFromUser = fromUser,
-                        wasExperimentalQuery = allowExperimental
+                        wasExperimentalQuery = allowExperimental,
                     )
                 } else {
                     UpdateSearchResult(
@@ -61,25 +68,27 @@ class UpdateViewModel(private val updateService: GitHubService): ViewModel() {
                         data = null,
                         executedAtMillis = executedAtMillis,
                         wasFromUser = fromUser,
-                        wasExperimentalQuery = allowExperimental
+                        wasExperimentalQuery = allowExperimental,
                     )
                 }
-                _updateSearch.postValue(newState)
-            }
+            _updateSearch.postValue(newState)
         }
+    }
 
-    fun downloadUpdate(context: Context, release: GitHubRelease) =
-        viewModelScope.launch(Dispatchers.IO + ioHandler) {
-            val downloadRequest = release.getDownloadRequest(context)
-            if (downloadRequest != null) {
-                val downloadManager = context.getSystemService<DownloadManager>()
-                if (downloadManager != null) {
-                    val lastUpdateId = Preferences.lastUpdateId
-                    if (lastUpdateId != -1L) {
-                        downloadManager.remove(lastUpdateId)
-                    }
-                    Preferences.lastUpdateId = downloadManager.enqueue(downloadRequest)
+    fun downloadUpdate(
+        context: Context,
+        release: GitHubRelease,
+    ) = viewModelScope.launch(Dispatchers.IO + ioHandler) {
+        val downloadRequest = release.getDownloadRequest(context)
+        if (downloadRequest != null) {
+            val downloadManager = context.getSystemService<DownloadManager>()
+            if (downloadManager != null) {
+                val lastUpdateId = Preferences.lastUpdateId
+                if (lastUpdateId != -1L) {
+                    downloadManager.remove(lastUpdateId)
                 }
+                Preferences.lastUpdateId = downloadManager.enqueue(downloadRequest)
             }
         }
+    }
 }

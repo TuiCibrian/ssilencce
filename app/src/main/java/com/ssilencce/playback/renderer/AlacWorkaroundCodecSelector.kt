@@ -25,19 +25,19 @@ import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 
 @OptIn(UnstableApi::class)
 class AlacWorkaroundCodecSelector : MediaCodecSelector {
-
     override fun getDecoderInfos(
         mimeType: String,
         requiresSecureDecoder: Boolean,
-        requiresTunnelingDecoder: Boolean
-    ): List<MediaCodecInfo> {
-        return MediaCodecSelector.DEFAULT.getDecoderInfos(
-            mimeType,
-            requiresSecureDecoder,
-            requiresTunnelingDecoder
-        ).let { defaultInfos ->
-            // Check specifically for Apple Lossless Audio Codec (ALAC).
-            if (mimeType.equals(MimeTypes.AUDIO_ALAC, ignoreCase = true)) {
+        requiresTunnelingDecoder: Boolean,
+    ): List<MediaCodecInfo> =
+        MediaCodecSelector.DEFAULT
+            .getDecoderInfos(
+                mimeType,
+                requiresSecureDecoder,
+                requiresTunnelingDecoder,
+            ).let { defaultInfos ->
+                // Check specifically for Apple Lossless Audio Codec (ALAC).
+                if (mimeType.equals(MimeTypes.AUDIO_ALAC, ignoreCase = true)) {
                 /*
                  * Some device-specific hardware ALAC decoders are known to malfunction
                  * when processing high-bitrate M4A files.
@@ -46,11 +46,10 @@ class AlacWorkaroundCodecSelector : MediaCodecSelector {
                  * software-based decoding. If no software decoders are found in this list,
                  * ExoPlayer will attempt to use available extensions (like FFmpeg).
                  */
-                defaultInfos.filterNot { it.hardwareAccelerated }
-            } else {
-                // For all other MIME types, proceed with the default selection logic.
-                defaultInfos
+                    defaultInfos.filterNot { it.hardwareAccelerated }
+                } else {
+                    // For all other MIME types, proceed with the default selection logic.
+                    defaultInfos
+                }
             }
-        }
-    }
 }

@@ -35,38 +35,39 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
  * @author Christians M. A. (mardous)
  */
 class LyricsFragment : Fragment() {
-
     private val playerViewModel: PlayerViewModel by activityViewModel()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
-            setContent {
-                SsilencceTheme {
-                    LyricsScreen(
-                        onEditClick = { currentSong ->
-                            findNavController().navigate(
-                                R.id.nav_lyrics_editor,
-                                LyricsEditorFragmentArgs.Builder(currentSong)
-                                    .build()
-                                    .toBundle()
-                            )
-                        }
-                    )
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext())
+            .apply {
+                setContent {
+                    SsilencceTheme {
+                        LyricsScreen(
+                            onEditClick = { currentSong ->
+                                findNavController().navigate(
+                                    R.id.nav_lyrics_editor,
+                                    LyricsEditorFragmentArgs
+                                        .Builder(currentSong)
+                                        .build()
+                                        .toBundle(),
+                                )
+                            },
+                        )
+                    }
                 }
+            }.also {
+                materialSharedAxis(it)
             }
-        }.also {
-            materialSharedAxis(it)
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
         if (currentFragment(R.id.fragment_container) !is LyricsEditorFragment &&
-            playerViewModel.queue.isNotEmpty()) {
+            playerViewModel.queue.isNotEmpty()
+        ) {
             (activity as? MainActivity)?.expandPanel()
         }
     }

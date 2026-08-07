@@ -1,4 +1,5 @@
 @file:Suppress("DEPRECATION")
+
 package com.ssilencce.playback.equalizer.engine
 
 import android.media.audiofx.BassBoost
@@ -14,8 +15,9 @@ import com.ssilencce.core.model.equalizer.LimiterState
 import com.ssilencce.core.model.equalizer.LoudnessGainState
 import com.ssilencce.core.model.equalizer.VirtualizerState
 
-abstract class EQEngine(val sessionId: Int) {
-
+abstract class EQEngine(
+    val sessionId: Int,
+) {
     private val bassBoost: BassBoost? =
         execOpCatchingWithTag("Create BassBoost") { BassBoost(0, sessionId) }
 
@@ -29,12 +31,22 @@ abstract class EQEngine(val sessionId: Int) {
     abstract val isMBCSupported: Boolean
     abstract val isLimiterSupported: Boolean
     abstract val bandCapabilities: EqBandCapabilities
+
     abstract fun setEnabled(isEnabled: Boolean)
+
     abstract fun setProfile(profile: EqProfile)
-    abstract fun setBandGain(bandIndex: Int, bandGainInDecibels: Float)
+
+    abstract fun setBandGain(
+        bandIndex: Int,
+        bandGainInDecibels: Float,
+    )
+
     abstract fun setBandCount(bandCount: Int): Boolean
+
     abstract fun setInputGain(inputGain: Float): Boolean
+
     abstract fun setCompressorState(state: CompressorState): Boolean
+
     abstract fun setLimiterState(state: LimiterState): Boolean
 
     fun setVirtualizerState(state: VirtualizerState): Boolean {
@@ -95,7 +107,10 @@ abstract class EQEngine(val sessionId: Int) {
         loudnessEnhancer?.release()
     }
 
-    protected inline fun <R> execOpCatchingWithTag(tag: String, callback: () -> R): R? {
+    protected inline fun <R> execOpCatchingWithTag(
+        tag: String,
+        callback: () -> R,
+    ): R? {
         synchronized(this) {
             return try {
                 callback()
@@ -106,10 +121,15 @@ abstract class EQEngine(val sessionId: Int) {
         }
     }
 
-    protected inline fun <A, reified R> execOpCatching(argument: A?, default: R, callback: (A) -> R): R {
+    protected inline fun <A, reified R> execOpCatching(
+        argument: A?,
+        default: R,
+        callback: (A) -> R,
+    ): R {
         synchronized(this) {
-            if (argument == null)
+            if (argument == null) {
                 return default
+            }
 
             return try {
                 callback(argument)

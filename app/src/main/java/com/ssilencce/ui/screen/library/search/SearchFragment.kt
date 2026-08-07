@@ -88,9 +88,11 @@ import java.util.Locale
 /**
  * @author Christians M. A. (mardous)
  */
-class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
-    View.OnClickListener, MaterialButtonToggleGroup.OnButtonCheckedListener, ISearchCallback {
-
+class SearchFragment :
+    AbsMainActivityFragment(R.layout.fragment_search),
+    View.OnClickListener,
+    MaterialButtonToggleGroup.OnButtonCheckedListener,
+    ISearchCallback {
     private var _binding: FragmentSearchBinding? = null
     private val binding get() = _binding!!
 
@@ -100,7 +102,10 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
     private lateinit var voiceSearchLauncher: ActivityResultLauncher<Intent>
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentSearchBinding.bind(view)
         setSupportActionBar(binding.toolbar)
@@ -114,7 +119,8 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
                 if (searchFilter != null) {
                     val compatibleModes = searchFilter.getCompatibleModes().map { it.buttonId }
 
-                    binding.modeButtonGroup.children.map { it as MaterialButton }
+                    binding.modeButtonGroup.children
+                        .map { it as MaterialButton }
                         .filter { !compatibleModes.contains(it.id) }
                         .forEach { it.isVisible = false }
                     binding.modeButtonGroup.isSelectionRequired = true
@@ -186,50 +192,59 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
             }
         }
 
-        voiceSearchLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode == Activity.RESULT_OK && it.data != null) {
-                val result = it.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
-                val newQuery = result?.get(0)
-                binding.searchView.setText(newQuery, TextView.BufferType.EDITABLE)
+        voiceSearchLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (it.resultCode == Activity.RESULT_OK && it.data != null) {
+                    val result = it.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                    val newQuery = result?.get(0)
+                    binding.searchView.setText(newQuery, TextView.BufferType.EDITABLE)
+                }
             }
-        }
 
         if (savedInstanceState == null) {
-            val filterMode = arguments?.let {
-                BundleCompat.getSerializable(it, MODE, SearchQuery.FilterMode::class.java)
-            }
+            val filterMode =
+                arguments?.let {
+                    BundleCompat.getSerializable(it, MODE, SearchQuery.FilterMode::class.java)
+                }
             binding.modeButtonGroup.check(filterMode?.buttonId ?: View.NO_ID)
             binding.searchView.setText(arguments?.getString(QUERY))
-            viewModel.updateFilter(arguments?.let {
-                BundleCompat.getParcelable(it, FILTER, SearchFilter::class.java)
-            })
+            viewModel.updateFilter(
+                arguments?.let {
+                    BundleCompat.getParcelable(it, FILTER, SearchFilter::class.java)
+                },
+            )
         }
     }
 
-    private val adapterDataObserver = object : AdapterDataObserver() {
-        override fun onChanged() {
-            super.onChanged()
-            val isEmpty = searchAdapter.isEmpty
-            if (!isEmpty) {
-                binding.recyclerView.scheduleLayoutAnimation()
+    private val adapterDataObserver =
+        object : AdapterDataObserver() {
+            override fun onChanged() {
+                super.onChanged()
+                val isEmpty = searchAdapter.isEmpty
+                if (!isEmpty) {
+                    binding.recyclerView.scheduleLayoutAnimation()
+                }
+                binding.empty.isVisible = isEmpty
             }
-            binding.empty.isVisible = isEmpty
         }
-    }
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupRecyclerView() {
-        searchAdapter = SearchAdapter(requireActivity(), emptyList(), this).apply {
-            registerAdapterDataObserver(adapterDataObserver)
-        }
+        searchAdapter =
+            SearchAdapter(requireActivity(), emptyList(), this).apply {
+                registerAdapterDataObserver(adapterDataObserver)
+            }
         binding.recyclerView.apply {
-            layoutAnimation = AnimationUtils.loadLayoutAnimation(context, R.anim.layout_animation_fall_down)
-                .apply { animation.duration = resources.getInteger(R.integer.short_anim_time).toLong() }
+            layoutAnimation =
+                AnimationUtils
+                    .loadLayoutAnimation(context, R.anim.layout_animation_fall_down)
+                    .apply { animation.duration = resources.getInteger(R.integer.short_anim_time).toLong() }
             layoutManager = LinearLayoutManager(activity)
             adapter = searchAdapter
-            onVerticalScroll(viewLifecycleOwner,
+            onVerticalScroll(
+                viewLifecycleOwner,
                 onScrollDown = { binding.keyboardPopup.shrink() },
-                onScrollUp = { binding.keyboardPopup.extend() }
+                onScrollUp = { binding.keyboardPopup.extend() },
             )
         }
     }
@@ -244,77 +259,92 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
     override fun onButtonChecked(
         group: MaterialButtonToggleGroup,
         checkedId: Int,
-        isChecked: Boolean
+        isChecked: Boolean,
     ) {
-        val searchMode = SearchQuery.FilterMode.entries
-            .firstOrNull { it.buttonId == group.checkedButtonId }
+        val searchMode =
+            SearchQuery.FilterMode.entries
+                .firstOrNull { it.buttonId == group.checkedButtonId }
         viewModel.updateQuery(mode = searchMode)
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {}
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-        return when (menuItem.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+        when (menuItem.itemId) {
             android.R.id.home -> {
                 findNavController().navigateUp()
                 true
             }
 
-            else -> false
+            else -> {
+                false
+            }
         }
-    }
 
-    override fun songClick(song: Song, results: List<Any>) {
+    override fun songClick(
+        song: Song,
+        results: List<Any>,
+    ) {
         viewModel.songClick(song, results)
     }
 
-    override fun songMenuItemClick(song: Song, menuItem: MenuItem): Boolean {
-        return song.onSongMenu(this, menuItem)
-    }
+    override fun songMenuItemClick(
+        song: Song,
+        menuItem: MenuItem,
+    ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>) {
+    override fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>,
+    ) {
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun albumMenuItemClick(
         album: Album,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>
-    ): Boolean {
-        return album.onAlbumMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>,
+    ): Boolean = album.onAlbumMenu(this, menuItem)
 
-    override fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>) {
+    override fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>,
+    ) {
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun artistMenuItemClick(
         artist: Artist,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>
-    ): Boolean {
-        return artist.onArtistMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>,
+    ): Boolean = artist.onArtistMenu(this, menuItem)
 
     override fun playlistClick(playlist: PlaylistWithSongs) {
         findNavController().navigate(R.id.nav_playlist_detail, playlistDetailArgs(playlist.playlistEntity.playListId))
     }
 
-    override fun playlistMenuItemClick(playlist: PlaylistWithSongs, menuItem: MenuItem): Boolean {
-        return playlist.onPlaylistMenu(this, menuItem)
-    }
+    override fun playlistMenuItemClick(
+        playlist: PlaylistWithSongs,
+        menuItem: MenuItem,
+    ): Boolean = playlist.onPlaylistMenu(this, menuItem)
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<Song>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Song>,
+    ) {
         selection.onSongsMenu(this, menuItem)
     }
 
@@ -331,14 +361,15 @@ class SearchFragment : AbsMainActivityFragment(R.layout.fragment_search),
     }
 
     private fun startVoiceSearch() {
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(
-                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM
-            )
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.search_hint))
-        }
+        val intent =
+            Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(
+                    RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+                )
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PROMPT, getString(R.string.search_hint))
+            }
         try {
             voiceSearchLauncher.launch(intent)
         } catch (e: ActivityNotFoundException) {

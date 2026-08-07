@@ -18,6 +18,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.ssilencce.R
 import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.extensions.currentFragment
 import com.ssilencce.extensions.navigation.isValidCategory
@@ -25,7 +26,6 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.extensions.whichFragment
 import com.ssilencce.playback.Playback
 import com.ssilencce.playback.library.MediaIDs
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.IScrollHelper
 import com.ssilencce.ui.component.base.AbsSlidingMusicPanelActivity
 import com.ssilencce.ui.screen.update.UpdateDialog
@@ -37,8 +37,9 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 /**
  * @author Christians M. A. (mardous)
  */
-class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
-
+class MainActivity :
+    AbsSlidingMusicPanelActivity(),
+    MediaController.Listener {
     private val updateViewModel: UpdateViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -63,31 +64,34 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
     override fun onCustomCommand(
         controller: MediaController,
         command: SessionCommand,
-        args: Bundle
+        args: Bundle,
     ): ListenableFuture<SessionResult> {
-        val sessionResult = when (command.customAction) {
-            Playback.EVENT_MEDIA_CONTENT_CHANGED -> {
-                playerViewModel.submitEvent(MediaEvent.MediaContentChanged)
-                SessionResult(SessionResult.RESULT_SUCCESS)
-            }
+        val sessionResult =
+            when (command.customAction) {
+                Playback.EVENT_MEDIA_CONTENT_CHANGED -> {
+                    playerViewModel.submitEvent(MediaEvent.MediaContentChanged)
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
 
-            Playback.EVENT_FAVORITE_CONTENT_CHANGED -> {
-                playerViewModel.submitEvent(MediaEvent.FavoriteContentChanged)
-                SessionResult(SessionResult.RESULT_SUCCESS)
-            }
+                Playback.EVENT_FAVORITE_CONTENT_CHANGED -> {
+                    playerViewModel.submitEvent(MediaEvent.FavoriteContentChanged)
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
 
-            Playback.EVENT_PLAYBACK_STARTED -> {
-                playerViewModel.submitEvent(MediaEvent.PlaybackStarted)
-                SessionResult(SessionResult.RESULT_SUCCESS)
-            }
+                Playback.EVENT_PLAYBACK_STARTED -> {
+                    playerViewModel.submitEvent(MediaEvent.PlaybackStarted)
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
 
-            Playback.EVENT_PLAYBACK_RESTORED -> {
-                playerViewModel.submitEvent(MediaEvent.PlaybackRestored)
-                SessionResult(SessionResult.RESULT_SUCCESS)
-            }
+                Playback.EVENT_PLAYBACK_RESTORED -> {
+                    playerViewModel.submitEvent(MediaEvent.PlaybackRestored)
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
 
-            else -> SessionResult(SessionError.ERROR_NOT_SUPPORTED)
-        }
+                else -> {
+                    SessionResult(SessionError.ERROR_NOT_SUPPORTED)
+                }
+            }
         return Futures.immediateFuture(sessionResult)
     }
 
@@ -100,8 +104,7 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                     // TODO show detailed info about scanned songs
                     showToast(R.string.scan_finished)
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
@@ -126,7 +129,9 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                                 it
                             }
                         }
-                    } else categoryInfo.category.id
+                    } else {
+                        categoryInfo.category.id
+                    },
                 )
             }
         }
@@ -157,7 +162,8 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                 R.id.nav_folders,
                 R.id.nav_playlists,
                 R.id.nav_genres,
-                R.id.nav_years -> {
+                R.id.nav_years,
+                -> {
                     // Save the last tab
                     if (Preferences.isRememberLastPage) {
                         saveTab(destination.id)
@@ -169,11 +175,14 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                 R.id.nav_queue,
                 R.id.nav_lyrics_editor,
                 R.id.nav_play_info,
-                R.id.nav_about -> {
+                R.id.nav_about,
+                -> {
                     setBottomNavVisibility(visible = false, hideBottomSheet = true)
                 }
 
-                else -> setBottomNavVisibility(visible = false, animate = true) // Hide Bottom Navigation Bar
+                else -> {
+                    setBottomNavVisibility(visible = false, animate = true)
+                } // Hide Bottom Navigation Bar
             }
         }
     }
@@ -189,24 +198,31 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
         handlePlaybackIntent(intent, false)
     }
 
-    private fun handlePlaybackIntent(intent: Intent, canRestorePlayback: Boolean) {
+    private fun handlePlaybackIntent(
+        intent: Intent,
+        canRestorePlayback: Boolean,
+    ) {
         when (intent.action) {
             APP_SHORTCUT_LAST_ADDED -> {
                 playerViewModel.playMediaId(MediaIDs.LAST_ADDED)
                 setIntent(Intent())
             }
+
             APP_SHORTCUT_TOP_TRACKS -> {
                 playerViewModel.playMediaId(MediaIDs.TOP_TRACKS)
                 setIntent(Intent())
             }
+
             APP_SHORTCUT_SHUFFLE -> {
                 playerViewModel.playMediaId(MediaIDs.SONGS, true)
                 setIntent(Intent())
             }
+
             APP_SHORTCUT_FAVORITES -> {
                 playerViewModel.playMediaId(MediaIDs.FAVORITES, true)
                 setIntent(Intent())
             }
+
             else -> {
                 libraryViewModel.handleIntent(intent).observe(this) { result ->
                     if (result.handled) {
@@ -214,7 +230,7 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                             playerViewModel.openQueue(
                                 queue = result.songs,
                                 position = result.position,
-                                shuffleMode = OpenShuffleMode.Off
+                                shuffleMode = OpenShuffleMode.Off,
                             )
                         }
                         setIntent(Intent())
@@ -243,11 +259,13 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
                                 }
                             }
                         }
+
                         UpdateSearchResult.State.Failed -> {
                             if (result.wasFromUser) {
                                 showToast(R.string.could_not_check_for_updates)
                             }
                         }
+
                         else -> {}
                     }
                 }
@@ -268,10 +286,11 @@ class MainActivity : AbsSlidingMusicPanelActivity(), MediaController.Listener {
         private const val APP_SHORTCUT_SHUFFLE = "com.ssilencce.shortcut.SHUFFLE"
         private const val APP_SHORTCUT_FAVORITES = "com.ssilencce.shortcut.FAVORITES"
 
-        private val OLD_SHORTCUT_IDS = listOf(
-            "com.ssilencce.appshortcuts.id.last_added",
-            "com.ssilencce.appshortcuts.id.top_tracks",
-            "com.ssilencce.appshortcuts.id.shuffle_all",
-        )
+        private val OLD_SHORTCUT_IDS =
+            listOf(
+                "com.ssilencce.appshortcuts.id.last_added",
+                "com.ssilencce.appshortcuts.id.top_tracks",
+                "com.ssilencce.appshortcuts.id.shuffle_all",
+            )
     }
 }

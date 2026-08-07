@@ -25,8 +25,9 @@ private typealias ProgressCallback = () -> Unit
 /**
  * A simple handler that runs continuously at a given interval.
  */
-class ProgressObserver(private val intervalMs: Long = DEFAULT_INTERVAL) : Handler(Looper.getMainLooper()) {
-
+class ProgressObserver(
+    private val intervalMs: Long = DEFAULT_INTERVAL,
+) : Handler(Looper.getMainLooper()) {
     companion object {
         private const val DEFAULT_INTERVAL = 500L
     }
@@ -34,12 +35,13 @@ class ProgressObserver(private val intervalMs: Long = DEFAULT_INTERVAL) : Handle
     private var callback: ProgressCallback? = null
     private var isStarted = false
 
-    private val runnable = object : Runnable {
-        override fun run() {
-            callback?.invoke()
-            postDelayed(this, intervalMs)
+    private val runnable =
+        object : Runnable {
+            override fun run() {
+                callback?.invoke()
+                postDelayed(this, intervalMs)
+            }
         }
-    }
 
     fun start(callback: ProgressCallback) {
         if (isStarted) return

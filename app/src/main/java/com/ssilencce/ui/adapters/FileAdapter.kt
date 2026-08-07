@@ -59,7 +59,6 @@ class FileAdapter(
     var playOptionAlwaysVisible: Boolean,
     private val callback: IFileCallback?,
 ) : AbsMultiSelectAdapter<FileAdapter.ViewHolder, FileSystemItem>(activity, R.menu.menu_media_selection) {
-
     var files: List<FileSystemItem> = files
         private set
 
@@ -67,16 +66,23 @@ class FileAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val itemView = if (viewType == VIEW_TYPE_FOLDER || viewType == VIEW_TYPE_SONG) {
-            LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
-        } else {
-            LayoutInflater.from(parent.context).inflate(R.layout.item_list, parent, false)
-        }
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
+        val itemView =
+            if (viewType == VIEW_TYPE_FOLDER || viewType == VIEW_TYPE_SONG) {
+                LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
+            } else {
+                LayoutInflater.from(parent.context).inflate(R.layout.item_list, parent, false)
+            }
         return ViewHolder(itemView, viewType)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val file = files[position]
         val isChecked = isChecked(file)
         holder.isActivated = isChecked
@@ -92,8 +98,8 @@ class FileAdapter(
         }
     }
 
-    private fun getFileTitle(file: FileSystemItem): CharSequence {
-        return if (file is Song) {
+    private fun getFileTitle(file: FileSystemItem): CharSequence =
+        if (file is Song) {
             if (sortMode.selectedKey == SortKey.FileName) {
                 file.fileName
             } else {
@@ -102,32 +108,48 @@ class FileAdapter(
         } else {
             file.fileName
         }
-    }
 
-    private fun getFileText(holder: ViewHolder, file: FileSystemItem): CharSequence? {
-        return when (file) {
-            is Song -> when (sortMode.selectedKey) {
-                SortKey.Track -> {
-                    buildInfoString(
-                        file.trackNumber
-                            .asReadableTrackNumber()
-                            .takeIf { it > 0 }?.toString() ?: "-",
+    private fun getFileText(
+        holder: ViewHolder,
+        file: FileSystemItem,
+    ): CharSequence? =
+        when (file) {
+            is Song -> {
+                when (sortMode.selectedKey) {
+                    SortKey.Track -> {
+                        buildInfoString(
+                            file.trackNumber
+                                .asReadableTrackNumber()
+                                .takeIf { it > 0 }
+                                ?.toString() ?: "-",
+                            file.songInfo(),
+                        )
+                    }
+
+                    else -> {
                         file.songInfo()
-                    )
+                    }
                 }
-
-                else -> file.songInfo()
             }
-            is Folder -> holder.itemView.context.plurals(R.plurals.x_items, file.musicFiles.size)
-            else -> null
-        }
-    }
 
-    private fun getFileIcon(holder: ViewHolder, file: FileSystemItem): Drawable? {
-        val iconRes = when (file) {
-            is StorageDevice -> file.iconRes
-            else -> R.drawable.ic_folder_24dp
+            is Folder -> {
+                holder.itemView.context.plurals(R.plurals.x_items, file.musicFiles.size)
+            }
+
+            else -> {
+                null
+            }
         }
+
+    private fun getFileIcon(
+        holder: ViewHolder,
+        file: FileSystemItem,
+    ): Drawable? {
+        val iconRes =
+            when (file) {
+                is StorageDevice -> file.iconRes
+                else -> R.drawable.ic_folder_24dp
+            }
         if (iconRes != 0) {
             return AppCompatResources.getDrawable(holder.itemView.context, iconRes)
         }
@@ -138,13 +160,12 @@ class FileAdapter(
 
     override fun getItemId(position: Int): Long = files[position].fileId
 
-    override fun getItemViewType(position: Int): Int {
-        return when(files[position]) {
+    override fun getItemViewType(position: Int): Int =
+        when (files[position]) {
             is Song -> VIEW_TYPE_SONG
             is Folder -> VIEW_TYPE_FOLDER
             else -> VIEW_TYPE_OTHER
         }
-    }
 
     override fun getIdentifier(position: Int): FileSystemItem? {
         if (getItemViewType(position) == VIEW_TYPE_OTHER) {
@@ -155,27 +176,37 @@ class FileAdapter(
 
     override fun getName(item: FileSystemItem): String = item.fileName
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<FileSystemItem>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<FileSystemItem>,
+    ) {
         callback?.filesMenuItemClick(selection, menuItem)
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun submitList(files: List<FileSystemItem>, sortMode: FileSortMode) {
+    fun submitList(
+        files: List<FileSystemItem>,
+        sortMode: FileSortMode,
+    ) {
         this.files = files
         this.sortMode = sortMode
         notifyDataSetChanged()
     }
 
-    inner class ViewHolder(itemView: View, itemViewType: Int) : MediaEntryViewHolder(itemView) {
+    inner class ViewHolder(
+        itemView: View,
+        itemViewType: Int,
+    ) : MediaEntryViewHolder(itemView) {
         private val currentFile: FileSystemItem
             get() = files[bindingAdapterPosition]
 
         private val filePopupMenuResource: Int
-            get() = when (itemViewType) {
-                VIEW_TYPE_SONG -> R.menu.menu_item_song
-                VIEW_TYPE_FOLDER -> R.menu.menu_item_directory
-                else -> 0
-            }
+            get() =
+                when (itemViewType) {
+                    VIEW_TYPE_SONG -> R.menu.menu_item_song
+                    VIEW_TYPE_FOLDER -> R.menu.menu_item_directory
+                    else -> 0
+                }
 
         override fun onClick(view: View) {
             if (isInQuickSelectMode) {
@@ -196,19 +227,20 @@ class FileAdapter(
                 image?.useAsIcon()
             }
             if (itemViewType != VIEW_TYPE_OTHER) {
-                menu?.setOnClickListener(object : OnClickMenu() {
-                    override val popupMenuRes: Int
-                        get() = filePopupMenuResource
+                menu?.setOnClickListener(
+                    object : OnClickMenu() {
+                        override val popupMenuRes: Int
+                            get() = filePopupMenuResource
 
-                    override fun onPreparePopup(menu: Menu) {
-                        menu.findItem(R.id.action_play)
-                            ?.isVisible = !songClickBehavior.isAbleToPlay || playOptionAlwaysVisible
-                    }
+                        override fun onPreparePopup(menu: Menu) {
+                            menu
+                                .findItem(R.id.action_play)
+                                ?.isVisible = !songClickBehavior.isAbleToPlay || playOptionAlwaysVisible
+                        }
 
-                    override fun onMenuItemClick(item: MenuItem): Boolean {
-                        return callback?.fileMenuItemClick(currentFile, item) == true
-                    }
-                })
+                        override fun onMenuItemClick(item: MenuItem): Boolean = callback?.fileMenuItemClick(currentFile, item) == true
+                    },
+                )
             }
         }
     }

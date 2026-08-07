@@ -27,9 +27,8 @@ data class Album(
     val albumArtistName: String?,
     val year: Int,
     val firstSongIndex: Int,
-    override val songs: List<Song>
+    override val songs: List<Song>,
 ) : SongProvider {
-
     val name: String
         get() = safeGetFirstSong().albumName
 
@@ -49,9 +48,7 @@ data class Album(
     val albumCover: Uri
         get() = id.asAlbumCoverUri()
 
-    fun safeGetFirstSong(): Song {
-        return songs.getOrNull(firstSongIndex) ?: Song.emptySong
-    }
+    fun safeGetFirstSong(): Song = songs.getOrNull(firstSongIndex) ?: Song.emptySong
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -60,13 +57,9 @@ data class Album(
         return id == album.id && songs == album.songs
     }
 
-    override fun hashCode(): Int {
-        return Objects.hash(id, songs)
-    }
+    override fun hashCode(): Int = Objects.hash(id, songs)
 
-    override fun toString(): String {
-        return "Album{id=$id, songs=$songs}"
-    }
+    override fun toString(): String = "Album{id=$id, songs=$songs}"
 
     companion object {
         const val UNKNOWN_ALBUM_DISPLAY_NAME = "Unknown Album"

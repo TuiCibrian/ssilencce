@@ -30,22 +30,21 @@ object EmptyViewDefaults {
         iconColor: Color = MaterialTheme.colorScheme.secondary,
         iconContainerColor: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
         titleColor: Color = MaterialTheme.colorScheme.onSurface,
-        textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant
-    ): EmptyViewColors {
-        return EmptyViewColors(
+        textColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    ): EmptyViewColors =
+        EmptyViewColors(
             iconColor = iconColor,
             iconContainerColor = iconContainerColor,
             titleColor = titleColor,
-            textColor = textColor
+            textColor = textColor,
         )
-    }
 }
 
 data class EmptyViewColors(
     val iconColor: Color,
     val iconContainerColor: Color,
     val titleColor: Color,
-    val textColor: Color
+    val textColor: Color,
 )
 
 @Composable
@@ -56,24 +55,25 @@ fun EmptyView(
     subtitle: String? = null,
     colors: EmptyViewColors = EmptyViewDefaults.defaultColors(),
     iconSize: Dp = EmptyViewDefaults.IconSize,
-    button: @Composable () -> Unit = {}
+    button: @Composable () -> Unit = {},
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = modifier.padding(32.dp)
+        modifier = modifier.padding(32.dp),
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .clip(CircleShape)
-                .background(colors.iconContainerColor)
-                .padding(32.dp)
+            modifier =
+                Modifier
+                    .clip(CircleShape)
+                    .background(colors.iconContainerColor)
+                    .padding(32.dp),
         ) {
             Icon(
                 painter = icon,
                 contentDescription = null,
                 tint = colors.iconColor,
-                modifier = Modifier.size(iconSize)
+                modifier = Modifier.size(iconSize),
             )
         }
 
@@ -83,7 +83,7 @@ fun EmptyView(
             text = title,
             textAlign = TextAlign.Center,
             color = colors.titleColor,
-            style = MaterialTheme.typography.titleLarge
+            style = MaterialTheme.typography.titleLarge,
         )
 
         if (!subtitle.isNullOrEmpty()) {
@@ -91,7 +91,7 @@ fun EmptyView(
                 text = subtitle,
                 textAlign = TextAlign.Center,
                 color = colors.textColor,
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium,
             )
         }
 

@@ -46,5 +46,5 @@ class HistoryEntity(
     @ColumnInfo(name = "genre_name")
     val genreName: String?,
     @ColumnInfo(name = "time_played")
-    val timePlayed: Long
+    val timePlayed: Long,
 )

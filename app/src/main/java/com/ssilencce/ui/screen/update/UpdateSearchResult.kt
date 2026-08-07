@@ -9,15 +9,20 @@ data class UpdateSearchResult(
     val wasFromUser: Boolean = false,
     val wasExperimentalQuery: Boolean = true,
 ) {
-    fun shouldStartNewSearchFor(fromUser: Boolean, allowExperimental: Boolean): Boolean {
-        return when (state) {
+    fun shouldStartNewSearchFor(
+        fromUser: Boolean,
+        allowExperimental: Boolean,
+    ): Boolean =
+        when (state) {
             State.Idle -> true
             State.Completed, State.Failed -> fromUser || wasExperimentalQuery != allowExperimental
             State.Searching -> false
         }
-    }
 
     enum class State {
-        Idle, Searching, Completed, Failed
+        Idle,
+        Searching,
+        Completed,
+        Failed,
     }
 }

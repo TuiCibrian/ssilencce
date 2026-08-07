@@ -19,11 +19,12 @@ class LyricsViewSettings(
     val resumeOnSeek: Boolean,
     val syncedStyle: TextStyle,
     val unsyncedStyle: TextStyle,
-    val lineSpacing: Int
+    val lineSpacing: Int,
 ) {
-
     enum class Mode {
-        Player, Full;
+        Player,
+        Full,
+        ;
 
         val isFull get() = this == Full
     }
@@ -31,7 +32,8 @@ class LyricsViewSettings(
     enum class BackgroundEffect {
         Gradient,
         Blur,
-        None;
+        None,
+        ;
 
         val isBlur get() = this == Blur
         val isGradient get() = this == Gradient

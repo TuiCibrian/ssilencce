@@ -28,12 +28,15 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
 @Parcelize
-open class Playlist(val id: Long, val name: String) : Parcelable, KoinComponent {
-
+open class Playlist(
+    val id: Long,
+    val name: String,
+) : Parcelable,
+    KoinComponent {
     @Suppress("DEPRECATION")
     constructor(cursor: Cursor) : this(
         cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists._ID)),
-        cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME))
+        cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Audio.Playlists.NAME)),
     )
 
     open fun description(context: Context): String {
@@ -60,9 +63,7 @@ open class Playlist(val id: Long, val name: String) : Parcelable, KoinComponent 
         return result
     }
 
-    override fun toString(): String {
-        return "Playlist{id=$id, name='$name'}"
-    }
+    override fun toString(): String = "Playlist{id=$id, name='$name'}"
 
     companion object {
         val EmptyPlaylist = Playlist(-1, "")

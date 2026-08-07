@@ -20,4 +20,7 @@ package com.ssilencce.data.model
 /**
  * @author Christians M. A. (mardous)
  */
-class Suggestion(val type: ContentType, val items: List<Any>)
+class Suggestion(
+    val type: ContentType,
+    val items: List<Any>,
+)

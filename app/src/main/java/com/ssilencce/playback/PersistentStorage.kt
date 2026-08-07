@@ -36,9 +36,8 @@ typealias RestorationListener = (MediaItemsWithStartPosition, ShuffleOrder?) -> 
 class PersistentStorage(
     context: Context,
     private val coroutineScope: CoroutineScope,
-    private val player: AdvancedForwardingPlayer
+    private val player: AdvancedForwardingPlayer,
 ) : KoinComponent {
-
     // Synchronization lock for listener sets
     private val lock = Any()
 
@@ -59,10 +58,12 @@ class PersistentStorage(
     /**
      * Represents the internal state of playback restoration.
      */
-    enum class RestorationState(val isRestored: Boolean = false) {
-        Awaiting(false),   // Not started yet
-        Restoring(false),  // Currently restoring
-        Restored(true)     // Completed (either failed or successful)
+    enum class RestorationState(
+        val isRestored: Boolean = false,
+    ) {
+        Awaiting(false), // Not started yet
+        Restoring(false), // Currently restoring
+        Restored(true), // Completed (either failed or successful)
     }
 
     /**
@@ -98,132 +99,141 @@ class PersistentStorage(
      * - Applies repeat/shuffle modes and playback position.
      * - Notifies all waiting listeners once complete.
      */
-    fun restoreState(callback: RestorationListener) = coroutineScope.launch(Dispatchers.IO) {
-        try {
-            // Ensure player is empty before restoring
-            val emptyTimeline = withContext(Dispatchers.Main) { player.currentTimeline.isEmpty }
+    fun restoreState(callback: RestorationListener) =
+        coroutineScope.launch(Dispatchers.IO) {
+            try {
+                // Ensure player is empty before restoring
+                val emptyTimeline = withContext(Dispatchers.Main) { player.currentTimeline.isEmpty }
 
-            // Only one restoration allowed
-            val movedToRestoringState = state.compareAndSet(RestorationState.Awaiting, RestorationState.Restoring)
-            if (movedToRestoringState && emptyTimeline) {
-                var startPosition = preferences.getInt(LAST_INDEX, C.INDEX_UNSET)
-                val startPositionMs = preferences.getLong(POSITION_IN_TRACK, C.TIME_UNSET)
+                // Only one restoration allowed
+                val movedToRestoringState = state.compareAndSet(RestorationState.Awaiting, RestorationState.Restoring)
+                if (movedToRestoringState && emptyTimeline) {
+                    var startPosition = preferences.getInt(LAST_INDEX, C.INDEX_UNSET)
+                    val startPositionMs = preferences.getLong(POSITION_IN_TRACK, C.TIME_UNSET)
 
-                // Load saved queue from database
-                val savedMediaItems = queueDao.savedItems().map {
-                    MediaItem.Builder()
-                        .setMediaId(it.id)
-                        .setMediaMetadata(
-                            MediaMetadata.Builder()
-                                .setExtras(
-                                    Bundle().apply {
-                                        putInt("original_index", it.order)
-                                    }
-                                )
-                                .build()
-                        )
-                        .build()
-                }
-
-                // Resolve valid items from repository
-                val (restoredMediaItems) = repository.songsByMediaItems(savedMediaItems)
-                    .let { (songs, missingMediaItems) ->
-                        songs.toMediaItems() to missingMediaItems
-                    }
-
-                // Build session state object
-                val items = if (restoredMediaItems.isNotEmpty()) {
-                    // Validate index if playlist changed
-                    if (restoredMediaItems.size != savedMediaItems.size) {
-                        val savedLastMediaItem = savedMediaItems.firstOrNull {
-                            it.mediaMetadata.extras?.getInt("original_index", -1) == startPosition
+                    // Load saved queue from database
+                    val savedMediaItems =
+                        queueDao.savedItems().map {
+                            MediaItem
+                                .Builder()
+                                .setMediaId(it.id)
+                                .setMediaMetadata(
+                                    MediaMetadata
+                                        .Builder()
+                                        .setExtras(
+                                            Bundle().apply {
+                                                putInt("original_index", it.order)
+                                            },
+                                        ).build(),
+                                ).build()
                         }
-                        if (savedLastMediaItem == null) {
-                            startPosition = 0
-                        } else {
-                            val restoredLastMediaItem = restoredMediaItems.getOrNull(startPosition)
-                            if (restoredLastMediaItem == null ||
-                                restoredLastMediaItem.mediaId != savedLastMediaItem.mediaId
-                            ) {
-                                startPosition = restoredMediaItems.indexOfFirst {
-                                    it.mediaId == savedLastMediaItem.mediaId
-                                }
+
+                    // Resolve valid items from repository
+                    val (restoredMediaItems) =
+                        repository
+                            .songsByMediaItems(savedMediaItems)
+                            .let { (songs, missingMediaItems) ->
+                                songs.toMediaItems() to missingMediaItems
                             }
-                        }
-                        startPosition = startPosition.coerceIn(0, restoredMediaItems.lastIndex)
-                    }
 
-                    MediaItemsWithStartPosition(
-                        restoredMediaItems,
-                        startPosition,
-                        startPositionMs
-                    )
-                } else {
-                    // No items found, return an empty session state
-                    MediaItemsWithStartPosition(
-                        emptyList(),
-                        C.INDEX_UNSET,
-                        C.TIME_UNSET
-                    )
-                }
+                    // Build session state object
+                    val items =
+                        if (restoredMediaItems.isNotEmpty()) {
+                            // Validate index if playlist changed
+                            if (restoredMediaItems.size != savedMediaItems.size) {
+                                val savedLastMediaItem =
+                                    savedMediaItems.firstOrNull {
+                                        it.mediaMetadata.extras?.getInt("original_index", -1) == startPosition
+                                    }
+                                if (savedLastMediaItem == null) {
+                                    startPosition = 0
+                                } else {
+                                    val restoredLastMediaItem = restoredMediaItems.getOrNull(startPosition)
+                                    if (restoredLastMediaItem == null ||
+                                        restoredLastMediaItem.mediaId != savedLastMediaItem.mediaId
+                                    ) {
+                                        startPosition =
+                                            restoredMediaItems.indexOfFirst {
+                                                it.mediaId == savedLastMediaItem.mediaId
+                                            }
+                                    }
+                                }
+                                startPosition = startPosition.coerceIn(0, restoredMediaItems.lastIndex)
+                            }
 
-                val repeatMode = preferences.getInt(REPEAT_MODE, Player.REPEAT_MODE_OFF)
-                val shuffleModeEnabled = preferences.getBoolean(SHUFFLE_MODE, false)
-
-                // Load serialized shuffle order
-                val serializedOrder = preferences.getString(SHUFFLE_ORDER, null)?.let {
-                    try {
-                        SerializedOrder.serializedFromJson(it)
-                    } catch (e: SerializationException) {
-                        Log.e(TAG, "Couldn't deserialize saved shuffle order: $it", e)
-                        null
-                    }
-                }
-
-                val shuffleOrder = if (shuffleModeEnabled) {
-                    if (serializedOrder != null) {
-                        val data = serializedOrder.data
-                        if (data == null || items.mediaItems.size != data.size) {
-                            Log.e(TAG, "Previous shuffle order is no longer valid")
-                            preferences.edit(commit = true) { putString(SHUFFLE_ORDER, null) }
-                            null
+                            MediaItemsWithStartPosition(
+                                restoredMediaItems,
+                                startPosition,
+                                startPositionMs,
+                            )
                         } else {
-                            serializedOrder.toShuffleOrder(
-                                firstIndex = items.startIndex,
-                                length = items.mediaItems.size
+                            // No items found, return an empty session state
+                            MediaItemsWithStartPosition(
+                                emptyList(),
+                                C.INDEX_UNSET,
+                                C.TIME_UNSET,
                             )
                         }
-                    } else {
-                        ShuffleOrder.UnshuffledShuffleOrder(items.mediaItems.size)
-                    }
-                } else {
-                    if (serializedOrder != null) {
-                        Log.e(TAG, "Found orphan shuffle order")
-                        preferences.edit(commit = true) { putString(SHUFFLE_ORDER, null) }
-                    }
-                    null
-                }
 
-                withContext(Dispatchers.Main) {
-                    // Apply repeat/shuffle modes on main thread
-                    player.repeatMode = repeatMode
-                    player.shuffleModeEnabled = shuffleModeEnabled && shuffleOrder != null
+                    val repeatMode = preferences.getInt(REPEAT_MODE, Player.REPEAT_MODE_OFF)
+                    val shuffleModeEnabled = preferences.getBoolean(SHUFFLE_MODE, false)
 
-                    dispatchItems(callback, items, shuffleOrder)
+                    // Load serialized shuffle order
+                    val serializedOrder =
+                        preferences.getString(SHUFFLE_ORDER, null)?.let {
+                            try {
+                                SerializedOrder.serializedFromJson(it)
+                            } catch (e: SerializationException) {
+                                Log.e(TAG, "Couldn't deserialize saved shuffle order: $it", e)
+                                null
+                            }
+                        }
+
+                    val shuffleOrder =
+                        if (shuffleModeEnabled) {
+                            if (serializedOrder != null) {
+                                val data = serializedOrder.data
+                                if (data == null || items.mediaItems.size != data.size) {
+                                    Log.e(TAG, "Previous shuffle order is no longer valid")
+                                    preferences.edit(commit = true) { putString(SHUFFLE_ORDER, null) }
+                                    null
+                                } else {
+                                    serializedOrder.toShuffleOrder(
+                                        firstIndex = items.startIndex,
+                                        length = items.mediaItems.size,
+                                    )
+                                }
+                            } else {
+                                ShuffleOrder.UnshuffledShuffleOrder(items.mediaItems.size)
+                            }
+                        } else {
+                            if (serializedOrder != null) {
+                                Log.e(TAG, "Found orphan shuffle order")
+                                preferences.edit(commit = true) { putString(SHUFFLE_ORDER, null) }
+                            }
+                            null
+                        }
+
+                    withContext(Dispatchers.Main) {
+                        // Apply repeat/shuffle modes on main thread
+                        player.repeatMode = repeatMode
+                        player.shuffleModeEnabled = shuffleModeEnabled && shuffleOrder != null
+
+                        dispatchItems(callback, items, shuffleOrder)
+                    }
                 }
+            } catch (t: Throwable) {
+                Log.e(TAG, "State restoration failed", t)
+                dispatchItems(
+                    callback = callback,
+                    items = MediaItemsWithStartPosition(emptyList(), C.INDEX_UNSET, C.TIME_UNSET),
+                    shuffleOrder = null,
+                )
+            } finally {
+                // Always mark as restored to unblock future listeners
+                state.store(RestorationState.Restored)
             }
-        } catch (t: Throwable) {
-            Log.e(TAG, "State restoration failed", t)
-            dispatchItems(
-                callback = callback,
-                items = MediaItemsWithStartPosition(emptyList(), C.INDEX_UNSET, C.TIME_UNSET),
-                shuffleOrder = null
-            )
-        } finally {
-            // Always mark as restored to unblock future listeners
-            state.store(RestorationState.Restored)
         }
-    }
 
     /**
      * Saves the current playback state to disk.
@@ -233,62 +243,67 @@ class PersistentStorage(
      */
     fun saveState(savePlaylist: Boolean = false) {
         // Avoid writing while restoring
-        if (restorationState == RestorationState.Restoring)
+        if (restorationState == RestorationState.Restoring) {
             return
+        }
 
         // Save playlist requests have higher priority
-        if (!savePlaylist && saveJob?.isActive == true)
+        if (!savePlaylist && saveJob?.isActive == true) {
             return
+        }
 
         saveJob?.cancel()
-        saveJob = coroutineScope.launch {
-            try {
-                // Small delay to prevent race conditions (e.g. fast track changes)
-                delay(500)
+        saveJob =
+            coroutineScope.launch {
+                try {
+                    // Small delay to prevent race conditions (e.g. fast track changes)
+                    delay(500)
 
-                // Read player state (on main thread)
-                val repeatMode = player.repeatMode
-                val shuffleModeEnabled = player.shuffleModeEnabled
-                val position = player.currentMediaItemIndex
-                val positionInTrack = player.currentPosition
-                val mediaItems = player.mediaItems
-                val shuffleOrder = when (val shuffleOrder = player.exoPlayer.shuffleOrder) {
-                    is ImprovedShuffleOrder -> SerializedOrder.serializedFromOrder(shuffleOrder)
-                    else -> null
-                }
-
-                // Write state asynchronously
-                withContext(Dispatchers.IO) {
-                    if (isActive) {
-                        preferences.edit(commit = true) {
-                            putInt(REPEAT_MODE, repeatMode)
-                            putBoolean(SHUFFLE_MODE, shuffleModeEnabled)
-                            putString(SHUFFLE_ORDER, shuffleOrder?.toString())
-                            putInt(LAST_INDEX, position)
-                            putLong(POSITION_IN_TRACK, positionInTrack)
+                    // Read player state (on main thread)
+                    val repeatMode = player.repeatMode
+                    val shuffleModeEnabled = player.shuffleModeEnabled
+                    val position = player.currentMediaItemIndex
+                    val positionInTrack = player.currentPosition
+                    val mediaItems = player.mediaItems
+                    val shuffleOrder =
+                        when (val shuffleOrder = player.exoPlayer.shuffleOrder) {
+                            is ImprovedShuffleOrder -> SerializedOrder.serializedFromOrder(shuffleOrder)
+                            else -> null
                         }
 
-                        // Optionally save playlist order
-                        if (savePlaylist) {
-                            val queueItems = mediaItems.mapIndexed { index, item ->
-                                QueueEntity(id = item.mediaId, order = index)
+                    // Write state asynchronously
+                    withContext(Dispatchers.IO) {
+                        if (isActive) {
+                            preferences.edit(commit = true) {
+                                putInt(REPEAT_MODE, repeatMode)
+                                putBoolean(SHUFFLE_MODE, shuffleModeEnabled)
+                                putString(SHUFFLE_ORDER, shuffleOrder?.toString())
+                                putInt(LAST_INDEX, position)
+                                putLong(POSITION_IN_TRACK, positionInTrack)
                             }
-                            if (isActive) {
-                                queueDao.replaceQueue(queueItems)
+
+                            // Optionally save playlist order
+                            if (savePlaylist) {
+                                val queueItems =
+                                    mediaItems.mapIndexed { index, item ->
+                                        QueueEntity(id = item.mediaId, order = index)
+                                    }
+                                if (isActive) {
+                                    queueDao.replaceQueue(queueItems)
+                                }
                             }
                         }
                     }
+                } catch (e: Throwable) {
+                    Log.e(TAG, "Failed to write current state to disk", e)
                 }
-            } catch (e: Throwable) {
-                Log.e(TAG, "Failed to write current state to disk", e)
             }
-        }
     }
 
     private suspend fun dispatchItems(
         callback: RestorationListener,
         items: MediaItemsWithStartPosition,
-        shuffleOrder: ShuffleOrder?
+        shuffleOrder: ShuffleOrder?,
     ) {
         withContext(Dispatchers.Main) {
             synchronized(lock) {

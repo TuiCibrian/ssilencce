@@ -8,28 +8,37 @@ data class LrcNode(
     val text: String?,
     var bgText: String?,
     var rawLine: String?,
-    var actor: LyricsActor? = null
+    var actor: LyricsActor? = null,
 ) {
     private val children = mutableListOf<LrcNode>()
 
     var end: Long = INVALID_DURATION
 
-    fun addChild(start: Long, end: Long = INVALID_DURATION, text: String?, actor: LyricsActor?): Boolean {
+    fun addChild(
+        start: Long,
+        end: Long = INVALID_DURATION,
+        text: String?,
+        actor: LyricsActor?,
+    ): Boolean {
         if (start > INVALID_DURATION) {
-            val node = LrcNode(
-                start = start,
-                text = text,
-                bgText = null,
-                rawLine = null,
-                actor = actor
-            )
+            val node =
+                LrcNode(
+                    start = start,
+                    text = text,
+                    bgText = null,
+                    rawLine = null,
+                    actor = actor,
+                )
             node.end = end
             return children.add(node)
         }
         return false
     }
 
-    private fun toWord(startIndex: Int, trimEnd: Boolean = false): SyncedLyrics.Word {
+    private fun toWord(
+        startIndex: Int,
+        trimEnd: Boolean = false,
+    ): SyncedLyrics.Word {
         checkNotNull(text)
         val wordText = if (trimEnd) text.trimEnd() else text
         return SyncedLyrics.Word(
@@ -39,12 +48,12 @@ data class LrcNode(
             end = end,
             endIndex = startIndex + (wordText.length - 1),
             duration = (end - start),
-            actor = actor
+            actor = actor,
         )
     }
 
-    fun getTextContent(): SyncedLyrics.TextContent {
-        return if (children.isNotEmpty()) {
+    fun getTextContent(): SyncedLyrics.TextContent =
+        if (children.isNotEmpty()) {
             children.sortBy { it.start }
             for (i in 0 until children.lastIndex) {
                 if (children[i].end == INVALID_DURATION) {
@@ -60,12 +69,16 @@ data class LrcNode(
 
             val words = mutableListOf<SyncedLyrics.Word>()
             for ((index, child) in children.withIndex()) {
-                if (index == lastWordIndex && child.text.isNullOrBlank())
+                if (index == lastWordIndex && child.text.isNullOrBlank()) {
                     continue
+                }
 
-                val trimEnd = if (index == (lastWordIndex - 1)) {
-                    children[lastWordIndex].text.isNullOrBlank()
-                } else index == children.lastIndex
+                val trimEnd =
+                    if (index == (lastWordIndex - 1)) {
+                        children[lastWordIndex].text.isNullOrBlank()
+                    } else {
+                        index == children.lastIndex
+                    }
 
                 val word = child.toWord(nextWordStartIndex, trimEnd = trimEnd)
                 if (words.add(word)) {
@@ -74,22 +87,27 @@ data class LrcNode(
             }
 
             SyncedLyrics.TextContent(
-                content = words.filterNot { it.isBackground }
-                    .joinToString(separator = "") { it.content }.trim(),
-                backgroundContent = words.filter { it.isBackground }
-                    .joinToString(separator = "") { it.content }.trim(),
+                content =
+                    words
+                        .filterNot { it.isBackground }
+                        .joinToString(separator = "") { it.content }
+                        .trim(),
+                backgroundContent =
+                    words
+                        .filter { it.isBackground }
+                        .joinToString(separator = "") { it.content }
+                        .trim(),
                 rawContent = rawLine.orEmpty(),
-                syllables = words
+                syllables = words,
             )
         } else {
             SyncedLyrics.TextContent(
                 content = text.orEmpty(),
                 backgroundContent = null,
                 rawContent = rawLine.orEmpty(),
-                syllables = emptyList()
+                syllables = emptyList(),
             )
         }
-    }
 
     fun toLine(): SyncedLyrics.Line? {
         if (start <= INVALID_DURATION && end <= INVALID_DURATION) {
@@ -102,7 +120,7 @@ data class LrcNode(
             content = getTextContent(),
             transliteration = null,
             translation = null,
-            actor = actor
+            actor = actor,
         )
     }
 

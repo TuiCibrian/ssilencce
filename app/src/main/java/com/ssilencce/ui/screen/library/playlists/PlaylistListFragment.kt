@@ -43,23 +43,34 @@ import com.ssilencce.ui.screen.library.ReloadType
 /**
  * @author Christians M. A. (mardous)
  */
-class PlaylistListFragment : AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapter, GridLayoutManager>(),
+class PlaylistListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapter, GridLayoutManager>(),
     IPlaylistCallback {
-
     override val titleRes: Int = R.string.playlists_label
     override val isShuffleVisible: Boolean = false
     override val emptyMessageRes: Int
         get() = R.string.no_device_playlists
 
     override val maxGridSize: Int
-        get() = if (isLandscape) resources.getInteger(R.integer.max_playlist_columns_land)
-        else resources.getInteger(R.integer.max_playlist_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.max_playlist_columns_land)
+            } else {
+                resources.getInteger(R.integer.max_playlist_columns)
+            }
 
     override val itemLayoutRes: Int
-        get() = if (isGridMode) R.layout.item_playlist
-        else R.layout.item_list
+        get() =
+            if (isGridMode) {
+                R.layout.item_playlist
+            } else {
+                R.layout.item_list
+            }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getPlaylists().observe(viewLifecycleOwner) { playlists ->
             adapter?.dataSet = playlists
@@ -71,9 +82,7 @@ class PlaylistListFragment : AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapt
         libraryViewModel.forceReload(ReloadType.Playlists)
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(requireContext(), gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(requireContext(), gridSize)
 
     override fun createAdapter(): PlaylistAdapter {
         notifyLayoutResChanged(itemLayoutRes)
@@ -85,11 +94,15 @@ class PlaylistListFragment : AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapt
         findNavController().navigate(R.id.nav_playlist_detail, playlistDetailArgs(playlist.playlistEntity.playListId))
     }
 
-    override fun playlistMenuItemClick(playlist: PlaylistWithSongs, menuItem: MenuItem): Boolean {
-        return playlist.onPlaylistMenu(this, menuItem)
-    }
+    override fun playlistMenuItemClick(
+        playlist: PlaylistWithSongs,
+        menuItem: MenuItem,
+    ): Boolean = playlist.onPlaylistMenu(this, menuItem)
 
-    override fun playlistsMenuItemClick(playlists: List<PlaylistWithSongs>, menuItem: MenuItem) {
+    override fun playlistsMenuItemClick(
+        playlists: List<PlaylistWithSongs>,
+        menuItem: MenuItem,
+    ) {
         playlists.onPlaylistsMenu(this, menuItem)
     }
 
@@ -106,7 +119,10 @@ class PlaylistListFragment : AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapt
         adapter?.actionMode?.finish()
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         menu.removeItem(R.id.action_view_type)
         menu.add(0, R.id.action_new_playlist, 0, R.string.new_playlist_title)
@@ -125,30 +141,33 @@ class PlaylistListFragment : AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapt
                     .show(childFragmentManager, "NEW_PLAYLIST")
                 true
             }
+
             R.id.action_import_playlist -> {
                 ImportPlaylistDialog().show(childFragmentManager, "IMPORT_PLAYLIST")
                 true
             }
-            else -> super.onMenuItemSelected(item)
+
+            else -> {
+                super.onMenuItemSelected(item)
+            }
         }
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.Normal
-    }
+    override fun getSavedViewType(): GridViewType = GridViewType.Normal
 
     override fun saveViewType(viewType: GridViewType) {}
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }

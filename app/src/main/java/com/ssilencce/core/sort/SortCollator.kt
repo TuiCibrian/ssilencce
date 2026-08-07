@@ -12,14 +12,15 @@ private val collators = ConcurrentHashMap<Locale, Collator>()
 // Frozen
 fun sortingCollator(locale: Locale = Locale.getDefault()): Collator =
     collators.computeIfAbsent(locale) {
-        Collator.getInstance(it).apply {
-            strength = Collator.PRIMARY
-            (this as? RuleBasedCollator)?.numericCollation = true
-        }.freeze()
+        Collator
+            .getInstance(it)
+            .apply {
+                strength = Collator.PRIMARY
+                (this as? RuleBasedCollator)?.numericCollation = true
+            }.freeze()
     }
 
-fun <T> Iterable<T>.sortedByName(selector: (T) -> String): List<T> =
-    sortedWith(compareBy(sortingCollator()) { selector(it) })
+fun <T> Iterable<T>.sortedByName(selector: (T) -> String): List<T> = sortedWith(compareBy(sortingCollator()) { selector(it) })
 
 fun <T> Iterable<T>.sortedByMediaName(selector: (T) -> String): List<T> {
     val ignoreArticles = Preferences.ignoreArticlesWhenSorting

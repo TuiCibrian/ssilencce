@@ -33,17 +33,18 @@ typealias ProgressCallback = (song: Song, progress: Int, total: Int) -> Unit
 typealias CompletionCallback = (deleted: Int) -> Unit
 
 object MusicUtil : KoinComponent {
-
     suspend fun deleteTracks(
         context: Context,
         songs: List<Song>,
         onProgress: ProgressCallback,
-        onCompleted: CompletionCallback? = null
+        onCompleted: CompletionCallback? = null,
     ) {
         val repository = get<Repository>()
-        val projection = arrayOf(
-            BaseColumns._ID, MediaStore.MediaColumns.DATA
-        )
+        val projection =
+            arrayOf(
+                BaseColumns._ID,
+                MediaStore.MediaColumns.DATA,
+            )
 
         // Split the query into multiple batches, and merge the resulting cursors
         var batchEnd = 0
@@ -71,44 +72,51 @@ object MusicUtil : KoinComponent {
             selection.append(")")
 
             try {
-                context.contentResolver.query(
-                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, projection, selection.toString(), null, null
-                ).use { cursor ->
-                    // TODO: At this point, there is no guarantee that the size of the cursor is the same as the size of the selection string.
-                    if (cursor != null) {
-                        // Step 1: Remove selected tracks from the current playlist, as well
-                        // as from the album art cache and the Music Database
-                        cursor.moveToFirst()
-                        while (!cursor.isAfterLast) {
-                            val position = cursor.position + 1
-                            val count = cursor.count
-
-                            val id = cursor.getLong(0)
-                            val deletedSong = repository.deleteSong(id)
-
-                            context.onUI {
-                                onProgress(deletedSong, position.coerceAtMost(count), count)
-                            }
-
-                            cursor.moveToNext()
-                        }
-
-                        // Step 2: Remove selected tracks from the database
-                        deleted += context.contentResolver.delete(
-                            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-                            selection.toString(), null
-                        )
-
-                        // Step 3: Remove files from card - Android Q takes care of this if the element is remove via MediaStore
-                        if (!hasQ()) {
+                context.contentResolver
+                    .query(
+                        MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                        projection,
+                        selection.toString(),
+                        null,
+                        null,
+                    ).use { cursor ->
+                        // TODO: At this point, there is no guarantee that the size of the cursor is the same as the size of the selection string.
+                        if (cursor != null) {
+                            // Step 1: Remove selected tracks from the current playlist, as well
+                            // as from the album art cache and the Music Database
                             cursor.moveToFirst()
                             while (!cursor.isAfterLast) {
-                                context.deleteUsingSAF(cursor.getString(1))
+                                val position = cursor.position + 1
+                                val count = cursor.count
+
+                                val id = cursor.getLong(0)
+                                val deletedSong = repository.deleteSong(id)
+
+                                context.onUI {
+                                    onProgress(deletedSong, position.coerceAtMost(count), count)
+                                }
+
                                 cursor.moveToNext()
+                            }
+
+                            // Step 2: Remove selected tracks from the database
+                            deleted +=
+                                context.contentResolver.delete(
+                                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                                    selection.toString(),
+                                    null,
+                                )
+
+                            // Step 3: Remove files from card - Android Q takes care of this if the element is remove via MediaStore
+                            if (!hasQ()) {
+                                cursor.moveToFirst()
+                                while (!cursor.isAfterLast) {
+                                    context.deleteUsingSAF(cursor.getString(1))
+                                    cursor.moveToNext()
+                                }
                             }
                         }
                     }
-                }
             } catch (e: SecurityException) {
                 e.printStackTrace()
             }

@@ -26,24 +26,32 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 
-class MusicBrainzService(private val client: HttpClient) {
-
-    suspend fun searchRecording(title: String, artist: String): MusicBrainzSearchResponse {
+class MusicBrainzService(
+    private val client: HttpClient,
+) {
+    suspend fun searchRecording(
+        title: String,
+        artist: String,
+    ): MusicBrainzSearchResponse {
         val query = "recording:\"$title\" AND artist:\"$artist\""
-        val body = client.get("${BASE_URL}recording") {
-            parameter("query", query)
-            parameter("fmt", "json")
-            header("User-Agent", USER_AGENT)
-        }.body<MusicBrainzSearchResponse>()
+        val body =
+            client
+                .get("${BASE_URL}recording") {
+                    parameter("query", query)
+                    parameter("fmt", "json")
+                    header("User-Agent", USER_AGENT)
+                }.body<MusicBrainzSearchResponse>()
         return body
     }
 
     suspend fun getRecordingDetails(id: String): MusicBrainzRecording {
-        val body = client.get("${BASE_URL}recording/$id") {
-            parameter("inc", "artist-credits+releases+genres+work-rels+artist-rels+work-level-rels+media")
-            parameter("fmt", "json")
-            header("User-Agent", USER_AGENT)
-        }.body<MusicBrainzRecording>()
+        val body =
+            client
+                .get("${BASE_URL}recording/$id") {
+                    parameter("inc", "artist-credits+releases+genres+work-rels+artist-rels+work-level-rels+media")
+                    parameter("fmt", "json")
+                    header("User-Agent", USER_AGENT)
+                }.body<MusicBrainzRecording>()
         return body
     }
 

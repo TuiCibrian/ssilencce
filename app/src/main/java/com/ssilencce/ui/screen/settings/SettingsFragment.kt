@@ -37,14 +37,18 @@ import com.ssilencce.ui.component.base.AbsMainActivityFragment
 /**
  * @author Christians M. A. (mardous)
  */
-class SettingsFragment : AbsMainActivityFragment(R.layout.fragment_settings), NavController.OnDestinationChangedListener {
-
+class SettingsFragment :
+    AbsMainActivityFragment(R.layout.fragment_settings),
+    NavController.OnDestinationChangedListener {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
 
     private var childNavController: NavController? = null
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentSettingsBinding.bind(view)
         with(binding.appBarLayout.toolbar) {
@@ -59,16 +63,24 @@ class SettingsFragment : AbsMainActivityFragment(R.layout.fragment_settings), Na
         view.applyHorizontalWindowInsets()
 
         val navHostFragment = childFragmentManager.findFragmentById(R.id.contentFrame) as NavHostFragment
-        childNavController = navHostFragment.navController.apply {
-            addOnDestinationChangedListener(this@SettingsFragment)
-        }
+        childNavController =
+            navHostFragment.navController.apply {
+                addOnDestinationChangedListener(this@SettingsFragment)
+            }
     }
 
-    override fun onDestinationChanged(controller: NavController, destination: NavDestination, arguments: Bundle?) {
+    override fun onDestinationChanged(
+        controller: NavController,
+        destination: NavDestination,
+        arguments: Bundle?,
+    ) {
         binding.appBarLayout.title = destination.label ?: getString(R.string.settings_title)
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {}
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean = false
 
@@ -83,17 +95,18 @@ class SettingsFragment : AbsMainActivityFragment(R.layout.fragment_settings), Na
         childNavController?.removeOnDestinationChangedListener(this)
     }
 
-    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            if (mainActivity.panelState != BottomSheetBehavior.STATE_COLLAPSED) {
-                mainActivity.collapsePanel()
-                return
-            }
-            if (childNavController?.popBackStack() == false) {
-                remove()
-                getOnBackPressedDispatcher().onBackPressed()
-                return
+    private val onBackPressedCallback =
+        object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (mainActivity.panelState != BottomSheetBehavior.STATE_COLLAPSED) {
+                    mainActivity.collapsePanel()
+                    return
+                }
+                if (childNavController?.popBackStack() == false) {
+                    remove()
+                    getOnBackPressedDispatcher().onBackPressed()
+                    return
+                }
             }
         }
-    }
 }

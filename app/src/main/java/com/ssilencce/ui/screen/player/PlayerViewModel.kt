@@ -75,19 +75,20 @@ const val QUEUE_DEBOUNCE = 100L
 @androidx.annotation.OptIn(UnstableApi::class)
 class PlayerViewModel(
     private val preferences: SharedPreferences,
-    private val repository: Repository
-) : ViewModel(), Player.Listener {
-
+    private val repository: Repository,
+) : ViewModel(),
+    Player.Listener {
     private val queueMutex = Mutex()
     private val progressObserver = ProgressObserver(intervalMs = 100)
     private val shuffleManager = ShuffleManager()
     private var mediaController: MediaController? = null
 
-    private val _mediaEvent = MutableSharedFlow<MediaEvent>(
-        replay = 0,
-        extraBufferCapacity = 1,
-        onBufferOverflow = BufferOverflow.DROP_OLDEST
-    )
+    private val _mediaEvent =
+        MutableSharedFlow<MediaEvent>(
+            replay = 0,
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
     val mediaEvent = _mediaEvent.asSharedFlow()
 
     private val _isPlayingFlow = MutableStateFlow(false)
@@ -167,30 +168,33 @@ class PlayerViewModel(
 
             onGenerateQueue(mediaController)
 
-            internalJobs += mediaEvent
-                .filter { it == MediaEvent.MediaContentChanged }
-                .debounce(500.milliseconds)
-                .onEach { _ -> onGenerateQueue(mediaController, mediaContentChanged = true) }
-                .launchIn(viewModelScope)
+            internalJobs +=
+                mediaEvent
+                    .filter { it == MediaEvent.MediaContentChanged }
+                    .debounce(500.milliseconds)
+                    .onEach { _ -> onGenerateQueue(mediaController, mediaContentChanged = true) }
+                    .launchIn(viewModelScope)
 
-            internalJobs += combine(queueFlow, positionFlow)
-            { queue, position -> Pair(queue, position) }
-                .debounce(QUEUE_DEBOUNCE.milliseconds)
-                .onEach { (queue, position) ->
-                    _currentSongFlow.value = queue.getOrElse(position.current) { Song.emptySong }
-                    _nextSongFlow.value = queue.getOrElse(position.next) { Song.emptySong }
-                }
-                .launchIn(viewModelScope)
+            internalJobs +=
+                combine(queueFlow, positionFlow)
+                    { queue, position -> Pair(queue, position) }
+                    .debounce(QUEUE_DEBOUNCE.milliseconds)
+                    .onEach { (queue, position) ->
+                        _currentSongFlow.value = queue.getOrElse(position.current) { Song.emptySong }
+                        _nextSongFlow.value = queue.getOrElse(position.next) { Song.emptySong }
+                    }.launchIn(viewModelScope)
 
-            internalJobs += currentSongFlow
-                .debounce(500.milliseconds)
-                .distinctUntilChangedBy { it.id }
-                .onEach { song -> onGenerateExtraInfo(song) }
-                .launchIn(viewModelScope)
+            internalJobs +=
+                currentSongFlow
+                    .debounce(500.milliseconds)
+                    .distinctUntilChangedBy { it.id }
+                    .onEach { song -> onGenerateExtraInfo(song) }
+                    .launchIn(viewModelScope)
 
-            internalJobs += isPlayingFlow
-                .onEach { isPlaying -> onSetIsPlaying(isPlaying) }
-                .launchIn(viewModelScope)
+            internalJobs +=
+                isPlayingFlow
+                    .onEach { isPlaying -> onSetIsPlaying(isPlaying) }
+                    .launchIn(viewModelScope)
         }
     }
 
@@ -219,7 +223,7 @@ class PlayerViewModel(
     private fun onGenerateQueue(
         player: Player,
         timeline: Timeline = player.currentTimeline,
-        mediaContentChanged: Boolean = false
+        mediaContentChanged: Boolean = false,
     ) = viewModelScope.launch {
         queueMutex.withLock {
             // If the timeline is empty, reset the queue and exit early.
@@ -234,39 +238,43 @@ class PlayerViewModel(
 
             val queueItems = player.getQueueItems(shuffle)
 
-            val (mediaItems, indicesInTimeline, queuePositionIndex) = withContext(Dispatchers.Default) {
-                val mediaItems = ArrayList<MediaItem>(queueItems.size)
-                val indices = IntArray(queueItems.size)
-                var currentPos = -1
+            val (mediaItems, indicesInTimeline, queuePositionIndex) =
+                withContext(Dispatchers.Default) {
+                    val mediaItems = ArrayList<MediaItem>(queueItems.size)
+                    val indices = IntArray(queueItems.size)
+                    var currentPos = -1
 
-                for (i in queueItems.indices) {
-                    val (item, timelineIndex) = queueItems[i]
-                    mediaItems.add(item)
-                    indices[i] = timelineIndex
-                    if (timelineIndex == playerIndex) {
-                        currentPos = i
+                    for (i in queueItems.indices) {
+                        val (item, timelineIndex) = queueItems[i]
+                        mediaItems.add(item)
+                        indices[i] = timelineIndex
+                        if (timelineIndex == playerIndex) {
+                            currentPos = i
+                        }
                     }
+                    Triple(mediaItems, indices, currentPos)
                 }
-                Triple(mediaItems, indices, currentPos)
-            }
 
-            val queuePosition = QueuePosition(
-                current = queuePositionIndex,
-                indicesInTimeline = indicesInTimeline
-            )
+            val queuePosition =
+                QueuePosition(
+                    current = queuePositionIndex,
+                    indicesInTimeline = indicesInTimeline,
+                )
 
             // Retrieve existing songs for the given MediaItems and detect missing ones.
-            val (songs, missingMediaItems) = withContext(IO) {
-                val result = repository.songsByMediaItems(mediaItems)
-                val occurrences = mutableMapOf<Long, Int>()
+            val (songs, missingMediaItems) =
+                withContext(IO) {
+                    val result = repository.songsByMediaItems(mediaItems)
+                    val occurrences = mutableMapOf<Long, Int>()
 
-                val queueSongs = result.first.map { song ->
-                    val count = occurrences.getOrDefault(song.id, 0)
-                    occurrences[song.id] = count + 1
-                    QueueSong(key = song.id to count, song)
+                    val queueSongs =
+                        result.first.map { song ->
+                            val count = occurrences.getOrDefault(song.id, 0)
+                            occurrences[song.id] = count + 1
+                            QueueSong(key = song.id to count, song)
+                        }
+                    queueSongs to result.second
                 }
-                queueSongs to result.second
-            }
 
             if (mediaContentChanged && missingMediaItems.isNotEmpty()) {
                 withContext(Dispatchers.Default) {
@@ -306,24 +314,33 @@ class PlayerViewModel(
         }
     }
 
-    private fun onGenerateExtraInfo(song: Song) = viewModelScope.launch(IO) {
-        _extraInfoFlow.value = if (Preferences.displayExtraInfo) {
-            MetadataField.getMetadataValue(
-                song = song,
-                fields = Preferences.getExtraInfoContent(
-                    key = NOW_PLAYING_EXTRA_INFO,
-                    defaultContent = Preferences.getDefaultNowPlayingInfo()
-                )
-            )
-        } else null
-    }
+    private fun onGenerateExtraInfo(song: Song) =
+        viewModelScope.launch(IO) {
+            _extraInfoFlow.value =
+                if (Preferences.displayExtraInfo) {
+                    MetadataField.getMetadataValue(
+                        song = song,
+                        fields =
+                            Preferences.getExtraInfoContent(
+                                key = NOW_PLAYING_EXTRA_INFO,
+                                defaultContent = Preferences.getDefaultNowPlayingInfo(),
+                            ),
+                    )
+                } else {
+                    null
+                }
+        }
 
-    override fun onEvents(player: Player, events: Player.Events) {
-        val isPlayStateEvent = events.containsAny(
-            Player.EVENT_PLAYBACK_STATE_CHANGED,
-            Player.EVENT_IS_PLAYING_CHANGED,
-            Player.EVENT_PLAY_WHEN_READY_CHANGED
-        )
+    override fun onEvents(
+        player: Player,
+        events: Player.Events,
+    ) {
+        val isPlayStateEvent =
+            events.containsAny(
+                Player.EVENT_PLAYBACK_STATE_CHANGED,
+                Player.EVENT_IS_PLAYING_CHANGED,
+                Player.EVENT_PLAY_WHEN_READY_CHANGED,
+            )
         if (isPlayStateEvent) {
             _isPlayingFlow.value = player.playWhenReady && player.isPlaying
             if (player.playbackState == Player.STATE_READY && !player.playWhenReady) {
@@ -421,14 +438,18 @@ class PlayerViewModel(
         }
     }
 
-    fun playMediaId(mediaId: String, shuffleMode: Boolean = false) {
+    fun playMediaId(
+        mediaId: String,
+        shuffleMode: Boolean = false,
+    ) {
         mediaController?.let { controller ->
             controller.shuffleModeEnabled = shuffleMode
             controller.setMediaItem(
-                MediaItem.Builder()
+                MediaItem
+                    .Builder()
                     .setMediaId(mediaId)
                     .build(),
-                true
+                true,
             )
             controller.prepare()
             controller.play()
@@ -439,7 +460,7 @@ class PlayerViewModel(
         queue: List<Song>,
         position: Int = 0,
         startPlaying: Boolean = true,
-        shuffleMode: OpenShuffleMode = OpenShuffleMode.Remember
+        shuffleMode: OpenShuffleMode = OpenShuffleMode.Remember,
     ) = viewModelScope.launch {
         mediaController?.let { controller ->
             var shuffleModeEnabled = controller.shuffleModeEnabled
@@ -447,11 +468,12 @@ class PlayerViewModel(
                 shuffleModeEnabled = false
             }
             val mediaItems = withContext(IO) { queue.toMediaItems() }
-            val shuffleMode = when (shuffleMode) {
-                OpenShuffleMode.On -> true
-                OpenShuffleMode.Off -> false
-                OpenShuffleMode.Remember -> shuffleModeEnabled
-            }
+            val shuffleMode =
+                when (shuffleMode) {
+                    OpenShuffleMode.On -> true
+                    OpenShuffleMode.Off -> false
+                    OpenShuffleMode.Remember -> shuffleModeEnabled
+                }
             if (mediaItems.isNotEmpty()) {
                 controller.shuffleModeEnabled = shuffleMode
                 controller.setMediaItems(mediaItems, position, C.TIME_UNSET)
@@ -461,35 +483,39 @@ class PlayerViewModel(
         }
     }
 
-    fun openAndShuffleQueue(queue: List<Song>) = viewModelScope.launch {
-        mediaController?.let { controller ->
-            val mediaItems = withContext(IO) { queue.toMediaItems() }
-            if (mediaItems.isNotEmpty()) {
-                controller.shuffleModeEnabled = true
-                controller.setMediaItems(mediaItems, true)
-                controller.prepare()
-                controller.play()
+    fun openAndShuffleQueue(queue: List<Song>) =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                val mediaItems = withContext(IO) { queue.toMediaItems() }
+                if (mediaItems.isNotEmpty()) {
+                    controller.shuffleModeEnabled = true
+                    controller.setMediaItems(mediaItems, true)
+                    controller.prepare()
+                    controller.play()
+                }
             }
         }
-    }
 
     fun openShuffle(
         providers: List<SongProvider>,
         mode: GroupShuffleMode,
-        sortMode: SongSortMode
+        sortMode: SongSortMode,
     ) = liveData {
-        val mediaItems = withContext(IO) {
-            shuffleManager.shuffleByProvider(providers, mode, sortMode).toMediaItems()
-        }
+        val mediaItems =
+            withContext(IO) {
+                shuffleManager.shuffleByProvider(providers, mode, sortMode).toMediaItems()
+            }
         if (mediaItems.isNotEmpty()) {
             mediaController?.let { controller ->
                 controller.shuffleModeEnabled = true
-                val resultFuture = controller.sendCustomCommand(
-                    SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
-                    Bundle.EMPTY
-                )
-                val result = runCatching { resultFuture.await() }
-                    .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                val resultFuture =
+                    controller.sendCustomCommand(
+                        SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
+                        Bundle.EMPTY,
+                    )
+                val result =
+                    runCatching { resultFuture.await() }
+                        .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
                 if (result.resultCode == SessionResult.RESULT_SUCCESS) {
                     controller.setMediaItems(mediaItems)
                     controller.prepare()
@@ -503,21 +529,27 @@ class PlayerViewModel(
     }
 
     @androidx.annotation.OptIn(UnstableApi::class)
-    fun openSpecialShuffle(songs: List<Song>, mode: SpecialShuffleMode) = viewModelScope.launch {
+    fun openSpecialShuffle(
+        songs: List<Song>,
+        mode: SpecialShuffleMode,
+    ) = viewModelScope.launch {
         if (shuffleOperationState.value.isIdle) {
             _shuffleOperationState.value = ShuffleOperationState(mode, ShuffleOperationState.Status.InProgress)
-            val mediaItems = withContext(IO) {
-                shuffleManager.applySmartShuffle(songs, mode).toMediaItems()
-            }
+            val mediaItems =
+                withContext(IO) {
+                    shuffleManager.applySmartShuffle(songs, mode).toMediaItems()
+                }
             if (mediaItems.isNotEmpty()) {
                 mediaController?.let { controller ->
                     controller.shuffleModeEnabled = true
-                    val resultFuture = controller.sendCustomCommand(
-                        SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
-                        Bundle.EMPTY
-                    )
-                    val result = runCatching { resultFuture.await() }
-                        .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
                     if (result.resultCode == SessionResult.RESULT_SUCCESS) {
                         controller.setMediaItems(mediaItems, true)
                         controller.prepare()
@@ -532,21 +564,24 @@ class PlayerViewModel(
     fun openPlaylist(
         playlist: PlaylistEntity,
         startPlaying: Boolean = true,
-        shuffleMode: OpenShuffleMode = OpenShuffleMode.Off
+        shuffleMode: OpenShuffleMode = OpenShuffleMode.Off,
     ) = viewModelScope.launch {
-        val songs = withContext(IO) {
-            repository.playlistSongs(playlist.playListId).toSongs()
-        }
+        val songs =
+            withContext(IO) {
+                repository.playlistSongs(playlist.playListId).toSongs()
+            }
         openQueue(songs, startPlaying = startPlaying, shuffleMode = shuffleMode)
     }
 
     fun openSongs(
         position: Int,
         songs: List<Song>,
-        behavior: SongClickBehavior
+        behavior: SongClickBehavior,
     ) = viewModelScope.launch {
         when (behavior) {
-            SongClickBehavior.PlayWholeList -> openQueue(songs, position)
+            SongClickBehavior.PlayWholeList -> {
+                openQueue(songs, position)
+            }
 
             SongClickBehavior.PlayOnlyThisSong -> {
                 val selectedSong = songs.getOrNull(position)
@@ -599,7 +634,10 @@ class PlayerViewModel(
         }
     }
 
-    fun enqueue(song: Song, toPosition: Int = -1) {
+    fun enqueue(
+        song: Song,
+        toPosition: Int = -1,
+    ) {
         mediaController?.let { controller ->
             if (controller.currentTimeline.isEmpty) {
                 openQueue(listOf(song), startPlaying = false)
@@ -650,36 +688,42 @@ class PlayerViewModel(
     }
 
     @androidx.annotation.OptIn(UnstableApi::class)
-    fun stopAt(stopPosition: Int) = viewModelScope.launch {
-        mediaController?.let { controller ->
-            if (stopPosition >= 0 && stopPosition < controller.mediaItemCount) {
-                val stopIndex = position.getIndexForPosition(stopPosition)
-                val mediaItem = controller.getMediaItemAt(stopIndex)
-                val resultFuture = controller.sendCustomCommand(
-                    SessionCommand(
-                        Playback.SET_STOP_POSITION,
-                        Bundle().apply {
-                            putInt("index", stopIndex)
-                        }
-                    ),
-                    Bundle.EMPTY
-                )
-                val result = runCatching { resultFuture.await() }
-                    .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
-                if (result.resultCode == SessionResult.RESULT_SUCCESS) {
-                    val canceled = result.extras.getBoolean("canceled", false)
-                    _stopAfterPosition.send(mediaItem.mediaMetadata.title?.toString() to canceled)
-                } else {
-                    _stopAfterPosition.send(null to false)
+    fun stopAt(stopPosition: Int) =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                if (stopPosition >= 0 && stopPosition < controller.mediaItemCount) {
+                    val stopIndex = position.getIndexForPosition(stopPosition)
+                    val mediaItem = controller.getMediaItemAt(stopIndex)
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(
+                                Playback.SET_STOP_POSITION,
+                                Bundle().apply {
+                                    putInt("index", stopIndex)
+                                },
+                            ),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                        val canceled = result.extras.getBoolean("canceled", false)
+                        _stopAfterPosition.send(mediaItem.mediaMetadata.title?.toString() to canceled)
+                    } else {
+                        _stopAfterPosition.send(null to false)
+                    }
                 }
             }
         }
-    }
 
-    fun moveSong(fromPosition: Int, toPosition: Int) {
+    fun moveSong(
+        fromPosition: Int,
+        toPosition: Int,
+    ) {
         mediaController?.moveMediaItem(
             position.getIndexForPosition(fromPosition),
-            position.getIndexForPosition(toPosition)
+            position.getIndexForPosition(toPosition),
         )
     }
 
@@ -691,34 +735,39 @@ class PlayerViewModel(
         mediaController?.removeMediaItem(position.getIndexForPosition(positionToRemove))
     }
 
-    fun restorePlayback() = viewModelScope.launch {
-        mediaController?.let { controller ->
-            if (!controller.playWhenReady) {
-                val resultFuture = controller.sendCustomCommand(
-                    SessionCommand(Playback.RESTORE_PLAYBACK, Bundle.EMPTY),
-                    Bundle.EMPTY
-                )
-                val result = runCatching { resultFuture.await() }
-                    .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
-                if (result.resultCode == SessionResult.RESULT_SUCCESS) {
-                    controller.playWhenReady = true
+    fun restorePlayback() =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                if (!controller.playWhenReady) {
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(Playback.RESTORE_PLAYBACK, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                        controller.playWhenReady = true
+                    }
                 }
             }
         }
-    }
 
     fun generatePlayerScheme(
         context: Context,
         mode: PlayerColorScheme.Mode,
-        color: PaletteColor
+        color: PaletteColor,
     ) = viewModelScope.launch(Dispatchers.Default) {
         val currentScheme = colorScheme.mode.takeIf { it == PlayerColorSchemeMode.AppTheme }
-        if (currentScheme == mode && colorScheme.appThemeToken.isValid(context))
+        if (currentScheme == mode && colorScheme.appThemeToken.isValid(context)) {
             return@launch
-
-        val result = runCatching {
-            PlayerColorScheme.autoColorScheme(context, color, mode)
         }
+
+        val result =
+            runCatching {
+                PlayerColorScheme.autoColorScheme(context, color, mode)
+            }
         if (result.isSuccess) {
             _colorScheme.value = result.getOrThrow()
         } else if (result.isFailure) {

@@ -29,30 +29,31 @@ import com.ssilencce.extensions.materialSharedAxis
 import com.ssilencce.ui.theme.SsilencceTheme
 
 class LyricsEditorFragment : Fragment() {
-
     private val args: LyricsEditorFragmentArgs by navArgs()
     private val song get() = args.extraSong
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     LyricsEditorScreen(
                         song = song,
                         onBackClick = {
                             findNavController().navigateUp()
-                        }
+                        },
                     )
                 }
             }
         }
-    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         materialSharedAxis(view)
     }

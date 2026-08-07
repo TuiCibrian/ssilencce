@@ -18,16 +18,16 @@
 package com.ssilencce.data.model.network
 
 sealed class LoginParams(
-    private val data: Map<String, String>
+    private val data: Map<String, String>,
 ) {
     operator fun get(key: String) = data[key]
 
     data class Lastfm(
         val username: String,
-        val password: String
+        val password: String,
     ) : LoginParams(mapOf("username" to username, "password" to password))
 
     data class ListenBrainz(
-        val token: String
+        val token: String,
     ) : LoginParams(mapOf("token" to token))
 }

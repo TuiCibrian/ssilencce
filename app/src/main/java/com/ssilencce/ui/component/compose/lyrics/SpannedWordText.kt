@@ -39,60 +39,77 @@ fun SpannedWordText(
     contentColor: Color,
     style: TextStyle,
     align: TextAlign,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     // Original code from Metrolist (https://github.com/mostafaalagamy/Metrolist)
-    val styledText = buildAnnotatedString {
-        syllables.forEach { word ->
-            val wordStartMs = word.start
-            val wordEndMs = word.end
-            val wordDuration = word.duration
+    val styledText =
+        buildAnnotatedString {
+            syllables.forEach { word ->
+                val wordStartMs = word.start
+                val wordEndMs = word.end
+                val wordDuration = word.duration
 
-            val isWordActive = selectedLine && currentMillis >= wordStartMs && currentMillis <= wordEndMs
-            val hasWordPassed = selectedLine && currentMillis > wordEndMs
+                val isWordActive = selectedLine && currentMillis >= wordStartMs && currentMillis <= wordEndMs
+                val hasWordPassed = selectedLine && currentMillis > wordEndMs
 
-            val fadeProgress = if (isWordActive && wordDuration > 0) {
-                val timeElapsed = currentMillis - wordStartMs
-                val linear = (timeElapsed.toFloat() / wordDuration.toFloat()).coerceIn(0f, 1f)
-                // Smooth cubic easing
-                linear * linear * (3f - 2f * linear)
-            } else if (hasWordPassed) 1f else 0f
+                val fadeProgress =
+                    if (isWordActive && wordDuration > 0) {
+                        val timeElapsed = currentMillis - wordStartMs
+                        val linear = (timeElapsed.toFloat() / wordDuration.toFloat()).coerceIn(0f, 1f)
+                        // Smooth cubic easing
+                        linear * linear * (3f - 2f * linear)
+                    } else if (hasWordPassed) {
+                        1f
+                    } else {
+                        0f
+                    }
 
-            val wordAlpha = when {
-                !selectedLine -> 0.5f
-                hasWordPassed -> 1f
-                isWordActive -> 0.4f + (0.6f * fadeProgress)
-                else -> 0.4f
-            }
-            val wordShadow = when {
-                shadowEffect && isWordActive && fadeProgress > 0.2f -> Shadow(
-                    color = contentColor.copy(alpha = 0.35f * fadeProgress),
-                    offset = Offset.Zero,
-                    blurRadius = 10f * fadeProgress
-                )
-                shadowEffect && hasWordPassed -> Shadow(
-                    color = contentColor.copy(alpha = 0.15f),
-                    offset = Offset.Zero,
-                    blurRadius = 6f
-                )
-                else -> null
-            }
-            val wordColor = contentColor.copy(alpha = wordAlpha)
+                val wordAlpha =
+                    when {
+                        !selectedLine -> 0.5f
+                        hasWordPassed -> 1f
+                        isWordActive -> 0.4f + (0.6f * fadeProgress)
+                        else -> 0.4f
+                    }
+                val wordShadow =
+                    when {
+                        shadowEffect && isWordActive && fadeProgress > 0.2f -> {
+                            Shadow(
+                                color = contentColor.copy(alpha = 0.35f * fadeProgress),
+                                offset = Offset.Zero,
+                                blurRadius = 10f * fadeProgress,
+                            )
+                        }
 
-            withStyle(
-                style = SpanStyle(
-                    color = wordColor,
-                    shadow = wordShadow
-                )
-            ) {
-                append(word.content)
+                        shadowEffect && hasWordPassed -> {
+                            Shadow(
+                                color = contentColor.copy(alpha = 0.15f),
+                                offset = Offset.Zero,
+                                blurRadius = 6f,
+                            )
+                        }
+
+                        else -> {
+                            null
+                        }
+                    }
+                val wordColor = contentColor.copy(alpha = wordAlpha)
+
+                withStyle(
+                    style =
+                        SpanStyle(
+                            color = wordColor,
+                            shadow = wordShadow,
+                        ),
+                ) {
+                    append(word.content)
+                }
             }
         }
-    }
     Text(
         text = styledText,
         style = style,
         textAlign = align,
-        modifier = modifier
+        modifier = modifier,
     )
 }

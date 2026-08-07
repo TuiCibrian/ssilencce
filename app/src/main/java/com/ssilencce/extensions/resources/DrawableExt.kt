@@ -32,29 +32,32 @@ import androidx.core.graphics.scale
 import java.io.OutputStream
 import kotlin.math.roundToInt
 
-fun Context.getDrawableCompat(@DrawableRes resId: Int) = ContextCompat.getDrawable(this, resId)
+fun Context.getDrawableCompat(
+    @DrawableRes resId: Int,
+) = ContextCompat.getDrawable(this, resId)
 
 @CheckResult
-fun Drawable?.getTinted(@ColorInt color: Int): Drawable? {
-    return this?.let {
-        DrawableCompat.wrap(it.mutate())
-    }?.apply {
-        DrawableCompat.setTintMode(this, PorterDuff.Mode.SRC_IN)
-        DrawableCompat.setTint(this, color)
-    }
-}
+fun Drawable?.getTinted(
+    @ColorInt color: Int,
+): Drawable? =
+    this
+        ?.let {
+            DrawableCompat.wrap(it.mutate())
+        }?.apply {
+            DrawableCompat.setTintMode(this, PorterDuff.Mode.SRC_IN)
+            DrawableCompat.setTint(this, color)
+        }
 
-fun Drawable.toBitmap(sizeMultiplier: Float = 1f): Bitmap {
-    return createBitmap(
+fun Drawable.toBitmap(sizeMultiplier: Float = 1f): Bitmap =
+    createBitmap(
         (intrinsicWidth * sizeMultiplier).toInt(),
-        (intrinsicHeight * sizeMultiplier).toInt()
+        (intrinsicHeight * sizeMultiplier).toInt(),
     ).apply {
         Canvas(this).let { c ->
             setBounds(0, 0, c.width, c.height)
             draw(c)
         }
     }
-}
 
 fun Bitmap.getResized(maxForSmallerSize: Int): Bitmap {
     val width = width
@@ -79,6 +82,7 @@ fun Bitmap.getResized(maxForSmallerSize: Int): Bitmap {
     return this.scale(dstWidth, dstHeight, false)
 }
 
-fun Bitmap.toJPG(quality: Int = 90, stream: OutputStream?): Boolean {
-    return stream != null && compress(Bitmap.CompressFormat.JPEG, quality, stream)
-}
+fun Bitmap.toJPG(
+    quality: Int = 90,
+    stream: OutputStream?,
+): Boolean = stream != null && compress(Bitmap.CompressFormat.JPEG, quality, stream)

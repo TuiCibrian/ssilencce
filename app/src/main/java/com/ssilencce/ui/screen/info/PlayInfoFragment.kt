@@ -45,14 +45,16 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
  * @author Christians M. A. (mardous)
  */
 class PlayInfoFragment : AbsMainActivityFragment(R.layout.fragment_play_info) {
-
     private val args: PlayInfoFragmentArgs by navArgs()
     private val viewModel: InfoViewModel by viewModel()
 
     private var _binding: FragmentPlayInfoBinding? = null
     private val binding get() = _binding!!
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPlayInfoBinding.bind(view)
 
@@ -97,22 +99,37 @@ class PlayInfoFragment : AbsMainActivityFragment(R.layout.fragment_play_info) {
 
                 val context = requireContext()
                 for (song in it.mostPlayedTracks) {
-                    val playInfo = when {
-                        song.playCount > 1 -> context.getString(
-                            R.string.song_stat_label, song.playCount, context.dateStr(song.timePlayed)
-                        )
-                        song.playCount == 1 -> context.getString(
-                            R.string.song_stat_one_time_label, context.dateStr(song.timePlayed)
-                        )
-                        else -> context.getString(R.string.song_stat_never_label)
-                    }
+                    val playInfo =
+                        when {
+                            song.playCount > 1 -> {
+                                context.getString(
+                                    R.string.song_stat_label,
+                                    song.playCount,
+                                    context.dateStr(song.timePlayed),
+                                )
+                            }
+
+                            song.playCount == 1 -> {
+                                context.getString(
+                                    R.string.song_stat_one_time_label,
+                                    context.dateStr(song.timePlayed),
+                                )
+                            }
+
+                            else -> {
+                                context.getString(R.string.song_stat_never_label)
+                            }
+                        }
                     binding.container.addInfo(layoutInflater, song.title, playInfo, vertical = true)
                 }
             }
         }
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {}
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {}
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
         when (menuItem.itemId) {
@@ -120,40 +137,47 @@ class PlayInfoFragment : AbsMainActivityFragment(R.layout.fragment_play_info) {
                 findNavController().navigateUp()
                 true
             }
-            else -> false
+
+            else -> {
+                false
+            }
         }
 
     private fun ViewGroup.addDivider(
         context: Context,
         marginTop: Float = 16f,
-        marginBottom: Float = 16f
+        marginBottom: Float = 16f,
     ) {
-        addView(MaterialDivider(context).apply {
-            layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
-                updateMargins(
-                    left = resources.getDimensionPixelSize(R.dimen.info_view_margin_horizontal),
-                    top = marginTop.dp(context),
-                    right = resources.getDimensionPixelSize(R.dimen.info_view_margin_horizontal),
-                    bottom = marginBottom.dp(context)
-                )
-            }
-        })
+        addView(
+            MaterialDivider(context).apply {
+                layoutParams =
+                    LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT).apply {
+                        updateMargins(
+                            left = resources.getDimensionPixelSize(R.dimen.info_view_margin_horizontal),
+                            top = marginTop.dp(context),
+                            right = resources.getDimensionPixelSize(R.dimen.info_view_margin_horizontal),
+                            bottom = marginBottom.dp(context),
+                        )
+                    }
+            },
+        )
     }
 
     private fun ViewGroup.addInfo(
         inflater: LayoutInflater,
         title: CharSequence,
         info: CharSequence?,
-        vertical: Boolean = false
+        vertical: Boolean = false,
     ): Boolean {
         if (info.isNullOrEmpty()) {
             return false
         }
-        val infoView = if (vertical) {
-            inflater.inflate(R.layout.info_item_vertical, this, false)
-        } else {
-            inflater.inflate(R.layout.info_item_horizontal, this, false)
-        }
+        val infoView =
+            if (vertical) {
+                inflater.inflate(R.layout.info_item_vertical, this, false)
+            } else {
+                inflater.inflate(R.layout.info_item_horizontal, this, false)
+            }
         infoView.findViewById<TextView>(R.id.title).text = title
         infoView.findViewById<TextView>(R.id.text).text = info
         addView(infoView)

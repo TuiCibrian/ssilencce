@@ -16,45 +16,39 @@ import com.google.common.util.concurrent.ListenableFuture
 
 @UnstableApi
 class CoilBitmapLoader(
-    private val context: Context
+    private val context: Context,
 ) : BitmapLoader {
+    override fun supportsMimeType(mimeType: String): Boolean = Util.isBitmapFactorySupportedMimeType(mimeType)
 
-    override fun supportsMimeType(mimeType: String): Boolean {
-        return Util.isBitmapFactorySupportedMimeType(mimeType)
-    }
+    override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> = loadImageUsingData(data)
 
-    override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> {
-        return loadImageUsingData(data)
-    }
+    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = loadImageUsingData(uri)
 
-    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
-        return loadImageUsingData(uri)
-    }
-
-    private fun loadImageUsingData(data: Any): ListenableFuture<Bitmap> {
-        return CallbackToFutureAdapter.getFuture { completer ->
-            SingletonImageLoader.get(context).enqueue(
-                ImageRequest.Builder(context)
-                    .data(data)
-                    .target(
-                        onError = {
-                            completer.setException(Exception("Coil failed to load the image"))
-                        },
-                        onSuccess = {
-                            completer.set(it.toBitmap())
-                        }
+    private fun loadImageUsingData(data: Any): ListenableFuture<Bitmap> =
+        CallbackToFutureAdapter.getFuture { completer ->
+            SingletonImageLoader
+                .get(context)
+                .enqueue(
+                    ImageRequest
+                        .Builder(context)
+                        .data(data)
+                        .target(
+                            onError = {
+                                completer.setException(Exception("Coil failed to load the image"))
+                            },
+                            onSuccess = {
+                                completer.set(it.toBitmap())
+                            },
+                        ).memoryCachePolicy(CachePolicy.DISABLED)
+                        .size(MAX_BITMAP_SIZE)
+                        .build(),
+                ).also {
+                    completer.addCancellationListener(
+                        { it.dispose() },
+                        ContextCompat.getMainExecutor(context),
                     )
-                    .memoryCachePolicy(CachePolicy.DISABLED)
-                    .size(MAX_BITMAP_SIZE)
-                    .build()
-            ).also {
-                completer.addCancellationListener(
-                    { it.dispose() },
-                    ContextCompat.getMainExecutor(context)
-                )
-            }
+                }
         }
-    }
 
     companion object {
         private const val MAX_BITMAP_SIZE = 1024

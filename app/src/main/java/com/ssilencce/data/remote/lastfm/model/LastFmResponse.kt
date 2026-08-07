@@ -9,7 +9,7 @@ import kotlinx.serialization.json.JsonTransformingSerializer
 
 @Serializable
 data class NowPlayingResponse(
-    val nowplaying: NowPlayingData
+    val nowplaying: NowPlayingData,
 )
 
 @Serializable
@@ -18,12 +18,12 @@ data class NowPlayingData(
     val artist: CorrectableField,
     val album: CorrectableField,
     val albumArtist: CorrectableField,
-    val ignoredMessage: IgnoredMessage
+    val ignoredMessage: IgnoredMessage,
 )
 
 @Serializable
 data class ScrobbleResponse(
-    val scrobbles: ScrobbleContainer
+    val scrobbles: ScrobbleContainer,
 )
 
 @Serializable
@@ -31,13 +31,13 @@ data class ScrobbleContainer(
     @SerialName("@attr")
     val attr: ScrobbleAttributes,
     @Serializable(with = ScrobbleListSerializer::class)
-    val scrobble: List<ScrobbleData>
+    val scrobble: List<ScrobbleData>,
 )
 
 @Serializable
 data class ScrobbleAttributes(
     val accepted: Int,
-    val ignored: Int
+    val ignored: Int,
 )
 
 @Serializable
@@ -47,26 +47,24 @@ data class ScrobbleData(
     val album: CorrectableField,
     val albumArtist: CorrectableField,
     val timestamp: String,
-    val ignoredMessage: IgnoredMessage
+    val ignoredMessage: IgnoredMessage,
 )
 
 @Serializable
 data class CorrectableField(
     val corrected: String,
     @SerialName("#text")
-    val text: String
+    val text: String,
 )
 
 @Serializable
 data class IgnoredMessage(
     val code: String,
     @SerialName("#text")
-    val text: String
+    val text: String,
 )
 
 object ScrobbleListSerializer :
     JsonTransformingSerializer<List<ScrobbleData>>(ListSerializer(ScrobbleData.serializer())) {
-    override fun transformDeserialize(element: JsonElement): JsonElement {
-        return element as? JsonArray ?: JsonArray(listOf(element))
-    }
+    override fun transformDeserialize(element: JsonElement): JsonElement = element as? JsonArray ?: JsonArray(listOf(element))
 }

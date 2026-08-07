@@ -28,34 +28,35 @@ fun AlbumArtGlance(
     playbackState: PlaybackState,
     placeholderColor: ColorProvider = GlanceTheme.colors.tertiaryContainer,
     placeholderIconColor: ColorProvider = GlanceTheme.colors.onTertiaryContainer,
-    modifier: GlanceModifier = GlanceModifier
+    modifier: GlanceModifier = GlanceModifier,
 ) {
-    val bitmap = playbackState.artworkData?.let {
-        try {
-            val options = BitmapFactory.Options()
-            BitmapFactory.decodeByteArray(it, 0, it.size, options)
-        } catch (t: Throwable) {
-            Log.e("SsilencceGlanceWidget", "Cannot decode artwork bitmap", t)
-            null
+    val bitmap =
+        playbackState.artworkData?.let {
+            try {
+                val options = BitmapFactory.Options()
+                BitmapFactory.decodeByteArray(it, 0, it.size, options)
+            } catch (t: Throwable) {
+                Log.e("SsilencceGlanceWidget", "Cannot decode artwork bitmap", t)
+                null
+            }
         }
-    }
     if (bitmap != null) {
         Image(
             provider = ImageProvider(bitmap),
             contentDescription = "Album Art",
             contentScale = ContentScale.Crop,
-            modifier = modifier
+            modifier = modifier,
         )
     } else {
         Box(
             modifier = modifier.background(placeholderColor),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             Image(
                 provider = ImageProvider(R.drawable.ic_music_note_24dp),
                 colorFilter = ColorFilter.tint(placeholderIconColor),
                 contentDescription = "Album Art",
-                modifier = GlanceModifier.wrapContentSize()
+                modifier = GlanceModifier.wrapContentSize(),
             )
         }
     }
@@ -66,13 +67,13 @@ fun ControlIconGlance(
     resId: Int,
     tint: ColorProvider,
     contentDescription: String,
-    modifier: GlanceModifier = GlanceModifier
+    modifier: GlanceModifier = GlanceModifier,
 ) {
     Image(
         provider = ImageProvider(resId),
         contentDescription = contentDescription,
         modifier = modifier,
-        colorFilter = ColorFilter.tint(tint)
+        colorFilter = ColorFilter.tint(tint),
     )
 }
 
@@ -83,7 +84,7 @@ fun CircularControlIconGlance(
     iconTint: ColorProvider,
     backgroundTint: ColorProvider,
     contentDescription: String,
-    onClick: GlanceModifier
+    onClick: GlanceModifier,
 ) {
     ShapeableControlIconGlance(
         resId = resId,
@@ -93,7 +94,7 @@ fun CircularControlIconGlance(
         iconTint = iconTint,
         backgroundTint = backgroundTint,
         contentDescription = contentDescription,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -106,23 +107,25 @@ fun ShapeableControlIconGlance(
     iconTint: ColorProvider = GlanceTheme.colors.onPrimaryContainer,
     backgroundTint: ColorProvider = GlanceTheme.colors.primaryContainer,
     contentDescription: String? = null,
-    onClick: GlanceModifier = GlanceModifier
+    onClick: GlanceModifier = GlanceModifier,
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = GlanceModifier
-            .size(size)
-            .cornerRadius(cornerRadius)
-            .padding(innerPadding)
-            .background(backgroundTint)
+        modifier =
+            GlanceModifier
+                .size(size)
+                .cornerRadius(cornerRadius)
+                .padding(innerPadding)
+                .background(backgroundTint),
     ) {
         Image(
             provider = ImageProvider(resId),
             contentDescription = contentDescription,
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .then(onClick),
-            colorFilter = ColorFilter.tint(iconTint)
+            modifier =
+                GlanceModifier
+                    .fillMaxSize()
+                    .then(onClick),
+            colorFilter = ColorFilter.tint(iconTint),
         )
     }
 }

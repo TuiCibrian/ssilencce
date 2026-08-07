@@ -5,9 +5,11 @@ import android.database.ContentObserver
 import android.os.Handler
 import android.provider.MediaStore
 
-open class MediaStoreObserver(private val uiHandler: Handler, private val onChanged: () -> Unit) :
-    ContentObserver(uiHandler), Runnable {
-
+open class MediaStoreObserver(
+    private val uiHandler: Handler,
+    private val onChanged: () -> Unit,
+) : ContentObserver(uiHandler),
+    Runnable {
     override fun onChange(selfChange: Boolean) {
         // if a change is detected, remove any scheduled callback
         // then post a new one. This is intended to prevent closely
@@ -22,10 +24,14 @@ open class MediaStoreObserver(private val uiHandler: Handler, private val onChan
 
     fun init(context: Context) {
         context.contentResolver.registerContentObserver(
-            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, this
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+            true,
+            this,
         )
         context.contentResolver.registerContentObserver(
-            MediaStore.Audio.Media.INTERNAL_CONTENT_URI, true, this
+            MediaStore.Audio.Media.INTERNAL_CONTENT_URI,
+            true,
+            this,
         )
     }
 

@@ -22,7 +22,6 @@ import java.io.File
  * @author Christians M. A. (mardous)
  */
 class ErrorActivity : AbsThemeActivity() {
-
     private var _binding: ActivityErrorBinding? = null
     private val binding get() = _binding!!
 
@@ -35,7 +34,7 @@ class ErrorActivity : AbsThemeActivity() {
         }
         val errorReport = CustomActivityOnCrash.getAllErrorDetailsFromIntent(this, intent)
         val nameFromTime = System.currentTimeMillis().asFormattedFileTime()
-        val errorReportFile = File(filesDir, "Crash_${nameFromTime}.log")
+        val errorReportFile = File(filesDir, "Crash_$nameFromTime.log")
         if (!errorReportFile.exists() || errorReportFile.delete()) {
             errorReportFile.writeText(errorReport)
         }
@@ -64,13 +63,15 @@ class ErrorActivity : AbsThemeActivity() {
     }
 
     private fun sendFile(file: File) {
-        val intent = ShareCompat.IntentBuilder(this)
-            .setSubject("${getString(R.string.app_name)} - crash log")
-            .setText("Please, add a description of the problem")
-            .setType("*/*")
-            .setStream(FileProvider.getUriForFile(this, fileProviderAuthority, file))
-            .setChooserTitle(R.string.uncaught_error_send)
-            .createChooserIntent()
+        val intent =
+            ShareCompat
+                .IntentBuilder(this)
+                .setSubject("${getString(R.string.app_name)} - crash log")
+                .setText("Please, add a description of the problem")
+                .setType("*/*")
+                .setStream(FileProvider.getUriForFile(this, fileProviderAuthority, file))
+                .setChooserTitle(R.string.uncaught_error_send)
+                .createChooserIntent()
 
         startActivity(intent)
     }

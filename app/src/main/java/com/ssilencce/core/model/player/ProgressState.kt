@@ -4,8 +4,10 @@ import androidx.compose.runtime.Immutable
 import com.ssilencce.extensions.media.asReadableDuration
 
 @Immutable
-class ProgressState(val progress: Long, val total: Long) {
-
+class ProgressState(
+    val progress: Long,
+    val total: Long,
+) {
     val mayUpdateUI = progress > -1 && total > -1
 
     val remainingTime: Long = (total - progress).coerceAtLeast(0L)

@@ -43,7 +43,6 @@ import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTIO
 import com.ssilencce.ui.component.views.MusicSlider
 
 class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_gradient_player_playback_controls) {
-
     private var _binding: FragmentGradientPlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -74,7 +73,10 @@ class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragme
     private var isFavorite: Boolean = false
     private var popupMenu: PopupMenu? = null
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentGradientPlayerPlaybackControlsBinding.bind(view)
         setupListeners()
@@ -116,17 +118,19 @@ class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragme
         val oldSecondaryTextColor = binding.text.currentTextColor
 
         val oldShuffleColor = getPlaybackControlsColor(isShuffleModeOn)
-        val newShuffleColor = getPlaybackControlsColor(
-            isShuffleModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newShuffleColor =
+            getPlaybackControlsColor(
+                isShuffleModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         val oldRepeatColor = getPlaybackControlsColor(isRepeatModeOn)
-        val newRepeatColor = getPlaybackControlsColor(
-            isRepeatModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newRepeatColor =
+            getPlaybackControlsColor(
+                isRepeatModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
 
         return listOfNotNull(
             binding.progressSlider.progressView?.tintTarget(oldSliderColor, scheme.onSurfaceColor),
@@ -141,11 +145,14 @@ class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragme
             binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songInfo.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songCurrentProgress.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
-            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         )
     }
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {
         _binding?.let { nonNullBinding ->
             nonNullBinding.title.text = currentSong.title
             nonNullBinding.text.text = getSongArtist(currentSong)
@@ -171,7 +178,10 @@ class GradientPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragme
         }
     }
 
-    internal fun setFavorite(isFavorite: Boolean, withAnimation: Boolean) {
+    internal fun setFavorite(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         if (this.isFavorite != isFavorite) {
             this.isFavorite = isFavorite
             playerFragment?.let { nonNullPlayerFragment ->

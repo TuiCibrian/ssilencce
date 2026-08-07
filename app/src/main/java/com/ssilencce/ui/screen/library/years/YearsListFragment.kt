@@ -36,13 +36,16 @@ import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
 
-class YearsListFragment : AbsRecyclerViewCustomGridSizeFragment<YearAdapter, GridLayoutManager>(),
+class YearsListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<YearAdapter, GridLayoutManager>(),
     IYearCallback {
-
     override val titleRes: Int = R.string.release_years_label
     override val isShuffleVisible: Boolean = false
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getYears().observe(viewLifecycleOwner) { releaseYears ->
             adapter?.dataSet = releaseYears
@@ -54,9 +57,7 @@ class YearsListFragment : AbsRecyclerViewCustomGridSizeFragment<YearAdapter, Gri
         libraryViewModel.forceReload(ReloadType.Years)
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(requireActivity(), gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(requireActivity(), gridSize)
 
     override fun createAdapter(): YearAdapter {
         notifyLayoutResChanged(itemLayoutRes)
@@ -65,25 +66,34 @@ class YearsListFragment : AbsRecyclerViewCustomGridSizeFragment<YearAdapter, Gri
     }
 
     override fun yearClick(year: ReleaseYear) {
-        findNavController().navigate(R.id.nav_year_detail,
-            YearDetailFragmentArgs.Builder(year.year)
+        findNavController().navigate(
+            R.id.nav_year_detail,
+            YearDetailFragmentArgs
+                .Builder(year.year)
                 .build()
-                .toBundle()
+                .toBundle(),
         )
     }
 
-    override fun yearMenuItemClick(year: ReleaseYear, menuItem: MenuItem): Boolean {
-        return year.songs.onSongsMenu(this, menuItem)
-    }
+    override fun yearMenuItemClick(
+        year: ReleaseYear,
+        menuItem: MenuItem,
+    ): Boolean = year.songs.onSongsMenu(this, menuItem)
 
-    override fun yearsMenuItemClick(selection: List<ReleaseYear>, menuItem: MenuItem): Boolean {
+    override fun yearsMenuItemClick(
+        selection: List<ReleaseYear>,
+        menuItem: MenuItem,
+    ): Boolean {
         libraryViewModel.songs(selection).observe(viewLifecycleOwner) { songs ->
             songs.onSongsMenu(this@YearsListFragment, menuItem)
         }
         return true
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         YearSortMode.AllYears.createMenu(menu)
     }
@@ -106,26 +116,26 @@ class YearsListFragment : AbsRecyclerViewCustomGridSizeFragment<YearAdapter, Gri
         adapter?.actionMode?.finish()
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.entries.firstOrNull {
+    override fun getSavedViewType(): GridViewType =
+        GridViewType.entries.firstOrNull {
             it.name == sharedPreferences.getString(VIEW_TYPE, null)
         } ?: GridViewType.Normal
-    }
 
     override fun saveViewType(viewType: GridViewType) {
         sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }

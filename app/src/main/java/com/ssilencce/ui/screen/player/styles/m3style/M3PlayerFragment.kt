@@ -47,7 +47,6 @@ import com.ssilencce.util.Preferences
  * @author Christians M. A. (mardous)
  */
 class M3PlayerFragment : AbsPlayerFragment(R.layout.fragment_m3_player) {
-
     private var _binding: FragmentM3PlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -67,7 +66,10 @@ class M3PlayerFragment : AbsPlayerFragment(R.layout.fragment_m3_player) {
     override val blurView: ImageView?
         get() = binding.blur
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentM3PlayerBinding.bind(view)
         setupToolbar()
@@ -122,7 +124,10 @@ class M3PlayerFragment : AbsPlayerFragment(R.layout.fragment_m3_player) {
         }
     }
 
-    override fun onLyricsVisibilityChange(animatorSet: AnimatorSet, lyricsVisible: Boolean) {
+    override fun onLyricsVisibilityChange(
+        animatorSet: AnimatorSet,
+        lyricsVisible: Boolean,
+    ) {
         _binding?.showLyricsButton?.let {
             if (lyricsVisible) {
                 it.setIconResource(R.drawable.ic_lyrics_24dp)
@@ -134,7 +139,10 @@ class M3PlayerFragment : AbsPlayerFragment(R.layout.fragment_m3_player) {
         }
     }
 
-    override fun onIsFavoriteChanged(isFavorite: Boolean, withAnimation: Boolean) {
+    override fun onIsFavoriteChanged(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         popupMenu?.menu?.setIsFavorite(isFavorite, false)
     }
 
