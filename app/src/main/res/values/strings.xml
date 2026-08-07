@@ -1008,6 +1008,9 @@
     <string name="more_info_action">More info.</string>
     <string name="download_action">Download</string>
     <string name="downloading_update">Downloading ssilencce update.</string>
+    <string name="update_notification_channel">Update verification</string>
+    <string name="update_signature_mismatch_title">Update rejected</string>
+    <string name="update_signature_mismatch_message">The downloaded update (%s) does not match this app\'s signature and was removed. Download it again only from the official source.</string>
 
     <string name="uncaught_error_title">Oops! That wasn\'t supposed to happen!</string>
     <string name="uncaught_error_message">It seems something went wrong and caused the app to crash.

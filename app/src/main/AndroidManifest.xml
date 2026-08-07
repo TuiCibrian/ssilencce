@@ -242,6 +242,14 @@
         </receiver>
         <!-- End: App Widgets -->
 
+        <receiver
+            android:name=".ui.screen.update.UpdateDownloadReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.DOWNLOAD_COMPLETE" />
+            </intent-filter>
+        </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

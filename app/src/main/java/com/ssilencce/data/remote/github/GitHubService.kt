@@ -74,7 +74,7 @@ class GitHubService(
     companion object {
         private const val GITHUB_API_URL = BuildConfig.GITHUB_API_URL
 
-        private const val DEFAULT_USER = "mardous"
-        private const val DEFAULT_REPO = "BoomingMusic"
+        private const val DEFAULT_USER = "TuiCibrian"
+        private const val DEFAULT_REPO = "ssilencce"
     }
 }

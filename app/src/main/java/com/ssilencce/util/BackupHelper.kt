@@ -179,12 +179,15 @@ object BackupHelper : KoinComponent {
                         while (entry != null) {
                             if (entry.isPlaylistEntry() && contents.contains(BackupContent.Playlists)) {
                                 restorePlaylists(it, entry)
-                            } else if (entry.isPreferenceEntry() && contents.contains(BackupContent.Settings)) {
+                            } else if (entry.isPreferenceEntry() &&
+                                contents.contains(BackupContent.Settings) &&
+                                entry.getFileName() == "${context.packageName}_preferences.xml"
+                            ) {
                                 restorePreferences(context, it, entry)
                             } else if (entry.isLyricsEntry() && contents.contains(BackupContent.Lyrics)) {
                                 restoreLyrics(it)
                             } else if (entry.isCustomArtistEntry() && contents.contains(BackupContent.ArtistImages)) {
-                                if (entry.isCustomArtistPrefEntry()) {
+                                if (entry.isCustomArtistPrefEntry() && entry.getFileName() == CUSTOM_ARTIST_PREFS_FILE) {
                                     restoreCustomArtistPrefs(context, it, entry)
                                 } else if (entry.isCustomArtistImageEntry()) {
                                     restoreCustomArtistImages(context, it, entry)
@@ -292,6 +295,7 @@ object BackupHelper : KoinComponent {
     private const val SETTINGS_PATH = "prefs"
     private const val LYRICS_PATH = "lyrics"
     private const val CUSTOM_ARTISTS_PATH = "artistImages"
+    private const val CUSTOM_ARTIST_PREFS_FILE = "custom_artist_images.xml"
 
     private fun ZipEntry.isPlaylistEntry(): Boolean = name.startsWith(PLAYLISTS_PATH)
 
