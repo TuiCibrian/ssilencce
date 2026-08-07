@@ -28,7 +28,7 @@ Mark PASS/FAIL per step; any FAIL = regression to fix before archiving the audit
 
 1. **Launch** — `open_app com.ssilencce.debug`; MainActivity focused, no crash.
 2. **Home** — `nav_home`: Top Tracks / Last added / History / Shuffle buttons + sections
-   "Recent albums" and "Not Recently Played" with the 2 albums / 3 songs.
+   "Top albums" and "Recent artists" and "Recent albums", each with the 2 albums / 2 artists.
 3. **Songs** — `nav_songs`: 4 rows with correct `title` and `0:30 • <artist>` text.
 4. **Playback** — tap a song row: mini player appears (`mini_player_container`) with the
    song title; `songCurrentProgress` advances between two `get_screen_state` calls.
@@ -59,6 +59,8 @@ Mark PASS/FAIL per step; any FAIL = regression to fix before archiving the audit
 15. **Media notification** — with playback active, `android_open_notifications`:
     notification "Sunrise / Aurora Test", category transport, actions (previous, pause/
     play, next, repeat, shuffle); execute Pause → action flips to "Play"; resume.
+    Note: the "next" action only appears while there is a next item in the queue
+    (Media3 dynamic commands) — test with an active multi-song queue, not at "List end".
 16. **Logcat** — `android_get_device_logs` (level E, package `com.ssilencce.debug`):
     empty. Also scan for ANR/Skipped frames (Choreographer) during the Compose screens
     (step 13/14/9) — cheap compose-performance signal.

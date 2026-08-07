@@ -142,6 +142,8 @@ class CreatePlaylistDialog : DialogFragment() {
                     dismiss()
                 } else {
                     showToast(getString(R.string.playlist_exists, result.playlistName))
+                    binding.playlistNameLayout.error =
+                        getString(R.string.playlist_exists, result.playlistName)
                 }
             }
     }
