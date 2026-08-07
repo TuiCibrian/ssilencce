@@ -26,6 +26,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.database.Cursor
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -33,13 +35,11 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.getSystemService
 import com.ssilencce.R
 import com.ssilencce.util.Preferences
-import org.koin.core.component.KoinComponent
 import java.io.File
+import java.io.FileInputStream
 import java.security.MessageDigest
 
-class UpdateDownloadReceiver :
-    BroadcastReceiver(),
-    KoinComponent {
+class UpdateDownloadReceiver : BroadcastReceiver() {
     override fun onReceive(
         context: Context,
         intent: Intent,
@@ -48,28 +48,90 @@ class UpdateDownloadReceiver :
         val downloadId = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1)
         if (downloadId != Preferences.lastUpdateId) return
 
+        // APK parsing must not run on the main thread
+        val pendingResult = goAsync()
+        val appContext = context.applicationContext
+        Thread {
+            try {
+                handleDownloadComplete(appContext, downloadId)
+            } finally {
+                pendingResult.finish()
+            }
+        }.start()
+    }
+
+    private fun handleDownloadComplete(
+        context: Context,
+        downloadId: Long,
+    ) {
         val downloadManager = context.getSystemService<DownloadManager>() ?: return
+        var apkFile: File? = null
+        var fileName: String? = null
         downloadManager.query(DownloadManager.Query().setFilterById(downloadId)).use { cursor ->
             if (!cursor.moveToFirst()) return
             if (cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS)) != DownloadManager.STATUS_SUCCESSFUL) {
                 return
             }
-            val fileName = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE))
-            val filePath = runCatching { cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_FILENAME)) }.getOrNull()
-            if (filePath == null || !isSignatureValid(context, filePath)) {
-                if (filePath != null) {
-                    runCatching { File(filePath).delete() }
-                }
-                showSignatureMismatchNotification(context, fileName)
-                Preferences.lastUpdateId = -1
-            }
+            fileName = cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TITLE))
+            apkFile = resolveApkFile(context, downloadId, cursor)
         }
+        if (apkFile != null && isSignatureValid(context, apkFile)) {
+            runCatching { apkFile.delete() }
+            Preferences.lastUpdateId = -1
+            return
+        }
+        // Signature mismatch: remove the download so DownloadManager's "Open" notification is
+        // dismissed, then delete the artifact and notify the user
+        runCatching { downloadManager.remove(downloadId) }
+        apkFile?.let { runCatching { it.delete() } }
+        Preferences.lastUpdateId = -1
+        showSignatureMismatchNotification(context, fileName)
+    }
+
+    /**
+     * API 29+ no longer exposes [DownloadManager.COLUMN_LOCAL_FILENAME] to apps, so the APK is
+     * copied from [DownloadManager.COLUMN_LOCAL_URI] into a cache file that [getPackageArchiveInfo]
+     * can parse. The cache copy is always deleted after verification.
+     */
+    private fun resolveApkFile(
+        context: Context,
+        downloadId: Long,
+        cursor: Cursor,
+    ): File? {
+        val source =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                val uriString = runCatching { cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_URI)) }.getOrNull()
+                uriString
+                    ?.let { runCatching { Uri.parse(it) }.getOrNull() }
+                    ?.let { runCatching { context.contentResolver.openInputStream(it) }.getOrNull() }
+            } else {
+                val path = runCatching { cursor.getString(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_LOCAL_FILENAME)) }.getOrNull()
+                if (path.isNullOrEmpty()) {
+                    null
+                } else {
+                    runCatching { FileInputStream(File(path)) }.getOrNull()
+                }
+            }
+        val tempFile = File(context.cacheDir, "update_verify_$downloadId.apk")
+        val copied =
+            runCatching {
+                val input = source ?: return@runCatching false
+                input.use { stream ->
+                    tempFile.outputStream().use { output -> stream.copyTo(output) }
+                }
+                true
+            }.getOrDefault(false)
+        if (!copied) {
+            runCatching { tempFile.delete() }
+            return null
+        }
+        return tempFile
     }
 
     @Suppress("DEPRECATION")
     private fun isSignatureValid(
         context: Context,
-        apkPath: String,
+        apkFile: File,
     ): Boolean {
         val installedInfo =
             try {
@@ -79,7 +141,7 @@ class UpdateDownloadReceiver :
             }
         val archiveInfo =
             try {
-                context.packageManager.getPackageArchiveInfo(apkPath, PackageManager.GET_SIGNATURES) ?: return false
+                context.packageManager.getPackageArchiveInfo(apkFile.absolutePath, PackageManager.GET_SIGNATURES) ?: return false
             } catch (e: Exception) {
                 return false
             }
