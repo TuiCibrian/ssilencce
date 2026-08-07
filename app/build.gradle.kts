@@ -7,7 +7,7 @@ import java.util.Properties
 plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.android.safeargs)
-    id("kotlin-parcelize")
+    alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -97,6 +97,12 @@ val currentVersion: Version =
     )
 val currentVersionCode = currentVersion.code
 
+val gitHash: String by lazy { runGitCommand("git rev-parse --short=7 HEAD") }
+
+val propertiesCache: MutableMap<String, Properties?> = HashMap()
+
+val flavorPropertiesCache: MutableMap<String?, Properties> = HashMap()
+
 android {
     compileSdk = 37
     namespace = "com.ssilencce"
@@ -106,7 +112,7 @@ android {
         targetSdk = 36
 
         applicationId = namespace
-        versionCode = 1400103
+        versionCode = currentVersion.code
         versionName = currentVersion.name
         check(versionCode == currentVersionCode)
     }
@@ -220,8 +226,6 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        val gitHash = runGitCommand("git rev-parse --short=7 HEAD")
-
         val isCI = System.getenv("RELEASE_TYPE") == "CI"
         if (isCI && variant.buildType == "release" && gitHash.isNotEmpty()) {
             variant.outputs.forEach { output ->
@@ -286,16 +290,14 @@ kotlin {
 
 val ktlint by configurations.creating
 
+val ktlintFileArgs = listOf("**/src/**/*.kt", "**.kts", "!**/build/**")
+
 val ktlintCheck by tasks.registering(JavaExec::class) {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Check Kotlin code style"
     classpath = ktlint
     mainClass.set("com.pinterest.ktlint.Main")
-    args(
-        "**/src/**/*.kt",
-        "**.kts",
-        "!**/build/**",
-    )
+    args(ktlintFileArgs)
 }
 
 tasks.check {
@@ -307,12 +309,7 @@ val ktlintFormat by tasks.registering(JavaExec::class) {
     description = "Fix Kotlin code style deviations"
     classpath = ktlint
     mainClass.set("com.pinterest.ktlint.Main")
-    args(
-        "-F",
-        "**/src/**/*.kt",
-        "**.kts",
-        "!**/build/**",
-    )
+    args(listOf("-F") + ktlintFileArgs)
 }
 
 dependencies {
@@ -362,9 +359,7 @@ dependencies {
     implementation(libs.aboutlibraries)
 
     implementation(libs.fadingedgelayout)
-    implementation(libs.advrecyclerview) {
-        isTransitive = true
-    }
+    implementation(libs.advrecyclerview)
     implementation(libs.fastscroll)
 
     implementation(libs.customactivityoncrash)
@@ -384,36 +379,38 @@ dependencies {
     }
 }
 
-fun getProperties(fileName: String): Properties? {
-    val file = rootProject.file(fileName)
-    return if (file.exists()) {
-        Properties().also { properties ->
-            file.inputStream().use { properties.load(it) }
+fun getProperties(fileName: String): Properties? =
+    propertiesCache.getOrPut(fileName) {
+        val file = rootProject.file(fileName)
+        if (file.exists()) {
+            Properties().also { properties ->
+                file.inputStream().use { properties.load(it) }
+            }
+        } else {
+            null
         }
-    } else {
-        null
     }
-}
 
 fun Properties.property(key: String) = this.getProperty(key) ?: "$key missing"
 
-fun loadFlavorProperties(flavorName: String?): Properties {
-    val finalProps = Properties()
-    val publicProperties = getProperties("public.properties")
-    if (publicProperties != null) {
-        for ((key, value) in publicProperties.entries) {
-            val keySplit = key.toString().split(".")
-            if (keySplit.size == 2) {
-                if (keySplit[0].equals(flavorName, ignoreCase = true)) {
-                    finalProps[keySplit[1]] = value
+fun loadFlavorProperties(flavorName: String?): Properties =
+    flavorPropertiesCache.getOrPut(flavorName) {
+        val finalProps = Properties()
+        val publicProperties = getProperties("public.properties")
+        if (publicProperties != null) {
+            for ((key, value) in publicProperties.entries) {
+                val keySplit = key.toString().split(".")
+                if (keySplit.size == 2) {
+                    if (keySplit[0].equals(flavorName, ignoreCase = true)) {
+                        finalProps[keySplit[1]] = value
+                    }
+                } else {
+                    finalProps[key] = value
                 }
-            } else {
-                finalProps[key] = value
             }
         }
+        finalProps
     }
-    return finalProps
-}
 
 fun runGitCommand(command: String): String =
     try {
