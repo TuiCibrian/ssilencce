@@ -1254,7 +1254,7 @@ private fun ProfileSelectorDialog(
                         contentPadding = PaddingValues(bottom = 24.dp),
                         verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                     ) {
-                        itemsIndexed(profiles) { index, profile ->
+                        itemsIndexed(profiles, key = { _, profile -> profile.name }) { index, profile ->
                             EqualizerProfileItem(
                                 shapes = ListItemDefaults.segmentedShapes(index, profiles.size),
                                 profile = profile,
@@ -1289,7 +1289,7 @@ private fun ProfileSelectorDialog(
                             contentPadding = PaddingValues(bottom = 24.dp),
                             verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                         ) {
-                            itemsIndexed(autoEqProfiles) { index, profile ->
+                            itemsIndexed(autoEqProfiles, key = { _, profile -> profile.name }) { index, profile ->
                                 AutoEqProfileItem(
                                     shapes = ListItemDefaults.segmentedShapes(index, autoEqProfiles.size),
                                     profile = profile,
@@ -1414,7 +1414,7 @@ private fun ProfileCheckDialog(
                 )
 
                 LazyColumn {
-                    items(profiles) { profile ->
+                    items(profiles, key = { it.name }) { profile ->
                         if (profile.isCustom.not()) {
                             val isChecked = selectedProfiles.contains(profile)
                             DialogListItemWithCheckBox(

@@ -145,7 +145,6 @@ fun SoundSettingsSheet(
                                     viewModel.setVolume(1f)
                                     viewModel.setBalance(0f)
                                 },
-                                modifier = Modifier.size(30.dp),
                             ) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_restart_alt_24dp),
@@ -262,7 +261,6 @@ fun SoundSettingsSheet(
                                         )
                                         viewModel.setTempo(isFixedPitch = tempo.isFixedPitch.not())
                                     },
-                                    modifier = Modifier.size(30.dp),
                                 ) {
                                     Icon(
                                         painter =
@@ -284,7 +282,6 @@ fun SoundSettingsSheet(
                                         )
                                         viewModel.setTempo(speed = 1f, pitch = 1f)
                                     },
-                                    modifier = Modifier.size(30.dp),
                                 ) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_restart_alt_24dp),

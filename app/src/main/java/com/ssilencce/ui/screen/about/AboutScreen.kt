@@ -69,6 +69,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -145,7 +147,7 @@ fun AboutScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
-                itemsIndexed(translators) { index, item ->
+                itemsIndexed(translators, key = { _, item -> item.title }) { index, item ->
                     AboutListItem(
                         index = index,
                         itemCount = translators.size,
@@ -221,7 +223,7 @@ fun AboutScreen(
 
             for (section in sections) {
                 item { AboutSectionTitle(section.first) }
-                itemsIndexed(section.second) { index, item ->
+                itemsIndexed(section.second, key = { _, item -> item.title }) { index, item ->
                     AboutListItem(
                         index = index,
                         itemCount = section.second.size,
@@ -256,6 +258,7 @@ private fun AppHeader(version: String) {
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 1,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             text = stringResource(R.string.app_description),
