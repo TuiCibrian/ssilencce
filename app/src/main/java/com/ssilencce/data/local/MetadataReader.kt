@@ -15,7 +15,30 @@ import org.jaudiotagger.tag.reference.GenreTypes
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-fun Picture.toBitmap(): Bitmap? = BitmapFactory.decodeByteArray(data, 0, data.size)
+private const val MAX_DECODED_COVER_SIZE = 2048
+
+fun Picture.toBitmap(): Bitmap? = decodeBitmapWithinBounds(data, MAX_DECODED_COVER_SIZE)
+
+private fun decodeBitmapWithinBounds(
+    data: ByteArray,
+    maxDimension: Int,
+): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        return null
+    }
+
+    var sampleSize = 1
+    while (bounds.outWidth / (sampleSize * 2) >= maxDimension ||
+        bounds.outHeight / (sampleSize * 2) >= maxDimension
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return BitmapFactory.decodeByteArray(data, 0, data.size, options)
+}
 
 class MetadataReader(
     uri: Uri,

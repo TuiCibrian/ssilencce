@@ -37,6 +37,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -176,7 +177,22 @@ object BackupHelper : KoinComponent {
                 if (inputStream != null) {
                     ZipInputStream(inputStream).use {
                         var entry = it.nextEntry
+                        var entryCount = 0
+                        var totalUncompressedBytes = 0L
                         while (entry != null) {
+                            if (entryCount >= MAX_BACKUP_ENTRIES) {
+                                throw IOException("Backup contains too many entries")
+                            }
+                            if (entry.size < 0 || entry.size > MAX_SINGLE_ENTRY_BYTES ||
+                                totalUncompressedBytes + entry.size > MAX_BACKUP_UNCOMPRESSED_BYTES
+                            ) {
+                                throw IOException("Backup entry exceeds size limits")
+                            }
+                            if (entry.isLyricsEntry() && entry.size > MAX_LYRICS_ENTRY_BYTES) {
+                                throw IOException("Lyrics entry exceeds size limit")
+                            }
+                            entryCount++
+                            totalUncompressedBytes += entry.size
                             if (entry.isPlaylistEntry() && contents.contains(BackupContent.Playlists)) {
                                 restorePlaylists(it, entry)
                             } else if (entry.isPreferenceEntry() &&
@@ -296,6 +312,10 @@ object BackupHelper : KoinComponent {
     private const val LYRICS_PATH = "lyrics"
     private const val CUSTOM_ARTISTS_PATH = "artistImages"
     private const val CUSTOM_ARTIST_PREFS_FILE = "custom_artist_images.xml"
+    private const val MAX_BACKUP_ENTRIES = 1000
+    private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 100L * 1024 * 1024
+    private const val MAX_SINGLE_ENTRY_BYTES = 100L * 1024 * 1024
+    private const val MAX_LYRICS_ENTRY_BYTES = 10L * 1024 * 1024
 
     private fun ZipEntry.isPlaylistEntry(): Boolean = name.startsWith(PLAYLISTS_PATH)
 
