@@ -26,6 +26,7 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 
 - **Build:** `./gradlew :app:assembleGithubDebug` — requires **JDK 21** (`jvmToolchain(21)`); single-module project (`:app`); AGP 9.3.1, Kotlin 2.3.21, compileSdk 37 / minSdk 26 / targetSdk 36.
 - **Lint:** `./gradlew :app:lintGithubDebug` — `lint { abortOnError = true }`, lint errors fail the build.
+- **Code quality hooks:** `.opencode/plugin/check.ts` auto-formats each edited `*.kt`/`*.kts` (via `scripts/ktlint.ps1`, project ktlint 1.8.0) and runs `:app:lintGithubDebug` in the background. Run `/codecheck` after each change for the full skill-based review pass (security, performance, accessibility, code-review) plus the lint gate.
 - **Tests:** No test source sets are configured; do not add test configurations (rule 10).
 - **Signing:** Release reads `keystore.properties` (keyAlias/keyPassword/storePassword/storeFile); if missing it silently falls back to the debug keystore.
 - **Last.fm keys:** Injected via `LASTFM_API_KEY`/`LASTFM_SECRET` from `local.properties` or environment; only for `github`/`playstore` flavors (`fdroid` gets none).

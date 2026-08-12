@@ -30,6 +30,8 @@ $McpUrl = "http://localhost:8080/mcp"
 $WatchTask = "ssilencce-emulator-watch"
 $CenterTolerance = 20
 $RecenteringGrace = 30
+$StartupTimeout = 120
+$ExitAfterClose = 60
 
 function Get-Token {
     $token = [Environment]::GetEnvironmentVariable("ANDROID_MCP_TOKEN", "User")
@@ -150,14 +152,17 @@ switch ($Action) {
         else { Write-Host "No emulator window found (or already centered)" }
     }
     "watch" {
-        Write-Host "Watch mode active: centering NEW emulator windows only. Ctrl+C to stop."
+        Write-Host "Watch mode active: centering NEW emulator windows only. Exits automatically after $StartupTimeout s without an emulator, or $ExitAfterClose s after it closes. Ctrl+C to stop."
         $knownStart = $null
         $knownHandle = [IntPtr]::Zero
         $graceUntil = $null
+        $startedAt = Get-Date
+        $lastSeen = $null
         while ($true) {
             try {
                 $proc = Get-EmulatorWindowProc
                 if ($proc) {
+                    $lastSeen = Get-Date
                     $start = $proc.StartTime
                     $handle = [int64]$proc.MainWindowHandle
                     if ($null -eq $knownStart) {
@@ -173,11 +178,22 @@ switch ($Action) {
                         if ((Get-Date) -ge $graceUntil) { $graceUntil = $null }
                         else { [void](Center-EmulatorWindow -Force) }
                     }
-                } elseif ($null -ne $knownStart) {
-                    $knownStart = $null
-                    $knownHandle = [IntPtr]::Zero
-                    $graceUntil = $null
-                    Write-Host "Emulator window closed; waiting for next launch..."
+                } else {
+                    if ($null -ne $knownStart) {
+                        $knownStart = $null
+                        $knownHandle = [IntPtr]::Zero
+                        $graceUntil = $null
+                        Write-Host "Emulator window closed; waiting for next launch..."
+                    }
+                    if ($null -eq $lastSeen) {
+                        if ((Get-Date) -gt $startedAt.AddSeconds($StartupTimeout)) {
+                            Write-Host "No emulator activity within $StartupTimeout s; exiting."
+                            exit 0
+                        }
+                    } elseif ((Get-Date) -gt $lastSeen.AddSeconds($ExitAfterClose)) {
+                        Write-Host "No emulator for $ExitAfterClose s after close; exiting."
+                        exit 0
+                    }
                 }
             } catch {
                 Write-Warning "watch iteration failed: $_"
