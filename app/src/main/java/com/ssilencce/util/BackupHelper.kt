@@ -314,7 +314,7 @@ object BackupHelper : KoinComponent {
     private const val CUSTOM_ARTIST_PREFS_FILE = "custom_artist_images.xml"
     private const val MAX_BACKUP_ENTRIES = 1000
     private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 100L * 1024 * 1024
-    private const val MAX_SINGLE_ENTRY_BYTES = 100L * 1024 * 1024
+    private const val MAX_SINGLE_ENTRY_BYTES = MAX_BACKUP_UNCOMPRESSED_BYTES
     private const val MAX_LYRICS_ENTRY_BYTES = 10L * 1024 * 1024
 
     private fun ZipEntry.isPlaylistEntry(): Boolean = name.startsWith(PLAYLISTS_PATH)
