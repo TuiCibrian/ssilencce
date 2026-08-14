@@ -141,7 +141,37 @@ Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/ag
 
 ### Domain docs
 
-Single-context; ADRs under `docs/architecture/`. See `docs/agents/domain.md`.
+Single-context; ADRs under `docs/architecture/` plus feature docs: `docs/FEATURES.md` (what
+exists), `docs/MISSING_FEATURES.md` (gaps vs Musicolet) and `docs/MUSICOLET_FEATURES.md`
+(reference snapshot of the other app). See `docs/agents/domain.md` and the
+[Documentation Maintenance](#documentation-maintenance) section.
+
+## Documentation Maintenance
+
+Keep the project docs in sync with the code. When a change is significant enough that a
+future reader of the docs would be misled, update the relevant doc in the same working
+set as the code change:
+
+- **`docs/CODE_MAP.md`** — add an entry for each new source file and update entries whose
+  file's responsibilities change (renames, package moves, new core logic). Keep the
+  existing per-file format (Purpose / Responsibilities / Inputs / Outputs / Dependencies /
+  Consumed by / Related files / Notes).
+- **`docs/FEATURES.md`** — add new user-facing features (settings, screens, behaviors) to
+  the matching numbered section, in the same bullet style.
+- **`docs/MISSING_FEATURES.md`** — when an implemented feature was listed as missing,
+  remove it from Part 1 / Part 2 / Appendix A as applicable; if only partially
+  implemented, reword the bullet to describe the remaining gap. Never edit
+  `docs/MUSICOLET_FEATURES.md` (pinned reference snapshot of another app).
+- **`docs/architecture/ADR-*.md`** — create a new ADR (next free number, template
+  Status/Context/Decision/Consequences) when the change affects an architectural
+  decision: stack choices, layering, data flow, persistence, playback engine,
+  navigation, theming, packaging. Read and cite the relevant ADRs first (see
+  `docs/agents/domain.md`); mark superseded ADRs accordingly.
+- **`docs/agents/domain.md`** — keep the ADR count and doc references up to date.
+- **`AGENTS.md`** — keep the condensed Repository Code Map and this section in sync.
+
+Trivial changes (variable renames, formatting, refactors with no behavior change) do not
+require doc updates. When in doubt, consult the human collaborator (rule 7).
 
 ## Rules for AI Agents
 
@@ -157,6 +187,7 @@ Single-context; ADRs under `docs/architecture/`. See `docs/agents/domain.md`.
 10. **Test Configuration:** Do not attempt to add test configurations unless they are already present in the project or specifically requested by the human user.
 11. **Language:** All code, comments, and documentation produced by the agent must be in English.
 12. **UI Development:** New UI changes or additions must prioritize Jetpack Compose. The project is currently migrating from the legacy View/XML system to Compose.
+13. **Documentation Maintenance:** Significant changes must keep the project docs in sync (see [Documentation Maintenance](#documentation-maintenance)): new or significantly edited source files → `docs/CODE_MAP.md`; new user-facing features → `docs/FEATURES.md`; implemented gaps → remove from `docs/MISSING_FEATURES.md`; architectural decisions → new ADR under `docs/architecture/`.
 
 <!-- context7 -->
 Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service — even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer — your training data may not reflect recent changes. Prefer this over web search for library docs.

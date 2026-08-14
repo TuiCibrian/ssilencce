@@ -4,7 +4,7 @@ Single-context repo: domain knowledge lives in Architecture Decision Records (AD
 
 ## Layout
 
-- `docs/architecture/ADR-*.md` — 32 ADRs; the numbered, dated record of architectural decisions
+- `docs/architecture/ADR-*.md` — ADR-001…ADR-032 (see directory); the numbered, dated record of architectural decisions
 - `AGENTS.md` — repo conventions and rules for agents
 - `docs/CODE_MAP.md` — per-file code map
 
