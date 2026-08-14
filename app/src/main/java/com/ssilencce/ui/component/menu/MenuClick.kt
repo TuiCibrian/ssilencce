@@ -23,17 +23,21 @@ import androidx.appcompat.widget.PopupMenu
 
 typealias MenuConsumer = (Menu) -> Unit
 
-fun newPopupMenu(anchor: View, menuRes: Int, menuConsumer: MenuConsumer? = null): PopupMenu {
-    return PopupMenu(anchor.context, anchor).apply {
+fun newPopupMenu(
+    anchor: View,
+    menuRes: Int,
+    menuConsumer: MenuConsumer? = null,
+): PopupMenu =
+    PopupMenu(anchor.context, anchor).apply {
         inflate(menuRes)
         if (menuConsumer != null) {
             menuConsumer(menu)
         }
     }
-}
 
-abstract class OnClickMenu : View.OnClickListener, PopupMenu.OnMenuItemClickListener {
-
+abstract class OnClickMenu :
+    View.OnClickListener,
+    PopupMenu.OnMenuItemClickListener {
     override fun onClick(v: View) {
         newPopupMenu(v, popupMenuRes) { menu ->
             onPreparePopup(menu)

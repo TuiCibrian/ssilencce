@@ -42,15 +42,18 @@ import com.ssilencce.ui.component.menu.onArtistsMenu
 import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.util.Preferences
 
-class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, GridLayoutManager>(),
+class ArtistListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, GridLayoutManager>(),
     IArtistCallback {
-
     override val titleRes: Int = R.string.artists_label
     override val isShuffleVisible: Boolean = true
     override val emptyMessageRes: Int
         get() = R.string.no_artists_label
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getArtists().observe(viewLifecycleOwner) { artists ->
             adapter?.dataSet = artists
@@ -60,15 +63,16 @@ class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, 
     override fun onShuffleClicked() {
         super.onShuffleClicked()
         adapter?.dataSet?.let {
-            playerViewModel.openShuffle(
-                providers = it,
-                mode = Preferences.artistShuffleMode,
-                sortMode = SongSortMode.Dynamic(SortKey.Name)
-            ).observe(viewLifecycleOwner) { success ->
-                if (success) {
-                    showToast(R.string.artists_shuffle)
+            playerViewModel
+                .openShuffle(
+                    providers = it,
+                    mode = Preferences.artistShuffleMode,
+                    sortMode = SongSortMode.Dynamic(SortKey.Name),
+                ).observe(viewLifecycleOwner) { success ->
+                    if (success) {
+                        showToast(R.string.artists_shuffle)
+                    }
                 }
-            }
         }
     }
 
@@ -77,9 +81,7 @@ class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, 
         libraryViewModel.forceReload(ReloadType.Artists)
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(activity, gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(activity, gridSize)
 
     override fun createAdapter(): ArtistAdapter {
         val itemLayoutRes = itemLayoutRes
@@ -88,28 +90,35 @@ class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, 
         return ArtistAdapter(mainActivity, dataSet, itemLayoutRes, ArtistSortMode.AllArtists, this)
     }
 
-    override fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>?) {
+    override fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun artistMenuItemClick(
         artist: Artist,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return artist.onArtistMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean = artist.onArtistMenu(this, menuItem)
 
-    override fun artistsMenuItemClick(artists: List<Artist>, menuItem: MenuItem) {
+    override fun artistsMenuItemClick(
+        artists: List<Artist>,
+        menuItem: MenuItem,
+    ) {
         artists.onArtistsMenu(this, menuItem)
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         ArtistSortMode.AllArtists.createMenu(menu)
         menu.add(0, R.id.action_album_artist, 0, R.string.show_album_artists).apply {
@@ -132,25 +141,25 @@ class ArtistListFragment : AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, 
         return super.onMenuItemSelected(item)
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.entries.firstOrNull {
+    override fun getSavedViewType(): GridViewType =
+        GridViewType.entries.firstOrNull {
             it.name == sharedPreferences.getString(VIEW_TYPE, null)
         } ?: GridViewType.Circle
-    }
 
     override fun saveViewType(viewType: GridViewType) {
         sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
     }
 
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }

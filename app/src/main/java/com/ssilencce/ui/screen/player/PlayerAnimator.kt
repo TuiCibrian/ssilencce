@@ -26,7 +26,9 @@ import androidx.core.animation.doOnStart
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import java.util.LinkedList
 
-abstract class PlayerAnimator(isEnabled: Boolean) {
+abstract class PlayerAnimator(
+    isEnabled: Boolean,
+) {
     private var musicControllerAnimationSet: AnimatorSet? = null
 
     var isEnabled: Boolean = isEnabled
@@ -64,12 +66,13 @@ abstract class PlayerAnimator(isEnabled: Boolean) {
 
             onAddAnimation(animators, interpolator)
 
-            musicControllerAnimationSet = AnimatorSet().apply {
-                doOnStart {
-                    onAnimationStarted()
+            musicControllerAnimationSet =
+                AnimatorSet().apply {
+                    doOnStart {
+                        onAnimationStarted()
+                    }
+                    playTogether(animators)
                 }
-                playTogether(animators)
-            }
         } else {
             musicControllerAnimationSet!!.cancel()
         }
@@ -84,20 +87,22 @@ abstract class PlayerAnimator(isEnabled: Boolean) {
         animators: MutableCollection<Animator>,
         view: View,
         interpolator: TimeInterpolator?,
-        delay: Int
+        delay: Int,
     ) {
-        val scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 0f, 1f).apply {
-            this.interpolator = interpolator
-            this.duration = 300
-            this.startDelay = delay.toLong()
-        }
+        val scaleX =
+            ObjectAnimator.ofFloat(view, View.SCALE_X, 0f, 1f).apply {
+                this.interpolator = interpolator
+                this.duration = 300
+                this.startDelay = delay.toLong()
+            }
         animators.add(scaleX)
 
-        val scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 0f, 1f).apply {
-            this.interpolator = interpolator
-            this.duration = 300
-            this.startDelay = delay.toLong()
-        }
+        val scaleY =
+            ObjectAnimator.ofFloat(view, View.SCALE_Y, 0f, 1f).apply {
+                this.interpolator = interpolator
+                this.duration = 300
+                this.startDelay = delay.toLong()
+            }
         animators.add(scaleY)
     }
 
@@ -116,6 +121,10 @@ abstract class PlayerAnimator(isEnabled: Boolean) {
      * convenient for each case, however, there is a convenience method called [addScaleAnimation]
      * which adds a simple alpha animation and a default [TimeInterpolator] is given..
      */
-    open fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {}
+    open fun onAddAnimation(
+        animators: LinkedList<Animator>,
+        interpolator: TimeInterpolator,
+    ) {}
+
     open fun onPrepareForAnimation() {}
 }

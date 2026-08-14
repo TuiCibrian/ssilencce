@@ -58,8 +58,9 @@ import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 
-class App : Application(), SingletonImageLoader.Factory {
-
+class App :
+    Application(),
+    SingletonImageLoader.Factory {
     override fun onCreate() {
         super.onCreate()
         startKoin {
@@ -82,7 +83,8 @@ class App : Application(), SingletonImageLoader.Factory {
         }
 
         // setting Error activity
-        CaocConfig.Builder.create()
+        CaocConfig.Builder
+            .create()
             .errorActivity(ErrorActivity::class.java)
             .restartActivity(MainActivity::class.java)
             .apply()
@@ -91,7 +93,8 @@ class App : Application(), SingletonImageLoader.Factory {
     }
 
     override fun newImageLoader(context: PlatformContext): ImageLoader {
-        return ImageLoader.Builder(context)
+        return ImageLoader
+            .Builder(context)
             .crossfade(true)
             .allowHardware(false)
             .components {
@@ -103,8 +106,8 @@ class App : Application(), SingletonImageLoader.Factory {
                 add(
                     AudioCoverFetcher.Factory(
                         preferences = get(),
-                        repository = get()
-                    )
+                        repository = get(),
+                    ),
                 )
 
                 // Artist
@@ -114,8 +117,8 @@ class App : Application(), SingletonImageLoader.Factory {
                     ArtistImageFetcher.Factory(
                         preferences = get(),
                         customImageManager = get(),
-                        repository = get()
-                    )
+                        repository = get(),
+                    ),
                 )
 
                 // Playlist
@@ -131,28 +134,28 @@ class App : Application(), SingletonImageLoader.Factory {
 
                 // Network
                 add(KtorNetworkFetcherFactory())
-            }
-            .also { builder ->
+            }.also { builder ->
                 if (BuildConfig.DEBUG) {
-                    builder.logger(object : Logger {
-                        override var minLevel = Logger.Level.Verbose
+                    builder.logger(
+                        object : Logger {
+                            override var minLevel = Logger.Level.Verbose
 
-                        override fun log(
-                            tag: String,
-                            level: Logger.Level,
-                            message: String?,
-                            throwable: Throwable?
-                        ) {
-                            if (level < minLevel) return
-                            message?.let { msg -> Log.println(level.ordinal + 2, tag, msg) }
-                            throwable?.let { thr ->
-                                Log.println(level.ordinal + 2, tag, Log.getStackTraceString(thr))
+                            override fun log(
+                                tag: String,
+                                level: Logger.Level,
+                                message: String?,
+                                throwable: Throwable?,
+                            ) {
+                                if (level < minLevel) return
+                                message?.let { msg -> Log.println(level.ordinal + 2, tag, msg) }
+                                throwable?.let { thr ->
+                                    Log.println(level.ordinal + 2, tag, Log.getStackTraceString(thr))
+                                }
                             }
-                        }
-                    })
+                        },
+                    )
                 }
-            }
-            .build()
+            }.build()
     }
 
     override fun onTrimMemory(level: Int) {
@@ -165,18 +168,20 @@ class App : Application(), SingletonImageLoader.Factory {
 
     private fun enableStrictMode() {
         StrictMode.setVmPolicy(
-            VmPolicy.Builder()
+            VmPolicy
+                .Builder()
                 .detectAll()
                 .penaltyLog()
-                .build()
+                .build(),
         )
 
         StrictMode.setThreadPolicy(
-            ThreadPolicy.Builder()
+            ThreadPolicy
+                .Builder()
                 .detectAll()
                 .penaltyLog()
                 .penaltyFlashScreen()
-                .build()
+                .build(),
         )
     }
 
@@ -185,7 +190,6 @@ class App : Application(), SingletonImageLoader.Factory {
 
         fun isPlayStoreBuild() = BuildConfig.FLAVOR.equals("playstore", ignoreCase = true)
 
-        fun isExperimentalBuild(): Boolean =
-            BuildConfig.VERSION_NAME.contains("(alpha|beta|rc)".toRegex(RegexOption.IGNORE_CASE))
+        fun isExperimentalBuild(): Boolean = BuildConfig.VERSION_NAME.contains("(alpha|beta|rc)".toRegex(RegexOption.IGNORE_CASE))
     }
 }

@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 class LastFmUserResponse(
-    val user: LastFmUser
+    val user: LastFmUser,
 )
 
 @Serializable

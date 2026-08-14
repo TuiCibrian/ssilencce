@@ -116,7 +116,7 @@ fun QueueScreen(
     onDeleteSongClick: (Song) -> Unit,
     onShareClick: (Song) -> Unit,
     onDetailsClick: (Song) -> Unit,
-    playerViewModel: PlayerViewModel = koinActivityViewModel()
+    playerViewModel: PlayerViewModel = koinActivityViewModel(),
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -143,20 +143,26 @@ fun QueueScreen(
 
     val listBottomPadding by animateDpAsState(
         targetValue = if (showLocateCurrentTrack) 96.dp else 16.dp,
-        animationSpec = tween(200)
+        animationSpec = tween(200),
     )
 
     val listState = rememberLazyListState(position.current)
-    val reorderableListState = rememberReorderableLazyListState(listState) { from, to ->
-        hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+    val reorderableListState =
+        rememberReorderableLazyListState(listState) { from, to ->
+            hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
 
-        reorderInfo = if (reorderInfo == null)
-            Pair(from.index, to.index) else reorderInfo!!.first to to.index
+            reorderInfo =
+                if (reorderInfo == null) {
+                    Pair(from.index, to.index)
+                } else {
+                    reorderInfo!!.first to to.index
+                }
 
-        reorderingQueue = reorderingQueue?.toMutableList()?.apply {
-            add(to.index, removeAt(from.index))
+            reorderingQueue =
+                reorderingQueue?.toMutableList()?.apply {
+                    add(to.index, removeAt(from.index))
+                }
         }
-    }
 
     ObserveAsEvent(playerViewModel.stopAfterPosition) { (title, canceled) ->
         if (title != null) {
@@ -184,7 +190,8 @@ fun QueueScreen(
     LaunchedEffect(position, playQueue) {
         delay(QUEUE_DEBOUNCE.milliseconds)
         if (shouldLocateCurrentTrackOnUpdate ||
-            listState.firstVisibleItemIndex == position.previous) {
+            listState.firstVisibleItemIndex == position.previous
+        ) {
             listState.animateScrollToItem(position.current)
             if (shouldLocateCurrentTrackOnUpdate) {
                 shouldLocateCurrentTrackOnUpdate = false
@@ -200,22 +207,24 @@ fun QueueScreen(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .nestedScroll(rememberNestedScrollInteropConnection())
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .nestedScroll(rememberNestedScrollInteropConnection()),
     ) {
         BottomSheetDefaults.DragHandle(
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
 
         SmallHeader(
             title = currentSong.title,
             subtitle = currentSong.displayArtistName(),
             imageModel = currentSong,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
         )
 
         Spacer(Modifier.height(16.dp))
@@ -223,9 +232,10 @@ fun QueueScreen(
         Row(
             horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
         ) {
             TonalToggleButton(
                 checked = shuffleMode,
@@ -235,11 +245,11 @@ fun QueueScreen(
                     playerViewModel.toggleShuffleMode()
                 },
                 shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_shuffle_24dp),
-                    contentDescription = stringResource(R.string.action_toggle_shuffle)
+                    contentDescription = stringResource(R.string.action_toggle_shuffle),
                 )
             }
 
@@ -250,15 +260,16 @@ fun QueueScreen(
                     playerViewModel.cycleRepeatMode()
                 },
                 shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(
-                    painter = when(repeatMode) {
-                        Player.REPEAT_MODE_ALL -> painterResource(R.drawable.ic_repeat_24dp)
-                        Player.REPEAT_MODE_ONE -> painterResource(R.drawable.ic_repeat_one_24dp)
-                        else -> painterResource(R.drawable.ic_repeat_24dp)
-                    },
-                    contentDescription = stringResource(R.string.action_cycle_repeat)
+                    painter =
+                        when (repeatMode) {
+                            Player.REPEAT_MODE_ALL -> painterResource(R.drawable.ic_repeat_24dp)
+                            Player.REPEAT_MODE_ONE -> painterResource(R.drawable.ic_repeat_one_24dp)
+                            else -> painterResource(R.drawable.ic_repeat_24dp)
+                        },
+                    contentDescription = stringResource(R.string.action_cycle_repeat),
                 )
             }
 
@@ -272,15 +283,17 @@ fun QueueScreen(
                     }
                 },
                 shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             ) {
                 Icon(
-                    painter = if (queueLocked) {
-                        painterResource(R.drawable.ic_lock_24dp)
-                    } else {
-                        painterResource(R.drawable.ic_lock_open_24dp)
-                    },
-                    contentDescription = stringResource(R.string.action_toggle_queue_lock))
+                    painter =
+                        if (queueLocked) {
+                            painterResource(R.drawable.ic_lock_24dp)
+                        } else {
+                            painterResource(R.drawable.ic_lock_open_24dp)
+                        },
+                    contentDescription = stringResource(R.string.action_toggle_queue_lock),
+                )
             }
         }
 
@@ -289,17 +302,18 @@ fun QueueScreen(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .padding(horizontal = 16.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(themeColors.surfaceContainerLowest.copy(alpha = .6f))
-                .padding(vertical = 12.dp)
-                .padding(start = 16.dp, end = 8.dp)
+            modifier =
+                Modifier
+                    .padding(horizontal = 16.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(themeColors.surfaceContainerLowest.copy(alpha = .6f))
+                    .padding(vertical = 12.dp)
+                    .padding(start = 16.dp, end = 8.dp),
         ) {
             Icon(
                 painterResource(R.drawable.ic_queue_music_24dp),
                 tint = themeColors.secondary,
-                contentDescription = null
+                contentDescription = null,
             )
 
             Column(Modifier.weight(1f)) {
@@ -308,34 +322,36 @@ fun QueueScreen(
                     style = MaterialTheme.typography.titleMedium,
                     color = themeColors.secondary,
                     fontWeight = FontWeight.SemiBold,
-                    maxLines = 1
+                    maxLines = 1,
                 )
 
                 Text(
-                    text = buildInfoString(
-                        playQueue.songCountStr(context),
-                        playQueue.songsDurationStr()
-                    ),
+                    text =
+                        buildInfoString(
+                            playQueue.songCountStr(context),
+                            playQueue.songsDurationStr(),
+                        ),
                     style = MaterialTheme.typography.bodySmall,
-                    color = themeColors.onSurfaceVariant
+                    color = themeColors.onSurfaceVariant,
                 )
             }
 
             OverflowMenu(
-                items = listOf(
-                    MenuItem.Button.DropDown(
-                        icon = painterResource(R.drawable.ic_playlist_add_24dp),
-                        text = stringResource(R.string.action_add_to_playlist),
-                        onClick = { onAddToPlaylistClick(playQueue) }
+                items =
+                    listOf(
+                        MenuItem.Button.DropDown(
+                            icon = painterResource(R.drawable.ic_playlist_add_24dp),
+                            text = stringResource(R.string.action_add_to_playlist),
+                            onClick = { onAddToPlaylistClick(playQueue) },
+                        ),
+                        MenuItem.Button.DropDown(
+                            icon = painterResource(R.drawable.ic_clear_all_24dp),
+                            text = stringResource(R.string.clear_queue),
+                            dangerous = true,
+                            onClick = { playerViewModel.clearQueue() },
+                        ),
                     ),
-                    MenuItem.Button.DropDown(
-                        icon = painterResource(R.drawable.ic_clear_all_24dp),
-                        text = stringResource(R.string.clear_queue),
-                        dangerous = true,
-                        onClick = { playerViewModel.clearQueue() }
-                    ),
-                ),
-                colors = MenuDefaults.dropDownMenuColors(themeColors.surfaceContainerHigh)
+                colors = MenuDefaults.dropDownMenuColors(themeColors.surfaceContainerHigh),
             )
         }
 
@@ -344,51 +360,54 @@ fun QueueScreen(
         Box {
             LazyColumnScrollbar(
                 state = listState,
-                settings = ScrollbarSettings(
-                    hideDelayMillis = 3000,
-                    thumbMaxLength = 0.1f,
-                    thumbSelectedColor = themeColors.primary,
-                    thumbUnselectedColor = themeColors.primary
-                )
+                settings =
+                    ScrollbarSettings(
+                        hideDelayMillis = 3000,
+                        thumbMaxLength = 0.1f,
+                        thumbSelectedColor = themeColors.primary,
+                        thumbUnselectedColor = themeColors.primary,
+                    ),
             ) {
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(8.dp) + PaddingValues(bottom = listBottomPadding),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     itemsIndexed(
                         items = reorderingQueue ?: playQueue,
-                        key = { _, item -> item.key }
+                        key = { _, item -> item.key },
                     ) { index, song ->
                         ReorderableItem(reorderableListState, key = song.key) {
                             val isCurrentSong = remember(position) { index == position.current }
 
                             val alpha by animateFloatAsState(
-                                targetValue = if (isCurrentSong || index >= position.current) 1f else .5f
+                                targetValue = if (isCurrentSong || index >= position.current) 1f else .5f,
                             )
                             val color by animateColorAsState(
-                                targetValue = if (isCurrentSong) {
-                                    themeColors.primaryContainer
-                                } else {
-                                    themeColors.surfaceContainer
-                                },
-                                animationSpec = tween(400)
+                                targetValue =
+                                    if (isCurrentSong) {
+                                        themeColors.primaryContainer
+                                    } else {
+                                        themeColors.surfaceContainer
+                                    },
+                                animationSpec = tween(400),
                             )
                             val contentColor by animateColorAsState(
-                                targetValue = if (isCurrentSong) {
-                                    themeColors.onPrimaryContainer
-                                } else {
-                                    themeColors.onSurfaceVariant
-                                },
-                                animationSpec = tween(400)
+                                targetValue =
+                                    if (isCurrentSong) {
+                                        themeColors.onPrimaryContainer
+                                    } else {
+                                        themeColors.onSurfaceVariant
+                                    },
+                                animationSpec = tween(400),
                             )
                             val cornerRadius by animateDpAsState(
                                 targetValue = if (isPlaying && isCurrentSong) 50.dp else 12.dp,
-                                animationSpec = tween(400)
+                                animationSpec = tween(400),
                             )
                             val imageCornerRadius by animateDpAsState(
                                 targetValue = if (isPlaying && isCurrentSong) 50.dp else 8.dp,
-                                animationSpec = tween(400)
+                                animationSpec = tween(400),
                             )
 
                             Surface(
@@ -401,37 +420,40 @@ fun QueueScreen(
                                 },
                                 shape = RoundedCornerShape(cornerRadius),
                                 color = color.copy(alpha),
-                                contentColor = contentColor.copy(alpha)
+                                contentColor = contentColor.copy(alpha),
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 8.dp, vertical = 8.dp)
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 8.dp, vertical = 8.dp),
                                 ) {
                                     Crossfade(
                                         targetState = isPlaying && isCurrentSong,
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(RoundedCornerShape(imageCornerRadius))
+                                        modifier =
+                                            Modifier
+                                                .size(48.dp)
+                                                .clip(RoundedCornerShape(imageCornerRadius)),
                                     ) { isPlayingSong ->
                                         if (isPlayingSong) {
                                             Box(
                                                 contentAlignment = Alignment.Center,
-                                                modifier = Modifier
-                                                    .fillMaxSize()
-                                                    .background(themeColors.primary)
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxSize()
+                                                        .background(themeColors.primary),
                                             ) {
                                                 AnimatedEqBars(
                                                     color = themeColors.onPrimary,
                                                     isPlaying = isPlaying,
-                                                    modifier = Modifier.size(16.dp)
+                                                    modifier = Modifier.size(16.dp),
                                                 )
                                             }
                                         } else {
                                             MediaImage(
                                                 model = song,
-                                                modifier = Modifier.fillMaxSize()
+                                                modifier = Modifier.fillMaxSize(),
                                             )
                                         }
                                     }
@@ -439,13 +461,13 @@ fun QueueScreen(
                                     Spacer(Modifier.width(16.dp))
 
                                     Column(
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     ) {
                                         Text(
                                             text = song.title,
                                             style = MaterialTheme.typography.titleMedium,
                                             overflow = TextOverflow.Ellipsis,
-                                            maxLines = 1
+                                            maxLines = 1,
                                         )
 
                                         Text(
@@ -453,7 +475,7 @@ fun QueueScreen(
                                             style = MaterialTheme.typography.bodyMedium,
                                             color = contentColor.copy(alpha = 0.8f),
                                             overflow = TextOverflow.Ellipsis,
-                                            maxLines = 1
+                                            maxLines = 1,
                                         )
                                     }
 
@@ -463,23 +485,24 @@ fun QueueScreen(
                                         Icon(
                                             painter = painterResource(R.drawable.ic_drag_handle_24dp),
                                             contentDescription = stringResource(R.string.reorder_action),
-                                            modifier = Modifier.draggableHandle(
-                                                onDragStarted = {
-                                                    hapticFeedback.performHapticFeedback(
-                                                        HapticFeedbackType.GestureThresholdActivate
-                                                    )
-                                                    reorderInfo = null
-                                                    reorderingQueue = playQueue
-                                                },
-                                                onDragStopped = {
-                                                    hapticFeedback.performHapticFeedback(
-                                                        HapticFeedbackType.GestureEnd
-                                                    )
-                                                    reorderInfo?.let { (from, to) ->
-                                                        playerViewModel.moveSong(from, to)
-                                                    }
-                                                }
-                                            )
+                                            modifier =
+                                                Modifier.draggableHandle(
+                                                    onDragStarted = {
+                                                        hapticFeedback.performHapticFeedback(
+                                                            HapticFeedbackType.GestureThresholdActivate,
+                                                        )
+                                                        reorderInfo = null
+                                                        reorderingQueue = playQueue
+                                                    },
+                                                    onDragStopped = {
+                                                        hapticFeedback.performHapticFeedback(
+                                                            HapticFeedbackType.GestureEnd,
+                                                        )
+                                                        reorderInfo?.let { (from, to) ->
+                                                            playerViewModel.moveSong(from, to)
+                                                        }
+                                                    },
+                                                ),
                                         )
                                     }
 
@@ -508,7 +531,7 @@ fun QueueScreen(
                                         },
                                         onDetailsClick = {
                                             onDetailsClick(song)
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -521,9 +544,10 @@ fun QueueScreen(
                 visible = showLocateCurrentTrack,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it },
-                modifier = Modifier
-                    .padding(bottom = 16.dp)
-                    .align(Alignment.BottomCenter)
+                modifier =
+                    Modifier
+                        .padding(bottom = 16.dp)
+                        .align(Alignment.BottomCenter),
             ) {
                 Button(
                     onClick = {
@@ -531,11 +555,11 @@ fun QueueScreen(
                             listState.animateScrollToItem(position.current)
                         }
                     },
-                    contentPadding = ButtonDefaults.MediumContentPadding
+                    contentPadding = ButtonDefaults.MediumContentPadding,
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_recenter_24dp),
-                        contentDescription = null
+                        contentDescription = null,
                     )
                     Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                     Text(stringResource(R.string.go_to_current_track))
@@ -555,50 +579,52 @@ private fun QueueItemMenu(
     onAddToPlaylistClick: () -> Unit,
     onShareClick: () -> Unit,
     onDeleteFromDeviceClick: () -> Unit,
-    onDetailsClick: () -> Unit
+    onDetailsClick: () -> Unit,
 ) {
     OverflowMenu(
-        items = listOf(
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_stop_circle_24dp),
-                text = stringResource(R.string.sleep_timer_stop_after_this_track),
-                enabled = itemIndex >= queueIndex,
-                onClick = onStopAfterThisTrackClick
+        items =
+            listOf(
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_stop_circle_24dp),
+                    text = stringResource(R.string.sleep_timer_stop_after_this_track),
+                    enabled = itemIndex >= queueIndex,
+                    onClick = onStopAfterThisTrackClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_queue_play_next_24dp),
+                    text = stringResource(R.string.put_after_current_track),
+                    enabled = itemIndex > (queueIndex + 1),
+                    onClick = onPutAfterCurrentTrackClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_remove_from_queue_24dp),
+                    text = stringResource(R.string.action_remove_from_playing_queue),
+                    onClick = onRemoveFromQueueClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_playlist_add_24dp),
+                    text = stringResource(R.string.action_add_to_playlist),
+                    onClick = onAddToPlaylistClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_share_24dp),
+                    text = stringResource(R.string.action_share),
+                    onClick = onShareClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_delete_24dp),
+                    text = stringResource(R.string.action_delete_from_device),
+                    onClick = onDeleteFromDeviceClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_info_24dp),
+                    text = stringResource(R.string.action_details),
+                    onClick = onDetailsClick,
+                ),
             ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_queue_play_next_24dp),
-                text = stringResource(R.string.put_after_current_track),
-                enabled = itemIndex > (queueIndex + 1),
-                onClick = onPutAfterCurrentTrackClick
+        colors =
+            MenuDefaults.dropDownMenuColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_remove_from_queue_24dp),
-                text = stringResource(R.string.action_remove_from_playing_queue),
-                onClick = onRemoveFromQueueClick
-            ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_playlist_add_24dp),
-                text = stringResource(R.string.action_add_to_playlist),
-                onClick = onAddToPlaylistClick
-            ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_share_24dp),
-                text = stringResource(R.string.action_share),
-                onClick = onShareClick
-            ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_delete_24dp),
-                text = stringResource(R.string.action_delete_from_device),
-                onClick = onDeleteFromDeviceClick
-            ),
-            MenuItem.Button.DropDown(
-                icon = painterResource(R.drawable.ic_info_24dp),
-                text = stringResource(R.string.action_details),
-                onClick = onDetailsClick
-            )
-        ),
-        colors = MenuDefaults.dropDownMenuColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        )
     )
 }

@@ -20,14 +20,18 @@ package com.ssilencce.data.local.lyrics.ttml
 import com.ssilencce.extensions.utilities.collapseSpaces
 import com.ssilencce.extensions.utilities.isWhitespace
 
-class TtmlTranslation(override val type: Type.Translation, val isInLine: Boolean) :
-    TtmlAccompaniment(type)
+class TtmlTranslation(
+    override val type: Type.Translation,
+    val isInLine: Boolean,
+) : TtmlAccompaniment(type)
 
-class TtmlTransliteration(override val type: Type.Transliteration) :
-    TtmlAccompaniment(type)
+class TtmlTransliteration(
+    override val type: Type.Transliteration,
+) : TtmlAccompaniment(type)
 
-open class TtmlAccompaniment(open val type: Type) {
-
+open class TtmlAccompaniment(
+    open val type: Type,
+) {
     protected val accompanistTexts = mutableSetOf<MutableAccompanistText>()
     protected var pending: MutableAccompanistText? = null
         private set
@@ -39,30 +43,34 @@ open class TtmlAccompaniment(open val type: Type) {
         private set
 
     fun prepare(key: String): Boolean {
-        if (closed || hasPendingContent || accompanistTexts.any { it.key == key })
+        if (closed || hasPendingContent || accompanistTexts.any { it.key == key }) {
             return false
+        }
 
         pending = MutableAccompanistText(key)
         return true
     }
 
     fun set(content: String?): Boolean {
-        if (closed || !hasPendingContent)
+        if (closed || !hasPendingContent) {
             return false
+        }
 
         return pending?.setContent(content) == true
     }
 
     fun addWord(node: TtmlNode): Boolean {
-        if (closed || !hasPendingContent)
+        if (closed || !hasPendingContent) {
             return false
+        }
 
         return pending?.addWord(node) == true
     }
 
     fun background(background: Boolean): Boolean {
-        if (closed || !hasPendingContent)
+        if (closed || !hasPendingContent) {
             return false
+        }
 
         if (background != pending!!.background) {
             pending!!.background = background
@@ -81,17 +89,22 @@ open class TtmlAccompaniment(open val type: Type) {
     }
 
     operator fun get(key: String?) =
-        if (closed) accompanistTexts.firstOrNull { it.key == key }?.let {
-            AccompanistText(
-                content = it.content.orEmpty(),
-                backgroundContent = it.backgroundContent,
-                syllables = it.syllables.orEmpty()
-            )
-        } else null
+        if (closed) {
+            accompanistTexts.firstOrNull { it.key == key }?.let {
+                AccompanistText(
+                    content = it.content.orEmpty(),
+                    backgroundContent = it.backgroundContent,
+                    syllables = it.syllables.orEmpty(),
+                )
+            }
+        } else {
+            null
+        }
 
     fun close(): Boolean {
-        if (closed || hasPendingContent)
+        if (closed || hasPendingContent) {
             return false
+        }
 
         closed = true
         pending = null
@@ -120,19 +133,23 @@ open class TtmlAccompaniment(open val type: Type) {
         return result
     }
 
-    override fun toString(): String {
-        return "TtmlAccompaniment{" +
-                "type='$type', " +
-                "accompanimentTexts=${accompanistTexts.size}}, " +
-                "pending=$pending, " +
-                "hasPendingContent=$hasPendingContent, " +
-                "closed=$closed" +
-                "}"
-    }
+    override fun toString(): String =
+        "TtmlAccompaniment{" +
+            "type='$type', " +
+            "accompanimentTexts=${accompanistTexts.size}}, " +
+            "pending=$pending, " +
+            "hasPendingContent=$hasPendingContent, " +
+            "closed=$closed" +
+            "}"
 
     sealed interface Type {
-        data class Translation(val lang: String) : Type
-        data class Transliteration(val lang: String?) : Type
+        data class Translation(
+            val lang: String,
+        ) : Type
+
+        data class Transliteration(
+            val lang: String?,
+        ) : Type
     }
 
     class AccompanistText(
@@ -146,9 +163,8 @@ open class TtmlAccompaniment(open val type: Type) {
         var content: String? = null,
         var backgroundContent: String? = null,
         var syllables: MutableList<TtmlNode>? = null,
-        var pending: Boolean = true
+        var pending: Boolean = true,
     ) {
-
         var background: Boolean = false
 
         private var hasSetContent = false
@@ -159,7 +175,7 @@ open class TtmlAccompaniment(open val type: Type) {
             pending.content,
             pending.backgroundContent,
             pending.syllables,
-            false
+            false,
         )
 
         fun setContent(content: String?): Boolean {
@@ -206,9 +222,7 @@ open class TtmlAccompaniment(open val type: Type) {
             return syllables?.add(node) == true
         }
 
-        override fun equals(other: Any?): Boolean {
-            return other is MutableAccompanistText && other.key == key
-        }
+        override fun equals(other: Any?): Boolean = other is MutableAccompanistText && other.key == key
 
         override fun hashCode(): Int {
             var result = key.hashCode()

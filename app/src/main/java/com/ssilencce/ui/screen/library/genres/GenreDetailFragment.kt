@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ssilencce.R
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.model.Genre
@@ -42,7 +43,6 @@ import com.ssilencce.extensions.media.songsDurationStr
 import com.ssilencce.extensions.navigation.searchArgs
 import com.ssilencce.extensions.setSupportActionBar
 import com.ssilencce.extensions.utilities.buildInfoString
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
@@ -51,8 +51,9 @@ import com.ssilencce.ui.component.menu.onSongsMenu
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
-class GenreDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_list), ISongCallback {
-
+class GenreDetailFragment :
+    AbsMainActivityFragment(R.layout.fragment_detail_list),
+    ISongCallback {
     private val arguments by navArgs<GenreDetailFragmentArgs>()
     private val detailViewModel: GenreDetailViewModel by viewModel {
         parametersOf(arguments.extraGenre)
@@ -62,7 +63,10 @@ class GenreDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_lis
     private var _binding: FragmentDetailListBinding? = null
     private val binding get() = _binding!!
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDetailListBinding.bind(view)
         genre = arguments.extraGenre
@@ -95,32 +99,36 @@ class GenreDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_lis
     }
 
     private fun setupRecyclerView() {
-        songAdapter = SongAdapter(
-            activity = requireActivity(),
-            dataSet = ArrayList(),
-            itemLayoutRes = R.layout.item_list,
-            sortMode = SongSortMode.GenreSongs,
-            callback = this
-        )
+        songAdapter =
+            SongAdapter(
+                activity = requireActivity(),
+                dataSet = ArrayList(),
+                itemLayoutRes = R.layout.item_list,
+                sortMode = SongSortMode.GenreSongs,
+                callback = this,
+            )
         binding.recyclerView.apply {
             itemAnimator = DefaultItemAnimator()
             layoutManager = LinearLayoutManager(requireContext())
             adapter = songAdapter
         }
-        songAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-            override fun onChanged() {
-                super.onChanged()
-                checkIsEmpty()
-            }
-        })
+        songAdapter.registerAdapterDataObserver(
+            object : RecyclerView.AdapterDataObserver() {
+                override fun onChanged() {
+                    super.onChanged()
+                    checkIsEmpty()
+                }
+            },
+        )
     }
 
     fun songs(songs: List<Song>) {
         binding.progressIndicator.hide()
-        binding.subtitle.text = buildInfoString(
-            songs.songCountStr(requireContext()),
-            songs.songsDurationStr()
-        )
+        binding.subtitle.text =
+            buildInfoString(
+                songs.songCountStr(requireContext()),
+                songs.songsDurationStr(),
+            )
         songAdapter.dataSet = songs
     }
 
@@ -133,39 +141,48 @@ class GenreDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_lis
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.menu_genre_detail, menu)
         SongSortMode.GenreSongs.createMenu(menu)
     }
 
-    override fun onMenuItemSelected(item: MenuItem): Boolean {
-        return if (SongSortMode.GenreSongs.sortItemSelected(item)) {
+    override fun onMenuItemSelected(item: MenuItem): Boolean =
+        if (SongSortMode.GenreSongs.sortItemSelected(item)) {
             detailViewModel.loadGenreSongs()
             true
-        } else when (item.itemId) {
-            android.R.id.home -> {
-                findNavController().navigateUp()
-                true
-            }
+        } else {
+            when (item.itemId) {
+                android.R.id.home -> {
+                    findNavController().navigateUp()
+                    true
+                }
 
-            R.id.action_search -> {
-                findNavController().navigate(
-                    R.id.nav_search,
-                    searchArgs(genre.searchFilter(requireContext()))
-                )
-                true
-            }
+                R.id.action_search -> {
+                    findNavController().navigate(
+                        R.id.nav_search,
+                        searchArgs(genre.searchFilter(requireContext())),
+                    )
+                    true
+                }
 
-            else -> songAdapter.dataSet.onSongsMenu(this, item)
+                else -> {
+                    songAdapter.dataSet.onSongsMenu(this, item)
+                }
+            }
         }
-    }
 
     override fun onMediaContentChanged() {
         super.onMediaContentChanged()

@@ -19,20 +19,24 @@ import androidx.viewpager.widget.ViewPager
 import kotlin.math.abs
 
 class CascadingPageTransformer : ViewPager.PageTransformer {
-
     private var mScaleOffset = 40
 
-    override fun transformPage(page: View, position: Float) {
+    override fun transformPage(
+        page: View,
+        position: Float,
+    ) {
         page.apply {
             when {
                 position < -1 -> { // [-Infinity,-1)
                     alpha = 0f
                 }
+
                 position <= 0 -> {
                     alpha = 1 - abs(position)
                     rotation = 45 * position
                     translationX = width / 3 * position
                 }
+
                 else -> {
                     alpha = 1f
                     rotation = 0f

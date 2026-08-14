@@ -32,17 +32,18 @@ import java.io.Serializable
  * @author Christians M. A. (mardous)
  */
 @Parcelize
-class BasicSearchFilter<T : Serializable>(private val name: String, private val argument: Argument<T>) : SearchFilter,
+class BasicSearchFilter<T : Serializable>(
+    private val name: String,
+    private val argument: Argument<T>,
+) : SearchFilter,
     KoinComponent {
-
     @IgnoredOnParcel
     private val searchRepository: SearchRepository by inject()
+
     @IgnoredOnParcel
     private val albumRepository: RealAlbumRepository by inject()
 
-    override fun getName(): CharSequence {
-        return name
-    }
+    override fun getName(): CharSequence = name
 
     override fun getCompatibleModes(): List<FilterMode> {
         val modes = mutableListOf(FilterMode.Songs)
@@ -52,33 +53,48 @@ class BasicSearchFilter<T : Serializable>(private val name: String, private val 
         return modes
     }
 
-    override suspend fun getResults(searchMode: FilterMode, query: String): List<Any> {
-        val songs = when (argument.type) {
-            Argument.FOLDER -> {
-                val folderPath = argument.value as? String ?: return emptyList()
-                searchRepository.searchFolderSongs(folderPath, query)
+    override suspend fun getResults(
+        searchMode: FilterMode,
+        query: String,
+    ): List<Any> {
+        val songs =
+            when (argument.type) {
+                Argument.FOLDER -> {
+                    val folderPath = argument.value as? String ?: return emptyList()
+                    searchRepository.searchFolderSongs(folderPath, query)
+                }
+
+                Argument.GENRE -> {
+                    val genreId = argument.value as? Long ?: return emptyList()
+                    searchRepository.searchGenreSongs(genreId, query)
+                }
+
+                Argument.YEAR -> {
+                    val year = argument.value as? Int ?: return emptyList()
+                    searchRepository.searchYearSongs(year, query)
+                }
+
+                Argument.PLAYLIST -> {
+                    val playlistId = argument.value as? Long ?: return emptyList()
+                    searchRepository.searchPlaylistSongs(playlistId, query)
+                }
+
+                else -> {
+                    arrayListOf()
+                }
             }
-            Argument.GENRE -> {
-                val genreId = argument.value as? Long ?: return emptyList()
-                searchRepository.searchGenreSongs(genreId, query)
-            }
-            Argument.YEAR -> {
-                val year = argument.value as? Int ?: return emptyList()
-                searchRepository.searchYearSongs(year, query)
-            }
-            Argument.PLAYLIST -> {
-                val playlistId = argument.value as? Long ?: return emptyList()
-                searchRepository.searchPlaylistSongs(playlistId, query)
-            }
-            else -> arrayListOf()
-        }
         return if (searchMode == FilterMode.Albums) {
             albumRepository.splitIntoAlbums(songs, sorted = false)
-        } else songs
+        } else {
+            songs
+        }
     }
 
     @Parcelize
-    class Argument<T : Serializable>(val value: T, val type: Int) : Parcelable {
+    class Argument<T : Serializable>(
+        val value: T,
+        val type: Int,
+    ) : Parcelable {
         companion object {
             const val YEAR = 1
             const val GENRE = 2

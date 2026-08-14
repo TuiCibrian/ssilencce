@@ -44,8 +44,9 @@ import java.io.IOException
 /**
  * @author Christians M. A. (mardous)
  */
-class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String> {
-
+class FolderChooserDialog :
+    DialogFragment(),
+    SimpleItemAdapter.Callback<String> {
     private var initialPath: String = getExternalStorageDirectory().absolutePath
     private var parentFolder: File? = null
     private var parentContents: Array<File>? = null
@@ -78,11 +79,12 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
         parentContents = listFiles()
 
         _binding = DialogRecyclerViewBinding.inflate(layoutInflater)
-        adapter = SimpleItemAdapter(
-            R.layout.item_folder,
-            items = getSelectionContents(),
-            callback = this
-        )
+        adapter =
+            SimpleItemAdapter(
+                R.layout.item_folder,
+                items = getSelectionContents(),
+                callback = this,
+            )
         binding.recyclerView.useLinearLayout()
         binding.recyclerView.adapter = adapter
         return MaterialAlertDialogBuilder(requireContext())
@@ -105,7 +107,11 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
             .setPositiveButton(android.R.string.ok, null)
             .create()
 
-    override fun bindData(itemView: View, position: Int, item: String): Boolean {
+    override fun bindData(
+        itemView: View,
+        position: Int,
+        item: String,
+    ): Boolean {
         val textView = itemView.findViewById<TextView>(android.R.id.text1)
         try {
             if (isEmulatedDir(parentFolder)) {
@@ -119,12 +125,17 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
                     }
                 }
             }
-        } catch (_: IOException) {}
+        } catch (_: IOException) {
+        }
         textView.setCompoundDrawablesRelativeWithIntrinsicBounds(R.drawable.ic_folder_24dp, 0, 0, 0)
         return false
     }
 
-    override fun itemClick(itemView: View, position: Int, item: String) {
+    override fun itemClick(
+        itemView: View,
+        position: Int,
+        item: String,
+    ) {
         onSelection(position)
     }
 
@@ -139,8 +150,8 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
         reload()
     }
 
-    private fun getSelectionContents(): List<String> {
-        return if (parentContents == null) {
+    private fun getSelectionContents(): List<String> =
+        if (parentContents == null) {
             if (canGoUp) listOf("..") else listOf()
         } else {
             val results = ArrayList<String>(parentContents!!.size + if (canGoUp) 1 else 0)
@@ -151,7 +162,6 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
                 it.addAll(parentContents!!.map { file -> file.name })
             }
         }
-    }
 
     private fun listFiles(): Array<File>? {
         if (isEmulatedDir(parentFolder)) {
@@ -174,8 +184,9 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
     }
 
     private fun isEmulatedDir(folder: File?): Boolean {
-        if (folder == null)
+        if (folder == null) {
             return false
+        }
 
         return StorageUtil.storageVolumes.any {
             it.file.parent == folder.canonicalPath
@@ -193,9 +204,10 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
     }
 
     private fun getTitle(folder: File?): CharSequence? {
-        val device = folder?.let {
-            StorageUtil.getStorageDevice(it)
-        }
+        val device =
+            folder?.let {
+                StorageUtil.getStorageDevice(it)
+            }
         return device?.fileName ?: folder?.name
     }
 
@@ -214,6 +226,9 @@ class FolderChooserDialog : DialogFragment(), SimpleItemAdapter.Callback<String>
     }
 
     interface FolderCallback {
-        fun onFolderSelection(dialog: FolderChooserDialog, folder: File)
+        fun onFolderSelection(
+            dialog: FolderChooserDialog,
+            folder: File,
+        )
     }
 }

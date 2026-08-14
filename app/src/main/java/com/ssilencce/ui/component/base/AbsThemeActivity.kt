@@ -40,7 +40,6 @@ import com.ssilencce.util.Preferences
  * @author Christians M. A. (mardous)
  */
 abstract class AbsThemeActivity : AppCompatActivity() {
-
     private var windowInsetsController: WindowInsetsControllerCompat? = null
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -63,12 +62,14 @@ abstract class AbsThemeActivity : AppCompatActivity() {
         val appTheme = createAppTheme()
         setTheme(appTheme.themeRes)
         if (appTheme.applyDynamicColors) {
-            val dynamicColorsOptions = DynamicColorsOptions.Builder()
-                .setOnAppliedCallback {
-                    if (appTheme.isBlackTheme) {
-                        setTheme(R.style.BlackThemeOverlay)
+            val dynamicColorsOptions =
+                DynamicColorsOptions
+                    .Builder()
+                    .setOnAppliedCallback {
+                        if (appTheme.isBlackTheme) {
+                            setTheme(R.style.BlackThemeOverlay)
+                        }
                     }
-                }
             if (appTheme.seedColor != null) {
                 dynamicColorsOptions.setContentBasedSource(appTheme.seedColor)
             }

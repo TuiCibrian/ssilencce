@@ -20,10 +20,7 @@ import java.util.Locale
  * - Translations: Identified by matching timestamps across different lines.
  */
 class LrcLyricsParser : LyricsParser {
-
-    override fun handles(file: LyricsFile): Boolean {
-        return file.format == LyricsFile.Format.LRC
-    }
+    override fun handles(file: LyricsFile): Boolean = file.format == LyricsFile.Format.LRC
 
     /**
      * Quickly checks if the reader content looks like LRC.
@@ -41,9 +38,12 @@ class LrcLyricsParser : LyricsParser {
                     false
                 } else {
                     val hasTime = LINE_TIME_PATTERN.containsMatchIn(line)
-                    val hasContent = LINE_PATTERN.matchEntire(line)?.groupValues
-                        ?.getOrNull(2)
-                        ?.isNotBlank() == true
+                    val hasContent =
+                        LINE_PATTERN
+                            .matchEntire(line)
+                            ?.groupValues
+                            ?.getOrNull(2)
+                            ?.isNotBlank() == true
 
                     hasTime && hasContent
                 }
@@ -55,7 +55,11 @@ class LrcLyricsParser : LyricsParser {
      * First pass: Extracts all raw lines and attributes, handling multiple timestamps per line.
      * Second pass: Sorts and converts raw nodes into [SyncedLyrics], resolving overlaps and durations.
      */
-    override fun parse(reader: Reader, trackLength: Long, ignoreBlankLines: Boolean): SyncedLyrics? {
+    override fun parse(
+        reader: Reader,
+        trackLength: Long,
+        ignoreBlankLines: Boolean,
+    ): SyncedLyrics? {
         val attributes = hashMapOf<String, String>()
         val rawLines = mutableListOf<LrcNode>()
         try {
@@ -70,9 +74,11 @@ class LrcLyricsParser : LyricsParser {
                     val karaokeMatcher = KARAOKE_LINE_PATTERN.find(line)
                     if (attrResult != null) {
                         val attr = attrResult.groupValues[1].lowercase(Locale.getDefault()).trim()
-                        val value = attrResult.groupValues[2].lowercase(Locale.getDefault())
-                            .trim()
-                            .takeUnless { it.isEmpty() } ?: continue
+                        val value =
+                            attrResult.groupValues[2]
+                                .lowercase(Locale.getDefault())
+                                .trim()
+                                .takeUnless { it.isEmpty() } ?: continue
 
                         attributes[attr] = value
                     } else if (karaokeMatcher != null && rawLines.isNotEmpty()) {
@@ -92,11 +98,14 @@ class LrcLyricsParser : LyricsParser {
                         // Check for lyric lines with timestamps
                         val lineResult = LINE_PATTERN.find(line)
                         if (lineResult != null) {
-                            val base = lineResult.groupValues[1].trim()
-                                .takeUnless { it.isEmpty() } ?: continue
+                            val base =
+                                lineResult.groupValues[1]
+                                    .trim()
+                                    .takeUnless { it.isEmpty() } ?: continue
                             val text = lineResult.groupValues[2].trim()
-                            val bgText = lineResult.groupValues[3]
-                                .takeIf { it.isNotEmpty() }
+                            val bgText =
+                                lineResult.groupValues[3]
+                                    .takeIf { it.isNotEmpty() }
 
                             var foundAny = false
                             // Extract all timestamps from the line (LRC allows multiple timestamps for one line)
@@ -143,13 +152,14 @@ class LrcLyricsParser : LyricsParser {
         attributes: Map<String, String>,
         rawLines: List<LrcNode>,
         trackLength: Long,
-        ignoreBlankLines: Boolean
+        ignoreBlankLines: Boolean,
     ): SyncedLyrics? {
         val lines = mutableMapOf<Long, SyncedLyrics.Line?>()
-        val length = attributes["length"]
-            ?.let { parseTime(it) }
-            ?.takeIf { it > LrcNode.INVALID_DURATION }
-            ?: trackLength
+        val length =
+            attributes["length"]
+                ?.let { parseTime(it) }
+                ?.takeIf { it > LrcNode.INVALID_DURATION }
+                ?: trackLength
 
         try {
             for ((i, entry) in rawLines.withIndex()) {
@@ -170,19 +180,20 @@ class LrcLyricsParser : LyricsParser {
                     nextEntry = rawLines.getOrNull(i + (nextStep++))
                 }
 
-                val end = nextEntry?.let { nextEntryNonNull ->
-                    if (nextEntryNonNull.start >= entry.start) {
-                        nextEntryNonNull.start
-                    } else {
-                        // Safety check for malformed files where timestamps might go backwards
-                        val firstLine = lines.values.firstOrNull()
-                        if (firstLine != null && firstLine.start == nextEntryNonNull.start) {
-                            length
+                val end =
+                    nextEntry?.let { nextEntryNonNull ->
+                        if (nextEntryNonNull.start >= entry.start) {
+                            nextEntryNonNull.start
                         } else {
-                            error("Malformed LRC file")
+                            // Safety check for malformed files where timestamps might go backwards
+                            val firstLine = lines.values.firstOrNull()
+                            if (firstLine != null && firstLine.start == nextEntryNonNull.start) {
+                                length
+                            } else {
+                                error("Malformed LRC file")
+                            }
                         }
                     }
-                }
 
                 entry.end = end ?: length
 
@@ -216,19 +227,21 @@ class LrcLyricsParser : LyricsParser {
                             // Heuristic: if the new entry has word-sync tags and the existing one doesn't,
                             // swap them so the word-synced one is the main content.
                             if (translationContent.isWordSynced && !existing.isWordSynced) {
-                                lines[entry.start] = existing.copy(
-                                    end = newEnd,
-                                    duration = newDuration,
-                                    content = translationContent,
-                                    translation = existing.content,
-                                    actor = entry.actor ?: existing.actor
-                                )
+                                lines[entry.start] =
+                                    existing.copy(
+                                        end = newEnd,
+                                        duration = newDuration,
+                                        content = translationContent,
+                                        translation = existing.content,
+                                        actor = entry.actor ?: existing.actor,
+                                    )
                             } else {
-                                lines[entry.start] = existing.copy(
-                                    end = newEnd,
-                                    duration = newDuration,
-                                    translation = translationContent
-                                )
+                                lines[entry.start] =
+                                    existing.copy(
+                                        end = newEnd,
+                                        duration = newDuration,
+                                        translation = translationContent,
+                                    )
                             }
                         }
                     } else {
@@ -239,32 +252,35 @@ class LrcLyricsParser : LyricsParser {
                 }
             }
 
-            val linesWithOffset = lines.values
-                .filterNotNull()
-                .distinctBy { it.id }
-                .toMutableList().apply {
-                    sortBy { it.start }
-                }
+            val linesWithOffset =
+                lines.values
+                    .filterNotNull()
+                    .distinctBy { it.id }
+                    .toMutableList()
+                    .apply {
+                        sortBy { it.start }
+                    }
 
             if (linesWithOffset.isNotEmpty()) {
                 val firstLine = linesWithOffset.first()
                 if (firstLine.start > SyncedLyrics.MIN_OFFSET_TIME) {
-                    linesWithOffset.add(0,
+                    linesWithOffset.add(
+                        0,
                         SyncedLyrics.Line(
                             start = 0,
                             end = firstLine.start,
                             content = SyncedLyrics.EmptyContent,
                             transliteration = null,
                             translation = null,
-                            actor = firstLine.actor
-                        )
+                            actor = firstLine.actor,
+                        ),
                     )
                 }
             }
 
             return SyncedLyrics(
                 lines = linesWithOffset,
-                offset = attributes["offset"]?.toLongOrNull() ?: 0
+                offset = attributes["offset"]?.toLongOrNull() ?: 0,
             )
         } catch (e: Exception) {
             e.printStackTrace()
@@ -277,7 +293,10 @@ class LrcLyricsParser : LyricsParser {
      * Example: `V1: <00:12.00>Hello <00:12.50>world`
      * Also handles background tags: `[bg:<00:13.00>ooh]`
      */
-    private fun addChildren(entry: LrcNode, actor: LyricsActor?) {
+    private fun addChildren(
+        entry: LrcNode,
+        actor: LyricsActor?,
+    ) {
         check(!entry.text.isNullOrBlank())
 
         // Extract actor prefix if present (e.g., "M:", "F:", "V1:")
@@ -290,7 +309,7 @@ class LrcLyricsParser : LyricsParser {
             entry.addChild(
                 start = parseTime(match),
                 text = match.groupValues.getOrNull(3),
-                actor = entry.actor
+                actor = entry.actor,
             )
         }
 
@@ -300,7 +319,7 @@ class LrcLyricsParser : LyricsParser {
                 entry.addChild(
                     start = parseTime(match),
                     text = match.groupValues.getOrNull(3),
-                    actor = entry.actor?.asBackground(true)
+                    actor = entry.actor?.asBackground(true),
                 )
             }
         }
@@ -320,7 +339,9 @@ class LrcLyricsParser : LyricsParser {
             val s = result.groupValues.getOrNull(2)?.toFloat()
             return if (m != null && s != null) {
                 (s * LRC_SECONDS_TO_MS_MULTIPLIER).toLong() + m * LRC_MINUTES_TO_MS_MULTIPLIER
-            } else LrcNode.INVALID_DURATION
+            } else {
+                LrcNode.INVALID_DURATION
+            }
         } catch (e: Exception) {
             Log.d("LrcLyricsParser", "LRC timestamp format is incorrect: ${result.value}", e)
         }

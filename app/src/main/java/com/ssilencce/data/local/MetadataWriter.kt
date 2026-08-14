@@ -28,7 +28,6 @@ import java.io.File
 import kotlin.coroutines.resume
 
 class MetadataWriter : KoinComponent {
-
     private val contentResolver: ContentResolver by inject()
     private val lock = Any()
 
@@ -36,34 +35,41 @@ class MetadataWriter : KoinComponent {
     private var pictureBitmap: Bitmap? = null
     private var pictureDeleted = false
 
-    fun picture(pictureBitmap: Bitmap?) = synchronized(lock) {
-        this.pictureBitmap = pictureBitmap
-        this.pictureDeleted = false
-    }
+    fun picture(pictureBitmap: Bitmap?) =
+        synchronized(lock) {
+            this.pictureBitmap = pictureBitmap
+            this.pictureDeleted = false
+        }
 
-    fun pictureDeleted(pictureDeleted: Boolean) = synchronized(lock) {
-        this.pictureDeleted = pictureDeleted
-        this.pictureBitmap = if (pictureDeleted) null else pictureBitmap
-    }
+    fun pictureDeleted(pictureDeleted: Boolean) =
+        synchronized(lock) {
+            this.pictureDeleted = pictureDeleted
+            this.pictureBitmap = if (pictureDeleted) null else pictureBitmap
+        }
 
-    fun propertyMap(propertyMap: Map<String, String?>) = synchronized(lock) {
-        this.properties = propertyMap
-    }
+    fun propertyMap(propertyMap: Map<String, String?>) =
+        synchronized(lock) {
+            this.properties = propertyMap
+        }
 
-    suspend fun write(context: Context, target: EditTarget) = withContext(IO) {
+    suspend fun write(
+        context: Context,
+        target: EditTarget,
+    ) = withContext(IO) {
         val results = mutableListOf<WriteResultInternal>()
         val picture = createPicture(target)
         val pictureThumbFile = createPictureThumbFile(picture)
         for (content in target.contents) {
-            val result = runCatching {
-                contentResolver.openFileDescriptor(content.uri, "rw")?.use { fd ->
-                    WriteResultInternal(
-                        content = content,
-                        pictureResult = writePicture(picture, fd),
-                        propertiesResult = writePropertyMap(fd)
-                    )
-                } ?: WriteResultInternal(content)
-            }
+            val result =
+                runCatching {
+                    contentResolver.openFileDescriptor(content.uri, "rw")?.use { fd ->
+                        WriteResultInternal(
+                            content = content,
+                            pictureResult = writePicture(picture, fd),
+                            propertiesResult = writePropertyMap(fd),
+                        )
+                    } ?: WriteResultInternal(content)
+                }
             if (result.isSuccess) {
                 results.add(result.getOrThrow())
                 contentResolver.notifyChange(content.uri, null)
@@ -82,20 +88,23 @@ class MetadataWriter : KoinComponent {
                 contentResolver.deleteAlbumArt(target.artworkId)
             }
         }
-        val successContents = results.filter { it.isSuccess }
-            .map { it -> it.content }
+        val successContents =
+            results
+                .filter { it.isSuccess }
+                .map { it -> it.content }
         val paths = successContents.map { content -> content.path }.toTypedArray()
         if (paths.isNotEmpty()) {
             val total = paths.size
-            val scanned = suspendCancellableCoroutine { continuation ->
-                var progress = 0
-                MediaScannerConnection.scanFile(context, paths, null) { _, _ ->
-                    progress++
-                    if (progress == total && continuation.isActive) {
-                        continuation.resume(total)
+            val scanned =
+                suspendCancellableCoroutine { continuation ->
+                    var progress = 0
+                    MediaScannerConnection.scanFile(context, paths, null) { _, _ ->
+                        progress++
+                        if (progress == total && continuation.isActive) {
+                            continuation.resume(total)
+                        }
                     }
                 }
-            }
             WriteResult(successContents, failed = total - scanned, scanned = scanned)
         } else {
             WriteResult(emptyList())
@@ -107,15 +116,16 @@ class MetadataWriter : KoinComponent {
         if (target.artworkId == -1L || pictureBitmap == null) {
             return null
         }
-        val byteArray = ByteArrayOutputStream(pictureBitmap.byteCount).use {
-            pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
-            it.toByteArray()
-        }
+        val byteArray =
+            ByteArrayOutputStream(pictureBitmap.byteCount).use {
+                pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+                it.toByteArray()
+            }
         return Picture(
             data = byteArray,
             description = "Embedded Front Cover - ssilencce",
             pictureType = "Front Cover",
-            mimeType = "image/jpeg"
+            mimeType = "image/jpeg",
         )
     }
 
@@ -138,7 +148,10 @@ class MetadataWriter : KoinComponent {
         return null
     }
 
-    private fun writePicture(picture: Picture?, fd: ParcelFileDescriptor): Result {
+    private fun writePicture(
+        picture: Picture?,
+        fd: ParcelFileDescriptor,
+    ): Result {
         if (picture == null) {
             if (pictureDeleted) {
                 if (TagLib.savePictures(fd.dup().detachFd(), arrayOf())) {
@@ -156,24 +169,28 @@ class MetadataWriter : KoinComponent {
     }
 
     private fun writePropertyMap(fd: ParcelFileDescriptor): Result {
-        val currentProperties = TagLib.getMetadata(fd.dup().detachFd(), false)
+        val currentProperties =
+            TagLib
+                .getMetadata(fd.dup().detachFd(), false)
                 ?.propertyMap ?: hashMapOf()
 
         for ((key, newValueRaw) in properties) {
-            val newValue = if (newValueRaw.isNullOrBlank()) {
-                emptyArray()
-            } else {
-                arrayOf(newValueRaw.trim())
-            }
+            val newValue =
+                if (newValueRaw.isNullOrBlank()) {
+                    emptyArray()
+                } else {
+                    arrayOf(newValueRaw.trim())
+                }
             currentProperties[key] = newValue
         }
 
-        val newProperties = currentProperties
-            // Workaround for the bug that caused regeneration of REPLAYGAIN tags,
-            // resulting in duplicate entries in the audio file.
-            .filterKeys { !it.contains(Regex("(?i)REPLAYGAIN_(TRACK|ALBUM)_[A-Z0-7_]+")) }
-            .filterValues { it.isNotEmpty() }
-            .mapValuesTo(hashMapOf()) { it.value }
+        val newProperties =
+            currentProperties
+                // Workaround for the bug that caused regeneration of REPLAYGAIN tags,
+                // resulting in duplicate entries in the audio file.
+                .filterKeys { !it.contains(Regex("(?i)REPLAYGAIN_(TRACK|ALBUM)_[A-Z0-7_]+")) }
+                .filterValues { it.isNotEmpty() }
+                .mapValuesTo(hashMapOf()) { it.value }
 
         return if (TagLib.savePropertyMap(fd.dup().detachFd(), newProperties)) {
             Result.Wrote
@@ -185,7 +202,7 @@ class MetadataWriter : KoinComponent {
     class WriteResult(
         val contents: List<EditTarget.Content>,
         val failed: Int = 0,
-        val scanned: Int = 0
+        val scanned: Int = 0,
     ) {
         val isSuccess: Boolean
             get() = contents.isNotEmpty() && scanned == contents.size
@@ -194,14 +211,17 @@ class MetadataWriter : KoinComponent {
     private class WriteResultInternal(
         val content: EditTarget.Content,
         val pictureResult: Result = Result.Failed,
-        val propertiesResult: Result = Result.Failed
+        val propertiesResult: Result = Result.Failed,
     ) {
         val isSuccess: Boolean
             get() = pictureResult != Result.Failed && propertiesResult != Result.Failed
     }
 
     private enum class Result {
-        None, Wrote, Deleted, Failed
+        None,
+        Wrote,
+        Deleted,
+        Failed,
     }
 }
 
@@ -211,9 +231,8 @@ data class EditTarget(
     val name: String,
     val id: Long,
     val artworkId: Long,
-    val contents: List<Content>
+    val contents: List<Content>,
 ) : Parcelable {
-
     val hasContent get() = contents.isNotEmpty()
 
     val hasArtwork get() = artworkId > -1
@@ -221,37 +240,47 @@ data class EditTarget(
     val first get() = contents.first()
 
     @Parcelize
-    data class Content(val id: Long, val uri: Uri, val path: String) : Parcelable
+    data class Content(
+        val id: Long,
+        val uri: Uri,
+        val path: String,
+    ) : Parcelable
 
     enum class Type {
-        Song, Artist, AlbumArtist, Album
+        Song,
+        Artist,
+        AlbumArtist,
+        Album,
     }
 
     companion object {
         val Empty = EditTarget(Type.Song, "", -1, -1, emptyList())
 
-        fun song(song: Song) = EditTarget(
-            type = Type.Song,
-            name = song.title,
-            id = song.id,
-            artworkId = song.albumId,
-            contents = listOf(Content(song.id, song.uri, song.data))
-        )
+        fun song(song: Song) =
+            EditTarget(
+                type = Type.Song,
+                name = song.title,
+                id = song.id,
+                artworkId = song.albumId,
+                contents = listOf(Content(song.id, song.uri, song.data)),
+            )
 
-        fun album(album: Album) = EditTarget(
-            type = Type.Album,
-            name = album.name,
-            id = album.id,
-            artworkId = album.id,
-            contents = album.songs.map { Content(it.id, it.uri, it.data) }
-        )
+        fun album(album: Album) =
+            EditTarget(
+                type = Type.Album,
+                name = album.name,
+                id = album.id,
+                artworkId = album.id,
+                contents = album.songs.map { Content(it.id, it.uri, it.data) },
+            )
 
-        fun artist(artist: Artist) = EditTarget(
-            type = if (artist.isAlbumArtist) Type.AlbumArtist else Type.Artist,
-            name = artist.name,
-            id = artist.id,
-            artworkId = -1,
-            contents = artist.songs.map { Content(it.id, it.uri, it.data) }
-        )
+        fun artist(artist: Artist) =
+            EditTarget(
+                type = if (artist.isAlbumArtist) Type.AlbumArtist else Type.Artist,
+                name = artist.name,
+                id = artist.id,
+                artworkId = -1,
+                contents = artist.songs.map { Content(it.id, it.uri, it.data) },
+            )
     }
 }

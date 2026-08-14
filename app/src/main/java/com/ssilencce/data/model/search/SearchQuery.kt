@@ -23,14 +23,15 @@ import com.ssilencce.R
 data class SearchQuery(
     val filterMode: FilterMode? = null,
     val searched: String? = null,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
 ) {
-
-    enum class FilterMode(@IdRes val buttonId: Int) {
+    enum class FilterMode(
+        @IdRes val buttonId: Int,
+    ) {
         Songs(R.id.modeSongs),
         Albums(R.id.modeAlbums),
         Artists(R.id.modeArtists),
         Genres(R.id.modeGenres),
-        Playlists(R.id.modePlaylists)
+        Playlists(R.id.modePlaylists),
     }
 }

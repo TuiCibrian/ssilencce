@@ -15,12 +15,12 @@ data class LRCLibResponse(
     @SerialName("duration")
     val durationInSeconds: Double,
     val plainLyrics: String?,
-    val syncedLyrics: String?
+    val syncedLyrics: String?,
 )
 
 @Serializable
 class BetterLyricsResponse(
-    val ttml: String
+    val ttml: String,
 )
 
 @Serializable
@@ -31,7 +31,7 @@ data class LyricallyLyricsResponse(
     val elrc: String? = null,
     val elrcMultiPerson: String? = null,
     val ttml: String? = null,
-    val plain: String? = null
+    val plain: String? = null,
 )
 
 @Serializable
@@ -43,7 +43,7 @@ data class LyricallyLyricsContent(
     val text: List<LyricallyLyricText> = emptyList(),
     val background: Boolean = false,
     val backgroundText: List<LyricallyLyricText> = emptyList(),
-    val oppositeTurn: Boolean = false
+    val oppositeTurn: Boolean = false,
 )
 
 @Serializable
@@ -51,5 +51,5 @@ data class LyricallyLyricText(
     val text: String,
     val timestamp: Long,
     val endtime: Long,
-    val part: Boolean
+    val part: Boolean,
 )

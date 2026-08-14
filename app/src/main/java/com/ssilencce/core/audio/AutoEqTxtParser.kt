@@ -9,19 +9,23 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 
 object AutoEqTxtParser {
-
     private const val GRAPHIC_EQ_PREFIX = "GraphicEQ:"
     private const val NAME_FALLBACK = "AutoEq Preset"
 
-    fun parse(context: Context, uri: Uri): AutoEqProfile? {
+    fun parse(
+        context: Context,
+        uri: Uri,
+    ): AutoEqProfile? {
         val fileName = getFileName(context, uri) ?: NAME_FALLBACK
         val inputStream = context.contentResolver.openInputStream(uri) ?: return null
 
         val fullText = BufferedReader(InputStreamReader(inputStream)).use { it.readText() }
 
-        val graphicEqLine = fullText.lines()
-            .firstOrNull { it.trim().startsWith(GRAPHIC_EQ_PREFIX, ignoreCase = true) }
-            ?: return null
+        val graphicEqLine =
+            fullText
+                .lines()
+                .firstOrNull { it.trim().startsWith(GRAPHIC_EQ_PREFIX, ignoreCase = true) }
+                ?: return null
 
         val dataString = graphicEqLine.substringAfter(GRAPHIC_EQ_PREFIX).trim()
         if (dataString.isEmpty()) {
@@ -50,7 +54,10 @@ object AutoEqTxtParser {
         }
     }
 
-    private fun getFileName(context: Context, uri: Uri): String? {
+    private fun getFileName(
+        context: Context,
+        uri: Uri,
+    ): String? {
         var name: String? = null
         if (uri.scheme == "content") {
             val cursor = context.contentResolver.query(uri, null, null, null, null)

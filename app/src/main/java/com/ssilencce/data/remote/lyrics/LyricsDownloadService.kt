@@ -29,32 +29,36 @@ import com.ssilencce.extensions.media.extractMainArtistName
 import io.ktor.client.HttpClient
 import java.io.IOException
 
-class LyricsDownloadService(client: HttpClient) {
-
-    private val lyricsApi = listOf(
-        LyricallyApi(client),
-        BetterLyricsApi(client),
-        LrcLibApi(client)
-    )
+class LyricsDownloadService(
+    client: HttpClient,
+) {
+    private val lyricsApi =
+        listOf(
+            LyricallyApi(client),
+            BetterLyricsApi(client),
+            LrcLibApi(client),
+        )
 
     @Throws(IOException::class)
     suspend fun remoteLyrics(
         song: Song,
         title: String = song.title,
         artist: String = song.albumArtistName(),
-        fromUser: Boolean = false
+        fromUser: Boolean = false,
     ): RawLyrics.Remote {
         var result = RawLyrics.Remote()
 
-        if (song == Song.emptySong || !NetworkFeature.isOnline(ignoreWifiSetting = fromUser))
+        if (song == Song.emptySong || !NetworkFeature.isOnline(ignoreWifiSetting = fromUser)) {
             return result
+        }
 
         try {
             val cleanedTitle = cleanTitle(title)
             val cleanedArtist = artist.extractMainArtistName()
             for (api in lyricsApi) {
-                if (!api.networkFeature.isEnabled)
+                if (!api.networkFeature.isEnabled) {
                     continue
+                }
 
                 val apiResult = runCatching { api.downloadLyrics(song, cleanedTitle, cleanedArtist) }
                 if (apiResult.isFailure) {
@@ -87,17 +91,18 @@ class LyricsDownloadService(client: HttpClient) {
     companion object {
         private const val TAG = "LyricsDownloadService"
 
-        private val TITLE_CLEANUP_PATTERNS = listOf(
-            Regex("""\s*\(.*?(official|video|audio|lyrics|lyric|visualizer|hd|hq|4k|remaster|remix|live|acoustic|version|edit|extended|radio|clean|explicit).*?\)""", RegexOption.IGNORE_CASE),
-            Regex("""\s*\[.*?(official|video|audio|lyrics|lyric|visualizer|hd|hq|4k|remaster|remix|live|acoustic|version|edit|extended|radio|clean|explicit).*?\]""", RegexOption.IGNORE_CASE),
-            Regex("""\s*【.*?】"""),
-            Regex("""\s*\|.*$"""),
-            Regex("""\s*-\s*(official|video|audio|lyrics|lyric|visualizer).*$""", RegexOption.IGNORE_CASE),
-            Regex("""\s*\(feat\..*?\)""", RegexOption.IGNORE_CASE),
-            Regex("""\s*\(ft\..*?\)""", RegexOption.IGNORE_CASE),
-            Regex("""\s*feat\..*$""", RegexOption.IGNORE_CASE),
-            Regex("""\s*ft\..*$""", RegexOption.IGNORE_CASE),
-            Regex("""\s*\([^)]*\d{4}[^)]*\)""", RegexOption.IGNORE_CASE),
-        )
+        private val TITLE_CLEANUP_PATTERNS =
+            listOf(
+                Regex("""\s*\(.*?(official|video|audio|lyrics|lyric|visualizer|hd|hq|4k|remaster|remix|live|acoustic|version|edit|extended|radio|clean|explicit).*?\)""", RegexOption.IGNORE_CASE),
+                Regex("""\s*\[.*?(official|video|audio|lyrics|lyric|visualizer|hd|hq|4k|remaster|remix|live|acoustic|version|edit|extended|radio|clean|explicit).*?\]""", RegexOption.IGNORE_CASE),
+                Regex("""\s*【.*?】"""),
+                Regex("""\s*\|.*$"""),
+                Regex("""\s*-\s*(official|video|audio|lyrics|lyric|visualizer).*$""", RegexOption.IGNORE_CASE),
+                Regex("""\s*\(feat\..*?\)""", RegexOption.IGNORE_CASE),
+                Regex("""\s*\(ft\..*?\)""", RegexOption.IGNORE_CASE),
+                Regex("""\s*feat\..*$""", RegexOption.IGNORE_CASE),
+                Regex("""\s*ft\..*$""", RegexOption.IGNORE_CASE),
+                Regex("""\s*\([^)]*\d{4}[^)]*\)""", RegexOption.IGNORE_CASE),
+            )
     }
 }

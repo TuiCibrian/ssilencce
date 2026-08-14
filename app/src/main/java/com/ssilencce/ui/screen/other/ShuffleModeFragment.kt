@@ -12,24 +12,22 @@ import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class ShuffleModeFragment : BottomSheetDialogFragment() {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val playerViewModel: PlayerViewModel by activityViewModel()
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View? =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     ShuffleModeBottomSheet(
                         libraryViewModel = libraryViewModel,
-                        playerViewModel = playerViewModel
+                        playerViewModel = playerViewModel,
                     )
                 }
             }
         }
-    }
 }

@@ -23,20 +23,20 @@ fun DialogListItemWithRadio(
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     subtitle: String? = null,
-    contentPadding: PaddingValues? = null
+    contentPadding: PaddingValues? = null,
 ) {
     DialogListItem(
         title = title,
         leadingComposable = {
             RadioButton(
                 selected = isSelected,
-                onClick = null
+                onClick = null,
             )
         },
         subtitle = subtitle,
         contentPadding = contentPadding,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -47,20 +47,20 @@ fun DialogListItemWithCheckBox(
     modifier: Modifier = Modifier,
     isSelected: Boolean = false,
     subtitle: String? = null,
-    contentPadding: PaddingValues? = null
+    contentPadding: PaddingValues? = null,
 ) {
     DialogListItem(
         title = title,
         leadingComposable = {
             Checkbox(
                 checked = isSelected,
-                onCheckedChange = null
+                onCheckedChange = null,
             )
         },
         subtitle = subtitle,
         contentPadding = contentPadding,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -71,15 +71,16 @@ private fun DialogListItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
-    contentPadding: PaddingValues? = null
+    contentPadding: PaddingValues? = null,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(contentPadding ?: PaddingValues(horizontal = 24.dp, vertical = 10.dp)),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clickable(onClick = onClick)
+                .padding(contentPadding ?: PaddingValues(horizontal = 24.dp, vertical = 10.dp)),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         leadingComposable.invoke()
 
@@ -87,13 +88,13 @@ private fun DialogListItem(
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
             if (!subtitle.isNullOrEmpty()) {
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

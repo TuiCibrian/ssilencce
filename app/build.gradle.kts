@@ -1,11 +1,13 @@
 import com.android.build.api.variant.BuildConfigField
 import com.android.build.api.variant.ResValue
+import org.gradle.api.attributes.Bundling
+import org.gradle.language.base.plugins.LifecycleBasePlugin
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.android)
     alias(libs.plugins.android.safeargs)
-    id("kotlin-parcelize")
+    alias(libs.plugins.kotlin.parcelize)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -18,7 +20,7 @@ sealed class Version(
     private val versionMinor: Int,
     private val versionPatch: Int,
     private val versionBuild: Int = 0,
-    private val versionType: String = ""
+    private val versionType: String = "",
 ) {
     companion object {
         private const val MAJOR = 1_000_000L
@@ -38,27 +40,43 @@ sealed class Version(
         }
     }
 
-    class Alpha(versionMajor: Int, versionMinor: Int, versionPatch: Int, versionBuild: Int) :
-        Version(ALPHA, versionMajor, versionMinor, versionPatch, versionBuild, "alpha")
+    class Alpha(
+        versionMajor: Int,
+        versionMinor: Int,
+        versionPatch: Int,
+        versionBuild: Int,
+    ) : Version(ALPHA, versionMajor, versionMinor, versionPatch, versionBuild, "alpha")
 
-    class Beta(versionMajor: Int, versionMinor: Int, versionPatch: Int, versionBuild: Int) :
-        Version(BETA, versionMajor, versionMinor, versionPatch, versionBuild, "beta")
+    class Beta(
+        versionMajor: Int,
+        versionMinor: Int,
+        versionPatch: Int,
+        versionBuild: Int,
+    ) : Version(BETA, versionMajor, versionMinor, versionPatch, versionBuild, "beta")
 
-    class RC(versionMajor: Int, versionMinor: Int, versionPatch: Int, versionBuild: Int) :
-        Version(RELEASE_CANDIDATE, versionMajor, versionMinor, versionPatch, versionBuild, "rc")
+    class RC(
+        versionMajor: Int,
+        versionMinor: Int,
+        versionPatch: Int,
+        versionBuild: Int,
+    ) : Version(RELEASE_CANDIDATE, versionMajor, versionMinor, versionPatch, versionBuild, "rc")
 
-    class Stable(versionMajor: Int, versionMinor: Int, versionPatch: Int) :
-        Version(STABLE, versionMajor, versionMinor, versionPatch)
+    class Stable(
+        versionMajor: Int,
+        versionMinor: Int,
+        versionPatch: Int,
+    ) : Version(STABLE, versionMajor, versionMinor, versionPatch)
 
     val name: String
         get() {
-            val versionName = "${versionMajor}.${versionMinor}.${versionPatch}"
-            return if (versionType.isNotEmpty()) "$versionName-${versionType}.$versionBuild" else versionName
+            val versionName = "$versionMajor.$versionMinor.$versionPatch"
+            return if (versionType.isNotEmpty()) "$versionName-$versionType.$versionBuild" else versionName
         }
 
     val code: Int
         get() {
-            val versionCode = versionMajor * MAJOR +
+            val versionCode =
+                versionMajor * MAJOR +
                     versionMinor * MINOR +
                     versionPatch * PATCH +
                     versionOffset * VARIANT +
@@ -70,13 +88,20 @@ sealed class Version(
         }
 }
 
-val currentVersion: Version = Version.Beta(
-    versionMajor = 1,
-    versionMinor = 4,
-    versionPatch = 0,
-    versionBuild = 3
-)
+val currentVersion: Version =
+    Version.Beta(
+        versionMajor = 1,
+        versionMinor = 4,
+        versionPatch = 0,
+        versionBuild = 3,
+    )
 val currentVersionCode = currentVersion.code
+
+val gitHash: String by lazy { runGitCommand("git rev-parse --short=7 HEAD") }
+
+val propertiesCache: MutableMap<String, Properties?> = HashMap()
+
+val flavorPropertiesCache: MutableMap<String?, Properties> = HashMap()
 
 android {
     compileSdk = 37
@@ -128,16 +153,17 @@ android {
 
     val signingProperties = getProperties("keystore.properties")
 
-    val releaseSigning = if (signingProperties != null) {
-        signingConfigs.create("release") {
-            keyAlias = signingProperties.property("keyAlias")
-            keyPassword = signingProperties.property("keyPassword")
-            storePassword = signingProperties.property("storePassword")
-            storeFile = file(signingProperties.property("storeFile"))
+    val releaseSigning =
+        if (signingProperties != null) {
+            signingConfigs.create("release") {
+                keyAlias = signingProperties.property("keyAlias")
+                keyPassword = signingProperties.property("keyPassword")
+                storePassword = signingProperties.property("storePassword")
+                storeFile = file(signingProperties.property("storeFile"))
+            }
+        } else {
+            signingConfigs.getByName("debug")
         }
-    } else {
-        signingConfigs.getByName("debug")
-    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -200,8 +226,6 @@ android {
 
 androidComponents {
     onVariants { variant ->
-        val gitHash = runGitCommand("git rev-parse --short=7 HEAD")
-
         val isCI = System.getenv("RELEASE_TYPE") == "CI"
         if (isCI && variant.buildType == "release" && gitHash.isNotEmpty()) {
             variant.outputs.forEach { output ->
@@ -211,7 +235,7 @@ androidComponents {
         }
 
         variant.buildConfigFields?.putAll(
-            mapOf("IS_CI_BUILD" to BuildConfigField("boolean", isCI, null))
+            mapOf("IS_CI_BUILD" to BuildConfigField("boolean", isCI, null)),
         )
 
         val flavorProps = loadFlavorProperties(variant.flavorName)
@@ -222,24 +246,30 @@ androidComponents {
         val canUseLastFm = variant.flavorName == "github" || variant.flavorName == "playstore"
 
         val localProperties = if (canUseLastFm) getProperties("local.properties") else null
-        val lastFmKey = if (canUseLastFm) {
-            localProperties?.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
-        } else ""
+        val lastFmKey =
+            if (canUseLastFm) {
+                localProperties?.getProperty("LASTFM_API_KEY") ?: System.getenv("LASTFM_API_KEY") ?: ""
+            } else {
+                ""
+            }
 
-        val lastFmSecret = if (canUseLastFm) {
-            localProperties?.getProperty("LASTFM_SECRET") ?: System.getenv("LASTFM_SECRET") ?: ""
-        } else ""
+        val lastFmSecret =
+            if (canUseLastFm) {
+                localProperties?.getProperty("LASTFM_SECRET") ?: System.getenv("LASTFM_SECRET") ?: ""
+            } else {
+                ""
+            }
 
         variant.buildConfigFields?.putAll(
             mapOf(
                 "LASTFM_API_KEY" to BuildConfigField("String", "\"$lastFmKey\"", "LastFM API Key"),
-                "LASTFM_SECRET" to BuildConfigField("String", "\"$lastFmSecret\"", "LastFM Secret")
-            )
+                "LASTFM_SECRET" to BuildConfigField("String", "\"$lastFmSecret\"", "LastFM Secret"),
+            ),
         )
 
         variant.resValues.put(
             variant.makeResValueKey("bool", "enable_lastfm_integration"),
-            ResValue(lastFmKey.isNotEmpty().toString(), "Enable LastFM integration")
+            ResValue(lastFmKey.isNotEmpty().toString(), "Enable LastFM integration"),
         )
 
         variant.outputs.forEach { output ->
@@ -256,6 +286,30 @@ kotlin {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
     }
     jvmToolchain(21)
+}
+
+val ktlint by configurations.creating
+
+val ktlintFileArgs = listOf("**/src/**/*.kt", "**.kts", "!**/build/**")
+
+val ktlintCheck by tasks.registering(JavaExec::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Check Kotlin code style"
+    classpath = ktlint
+    mainClass.set("com.pinterest.ktlint.Main")
+    args(ktlintFileArgs)
+}
+
+tasks.check {
+    dependsOn(ktlintCheck)
+}
+
+val ktlintFormat by tasks.registering(JavaExec::class) {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Fix Kotlin code style deviations"
+    classpath = ktlint
+    mainClass.set("com.pinterest.ktlint.Main")
+    args(listOf("-F") + ktlintFileArgs)
 }
 
 dependencies {
@@ -305,9 +359,7 @@ dependencies {
     implementation(libs.aboutlibraries)
 
     implementation(libs.fadingedgelayout)
-    implementation(libs.advrecyclerview) {
-        isTransitive = true
-    }
+    implementation(libs.advrecyclerview)
     implementation(libs.fastscroll)
 
     implementation(libs.customactivityoncrash)
@@ -319,44 +371,55 @@ dependencies {
     implementation(libs.versioncompare)
     implementation(libs.commons.text)
     implementation(libs.juniversalchardet)
-}
 
-fun getProperties(fileName: String): Properties? {
-    val file = rootProject.file(fileName)
-    return if (file.exists()) {
-        Properties().also { properties ->
-            file.inputStream().use { properties.load(it) }
-        }
-    } else null
-}
-
-fun Properties.property(key: String) =
-    this.getProperty(key) ?: "$key missing"
-
-fun loadFlavorProperties(flavorName: String?): Properties {
-    val finalProps = Properties()
-    val publicProperties = getProperties("public.properties")
-    if (publicProperties != null) {
-        for ((key, value) in publicProperties.entries) {
-            val keySplit = key.toString().split(".")
-            if (keySplit.size == 2) {
-                if (keySplit[0].equals(flavorName, ignoreCase = true)) {
-                    finalProps[keySplit[1]] = value
-                }
-            } else {
-                finalProps[key] = value
-            }
+    ktlint(libs.ktlint.cli) {
+        attributes {
+            attribute(Bundling.BUNDLING_ATTRIBUTE, objects.named(Bundling.EXTERNAL))
         }
     }
-    return finalProps
 }
 
-fun runGitCommand(command: String): String {
-    return try {
-        providers.exec {
-            commandLine(command.split(" "))
-        }.standardOutput.asText.get().trim()
+fun getProperties(fileName: String): Properties? =
+    propertiesCache.getOrPut(fileName) {
+        val file = rootProject.file(fileName)
+        if (file.exists()) {
+            Properties().also { properties ->
+                file.inputStream().use { properties.load(it) }
+            }
+        } else {
+            null
+        }
+    }
+
+fun Properties.property(key: String) = this.getProperty(key) ?: "$key missing"
+
+fun loadFlavorProperties(flavorName: String?): Properties =
+    flavorPropertiesCache.getOrPut(flavorName) {
+        val finalProps = Properties()
+        val publicProperties = getProperties("public.properties")
+        if (publicProperties != null) {
+            for ((key, value) in publicProperties.entries) {
+                val keySplit = key.toString().split(".")
+                if (keySplit.size == 2) {
+                    if (keySplit[0].equals(flavorName, ignoreCase = true)) {
+                        finalProps[keySplit[1]] = value
+                    }
+                } else {
+                    finalProps[key] = value
+                }
+            }
+        }
+        finalProps
+    }
+
+fun runGitCommand(command: String): String =
+    try {
+        providers
+            .exec {
+                commandLine(command.split(" "))
+            }.standardOutput.asText
+            .get()
+            .trim()
     } catch (e: Exception) {
         ""
     }
-}

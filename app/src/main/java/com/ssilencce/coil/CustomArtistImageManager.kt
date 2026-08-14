@@ -25,8 +25,9 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class CustomArtistImageManager(private val context: Context) {
-
+class CustomArtistImageManager(
+    private val context: Context,
+) {
     private val coroutineScope = MainScope()
     private val contentResolver get() = context.contentResolver
     private val imagesPreferences by lazy {
@@ -37,11 +38,9 @@ class CustomArtistImageManager(private val context: Context) {
     }
 
     // shared prefs saves us many IO operations
-    fun hasCustomImage(image: ArtistImage) =
-        imagesPreferences.getBoolean(image.getFileName(), false)
+    fun hasCustomImage(image: ArtistImage) = imagesPreferences.getBoolean(image.getFileName(), false)
 
-    fun getSignature(image: ArtistImage) =
-        signaturesPreferences.getLong(image.name, 0).toString()
+    fun getSignature(image: ArtistImage) = signaturesPreferences.getLong(image.name, 0).toString()
 
     fun getCustomImageFile(image: ArtistImage) =
         FileUtil.customArtistImagesDirectory()?.let { dir ->
@@ -53,11 +52,15 @@ class CustomArtistImageManager(private val context: Context) {
             File(dir, artist.getFileName())
         }
 
-    suspend fun setCustomImage(artist: Artist, uri: Uri): Boolean {
-        return try {
+    suspend fun setCustomImage(
+        artist: Artist,
+        uri: Uri,
+    ): Boolean =
+        try {
             suspendCancellableCoroutine { continuation ->
                 SingletonImageLoader.get(context).enqueue(
-                    ImageRequest.Builder(context)
+                    ImageRequest
+                        .Builder(context)
                         .data(uri)
                         .memoryCachePolicy(CachePolicy.DISABLED)
                         .size(2048)
@@ -69,16 +72,18 @@ class CustomArtistImageManager(private val context: Context) {
                                         continuation.resume(false)
                                     } else {
                                         try {
-                                            val imageCreated = imageFile.outputStream()
-                                                .buffered()
-                                                .use { stream ->
-                                                    drawable.toBitmap().toJPG(100, stream)
-                                                }
+                                            val imageCreated =
+                                                imageFile
+                                                    .outputStream()
+                                                    .buffered()
+                                                    .use { stream ->
+                                                        drawable.toBitmap().toJPG(100, stream)
+                                                    }
 
                                             artist.updateHasImage(imageCreated)
                                             contentResolver.notifyChange(
                                                 Artists.EXTERNAL_CONTENT_URI,
-                                                null
+                                                null,
                                             )
 
                                             if (!imageCreated) {
@@ -95,27 +100,26 @@ class CustomArtistImageManager(private val context: Context) {
                                         imageFile?.deleteQuietly()
                                     }
                                 }
-                            }
-                        )
-                        .build()
+                            },
+                        ).build(),
                 )
             }
         } catch (t: Throwable) {
             Log.e("CustomArtistImageManager", "Cannot set artist image", t)
             false
         }
-    }
 
-    suspend fun removeCustomImage(artist: Artist): Boolean = withContext(Dispatchers.IO) {
-        artist.updateHasImage(false)
+    suspend fun removeCustomImage(artist: Artist): Boolean =
+        withContext(Dispatchers.IO) {
+            artist.updateHasImage(false)
 
-        // trigger media store changed to force artist image reload
-        contentResolver.notifyChange(Artists.EXTERNAL_CONTENT_URI, null)
+            // trigger media store changed to force artist image reload
+            contentResolver.notifyChange(Artists.EXTERNAL_CONTENT_URI, null)
 
-        getCustomImageFile(artist)?.let { file ->
-            file.exists() && file.deleteQuietly()
-        } ?: false
-    }
+            getCustomImageFile(artist)?.let { file ->
+                file.exists() && file.deleteQuietly()
+            } ?: false
+        }
 
     private fun Artist.updateHasImage(hasImage: Boolean) {
         imagesPreferences.edit(true) {
@@ -126,18 +130,15 @@ class CustomArtistImageManager(private val context: Context) {
         }
     }
 
-    private fun Artist.getFileName(): String {
-        return String.format(Locale.US, "#%d#%s.jpeg", id, name).sanitize()
-    }
+    private fun Artist.getFileName(): String = String.format(Locale.US, "#%d#%s.jpeg", id, name).sanitize()
 
-    private fun ArtistImage.getFileName(): String {
-        return String.format(Locale.US, "#%d#%s.jpeg", id, name).sanitize()
-    }
+    private fun ArtistImage.getFileName(): String = String.format(Locale.US, "#%d#%s.jpeg", id, name).sanitize()
 
-    private fun File.deleteQuietly() = try {
-        this.delete()
-    } catch (e: IOException) {
-        Log.e("CustomArtistImageManager", "Unable to delete file $this", e)
-        false
-    }
+    private fun File.deleteQuietly() =
+        try {
+            this.delete()
+        } catch (e: IOException) {
+            Log.e("CustomArtistImageManager", "Unable to delete file $this", e)
+            false
+        }
 }

@@ -52,7 +52,7 @@ import com.ssilencce.ui.screen.player.PlayerViewModel
 fun ShuffleModeBottomSheet(
     libraryViewModel: LibraryViewModel,
     playerViewModel: PlayerViewModel,
-    modes: Array<SpecialShuffleMode> = SpecialShuffleMode.entries.toTypedArray()
+    modes: Array<SpecialShuffleMode> = SpecialShuffleMode.entries.toTypedArray(),
 ) {
     val allSongs by libraryViewModel.getSongs().observeAsState(emptyList())
     val shuffleState by playerViewModel.shuffleOperationState.collectAsState()
@@ -69,21 +69,23 @@ fun ShuffleModeBottomSheet(
 
     BottomSheetDialogSurface {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .padding(bottom = 16.dp)
-                .padding(horizontal = 16.dp)
-                .nestedScroll(rememberNestedScrollInteropConnection())
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight()
+                    .padding(bottom = 16.dp)
+                    .padding(horizontal = 16.dp)
+                    .nestedScroll(rememberNestedScrollInteropConnection()),
         ) {
             BottomSheetDefaults.DragHandle(
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
             )
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(24.dp)),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(24.dp)),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 items(modes) { mode ->
                     ShuffleModeItem(
@@ -93,21 +95,23 @@ fun ShuffleModeBottomSheet(
                         onClick = {
                             playerViewModel.openSpecialShuffle(allSongs, mode)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .then(
-                                if (maxItemHeight > 0)
-                                    with(LocalDensity.current) {
-                                        Modifier.height(maxItemHeight.toDp())
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .then(
+                                    if (maxItemHeight > 0) {
+                                        with(LocalDensity.current) {
+                                            Modifier.height(maxItemHeight.toDp())
+                                        }
+                                    } else {
+                                        Modifier
+                                    },
+                                ).onGloballyPositioned { coordinates ->
+                                    val height = coordinates.size.height
+                                    if (height > maxItemHeight) {
+                                        maxItemHeight = height
                                     }
-                                else Modifier
-                            )
-                            .onGloballyPositioned { coordinates ->
-                                val height = coordinates.size.height
-                                if (height > maxItemHeight) {
-                                    maxItemHeight = height
-                                }
-                            }
+                                },
                     )
                 }
             }
@@ -121,38 +125,39 @@ private fun ShuffleModeItem(
     modifier: Modifier = Modifier,
     isEnabled: Boolean = true,
     isShuffling: Boolean = false,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     val animatedAlpha by animateFloatAsState(
         targetValue = if (isEnabled) 1f else 0.5f,
-        animationSpec = tween(500)
+        animationSpec = tween(500),
     )
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = .75f),
         shape = RoundedCornerShape(4.dp),
-        modifier = modifier.clickable(enabled = isEnabled, onClick = onClick)
+        modifier = modifier.clickable(enabled = isEnabled, onClick = onClick),
     ) {
         Row(
-            modifier = modifier
-                .alpha(animatedAlpha)
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+            modifier =
+                modifier
+                    .alpha(animatedAlpha)
+                    .padding(horizontal = 16.dp, vertical = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Crossfade(
                 targetState = isShuffling,
-                animationSpec = tween(500)
+                animationSpec = tween(500),
             ) { loading ->
                 if (loading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
+                        strokeWidth = 2.dp,
                     )
                 } else {
                     Icon(
                         painter = painterResource(mode.iconRes),
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary
+                        tint = MaterialTheme.colorScheme.primary,
                     )
                 }
             }
@@ -161,13 +166,13 @@ private fun ShuffleModeItem(
                     text = stringResource(mode.titleRes),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 Text(
                     text = stringResource(mode.descriptionRes),
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
             }
         }

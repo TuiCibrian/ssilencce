@@ -94,7 +94,5 @@ class StopWatch {
             }
         }
 
-    override fun toString(): String {
-        return String.format(Locale.getDefault(), "%d millis, is running: %s", elapsedTime, isRunning.toString())
-    }
+    override fun toString(): String = String.format(Locale.getDefault(), "%d millis, is running: %s", elapsedTime, isRunning.toString())
 }

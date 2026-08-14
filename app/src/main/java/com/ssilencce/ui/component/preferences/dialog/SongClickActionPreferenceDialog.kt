@@ -29,14 +29,13 @@ import com.ssilencce.ui.theme.SsilencceTheme
 import com.ssilencce.util.Preferences
 
 class SongClickActionPreferenceDialog : DialogFragment() {
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext())
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.on_song_click_title)
             .setView(
                 ComposeView(requireContext()).apply {
                     setViewCompositionStrategy(
-                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
                     )
                     setContent {
                         SsilencceTheme {
@@ -48,42 +47,43 @@ class SongClickActionPreferenceDialog : DialogFragment() {
                                 onActionClick = { action ->
                                     selectedAction = action
                                     Preferences.songClickAction = action
-                                }
+                                },
                             )
                         }
                     }
-                }
-            )
-            .setNegativeButton(R.string.close_action, null)
+                },
+            ).setNegativeButton(R.string.close_action, null)
             .create()
-    }
 
     @Composable
     private fun SongDialogScreen(
         selected: SongClickBehavior,
-        onActionClick: (SongClickBehavior) -> Unit
+        onActionClick: (SongClickBehavior) -> Unit,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.wrapContentHeight()
+            modifier = Modifier.wrapContentHeight(),
         ) {
             val actions = remember { SongClickBehavior.entries.toTypedArray() }
-            val firstVisibleIndex = actions.indexOfFirst { it.ordinal == selected.ordinal }
-                .coerceAtLeast(0)
+            val firstVisibleIndex =
+                actions
+                    .indexOfFirst { it.ordinal == selected.ordinal }
+                    .coerceAtLeast(0)
 
             LazyColumn(
                 state = rememberLazyListState(firstVisibleIndex),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(top = 24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(top = 24.dp),
             ) {
                 items(actions) { action ->
                     DialogListItemWithRadio(
                         title = stringResource(action.titleRes),
                         subtitle = stringResource(action.summaryRes),
                         isSelected = action == selected,
-                        onClick = { onActionClick(action) }
+                        onClick = { onActionClick(action) },
                     )
                 }
             }

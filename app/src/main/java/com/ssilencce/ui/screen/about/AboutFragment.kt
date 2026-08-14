@@ -34,22 +34,24 @@ class AboutFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View? =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     AboutScreen(
                         onBackClick = {
                             getOnBackPressedDispatcher().onBackPressed()
-                        }
+                        },
                     )
                 }
             }
         }
-    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         materialSharedAxis(view)
     }

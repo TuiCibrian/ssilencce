@@ -37,16 +37,19 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 import java.io.OutputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 
 object BackupHelper : KoinComponent {
-
     private val repository by inject<Repository>()
     private val lyricsDao by inject<LyricsDao>()
 
-    suspend fun createBackup(context: Context, uri: Uri?) {
+    suspend fun createBackup(
+        context: Context,
+        uri: Uri?,
+    ) {
         if (uri == null) return
         val outputStream = context.contentResolver.openOutputStream(uri) ?: return
         val zipItems = mutableListOf<ZipItem>()
@@ -59,35 +62,38 @@ object BackupHelper : KoinComponent {
         File(context.filesDir, PLAYLISTS_PATH).deleteRecursively()
     }
 
-    private suspend fun zipAll(context: Context, zipItems: List<ZipItem>, output: OutputStream) =
-        withContext(Dispatchers.IO) {
-            runCatching {
-                output.zipOutputStream().use { out ->
-                    out.setComment(context.getString(R.string.app_name))
-                    for (zipItem in zipItems) {
-                        if (zipItem.filePath != null) {
-                            File(zipItem.filePath).inputStream().buffered().use { origin ->
-                                val entry = ZipEntry(zipItem.zipPath)
-                                out.putNextEntry(entry)
-                                origin.copyTo(out)
-                            }
-                        } else if (!zipItem.fileContent.isNullOrEmpty()) {
+    private suspend fun zipAll(
+        context: Context,
+        zipItems: List<ZipItem>,
+        output: OutputStream,
+    ) = withContext(Dispatchers.IO) {
+        runCatching {
+            output.zipOutputStream().use { out ->
+                out.setComment(context.getString(R.string.app_name))
+                for (zipItem in zipItems) {
+                    if (zipItem.filePath != null) {
+                        File(zipItem.filePath).inputStream().buffered().use { origin ->
                             val entry = ZipEntry(zipItem.zipPath)
                             out.putNextEntry(entry)
-                            out.bufferedWriter().use { it.write(zipItem.fileContent) }
+                            origin.copyTo(out)
                         }
+                    } else if (!zipItem.fileContent.isNullOrEmpty()) {
+                        val entry = ZipEntry(zipItem.zipPath)
+                        out.putNextEntry(entry)
+                        out.bufferedWriter().use { it.write(zipItem.fileContent) }
                     }
                 }
-            }.onFailure {
-                withContext(Dispatchers.Main) {
-                    context.showToast(R.string.backup_failed)
-                }
-            }.onSuccess {
-                withContext(Dispatchers.Main) {
-                    context.showToast(R.string.backup_successful)
-                }
+            }
+        }.onFailure {
+            withContext(Dispatchers.Main) {
+                context.showToast(R.string.backup_failed)
+            }
+        }.onSuccess {
+            withContext(Dispatchers.Main) {
+                context.showToast(R.string.backup_successful)
             }
         }
+    }
 
     private suspend fun getPlaylistZipItems(context: Context): List<ZipItem> {
         val playlistZipItems = mutableListOf<ZipItem>()
@@ -104,8 +110,8 @@ object BackupHelper : KoinComponent {
                     playlistZipItems.add(
                         ZipItem(
                             PLAYLISTS_PATH.child(playlistFile.name),
-                            playlistFile.absolutePath
-                        )
+                            playlistFile.absolutePath,
+                        ),
                     )
                 }
             }
@@ -135,13 +141,14 @@ object BackupHelper : KoinComponent {
         val customArtistImagesDir = FileUtil.customArtistImagesDirectory()
         if (customArtistImagesDir != null) {
             zipItemList.addAll(
-                customArtistImagesDir.listFiles()
+                customArtistImagesDir
+                    .listFiles()
                     ?.map {
                         ZipItem(
                             CUSTOM_ARTISTS_PATH.child("custom_artist_images").child(it.name),
-                            it.absolutePath
+                            it.absolutePath,
                         )
-                    }?.toList() ?: listOf()
+                    }?.toList() ?: listOf(),
             )
 
             File(sharedPrefPath, "custom_artist_images.xml").let {
@@ -149,8 +156,8 @@ object BackupHelper : KoinComponent {
                     zipItemList.add(
                         ZipItem(
                             CUSTOM_ARTISTS_PATH.child("prefs").child("custom_artist_images.xml"),
-                            it.absolutePath
-                        )
+                            it.absolutePath,
+                        ),
                     )
                 }
             }
@@ -158,7 +165,11 @@ object BackupHelper : KoinComponent {
         return zipItemList
     }
 
-    suspend fun restoreBackup(context: Context, uri: Uri?, contents: List<BackupContent>) {
+    suspend fun restoreBackup(
+        context: Context,
+        uri: Uri?,
+        contents: List<BackupContent>,
+    ) {
         if (uri == null) return
         withContext(Dispatchers.IO) {
             runCatching {
@@ -166,15 +177,33 @@ object BackupHelper : KoinComponent {
                 if (inputStream != null) {
                     ZipInputStream(inputStream).use {
                         var entry = it.nextEntry
+                        var entryCount = 0
+                        var totalUncompressedBytes = 0L
                         while (entry != null) {
+                            if (entryCount >= MAX_BACKUP_ENTRIES) {
+                                throw IOException("Backup contains too many entries")
+                            }
+                            if (entry.size < 0 || entry.size > MAX_SINGLE_ENTRY_BYTES ||
+                                totalUncompressedBytes + entry.size > MAX_BACKUP_UNCOMPRESSED_BYTES
+                            ) {
+                                throw IOException("Backup entry exceeds size limits")
+                            }
+                            if (entry.isLyricsEntry() && entry.size > MAX_LYRICS_ENTRY_BYTES) {
+                                throw IOException("Lyrics entry exceeds size limit")
+                            }
+                            entryCount++
+                            totalUncompressedBytes += entry.size
                             if (entry.isPlaylistEntry() && contents.contains(BackupContent.Playlists)) {
                                 restorePlaylists(it, entry)
-                            } else if (entry.isPreferenceEntry() && contents.contains(BackupContent.Settings)) {
+                            } else if (entry.isPreferenceEntry() &&
+                                contents.contains(BackupContent.Settings) &&
+                                entry.getFileName() == "${context.packageName}_preferences.xml"
+                            ) {
                                 restorePreferences(context, it, entry)
                             } else if (entry.isLyricsEntry() && contents.contains(BackupContent.Lyrics)) {
                                 restoreLyrics(it)
                             } else if (entry.isCustomArtistEntry() && contents.contains(BackupContent.ArtistImages)) {
-                                if (entry.isCustomArtistPrefEntry()) {
+                                if (entry.isCustomArtistPrefEntry() && entry.getFileName() == CUSTOM_ARTIST_PREFS_FILE) {
                                     restoreCustomArtistPrefs(context, it, entry)
                                 } else if (entry.isCustomArtistImageEntry()) {
                                     restoreCustomArtistImages(context, it, entry)
@@ -204,7 +233,11 @@ object BackupHelper : KoinComponent {
         lyricsDao.insertLyrics(lyrics)
     }
 
-    private fun restorePreferences(context: Context, zipIn: ZipInputStream, zipEntry: ZipEntry) {
+    private fun restorePreferences(
+        context: Context,
+        zipIn: ZipInputStream,
+        zipEntry: ZipEntry,
+    ) {
         val file = File(context.filesDir.parent!! + File.separator + "shared_prefs" + File.separator + zipEntry.getFileName())
         if (file.exists()) {
             file.delete()
@@ -214,7 +247,10 @@ object BackupHelper : KoinComponent {
         }
     }
 
-    private suspend fun restorePlaylists(zipIn: ZipInputStream, zipEntry: ZipEntry) {
+    private suspend fun restorePlaylists(
+        zipIn: ZipInputStream,
+        zipEntry: ZipEntry,
+    ) {
         val playlistName = zipEntry.getFileName().substringBeforeLast(".")
         val songs = mutableListOf<Song>()
 
@@ -228,15 +264,17 @@ object BackupHelper : KoinComponent {
         }
         val playlistEntity = repository.checkPlaylistExists(playlistName).firstOrNull()
         if (playlistEntity != null) {
-            val songEntities = songs.map {
-                it.toSongEntity(playlistEntity.playListId)
-            }
+            val songEntities =
+                songs.map {
+                    it.toSongEntity(playlistEntity.playListId)
+                }
             repository.insertSongsInPlaylist(songEntities)
         } else {
             val playListId = repository.createPlaylist(PlaylistEntity(playlistName = playlistName))
-            val songEntities = songs.map {
-                it.toSongEntity(playListId)
-            }
+            val songEntities =
+                songs.map {
+                    it.toSongEntity(playListId)
+                }
             repository.insertSongsInPlaylist(songEntities)
         }
     }
@@ -244,7 +282,7 @@ object BackupHelper : KoinComponent {
     private fun restoreCustomArtistImages(
         context: Context,
         zipIn: ZipInputStream,
-        zipEntry: ZipEntry
+        zipEntry: ZipEntry,
     ) {
         val parentFolder = File(context.filesDir, "custom_artist_images")
         if (!parentFolder.exists()) {
@@ -259,7 +297,7 @@ object BackupHelper : KoinComponent {
     private fun restoreCustomArtistPrefs(
         context: Context,
         zipIn: ZipInputStream,
-        zipEntry: ZipEntry
+        zipEntry: ZipEntry,
     ) {
         val file = File(context.filesDir.parentFile, "shared_prefs".child(zipEntry.getFileName()))
         file.outputStream().buffered().use { bos ->
@@ -273,49 +311,40 @@ object BackupHelper : KoinComponent {
     private const val SETTINGS_PATH = "prefs"
     private const val LYRICS_PATH = "lyrics"
     private const val CUSTOM_ARTISTS_PATH = "artistImages"
+    private const val CUSTOM_ARTIST_PREFS_FILE = "custom_artist_images.xml"
+    private const val MAX_BACKUP_ENTRIES = 1000
+    private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 100L * 1024 * 1024
+    private const val MAX_SINGLE_ENTRY_BYTES = MAX_BACKUP_UNCOMPRESSED_BYTES
+    private const val MAX_LYRICS_ENTRY_BYTES = 10L * 1024 * 1024
 
-    private fun ZipEntry.isPlaylistEntry(): Boolean {
-        return name.startsWith(PLAYLISTS_PATH)
-    }
+    private fun ZipEntry.isPlaylistEntry(): Boolean = name.startsWith(PLAYLISTS_PATH)
 
-    private fun ZipEntry.isPreferenceEntry(): Boolean {
-        return name.startsWith(SETTINGS_PATH)
-    }
+    private fun ZipEntry.isPreferenceEntry(): Boolean = name.startsWith(SETTINGS_PATH)
 
-    private fun ZipEntry.isLyricsEntry(): Boolean {
-        return name.startsWith(LYRICS_PATH)
-    }
+    private fun ZipEntry.isLyricsEntry(): Boolean = name.startsWith(LYRICS_PATH)
 
-    private fun ZipEntry.isCustomArtistEntry(): Boolean {
-        return name.startsWith(CUSTOM_ARTISTS_PATH)
-    }
+    private fun ZipEntry.isCustomArtistEntry(): Boolean = name.startsWith(CUSTOM_ARTISTS_PATH)
 
-    private fun ZipEntry.isCustomArtistImageEntry(): Boolean {
-        return name.startsWith(CUSTOM_ARTISTS_PATH) && name.contains("custom_artist_images")
-    }
+    private fun ZipEntry.isCustomArtistImageEntry(): Boolean = name.startsWith(CUSTOM_ARTISTS_PATH) && name.contains("custom_artist_images")
 
-    private fun ZipEntry.isCustomArtistPrefEntry(): Boolean {
-        return name.startsWith(CUSTOM_ARTISTS_PATH) && name.contains("prefs")
-    }
+    private fun ZipEntry.isCustomArtistPrefEntry(): Boolean = name.startsWith(CUSTOM_ARTISTS_PATH) && name.contains("prefs")
 
-    private fun ZipEntry.getFileName(): String {
-        return name.substring(name.lastIndexOf(File.separator) + 1)
-    }
+    private fun ZipEntry.getFileName(): String = name.substring(name.lastIndexOf(File.separator) + 1)
 }
 
 data class ZipItem(
     val zipPath: String,
     val filePath: String? = null,
-    val fileContent: String? = null
+    val fileContent: String? = null,
 )
 
-fun String.child(child: String): String {
-    return this + File.separator + child
-}
+fun String.child(child: String): String = this + File.separator + child
 
-enum class BackupContent(@StringRes val titleRes: Int) {
+enum class BackupContent(
+    @StringRes val titleRes: Int,
+) {
     Settings(R.string.backup_settings),
     Lyrics(R.string.backup_synced_lyrics),
     ArtistImages(R.string.backup_artist_images),
-    Playlists(R.string.backup_playlists)
+    Playlists(R.string.backup_playlists),
 }

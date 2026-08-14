@@ -26,11 +26,12 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 
 - **Build:** `./gradlew :app:assembleGithubDebug` — requires **JDK 21** (`jvmToolchain(21)`); single-module project (`:app`); AGP 9.3.1, Kotlin 2.3.21, compileSdk 37 / minSdk 26 / targetSdk 36.
 - **Lint:** `./gradlew :app:lintGithubDebug` — `lint { abortOnError = true }`, lint errors fail the build.
-- **Tests:** No test source sets are configured; do not add test configurations (rule 12).
+- **Code quality hooks:** `.opencode/plugin/check.ts` auto-formats each edited `*.kt`/`*.kts` (via `scripts/ktlint.ps1`, project ktlint 1.8.0) and runs `:app:lintGithubDebug` in the background. Run `/codecheck` after each change for the full skill-based review pass (security, performance, accessibility, code-review) plus the lint gate.
+- **Tests:** No test source sets are configured; do not add test configurations (rule 10).
 - **Signing:** Release reads `keystore.properties` (keyAlias/keyPassword/storePassword/storeFile); if missing it silently falls back to the debug keystore.
 - **Last.fm keys:** Injected via `LASTFM_API_KEY`/`LASTFM_SECRET` from `local.properties` or environment; only for `github`/`playstore` flavors (`fdroid` gets none).
 - **Flavor source sets:** `github` and `fdroid` add `src/shared/java`; `playstore` uses its own stub (`PaxsenixSearchHelper` always returns null, no Lyrically API access).
-- **Versioning:** `versionCode`/`versionName` derive from the `Version` classes in `app/build.gradle.kts`; `check(versionCode == currentVersionCode)` fails the build if they diverge. Never change the version (rule 10).
+- **Versioning:** `versionCode`/`versionName` derive from the `Version` classes in `app/build.gradle.kts`; `check(versionCode == currentVersionCode)` fails the build if they diverge. Never change the version (rule 8).
 - **CI:** `RELEASE_TYPE=CI` disables ABI splits and appends the git hash to the version name; APK names follow `ssilencce-<version>-<flavor>-<abi>.apk`.
 
 ## Fork Notes
@@ -38,7 +39,7 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 - This repository is **ssilencce**, a fork of Booming Music; `applicationId` and `namespace` are now `com.ssilencce`.
 - Changing the `applicationId` lets the app install alongside the upstream app, but the ID is permanent once published on a store (e.g. Play Store). Changing the `namespace` additionally requires updating all `com.ssilencce.R` imports and manifest component references.
 - **Built-in updater (github flavor):** `public.properties` → `github.GITHUB_API_URL` points at the upstream repo `mardous/BoomingMusic`. Before publishing the fork, point it at the fork repository; otherwise the updater offers upstream APKs signed with a different key (install failure).
-- Use your own release keystore; do not touch `metadata/`, README, or contributor info without explicit request (rules 1, 11).
+- Use your own release keystore; do not touch `metadata/`, README, or contributor info without explicit request (rule 9).
 
 ## Repository Code Map
 
@@ -110,20 +111,99 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 ### res/ (resources)
 - drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (~25), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
 
+## Agent Skills
+
+Preconfigured skills are installed under `.agents/skills/` (managed by the `skills` CLI, tracked in `skills-lock.json`) and `.opencode/skills/` (OpenSpec workflow). **AGENTS.md overrides every skill**: where a skill conflicts with these guidelines, the rules here win.
+
+### Installed skills catalog
+
+- **Android architecture & Gradle** (new-silvermoon): `android-architecture`, `android-data-layer`, `android-viewmodel`, `android-coroutines`, `android-gradle-logic`, `android-retrofit`, `coil-compose`, `compose-ui`, `android-accessibility`, `compose-performance-audit`, `gradle-build-performance`, `xml-to-compose-migration`
+- **Engineering** (mattpocock): `code-review`
+- **Security** (semgrep / getsentry): `code-security`, `gha-security-review`
+- **Docs** (github/awesome-copilot): `documentation-writer`
+- **Utilities** (kept from earlier set): `find-docs`, `find-skills`, `android-kotlin-core`, `android-testing-unit`
+- **OpenSpec** (fission-ai): `.opencode/skills/`: `openspec-apply-change`, `openspec-archive-change`, `openspec-explore`, `openspec-propose`, `openspec-sync-specs`, `openspec-update-change`; `.agents/skills/`: `openspec-new-change`, `openspec-continue-change`, `openspec-onboard`, `openspec-verify-change`
+
+Load a skill with the `skill` tool when a task matches its description; do not read `SKILL.md` files by hand unless verifying setup.
+
+### Stack exceptions (generic-pattern advice does not apply)
+
+Generic Android skills assume Hilt + Retrofit; this repo deliberately differs (ADRs are the source of truth). When a skill proposes a pattern that contradicts the stack, the stack wins:
+
+- **Dependency Injection:** Koin, not Hilt (ADR-006). Do not generate Hilt `@Module`/`@HiltViewModel`/`@AndroidEntryPoint` code; Koin modules live in `MainModule.kt`.
+- **Networking:** Ktor, not Retrofit idioms (ADR-020). Do not generate Retrofit `interface Api { @GET ... }` services; Ktor services live under `data/remote/`.
+- **Navigation:** Jetpack Navigation 2.9.8 + safeargs (ADR-027), not `navigation3`.
+- **Layering:** Clean-architecture advice is a guide, not a mandate — single-module app with a pragmatic repository layer (ADR-010).
+
+### Issue tracker
+
+Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Single-context; ADRs under `docs/architecture/` plus feature docs: `docs/FEATURES.md` (what
+exists), `docs/MISSING_FEATURES.md` (gaps vs Musicolet) and `docs/MUSICOLET_FEATURES.md`
+(reference snapshot of the other app). See `docs/agents/domain.md` and the
+[Documentation Maintenance](#documentation-maintenance) section.
+
+## Documentation Maintenance
+
+Keep the project docs in sync with the code. When a change is significant enough that a
+future reader of the docs would be misled, update the relevant doc in the same working
+set as the code change:
+
+- **`docs/CODE_MAP.md`** — add an entry for each new source file and update entries whose
+  file's responsibilities change (renames, package moves, new core logic). Keep the
+  existing per-file format (Purpose / Responsibilities / Inputs / Outputs / Dependencies /
+  Consumed by / Related files / Notes).
+- **`docs/FEATURES.md`** — add new user-facing features (settings, screens, behaviors) to
+  the matching numbered section, in the same bullet style.
+- **`docs/MISSING_FEATURES.md`** — when an implemented feature was listed as missing,
+  remove it from Part 1 / Part 2 / Appendix A as applicable; if only partially
+  implemented, reword the bullet to describe the remaining gap. Never edit
+  `docs/MUSICOLET_FEATURES.md` (pinned reference snapshot of another app).
+- **`docs/architecture/ADR-*.md`** — create a new ADR (next free number, template
+  Status/Context/Decision/Consequences) when the change affects an architectural
+  decision: stack choices, layering, data flow, persistence, playback engine,
+  navigation, theming, packaging. Read and cite the relevant ADRs first (see
+  `docs/agents/domain.md`); mark superseded ADRs accordingly.
+- **`docs/agents/domain.md`** — keep the ADR count and doc references up to date.
+- **`AGENTS.md`** — keep the condensed Repository Code Map and this section in sync.
+
+Trivial changes (variable renames, formatting, refactors with no behavior change) do not
+require doc updates. When in doubt, consult the human collaborator (rule 7).
+
 ## Rules for AI Agents
 
-1. **Documentation and Workflows:** The agent must not modify documentation files like `README.md` or GitHub templates/workflows unless explicitly requested.
-2. **Git Integrity:** The agent must not execute commands that compromise the Git branch or alter history unless specifically demanded by the human user. In such cases, the user assumes responsibility for reviewing the changes.
-3. **Commits and Pushing:** The agent must not perform commits or push changes unless explicitly instructed to do so.
-4. **Localization Strings:** When modifying or adding strings, only use the main strings file (located in the `values` folder). The agent is prohibited from directly modifying strings files for other languages.
-5. **Commit Message Format:** Commits must follow the format: `type(scope): short description`. 
-   - *Example:* `feat(player): add blur radius setting`
-6. **Code Comments:** Add comments only for non-obvious or complex code. Avoid commenting simple lines to keep the code readable and non-redundant.
-7. **Human Collaboration:** Always follow the rules and guidelines provided by the human collaborator.
-8. **Performance and Battery Life:** Prioritize performance and battery consumption in all changes. Always consider the impact on the user experience. The agent must inform the human collaborator if a requested change might compromise these aspects.
-9. **No Assumptions:** If in doubt, the agent must always consult the human collaborator instead of making assumptions about the code's logic or functionality.
-10. **Version Number:** It is strictly forbidden for the agent to alter the application's version number. This task is reserved for the primary development team.
-11. **Contributors and Collaborators:** The agent must not modify any information about project contributors or collaborators.
-12. **Test Configuration:** Do not attempt to add test configurations unless they are already present in the project or specifically requested by the human user.
-13. **Language:** All code, comments, and documentation produced by the agent must be in English.
-14. **UI Development:** New UI changes or additions must prioritize Jetpack Compose. The project is currently migrating from the legacy View/XML system to Compose.
+1. **Git Integrity:** The agent must not execute commands that compromise the Git branch or alter history unless specifically demanded by the human user. In such cases, the user assumes responsibility for reviewing the changes.
+2. **Commits and Pushing:** The agent must not perform commits or push changes unless explicitly instructed to do so.
+3. **Localization Strings:** When modifying or adding strings, only use the main strings file (located in the `values` folder). The agent is prohibited from directly modifying strings files for other languages.
+4. **Code Comments:** Add comments only for non-obvious or complex code. Avoid commenting simple lines to keep the code readable and non-redundant.
+5. **Human Collaboration:** Always follow the rules and guidelines provided by the human collaborator.
+6. **Performance and Battery Life:** Prioritize performance and battery consumption in all changes. Always consider the impact on the user experience. The agent must inform the human collaborator if a requested change might compromise these aspects.
+7. **No Assumptions:** If in doubt, the agent must always consult the human collaborator instead of making assumptions about the code's logic or functionality.
+8. **Version Number:** It is strictly forbidden for the agent to alter the application's version number. This task is reserved for the primary development team.
+9. **Contributors and Collaborators:** The agent must not modify any information about project contributors or collaborators.
+10. **Test Configuration:** Do not attempt to add test configurations unless they are already present in the project or specifically requested by the human user.
+11. **Language:** All code, comments, and documentation produced by the agent must be in English.
+12. **UI Development:** New UI changes or additions must prioritize Jetpack Compose. The project is currently migrating from the legacy View/XML system to Compose.
+13. **Documentation Maintenance:** Significant changes must keep the project docs in sync (see [Documentation Maintenance](#documentation-maintenance)): new or significantly edited source files → `docs/CODE_MAP.md`; new user-facing features → `docs/FEATURES.md`; implemented gaps → remove from `docs/MISSING_FEATURES.md`; architectural decisions → new ADR under `docs/architecture/`.
+
+<!-- context7 -->
+Use the `ctx7` CLI to fetch current documentation whenever the user asks about a library, framework, SDK, API, CLI tool, or cloud service — even well-known ones like React, Next.js, Prisma, Express, Tailwind, Django, or Spring Boot. This includes API syntax, configuration, version migration, library-specific debugging, setup instructions, and CLI tool usage. Use even when you think you know the answer — your training data may not reflect recent changes. Prefer this over web search for library docs.
+
+Do not use for: refactoring, writing scripts from scratch, debugging business logic, code review, or general programming concepts.
+
+## Steps
+
+1. Resolve library: `npx ctx7@latest library <name> "<what to look up>"` — use the official library name with proper punctuation (e.g., "Next.js" not "nextjs", "Customer.io" not "customerio", "Three.js" not "threejs")
+2. Pick the best match (ID format: `/org/project`) by: exact name match, description relevance, code snippet count, source reputation (High/Medium preferred), and benchmark score (higher is better). If results don't look right, try alternate names or queries (e.g., "next.js" not "nextjs", or rephrase the question)
+3. Fetch docs: `npx ctx7@latest docs <libraryId> "<what to look up>"` — run a separate `docs` command per distinct concept if the question spans multiple topics, unless it's about how they interact
+4. Answer using the fetched documentation
+
+You MUST call `library` first to get a valid ID unless the user provides one directly in `/org/project` format. Be specific about what to look up in the library's documentation — specific and detailed queries return better results than vague single words, but keep each query to a single concept unless the question is about how concepts interact; combined multi-topic queries dilute ranking and return shallow results for each topic. Do not run more than 3 commands per question. Do not include sensitive information (API keys, passwords, credentials) in queries.
+
+For version-specific docs, use `/org/project/version` from the `library` output (e.g., `/vercel/next.js/v14.3.0`).
+
+If a command fails with a quota error, inform the user and suggest `npx ctx7@latest login` or setting `CONTEXT7_API_KEY` env var for higher limits. Do not silently fall back to training data.
+<!-- context7 -->

@@ -12,8 +12,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
-class SleepTimerFragment: BottomSheetDialogFragment() {
-
+class SleepTimerFragment : BottomSheetDialogFragment() {
     private val viewModel: SleepTimerViewModel by viewModel()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -27,16 +26,15 @@ class SleepTimerFragment: BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     SleepTimerBottomSheet(
-                        viewModel = viewModel
+                        viewModel = viewModel,
                     )
                 }
             }
         }
-    }
 }

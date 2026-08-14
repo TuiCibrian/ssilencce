@@ -25,10 +25,12 @@ import android.os.Build
  */
 class AudioDevice(
     val type: AudioDeviceType,
-    private val productName: String?
+    private val productName: String?,
 ) {
-
-    fun getDeviceName(context: Context, renameDeviceOutput: Boolean = true): String {
+    fun getDeviceName(
+        context: Context,
+        renameDeviceOutput: Boolean = true,
+    ): String {
         if (type.isProduct && !productName.isNullOrEmpty()) {
             return productName
         }

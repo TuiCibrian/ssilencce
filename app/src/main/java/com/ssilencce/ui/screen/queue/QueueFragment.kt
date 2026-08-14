@@ -40,7 +40,6 @@ import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class QueueFragment : BottomSheetDialogFragment() {
-
     private val playerViewModel: PlayerViewModel by activityViewModel()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -53,40 +52,44 @@ class QueueFragment : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setContent {
                 SsilencceTheme {
                     BottomSheetDialogSurface {
                         QueueScreen(
                             onAddToPlaylistClick = { songs ->
-                                AddToPlaylistDialog.create(songs)
+                                AddToPlaylistDialog
+                                    .create(songs)
                                     .show(childFragmentManager, "ADD_TO_PLAYLIST")
                             },
                             onDeleteSongClick = { song ->
-                                DeleteSongsDialog.create(song)
+                                DeleteSongsDialog
+                                    .create(song)
                                     .show(childFragmentManager, "DELETE_SONGS")
                             },
                             onShareClick = { song ->
                                 startActivity(
                                     requireContext()
                                         .getShareSongIntent(song)
-                                        .toChooser(getString(R.string.action_share))
+                                        .toChooser(getString(R.string.action_share)),
                                 )
                             },
                             onDetailsClick = { song ->
                                 findNavController()
                                     .navigate(R.id.nav_song_details, songDetailArgs(song))
-                            }
+                            },
                         )
                     }
                 }
             }
         }
-    }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.queueFlow.collect { queue ->

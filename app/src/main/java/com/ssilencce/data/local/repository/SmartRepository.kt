@@ -40,26 +40,53 @@ import java.io.File
 
 interface SmartRepository {
     suspend fun topAlbums(): List<Album>
+
     suspend fun topAlbumArtists(): List<Artist>
+
     suspend fun recentSongs(): List<Song>
-    suspend fun recentSongs(query: String, contentType: ContentType): List<Song>
+
+    suspend fun recentSongs(
+        query: String,
+        contentType: ContentType,
+    ): List<Song>
+
     suspend fun recentAlbums(): List<Album>
+
     suspend fun recentAlbumArtists(): List<Artist>
+
     suspend fun notRecentlyPlayedSongs(): List<Song>
+
     suspend fun playCountSongs(): List<Song>
+
     fun playCountSongsFlow(): Flow<List<Song>>
+
     suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity>
+
     suspend fun findSongInPlayCount(songId: Long): PlayCountEntity?
+
     suspend fun deleteSongInPlayCount(songId: Long)
+
     suspend fun deleteSongsInPlayCount(songIds: List<Long>)
-    suspend fun insetOrIncrementPlayCount(song: Song, timePlayed: Long)
+
+    suspend fun insetOrIncrementPlayCount(
+        song: Song,
+        timePlayed: Long,
+    )
+
     suspend fun insetOrIncrementSkipCount(song: Song)
+
     suspend fun clearPlayCount()
+
     suspend fun historySongs(): List<Song>
+
     fun historySongsFlow(): Flow<List<Song>>
+
     suspend fun upsertSongInHistory(currentSong: Song)
+
     suspend fun deleteSongInHistory(songId: Long)
+
     suspend fun deleteSongsInHistory(songIds: List<Long>)
+
     suspend fun clearSongHistory()
 }
 
@@ -71,47 +98,46 @@ class RealSmartRepository(
     private val historyDao: HistoryDao,
     private val playCountDao: PlayCountDao,
 ) : SmartRepository {
+    override suspend fun topAlbums(): List<Album> = albumRepository.splitIntoAlbums(playCountSongs(), sorted = false)
 
-    override suspend fun topAlbums(): List<Album> =
-        albumRepository.splitIntoAlbums(playCountSongs(), sorted = false)
+    override suspend fun topAlbumArtists(): List<Artist> = artistRepository.splitIntoAlbumArtists(topAlbums())
 
-    override suspend fun topAlbumArtists(): List<Artist> =
-        artistRepository.splitIntoAlbumArtists(topAlbums())
+    override suspend fun recentSongs(): List<Song> = songRepository.songs(makeLastAddedCursor(null, ContentType.RecentSongs))
 
-    override suspend fun recentSongs(): List<Song> =
-        songRepository.songs(makeLastAddedCursor(null, ContentType.RecentSongs))
+    override suspend fun recentSongs(
+        query: String,
+        contentType: ContentType,
+    ): List<Song> = songRepository.songs(makeLastAddedCursor(query, contentType))
 
-    override suspend fun recentSongs(query: String, contentType: ContentType): List<Song> =
-        songRepository.songs(makeLastAddedCursor(query, contentType))
+    override suspend fun recentAlbums(): List<Album> = albumRepository.splitIntoAlbums(recentSongs(), sorted = false)
 
-    override suspend fun recentAlbums(): List<Album> =
-        albumRepository.splitIntoAlbums(recentSongs(), sorted = false)
+    override suspend fun recentAlbumArtists(): List<Artist> = artistRepository.splitIntoAlbumArtists(recentAlbums())
 
-    override suspend fun recentAlbumArtists(): List<Artist> =
-        artistRepository.splitIntoAlbumArtists(recentAlbums())
-
-    override suspend fun notRecentlyPlayedSongs(): List<Song> {
-        return buildList {
+    override suspend fun notRecentlyPlayedSongs(): List<Song> =
+        buildList {
             addAll(songRepository.songs())
 
             val playedSongIds = historyDao.playedSongIds()
             removeAll { it.id in playedSongIds }
 
-            val oldSongIds = historyDao.notPlayedSongIds(
-                cutoff = Preferences.getHistoryCutoff(context).interval
-            )
-            val oldSongs = songRepository.songs(
-                songRepository.makeSongCursor(
-                    selection = "${AudioColumns._ID} IN (${oldSongIds.joinToString(",") { "?" }})",
-                    selectionValues = oldSongIds.map { it.toString() }.toTypedArray()
+            val oldSongIds =
+                historyDao.notPlayedSongIds(
+                    cutoff = Preferences.getHistoryCutoff(context).interval,
                 )
-            )
+            val oldSongs =
+                songRepository.songs(
+                    songRepository.makeSongCursor(
+                        selection = "${AudioColumns._ID} IN (${oldSongIds.joinToString(",") { "?" }})",
+                        selectionValues = oldSongIds.map { it.toString() }.toTypedArray(),
+                    ),
+                )
             addAll(oldSongs)
         }
-    }
 
-    override suspend fun playCountSongs(): List<Song> = playCountDao.playCountSongs()
-        .fromPlayCountToSongs()
+    override suspend fun playCountSongs(): List<Song> =
+        playCountDao
+            .playCountSongs()
+            .fromPlayCountToSongs()
 
     override fun playCountSongsFlow(): Flow<List<Song>> =
         playCountDao.playCountSongsFlow().map { playCountEntities ->
@@ -127,11 +153,9 @@ class RealSmartRepository(
         }
     }
 
-    override suspend fun findSongInPlayCount(songId: Long): PlayCountEntity? =
-        playCountDao.findSongExistInPlayCount(songId)
+    override suspend fun findSongInPlayCount(songId: Long): PlayCountEntity? = playCountDao.findSongExistInPlayCount(songId)
 
-    override suspend fun deleteSongInPlayCount(songId: Long) =
-        playCountDao.deleteSongInPlayCount(songId)
+    override suspend fun deleteSongInPlayCount(songId: Long) = playCountDao.deleteSongInPlayCount(songId)
 
     override suspend fun deleteSongsInPlayCount(songIds: List<Long>) {
         if (songIds.isEmpty()) return
@@ -140,26 +164,28 @@ class RealSmartRepository(
         }
     }
 
-    override suspend fun insetOrIncrementPlayCount(song: Song, timePlayed: Long) =
-        playCountDao.insertOrIncrementPlayCount(song, timePlayed)
+    override suspend fun insetOrIncrementPlayCount(
+        song: Song,
+        timePlayed: Long,
+    ) = playCountDao.insertOrIncrementPlayCount(song, timePlayed)
 
-    override suspend fun insetOrIncrementSkipCount(song: Song) =
-        playCountDao.insertOrIncrementSkipCount(song)
+    override suspend fun insetOrIncrementSkipCount(song: Song) = playCountDao.insertOrIncrementSkipCount(song)
 
     override suspend fun clearPlayCount() {
         playCountDao.clearPlayCount()
     }
 
     override suspend fun historySongs(): List<Song> =
-        historyDao.historySongs(Preferences.getHistoryCutoff(context).interval).
-            fromHistoryToSongs()
+        historyDao
+            .historySongs(Preferences.getHistoryCutoff(context).interval)
+            .fromHistoryToSongs()
 
     override fun historySongsFlow(): Flow<List<Song>> =
-        historyDao.historySongsFlow(Preferences.getHistoryCutoff(context).interval)
+        historyDao
+            .historySongsFlow(Preferences.getHistoryCutoff(context).interval)
             .map { historyEntities -> historyEntities.fromHistoryToSongs() }
 
-    override suspend fun upsertSongInHistory(currentSong: Song) =
-        historyDao.upsertSongInHistory(currentSong.toHistoryEntity(System.currentTimeMillis()))
+    override suspend fun upsertSongInHistory(currentSong: Song) = historyDao.upsertSongInHistory(currentSong.toHistoryEntity(System.currentTimeMillis()))
 
     override suspend fun deleteSongInHistory(songId: Long) {
         historyDao.deleteSongInHistory(songId)
@@ -176,13 +202,17 @@ class RealSmartRepository(
         historyDao.clearHistory()
     }
 
-    private fun makeLastAddedCursor(query: String?, contentType: ContentType): Cursor? {
+    private fun makeLastAddedCursor(
+        query: String?,
+        contentType: ContentType,
+    ): Cursor? {
         val cutoff = Preferences.getLastAddedCutoff(context).interval
-        val queryDispatcher = MediaQueryDispatcher()
-            .setProjection(RealSongRepository.getBaseProjection())
-            .setSelection("${AudioColumns.DATE_ADDED}>?")
-            .setSelectionArguments(arrayOf(cutoff.toString()))
-            .setSortOrder("${AudioColumns.DATE_ADDED} DESC")
+        val queryDispatcher =
+            MediaQueryDispatcher()
+                .setProjection(RealSongRepository.getBaseProjection())
+                .setSelection("${AudioColumns.DATE_ADDED}>?")
+                .setSelectionArguments(arrayOf(cutoff.toString()))
+                .setSortOrder("${AudioColumns.DATE_ADDED} DESC")
         if (!query.isNullOrEmpty()) {
             when (contentType) {
                 ContentType.RecentAlbums -> queryDispatcher.addSelection("${AudioColumns.ALBUM} LIKE ?")
@@ -195,29 +225,33 @@ class RealSmartRepository(
         return songRepository.makeSongCursor(queryDispatcher)
     }
 
-    private suspend fun List<PlayCountEntity>.fromPlayCountToSongs(): List<Song> = withContext(IO) {
-        val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
-        if (deletedTracks.isNotEmpty()) {
-            deletedTracks.map { it.id }
-                .chunked(MAX_ITEMS_PER_CHUNK)
-                .forEach { chunkIds ->
-                    deleteSongsInPlayCount(chunkIds)
-                }
+    private suspend fun List<PlayCountEntity>.fromPlayCountToSongs(): List<Song> =
+        withContext(IO) {
+            val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
+            if (deletedTracks.isNotEmpty()) {
+                deletedTracks
+                    .map { it.id }
+                    .chunked(MAX_ITEMS_PER_CHUNK)
+                    .forEach { chunkIds ->
+                        deleteSongsInPlayCount(chunkIds)
+                    }
+            }
+
+            validTracks.map { it.toSong() }
         }
 
-        validTracks.map { it.toSong() }
-    }
+    private suspend fun List<HistoryEntity>.fromHistoryToSongs(): List<Song> =
+        withContext(IO) {
+            val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
+            if (deletedTracks.isNotEmpty()) {
+                deletedTracks
+                    .map { it.id }
+                    .chunked(MAX_ITEMS_PER_CHUNK)
+                    .forEach { chunkIds ->
+                        deleteSongsInHistory(chunkIds)
+                    }
+            }
 
-    private suspend fun List<HistoryEntity>.fromHistoryToSongs(): List<Song> = withContext(IO) {
-        val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
-        if (deletedTracks.isNotEmpty()) {
-            deletedTracks.map { it.id }
-                .chunked(MAX_ITEMS_PER_CHUNK)
-                .forEach { chunkIds ->
-                    deleteSongsInHistory(chunkIds)
-                }
+            validTracks.map { it.toSong() }
         }
-
-        validTracks.map { it.toSong() }
-    }
 }

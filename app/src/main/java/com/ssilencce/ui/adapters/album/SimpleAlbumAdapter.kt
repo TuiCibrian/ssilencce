@@ -29,14 +29,15 @@ class SimpleAlbumAdapter(
     activity: FragmentActivity,
     dataSet: List<Album>,
     itemLayoutRes: Int,
-    callback: IAlbumCallback? = null
+    callback: IAlbumCallback? = null,
 ) : AlbumAdapter(activity, dataSet, itemLayoutRes, callback = callback) {
-
-    override fun getAlbumText(holder: ViewHolder, album: Album): String? {
-        return if (album.year > 0) {
+    override fun getAlbumText(
+        holder: ViewHolder,
+        album: Album,
+    ): String? =
+        if (album.year > 0) {
             album.year.toString()
         } else {
             holder.itemView.resources.getString(R.string.unknown_year)
         }
-    }
 }

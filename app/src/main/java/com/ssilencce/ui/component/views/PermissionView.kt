@@ -26,8 +26,10 @@ import android.widget.TextView
 import com.google.android.material.button.MaterialButton
 import com.ssilencce.R
 
-class PermissionView(context: Context, attrs: AttributeSet? = null) : FrameLayout(context, attrs) {
-
+class PermissionView(
+    context: Context,
+    attrs: AttributeSet? = null,
+) : FrameLayout(context, attrs) {
     private var mNumberView: TextView? = null
     private var mTitleView: TextView? = null
     private var mDescView: TextView? = null

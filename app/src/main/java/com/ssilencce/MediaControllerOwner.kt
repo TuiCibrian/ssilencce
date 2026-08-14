@@ -23,9 +23,9 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 @OptIn(ExperimentalAtomicApi::class)
 class MediaControllerOwner(
     private val context: Context,
-    private var listener: MediaController.Listener?
-) : MediaController.Listener, DefaultLifecycleObserver {
-
+    private var listener: MediaController.Listener?,
+) : MediaController.Listener,
+    DefaultLifecycleObserver {
     private val currentState = AtomicReference(State.Idle)
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
@@ -38,42 +38,54 @@ class MediaControllerOwner(
         get() = currentState.load()
 
     enum class State {
-        Idle, Connected, Connecting, Disconnected
+        Idle,
+        Connected,
+        Connecting,
+        Disconnected,
     }
 
     fun get(): MediaController? = controller
 
     fun attachTo(lifecycleOwner: LifecycleOwner) {
         val lifecycle = lifecycleOwner.lifecycle
-        if (lifecycle.currentState == Lifecycle.State.DESTROYED)
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
             return
+        }
 
         lifecycle.addObserver(this)
     }
 
     private fun getSafeListener() = if (state == State.Disconnected) null else listener
 
-    fun addPlayerListener(listener: Player.Listener, lifecycle: Lifecycle) {
+    fun addPlayerListener(
+        listener: Player.Listener,
+        lifecycle: Lifecycle,
+    ) {
         if (state < State.Disconnected && lifecycle.currentState.isAtLeast(Lifecycle.State.CREATED)) {
             controller?.addListener(listener)
-            lifecycle.addObserver(object : DefaultLifecycleObserver {
-                override fun onDestroy(owner: LifecycleOwner) {
-                    controller?.removeListener(listener)
-                }
-            })
+            lifecycle.addObserver(
+                object : DefaultLifecycleObserver {
+                    override fun onDestroy(owner: LifecycleOwner) {
+                        controller?.removeListener(listener)
+                    }
+                },
+            )
         }
     }
 
     override fun onStart(owner: LifecycleOwner) {
-        val movedToConnectingState = currentState.compareAndSet(State.Idle, State.Connecting) ||
+        val movedToConnectingState =
+            currentState.compareAndSet(State.Idle, State.Connecting) ||
                 currentState.compareAndSet(State.Disconnected, State.Connecting)
 
         if (!movedToConnectingState) return
 
         val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
-        controllerFuture = MediaController.Builder(context, sessionToken)
-            .setListener(this)
-            .buildAsync()
+        controllerFuture =
+            MediaController
+                .Builder(context, sessionToken)
+                .setListener(this)
+                .buildAsync()
 
         controllerFuture?.addListener({
             try {
@@ -114,21 +126,24 @@ class MediaControllerOwner(
         listener?.onDisconnected(controller)
     }
 
-    override fun onCustomLayoutChanged(controller: MediaController, layout: List<CommandButton>) {
+    override fun onCustomLayoutChanged(
+        controller: MediaController,
+        layout: List<CommandButton>,
+    ) {
         getSafeListener()?.onCustomLayoutChanged(controller, layout)
     }
 
     @UnstableApi
     override fun onMediaButtonPreferencesChanged(
         controller: MediaController,
-        mediaButtonPreferences: List<CommandButton>
+        mediaButtonPreferences: List<CommandButton>,
     ) {
         getSafeListener()?.onMediaButtonPreferencesChanged(controller, mediaButtonPreferences)
     }
 
     override fun onAvailableSessionCommandsChanged(
         controller: MediaController,
-        commands: SessionCommands
+        commands: SessionCommands,
     ) {
         getSafeListener()?.onAvailableSessionCommandsChanged(controller, commands)
     }
@@ -136,26 +151,31 @@ class MediaControllerOwner(
     override fun onCustomCommand(
         controller: MediaController,
         command: SessionCommand,
-        args: Bundle
-    ): ListenableFuture<SessionResult> {
-        return getSafeListener()?.onCustomCommand(controller, command, args)
+        args: Bundle,
+    ): ListenableFuture<SessionResult> =
+        getSafeListener()?.onCustomCommand(controller, command, args)
             ?: super.onCustomCommand(controller, command, args)
-    }
 
-    override fun onExtrasChanged(controller: MediaController, extras: Bundle) {
+    override fun onExtrasChanged(
+        controller: MediaController,
+        extras: Bundle,
+    ) {
         getSafeListener()?.onExtrasChanged(controller, extras)
     }
 
     @UnstableApi
     override fun onSessionActivityChanged(
         controller: MediaController,
-        sessionActivity: PendingIntent?
+        sessionActivity: PendingIntent?,
     ) {
         getSafeListener()?.onSessionActivityChanged(controller, sessionActivity)
     }
 
     @UnstableApi
-    override fun onError(controller: MediaController, sessionError: SessionError) {
+    override fun onError(
+        controller: MediaController,
+        sessionError: SessionError,
+    ) {
         getSafeListener()?.onError(controller, sessionError)
     }
 }

@@ -23,8 +23,9 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
-class SearchViewModel(private val repository: Repository) : ViewModel() {
-
+class SearchViewModel(
+    private val repository: Repository,
+) : ViewModel() {
     private val searchQuery = MutableStateFlow(SearchQuery())
 
     private val _searchFilter = MutableStateFlow<SearchFilter?>(null)
@@ -44,8 +45,7 @@ class SearchViewModel(private val repository: Repository) : ViewModel() {
             .onEach { (query, filter) ->
                 val result = repository.search(query, filter)
                 _searchResult.value = result
-            }
-            .flowOn(Dispatchers.IO)
+            }.flowOn(Dispatchers.IO)
             .launchIn(viewModelScope)
     }
 
@@ -55,22 +55,27 @@ class SearchViewModel(private val repository: Repository) : ViewModel() {
 
     fun updateQuery(
         mode: SearchQuery.FilterMode? = searchQuery.value.filterMode,
-        query: String? = searchQuery.value.searched
+        query: String? = searchQuery.value.searched,
     ) {
         searchQuery.value = searchQuery.value.copy(filterMode = mode, searched = query)
     }
 
-    fun songClick(song: Song, results: List<Any>) = viewModelScope.launch(Dispatchers.IO) {
-        val songs = if (Preferences.playAllSongsWhenSearching) {
-            repository.allSongs()
-        } else {
-            results.filterIsInstance<Song>()
-        }
-        val startPos = if (songs.size == 1) {
-            if (songs.singleOrNull { it.id == song.id } != null) 0 else -1
-        } else {
-            songs.indexOfSong(song.id).coerceAtLeast(0)
-        }
+    fun songClick(
+        song: Song,
+        results: List<Any>,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        val songs =
+            if (Preferences.playAllSongsWhenSearching) {
+                repository.allSongs()
+            } else {
+                results.filterIsInstance<Song>()
+            }
+        val startPos =
+            if (songs.size == 1) {
+                if (songs.singleOrNull { it.id == song.id } != null) 0 else -1
+            } else {
+                songs.indexOfSong(song.id).coerceAtLeast(0)
+            }
         if (startPos != -1) {
             _queueFlow.emit(Triple(songs, startPos, Preferences.songClickAction))
         }

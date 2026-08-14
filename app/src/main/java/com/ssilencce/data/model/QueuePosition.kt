@@ -4,20 +4,16 @@ import androidx.media3.common.C
 
 data class QueuePosition(
     val current: Int,
-    private val indicesInTimeline: IntArray
+    private val indicesInTimeline: IntArray,
 ) {
-
     val previous: Int = current - 1
     val next: Int = current + 1
 
-    fun setCurrentIndex(index: Int) =
-        copy(current = getPositionForIndex(index))
+    fun setCurrentIndex(index: Int) = copy(current = getPositionForIndex(index))
 
-    fun getPositionForIndex(index: Int) =
-        indicesInTimeline.indexOfFirst { it == index }
+    fun getPositionForIndex(index: Int) = indicesInTimeline.indexOfFirst { it == index }
 
-    fun getIndexForPosition(position: Int) =
-        indicesInTimeline.getOrElse(position) { C.INDEX_UNSET }
+    fun getIndexForPosition(position: Int) = indicesInTimeline.getOrElse(position) { C.INDEX_UNSET }
 
     companion object {
         val Undefined = QueuePosition(C.INDEX_UNSET, IntArray(0))

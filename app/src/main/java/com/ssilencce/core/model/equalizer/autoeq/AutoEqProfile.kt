@@ -6,19 +6,18 @@ import kotlin.math.log10
 @Serializable
 class AutoEqPoint(
     val frequency: Float,
-    val gain: Float
+    val gain: Float,
 )
 
 @Serializable
 data class AutoEqProfile(
     val name: String,
     val points: List<AutoEqPoint>,
-    val preamp: Float = 0f
+    val preamp: Float = 0f,
 ) {
-
     fun getBandGains(
         targetFrequencies: IntArray,
-        validGainRange: ClosedFloatingPointRange<Float>
+        validGainRange: ClosedFloatingPointRange<Float>,
     ): FloatArray {
         val sortedPoints = points.sortedBy { it.frequency }
         val bandGains = FloatArray(targetFrequencies.size)
@@ -29,7 +28,10 @@ data class AutoEqProfile(
         return bandGains
     }
 
-    private fun interpolate(sortedPoints: List<AutoEqPoint>, targetFrequency: Float): Float {
+    private fun interpolate(
+        sortedPoints: List<AutoEqPoint>,
+        targetFrequency: Float,
+    ): Float {
         if (sortedPoints.isEmpty()) return 0f
 
         if (targetFrequency <= sortedPoints.first().frequency) {
@@ -44,7 +46,8 @@ data class AutoEqProfile(
 
         for (i in 0 until sortedPoints.size - 1) {
             if (targetFrequency >= sortedPoints[i].frequency &&
-                targetFrequency <= sortedPoints[i + 1].frequency) {
+                targetFrequency <= sortedPoints[i + 1].frequency
+            ) {
                 p1 = sortedPoints[i]
                 p2 = sortedPoints[i + 1]
                 break

@@ -36,6 +36,7 @@ import com.google.android.material.transition.MaterialArcMotion
 import com.google.android.material.transition.MaterialContainerTransform
 import com.ssilencce.R
 import com.ssilencce.coil.artistImage
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.core.sort.SortMode
@@ -62,7 +63,6 @@ import com.ssilencce.extensions.resources.removeHorizontalMarginIfRequired
 import com.ssilencce.extensions.resources.setupStatusBarForeground
 import com.ssilencce.extensions.resources.surfaceColor
 import com.ssilencce.extensions.setSupportActionBar
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.IAlbumCallback
 import com.ssilencce.ui.IArtistCallback
 import com.ssilencce.ui.ISongCallback
@@ -87,9 +87,11 @@ import java.util.Locale
 /**
  * @author Christians M. A. (mardous)
  */
-class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_detail),
-    IAlbumCallback, IArtistCallback, ISongCallback {
-
+class ArtistDetailFragment :
+    AbsMainActivityFragment(R.layout.fragment_artist_detail),
+    IAlbumCallback,
+    IArtistCallback,
+    ISongCallback {
     private val arguments by navArgs<ArtistDetailFragmentArgs>()
     private val detailViewModel by viewModel<ArtistDetailViewModel> {
         parametersOf(arguments.artistId, arguments.artistName)
@@ -116,15 +118,19 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedElementEnterTransition = MaterialContainerTransform().apply {
-            drawingViewId = R.id.fragment_container
-            scrimColor = Color.TRANSPARENT
-            setAllContainerColors(surfaceColor())
-            setPathMotion(MaterialArcMotion())
-        }
+        sharedElementEnterTransition =
+            MaterialContainerTransform().apply {
+                drawingViewId = R.id.fragment_container
+                scrimColor = Color.TRANSPARENT
+                setAllContainerColors(surfaceColor())
+                setPathMotion(MaterialArcMotion())
+            }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentArtistDetailBinding.bind(view)
         setSupportActionBar(binding.toolbar, "")
@@ -154,78 +160,88 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
     private fun getArtist() = detailViewModel.getArtist()
 
     private fun createSongAdapter() {
-        val itemLayoutRes = if (Preferences.compactArtistSongView) {
-            R.layout.item_song
-        } else {
-            R.layout.item_song_detailed
-        }
-        songAdapter = SimpleSongAdapter(
-            context = requireActivity(),
-            songs = getArtist().sortedSongs,
-            layoutRes = itemLayoutRes,
-            sortMode = SongSortMode.ArtistSongs,
-            callback = this
-        )
+        val itemLayoutRes =
+            if (Preferences.compactArtistSongView) {
+                R.layout.item_song
+            } else {
+                R.layout.item_song_detailed
+            }
+        songAdapter =
+            SimpleSongAdapter(
+                context = requireActivity(),
+                songs = getArtist().sortedSongs,
+                layoutRes = itemLayoutRes,
+                sortMode = SongSortMode.ArtistSongs,
+                callback = this,
+            )
     }
 
     private fun setupRecyclerView() {
         // Header
-        headerAdapter = HeaderAdapter { headerBinding ->
-            headerBinding.image.transitionName = if (isAlbumArtist) {
-                arguments.artistName
-            } else {
-                arguments.artistId.toString()
-            }
-            headerBinding.image.removeHorizontalMarginIfRequired()
-            headerBinding.image.artistImage(getArtist()) { crossfade(false) }
+        headerAdapter =
+            HeaderAdapter { headerBinding ->
+                headerBinding.image.transitionName =
+                    if (isAlbumArtist) {
+                        arguments.artistName
+                    } else {
+                        arguments.artistId.toString()
+                    }
+                headerBinding.image.removeHorizontalMarginIfRequired()
+                headerBinding.image.artistImage(getArtist()) { crossfade(false) }
 
-            headerBinding.title.text = getArtist().displayName()
-            headerBinding.subtitle.text = getArtist().artistInfo(requireContext())
+                headerBinding.title.text = getArtist().displayName()
+                headerBinding.subtitle.text = getArtist().artistInfo(requireContext())
 
-            headerBinding.playAction.setOnClickListener {
-                playerViewModel.openQueue(getArtist().sortedSongs, shuffleMode = OpenShuffleMode.Off)
+                headerBinding.playAction.setOnClickListener {
+                    playerViewModel.openQueue(getArtist().sortedSongs, shuffleMode = OpenShuffleMode.Off)
+                }
+                headerBinding.shuffleAction.setOnClickListener {
+                    playerViewModel.openAndShuffleQueue(getArtist().sortedSongs)
+                }
+                headerBinding.searchAction?.setOnClickListener { goToSearch() }
             }
-            headerBinding.shuffleAction.setOnClickListener {
-                playerViewModel.openAndShuffleQueue(getArtist().sortedSongs)
-            }
-            headerBinding.searchAction?.setOnClickListener { goToSearch() }
-        }
 
         // Grid albums
-        albumHeaderAdapter = SectionHeaderAdapter(getString(R.string.albums_label)) {
-            createSortOrderMenu(it, AlbumSortMode.ArtistAlbums)
-        }
-        albumGridAdapter = SimpleAlbumAdapter(
-            requireActivity(),
-            getArtist().sortedAlbums,
-            R.layout.item_album,
-            callback = this
-        )
+        albumHeaderAdapter =
+            SectionHeaderAdapter(getString(R.string.albums_label)) {
+                createSortOrderMenu(it, AlbumSortMode.ArtistAlbums)
+            }
+        albumGridAdapter =
+            SimpleAlbumAdapter(
+                requireActivity(),
+                getArtist().sortedAlbums,
+                R.layout.item_album,
+                callback = this,
+            )
 
         // Horizontal albums
-        val horizontalAlbumAdapter = SimpleAlbumAdapter(
-            requireActivity(),
-            getArtist().sortedAlbums,
-            R.layout.item_image,
-            callback = this
-        )
-        albumHorizontalAdapter = HorizontalListAdapter("", horizontalAlbumAdapter) {
-            createSortOrderMenu(it, AlbumSortMode.ArtistAlbums)
-        }
+        val horizontalAlbumAdapter =
+            SimpleAlbumAdapter(
+                requireActivity(),
+                getArtist().sortedAlbums,
+                R.layout.item_image,
+                callback = this,
+            )
+        albumHorizontalAdapter =
+            HorizontalListAdapter("", horizontalAlbumAdapter) {
+                createSortOrderMenu(it, AlbumSortMode.ArtistAlbums)
+            }
 
         // Songs
-        songHeaderAdapter = SectionHeaderAdapter(getString(R.string.songs_label)) {
-            createSortOrderMenu(it, SongSortMode.ArtistSongs)
-        }
+        songHeaderAdapter =
+            SectionHeaderAdapter(getString(R.string.songs_label)) {
+                createSortOrderMenu(it, SongSortMode.ArtistSongs)
+            }
         createSongAdapter()
 
         // Similar artists
-        val similarAdapter = ArtistAdapter(
-            activity = requireActivity(),
-            dataSet = emptyList(),
-            itemLayoutRes = R.layout.item_artist,
-            callback = this
-        )
+        val similarAdapter =
+            ArtistAdapter(
+                activity = requireActivity(),
+                dataSet = emptyList(),
+                itemLayoutRes = R.layout.item_artist,
+                callback = this,
+            )
         similarArtistAdapter = HorizontalListAdapter(getString(R.string.similar_artists), similarAdapter)
 
         // Wiki
@@ -233,21 +249,24 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
 
         val spanCount = defaultGridColumns()
         val layoutManager = GridLayoutManager(requireContext(), spanCount)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                val adapterAndPosition = concatAdapter.getWrappedAdapterAndPosition(position)
-                return if (adapterAndPosition.first == albumGridAdapter && !Preferences.horizontalArtistAlbums) 1 else spanCount
+        layoutManager.spanSizeLookup =
+            object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int {
+                    val adapterAndPosition = concatAdapter.getWrappedAdapterAndPosition(position)
+                    return if (adapterAndPosition.first == albumGridAdapter && !Preferences.horizontalArtistAlbums) 1 else spanCount
+                }
             }
-        }
 
         updateConcatAdapter()
         binding.recyclerView.layoutManager = layoutManager
     }
 
     private fun updateConcatAdapter() {
-        val config = ConcatAdapter.Config.Builder()
-            .setStableIdMode(ConcatAdapter.Config.StableIdMode.ISOLATED_STABLE_IDS)
-            .build()
+        val config =
+            ConcatAdapter.Config
+                .Builder()
+                .setStableIdMode(ConcatAdapter.Config.StableIdMode.ISOLATED_STABLE_IDS)
+                .build()
 
         val adapters = mutableListOf<RecyclerView.Adapter<*>>()
         adapters.add(headerAdapter)
@@ -270,16 +289,22 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
         }
     }
 
-    private fun createSortOrderMenu(view: View, sortMode: SortMode) {
-        val popupMenu = PopupMenu(view.context, view).apply {
-            sortMode.createMenu(menu, hasSubMenu = false)
-            setOnMenuItemClickListener { item ->
-                if (sortMode.sortItemSelected(item)) {
-                    detailViewModel.loadArtistDetail()
-                    true
-                } else false
+    private fun createSortOrderMenu(
+        view: View,
+        sortMode: SortMode,
+    ) {
+        val popupMenu =
+            PopupMenu(view.context, view).apply {
+                sortMode.createMenu(menu, hasSubMenu = false)
+                setOnMenuItemClickListener { item ->
+                    if (sortMode.sortItemSelected(item)) {
+                        detailViewModel.loadArtistDetail()
+                        true
+                    } else {
+                        false
+                    }
+                }
             }
-        }
         popupMenu.show()
     }
 
@@ -317,7 +342,10 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
         albumHeaderAdapter.setVisible(hasAlbums && !Preferences.horizontalArtistAlbums)
     }
 
-    private fun loadBiography(name: String, lang: String? = Locale.getDefault().language) {
+    private fun loadBiography(
+        name: String,
+        lang: String? = Locale.getDefault().language,
+    ) {
         this.biography = null
         this.lang = lang
         detailViewModel.getArtistBio(name, lang, null).observe(viewLifecycleOwner) { lastFmArtist ->
@@ -357,50 +385,60 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
         }
     }
 
-    override fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>?) {
+    override fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun albumMenuItemClick(
         album: Album,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return false
-    }
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean = false
 
-    override fun albumsMenuItemClick(albums: List<Album>, menuItem: MenuItem) {
+    override fun albumsMenuItemClick(
+        albums: List<Album>,
+        menuItem: MenuItem,
+    ) {
         albums.onAlbumsMenu(this, menuItem)
     }
 
-    override fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>?) {
+    override fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun artistMenuItemClick(
         artist: Artist,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = false
 
-    override fun artistsMenuItemClick(artists: List<Artist>, menuItem: MenuItem) {
+    override fun artistsMenuItemClick(
+        artists: List<Artist>,
+        menuItem: MenuItem,
+    ) {
         artists.onArtistsMenu(this, menuItem)
     }
 
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean {
         if (menuItem.itemId == R.id.action_go_to_artist) {
             return true
@@ -408,11 +446,17 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
         return song.onSongMenu(this, menuItem)
     }
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {
         menuInflater.inflate(R.menu.menu_artist_detail, menu)
         if (!isLandscape()) {
             menu.removeItem(R.id.action_search)
@@ -422,8 +466,8 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
         menu.findItem(R.id.action_toggle_compact_song_view)?.isChecked = Preferences.compactArtistSongView
     }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-        return when (menuItem.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+        when (menuItem.itemId) {
             android.R.id.home -> {
                 findNavController().navigateUp()
                 true
@@ -465,9 +509,10 @@ class ArtistDetailFragment : AbsMainActivityFragment(R.layout.fragment_artist_de
                 true
             }
 
-            else -> getArtist().onArtistMenu(this, menuItem)
+            else -> {
+                getArtist().onArtistMenu(this, menuItem)
+            }
         }
-    }
 
     private fun goToSearch() {
         findNavController().navigate(R.id.nav_search, searchArgs(getArtist().searchFilter(requireContext())))

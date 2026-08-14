@@ -38,18 +38,26 @@ import com.ssilencce.ui.screen.library.ReloadType
 /**
  * @author Christians M. A. (mardous)
  */
-class SongListFragment : AbsRecyclerViewCustomGridSizeFragment<SongAdapter, GridLayoutManager>(), ISongCallback {
-
+class SongListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<SongAdapter, GridLayoutManager>(),
+    ISongCallback {
     override val titleRes: Int = R.string.songs_label
     override val isShuffleVisible: Boolean = true
     override val emptyMessageRes: Int
         get() = R.string.no_songs_label
 
     override val defaultGridSize: Int
-        get() = if (isLandscape) resources.getInteger(R.integer.default_list_columns_land)
-        else resources.getInteger(R.integer.default_list_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.default_list_columns_land)
+            } else {
+                resources.getInteger(R.integer.default_list_columns)
+            }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getSongs().observe(viewLifecycleOwner) { songs ->
             adapter?.dataSet = songs
@@ -73,9 +81,7 @@ class SongListFragment : AbsRecyclerViewCustomGridSizeFragment<SongAdapter, Grid
         adapter?.actionMode?.finish()
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(activity, gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(activity, gridSize)
 
     override fun createAdapter(): SongAdapter {
         notifyLayoutResChanged(itemLayoutRes)
@@ -85,46 +91,50 @@ class SongListFragment : AbsRecyclerViewCustomGridSizeFragment<SongAdapter, Grid
             dataSet = dataSet,
             itemLayoutRes = itemLayoutRes,
             sortMode = SongSortMode.AllSongs,
-            callback = this
+            callback = this,
         )
     }
 
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return song.onSongMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.entries.firstOrNull {
+    override fun getSavedViewType(): GridViewType =
+        GridViewType.entries.firstOrNull {
             it.name == sharedPreferences.getString(VIEW_TYPE, null)
         } ?: GridViewType.Normal
-    }
 
     override fun saveViewType(viewType: GridViewType) {
         sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
     }
 
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         SongSortMode.AllSongs.createMenu(menu)
     }

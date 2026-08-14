@@ -68,8 +68,8 @@ import com.ssilencce.ui.dialogs.MultiCheckDialog
 import com.ssilencce.ui.dialogs.library.BlacklistWhitelistDialog
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.library.ReloadType
-import com.ssilencce.ui.screen.scrobbling.ScrobblingServiceLoginFragment
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
+import com.ssilencce.ui.screen.scrobbling.ScrobblingServiceLoginFragment
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
@@ -113,50 +113,71 @@ import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class AppearancePreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_appearance)
     }
 }
 
 class NowPlayingPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_now_playing)
     }
 }
 
 class LyricsPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_lyrics)
     }
 }
 
 class PlaybackPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_playback)
     }
 }
 
 class LibraryPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_library)
     }
 }
 
 class NetworkPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_network)
     }
 }
 
 class AdvancedPreferencesFragment : PreferenceScreenFragment() {
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences_screen_advanced)
     }
 }
 
-open class PreferenceScreenFragment : PreferenceFragmentCompat(),
+open class PreferenceScreenFragment :
+    PreferenceFragmentCompat(),
     SharedPreferences.OnSharedPreferenceChangeListener {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val lyricsViewModel: LyricsViewModel by activityViewModel()
     private val updateViewModel: UpdateViewModel by activityViewModel()
@@ -164,7 +185,8 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
     private val importFontLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
             if (uri != null) {
-                lyricsViewModel.importCustomFont(requireContext(), uri)
+                lyricsViewModel
+                    .importCustomFont(requireContext(), uri)
                     .observe(viewLifecycleOwner) { success ->
                         if (success) {
                             showToast(R.string.font_imported_successfully)
@@ -189,32 +211,42 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
     private val selectBackupLauncher: ActivityResultLauncher<Array<String>> =
         registerForActivityResult(ActivityResultContracts.OpenDocument()) { selection ->
             if (selection != null) {
-                val items = BackupContent.entries.map {
-                    getString(it.titleRes)
-                }
-                val multiCheckDialog = MultiCheckDialog.Builder(requireContext())
-                    .title(R.string.select_content_to_restore)
-                    .items(items)
-                    .createDialog { _, whichPos, _ ->
-                        val content = BackupContent.entries.filterIndexed { i, _ ->
-                            whichPos.contains(i)
-                        }
-                        GlobalScope.launch {
-                            BackupHelper.restoreBackup(requireContext(), selection, content)
-                        }
-                        true
+                val items =
+                    BackupContent.entries.map {
+                        getString(it.titleRes)
                     }
+                val multiCheckDialog =
+                    MultiCheckDialog
+                        .Builder(requireContext())
+                        .title(R.string.select_content_to_restore)
+                        .items(items)
+                        .createDialog { _, whichPos, _ ->
+                            val content =
+                                BackupContent.entries.filterIndexed { i, _ ->
+                                    whichPos.contains(i)
+                                }
+                            GlobalScope.launch {
+                                BackupHelper.restoreBackup(requireContext(), selection, content)
+                            }
+                            true
+                        }
                 multiCheckDialog.show(childFragmentManager, "RESTORE_DIALOG")
             }
         }
 
     private val preferences: SharedPreferences by inject()
 
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    override fun onCreatePreferences(
+        savedInstanceState: Bundle?,
+        rootKey: String?,
+    ) {
         addPreferencesFromResource(R.xml.preferences)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         preferences.registerOnSharedPreferenceChangeListener(this)
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
@@ -230,13 +262,14 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
             getString(R.string.about_summary, BuildConfig.VERSION_NAME)
 
         findPreference<ThemePreference>(GENERAL_THEME)?.apply {
-            customCallback = object : ThemePreference.Callback {
-                override fun onThemeSelected(themeName: String) {
-                    Preferences.generalTheme = themeName
-                    setDefaultNightMode(Preferences.getDayNightMode(themeName))
-                    restartActivity()
+            customCallback =
+                object : ThemePreference.Callback {
+                    override fun onThemeSelected(themeName: String) {
+                        Preferences.generalTheme = themeName
+                        setDefaultNightMode(Preferences.getDayNightMode(themeName))
+                        restartActivity()
+                    }
                 }
-            }
         }
 
         findPreference<Preference>(BLACK_THEME)?.apply {
@@ -271,10 +304,14 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
         findPreference<ListPreference>(LyricsViewSettings.Key.BACKGROUND_EFFECT)?.apply {
             if (!hasS()) {
                 val indexOfBlur = entryValues.indexOf("blur")
-                entries = entries.filterIndexed { index, _ -> index != indexOfBlur }
-                    .toTypedArray()
-                entryValues = entryValues.filterIndexed { index, _ -> index != indexOfBlur }
-                    .toTypedArray()
+                entries =
+                    entries
+                        .filterIndexed { index, _ -> index != indexOfBlur }
+                        .toTypedArray()
+                entryValues =
+                    entryValues
+                        .filterIndexed { index, _ -> index != indexOfBlur }
+                        .toTypedArray()
             }
         }
 
@@ -282,19 +319,21 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
             ?.isVisible = hasS()
 
         findPreference<Preference>(LyricsViewSettings.Key.SELECTED_CUSTOM_FONT)
-            ?.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-            importFontLauncher.launch(
-                arrayOf("font/ttf", "font/otf", "application/x-font-ttf", "application/x-font-otf")
-            )
-            true
-        }
+            ?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                importFontLauncher.launch(
+                    arrayOf("font/ttf", "font/otf", "application/x-font-ttf", "application/x-font-otf"),
+                )
+                true
+            }
 
         findPreference<Preference>("clear_lyrics")
-            ?.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-            lyricsViewModel.deleteLyrics()
-            showToast(R.string.lyrics_cleared)
-            true
-        }
+            ?.onPreferenceClickListener =
+            Preference.OnPreferenceClickListener {
+                lyricsViewModel.deleteLyrics()
+                showToast(R.string.lyrics_cleared)
+                true
+            }
 
         if (!hasR()) {
             findPreference<Preference>(TRASH_MUSIC_FILES)?.isVisible = false
@@ -307,19 +346,23 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
             }
 
         findPreference<SwitchWithButtonPreference>(WHITELIST_ENABLED)?.apply {
-            setButtonPressedListener(object : SwitchWithButtonPreference.OnButtonPressedListener {
-                override fun onButtonPressed() {
-                    showLibraryFolderSelector(InclExclDao.WHITELIST)
-                }
-            })
+            setButtonPressedListener(
+                object : SwitchWithButtonPreference.OnButtonPressedListener {
+                    override fun onButtonPressed() {
+                        showLibraryFolderSelector(InclExclDao.WHITELIST)
+                    }
+                },
+            )
         }
 
         findPreference<SwitchWithButtonPreference>(BLACKLIST_ENABLED)?.apply {
-            setButtonPressedListener(object : SwitchWithButtonPreference.OnButtonPressedListener {
-                override fun onButtonPressed() {
-                    showLibraryFolderSelector(InclExclDao.BLACKLIST)
-                }
-            })
+            setButtonPressedListener(
+                object : SwitchWithButtonPreference.OnButtonPressedListener {
+                    override fun onButtonPressed() {
+                        showLibraryFolderSelector(InclExclDao.BLACKLIST)
+                    }
+                },
+            )
         }
 
         findPreference<Preference>(IGNORE_MEDIA_STORE)?.onPreferenceChangeListener =
@@ -354,8 +397,8 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
             createBackupLauncher.launch(
                 getFormattedFileName(
                     "Backup",
-                    BackupHelper.BACKUP_EXTENSION
-                )
+                    BackupHelper.BACKUP_EXTENSION,
+                ),
             )
             true
         }
@@ -369,10 +412,11 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
 
         val updateSearchPreference = findPreference<ProgressIndicatorPreference>("search_for_update")
         if (updateSearchPreference != null) {
-            updateSearchPreference.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-                updateViewModel.searchForUpdate(true)
-                true
-            }
+            updateSearchPreference.onPreferenceClickListener =
+                Preference.OnPreferenceClickListener {
+                    updateViewModel.searchForUpdate(true)
+                    true
+                }
 
             updateViewModel.updateEventObservable.observe(viewLifecycleOwner) {
                 val result = it.peekContent()
@@ -384,7 +428,8 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
                     }
 
                     UpdateSearchResult.State.Completed,
-                    UpdateSearchResult.State.Failed -> {
+                    UpdateSearchResult.State.Failed,
+                    -> {
                         updateSearchState(updateSearchPreference, result.executedAtMillis)
                     }
 
@@ -408,22 +453,33 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
             dialogFragment.setTargetFragment(this, 0)
             dialogFragment.show(parentFragmentManager, "androidx.preference.PreferenceFragment.DIALOG")
         } else {
-            val dialogFragment: DialogFragment? = when (preference.key) {
-                LIBRARY_CATEGORIES -> CategoriesPreferenceDialog()
-                NOW_PLAYING_SCREEN -> NowPlayingScreenPreferenceDialog()
-                NOW_PLAYING_EXTRA_INFO -> ExtraInfoPreferenceDialog.nowPlaying(requireContext())
-                WIDGET_THIRD_LINE_CONTENT -> ExtraInfoPreferenceDialog.appWidgets(requireContext())
-                ON_SONG_CLICK_ACTION -> SongClickActionPreferenceDialog()
-                ON_CLEAR_QUEUE_ACTION -> ClearQueueActionPreferenceDialog()
-                COVER_DOUBLE_TAP_ACTION,
-                COVER_SINGLE_TAP_ACTION,
-                COVER_LONG_PRESS_ACTION,
-                COVER_LEFT_DOUBLE_TAP_ACTION,
-                COVER_RIGHT_DOUBLE_TAP_ACTION -> ActionOnCoverPreferenceDialog.newInstance(preference.key)
-                LASTFM_LOGIN -> ScrobblingServiceLoginFragment.create(ScrobblingService.Lastfm)
-                LISTENBRAINZ_LOGIN -> ScrobblingServiceLoginFragment.create(ScrobblingService.ListenBrainz)
-                else -> null
-            }
+            val dialogFragment: DialogFragment? =
+                when (preference.key) {
+                    LIBRARY_CATEGORIES -> CategoriesPreferenceDialog()
+
+                    NOW_PLAYING_SCREEN -> NowPlayingScreenPreferenceDialog()
+
+                    NOW_PLAYING_EXTRA_INFO -> ExtraInfoPreferenceDialog.nowPlaying(requireContext())
+
+                    WIDGET_THIRD_LINE_CONTENT -> ExtraInfoPreferenceDialog.appWidgets(requireContext())
+
+                    ON_SONG_CLICK_ACTION -> SongClickActionPreferenceDialog()
+
+                    ON_CLEAR_QUEUE_ACTION -> ClearQueueActionPreferenceDialog()
+
+                    COVER_DOUBLE_TAP_ACTION,
+                    COVER_SINGLE_TAP_ACTION,
+                    COVER_LONG_PRESS_ACTION,
+                    COVER_LEFT_DOUBLE_TAP_ACTION,
+                    COVER_RIGHT_DOUBLE_TAP_ACTION,
+                    -> ActionOnCoverPreferenceDialog.newInstance(preference.key)
+
+                    LASTFM_LOGIN -> ScrobblingServiceLoginFragment.create(ScrobblingService.Lastfm)
+
+                    LISTENBRAINZ_LOGIN -> ScrobblingServiceLoginFragment.create(ScrobblingService.ListenBrainz)
+
+                    else -> null
+                }
             if (dialogFragment != null) {
                 dialogFragment.show(childFragmentManager, "androidx.preference.PreferenceFragment.DIALOG")
             } else {
@@ -439,23 +495,35 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
                 findNavController().navigate(settingsScreen.navAction)
                 true
             }
+
             preference.key == "about" -> {
                 findActivityNavController(R.id.fragment_container).navigate(R.id.nav_about)
                 true
             }
-            else -> super.onPreferenceTreeClick(preference)
+
+            else -> {
+                super.onPreferenceTreeClick(preference)
+            }
         }
     }
 
-    override fun onSharedPreferenceChanged(preferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        preferences: SharedPreferences,
+        key: String?,
+    ) {
         when (key) {
             NOW_PLAYING_SCREEN -> onUpdateNowPlayingScreen()
+
             COVER_DOUBLE_TAP_ACTION,
             COVER_LEFT_DOUBLE_TAP_ACTION,
             COVER_RIGHT_DOUBLE_TAP_ACTION,
-            COVER_LONG_PRESS_ACTION -> onUpdateCoverActions()
+            COVER_LONG_PRESS_ACTION,
+            -> onUpdateCoverActions()
+
             ON_SONG_CLICK_ACTION,
-            ON_CLEAR_QUEUE_ACTION -> onUpdateQueuePreferences()
+            ON_CLEAR_QUEUE_ACTION,
+            -> onUpdateQueuePreferences()
+
             LyricsViewSettings.Key.BACKGROUND_EFFECT -> onUpdateLyricsPreferences()
         }
     }
@@ -502,19 +570,23 @@ open class PreferenceScreenFragment : PreferenceFragmentCompat(),
         BlacklistWhitelistDialog.newInstance(type).show(childFragmentManager, "LIBRARY_PATHS_PREFERENCE")
     }
 
-    private fun clearImageLoaderCache() = lifecycleScope.launch(Dispatchers.IO) {
-        try {
-            CoverProvider.clearCache(requireContext())
+    private fun clearImageLoaderCache() =
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                CoverProvider.clearCache(requireContext())
 
-            val imageLoader = SingletonImageLoader.get(requireContext())
-            imageLoader.memoryCache?.clear()
-            imageLoader.diskCache?.clear()
-        } catch (e: Exception) {
-            Log.e("Settings", "Failed to clear image loader cache", e)
+                val imageLoader = SingletonImageLoader.get(requireContext())
+                imageLoader.memoryCache?.clear()
+                imageLoader.diskCache?.clear()
+            } catch (e: Exception) {
+                Log.e("Settings", "Failed to clear image loader cache", e)
+            }
         }
-    }
 
-    private fun updateSearchState(preference: ProgressIndicatorPreference?, lastUpdateSearch: Long) {
+    private fun updateSearchState(
+        preference: ProgressIndicatorPreference?,
+        lastUpdateSearch: Long,
+    ) {
         requestContext {
             preference?.hideProgressIndicator()
             preference?.isEnabled = true

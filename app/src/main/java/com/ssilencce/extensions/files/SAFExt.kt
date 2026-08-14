@@ -42,7 +42,7 @@ fun Context.saveTreeUri(uri: Uri?): Uri? {
     if (uri == null) return null
     contentResolver.takePersistableUriPermission(
         uri,
-        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION
+        Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION,
     )
     return uri
 }

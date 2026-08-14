@@ -9,7 +9,7 @@ class PaletteColor(
     val backgroundColor: Int,
     val primaryColor: Int,
     val primaryTextColor: Int,
-    val secondaryTextColor: Int
+    val secondaryTextColor: Int,
 ) {
     companion object {
         fun errorColor(context: Context): PaletteColor {
@@ -19,7 +19,7 @@ class PaletteColor(
                 backgroundColor = backgroundColor,
                 primaryColor = foregroundColor,
                 primaryTextColor = foregroundColor,
-                secondaryTextColor = foregroundColor.withAlpha(0.75f)
+                secondaryTextColor = foregroundColor.withAlpha(0.75f),
             )
         }
     }

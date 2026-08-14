@@ -36,19 +36,23 @@ import java.util.Locale
 fun createAlbumArtThumbFile(): File =
     File(
         FileUtil.thumbsDirectory(),
-        "Thumb_%d".format(System.currentTimeMillis())
+        "Thumb_%d".format(System.currentTimeMillis()),
     )
 
-fun ContentResolver.insertAlbumArt(albumId: Long, path: String) {
+fun ContentResolver.insertAlbumArt(
+    albumId: Long,
+    path: String,
+) {
     val artworkUri = "content://media/external/audio/albumart".toUri()
     delete(ContentUris.withAppendedId(artworkUri, albumId), null, null)
     if (!hasQ()) {
         // On Android Q+, this throws an IllegalArgumentException
         // as modifying the _data column is not longer allowed
-        val values = contentValuesOf(
-            AlbumColumns.ALBUM_ID to albumId,
-            MediaColumns.DATA to path
-        )
+        val values =
+            contentValuesOf(
+                AlbumColumns.ALBUM_ID to albumId,
+                MediaColumns.DATA to path,
+            )
         insert(artworkUri, values)
     }
     notifyChange(artworkUri, null)
@@ -68,14 +72,14 @@ fun Int.asReadableTrackNumber(): Int = this % 1000
 
 fun Int.asNumberOfSongs(context: Context): String = context.plurals(R.plurals.x_songs, this)
 
-fun Int.asNumberOfTimes(context: Context): String {
-    return if (this <= 0) {
+fun Int.asNumberOfTimes(context: Context): String =
+    if (this <= 0) {
         context.getString(R.string.label_never)
-    } else context.plurals(R.plurals.x_times, this)
-}
+    } else {
+        context.plurals(R.plurals.x_times, this)
+    }
 
-fun Long.asAlbumCoverUri(): Uri =
-    ContentUris.withAppendedId("content://media/external/audio/albumart".toUri(), this)
+fun Long.asAlbumCoverUri(): Uri = ContentUris.withAppendedId("content://media/external/audio/albumart".toUri(), this)
 
 fun Long.asReadableDuration(readableFormat: Boolean = false): String {
     val totalSeconds = this / 1000
@@ -99,8 +103,9 @@ fun Long.asReadableDuration(readableFormat: Boolean = false): String {
 }
 
 fun String?.asSectionName(sortMode: SortMode? = null): String {
-    if (this.isNullOrEmpty())
+    if (this.isNullOrEmpty()) {
         return ""
+    }
 
     val title = normalizeForSorting(sortMode?.ignoreArticles == true)
     return if (title.isEmpty()) "" else title[0].toString().lowercase()
@@ -108,7 +113,7 @@ fun String?.asSectionName(sortMode: SortMode? = null): String {
 
 fun String.normalizeForSorting(
     ignoreArticles: Boolean,
-    language: String = Locale.getDefault().language
+    language: String = Locale.getDefault().language,
 ): String {
     return if (ignoreArticles) {
         val regex = ARTICLES_REGEX_BY_LANGUAGE[language] ?: return this
@@ -118,16 +123,18 @@ fun String.normalizeForSorting(
     }
 }
 
-private val ARTICLES_BY_LANGUAGE = mapOf(
-    "en" to listOf("the", "a", "an"),
-    "es" to listOf("el", "la", "los", "las", "un", "una"),
-    "fr" to listOf("le", "la", "les", "un", "une"),
-    "de" to listOf("der", "die", "das", "ein", "eine"),
-    "it" to listOf("il", "lo", "la", "l’", "i", "gli", "un", "una"),
-    "pt" to listOf("o", "a", "os", "as", "um", "uma"),
-    "nl" to listOf("de", "het", "een")
-)
+private val ARTICLES_BY_LANGUAGE =
+    mapOf(
+        "en" to listOf("the", "a", "an"),
+        "es" to listOf("el", "la", "los", "las", "un", "una"),
+        "fr" to listOf("le", "la", "les", "un", "une"),
+        "de" to listOf("der", "die", "das", "ein", "eine"),
+        "it" to listOf("il", "lo", "la", "l’", "i", "gli", "un", "una"),
+        "pt" to listOf("o", "a", "os", "as", "um", "uma"),
+        "nl" to listOf("de", "het", "een"),
+    )
 
-private val ARTICLES_REGEX_BY_LANGUAGE = ARTICLES_BY_LANGUAGE.mapValues { (_, articles) ->
-    Regex("^(${articles.joinToString("|")})\\s+", RegexOption.IGNORE_CASE)
-}
+private val ARTICLES_REGEX_BY_LANGUAGE =
+    ARTICLES_BY_LANGUAGE.mapValues { (_, articles) ->
+        Regex("^(${articles.joinToString("|")})\\s+", RegexOption.IGNORE_CASE)
+    }

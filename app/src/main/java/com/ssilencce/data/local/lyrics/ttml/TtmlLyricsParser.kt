@@ -22,19 +22,18 @@ import java.util.regex.Pattern
  * - Various time expressions (clock time and offset time).
  */
 class TtmlLyricsParser : LyricsParser {
-
-    override fun handles(file: LyricsFile): Boolean =
-        file.format == LyricsFile.Format.TTML
+    override fun handles(file: LyricsFile): Boolean = file.format == LyricsFile.Format.TTML
 
     /**
      * Quickly checks if the reader content is a valid TTML lyrics file.
      * It verifies the presence of the `<tt>` root tag and at least one `<div>` inside `<body>`.
      */
-    override fun handles(reader: Reader): Boolean {
-        return try {
-            val parser = XmlPullParserFactory.newInstance().newPullParser().apply {
-                setInput(reader)
-            }
+    override fun handles(reader: Reader): Boolean =
+        try {
+            val parser =
+                XmlPullParserFactory.newInstance().newPullParser().apply {
+                    setInput(reader)
+                }
 
             var foundTt = false
             var foundDivInBody = false
@@ -45,14 +44,23 @@ class TtmlLyricsParser : LyricsParser {
                 when (event) {
                     XmlPullParser.START_TAG -> {
                         when (parser.name) {
-                            "tt" -> foundTt = true
-                            "body" -> insideBody = true
-                            "div" -> if (insideBody) {
-                                foundDivInBody = true
-                                break
+                            "tt" -> {
+                                foundTt = true
+                            }
+
+                            "body" -> {
+                                insideBody = true
+                            }
+
+                            "div" -> {
+                                if (insideBody) {
+                                    foundDivInBody = true
+                                    break
+                                }
                             }
                         }
                     }
+
                     XmlPullParser.END_TAG -> {
                         if (parser.name == "body") {
                             insideBody = false
@@ -65,14 +73,17 @@ class TtmlLyricsParser : LyricsParser {
         } catch (_: Exception) {
             false
         }
-    }
 
     /**
      * Main entry point for parsing TTML content using [XmlPullParser].
      * It builds a [TtmlNodeTree] by processing start and end tags.
      * The tree is then converted into [SyncedLyrics].
      */
-    override fun parse(reader: Reader, trackLength: Long, ignoreBlankLines: Boolean): SyncedLyrics? {
+    override fun parse(
+        reader: Reader,
+        trackLength: Long,
+        ignoreBlankLines: Boolean,
+    ): SyncedLyrics? {
         try {
             val parser = XmlPullParserFactory.newInstance().newPullParser()
             parser.setInput(reader)
@@ -92,7 +103,7 @@ class TtmlLyricsParser : LyricsParser {
                                 // Agents define the performers of the lyrics
                                 nodeTree.addAgent(
                                     id = parser.getAttributeValue(null, "xml:id"),
-                                    type = parser.getAttributeValue(null, "type")
+                                    type = parser.getAttributeValue(null, "type"),
                                 )
                             }
 
@@ -121,36 +132,39 @@ class TtmlLyricsParser : LyricsParser {
                             }
 
                             TtmlNode.TAG_BODY -> {
-                                val hasRoot = nodeTree.addRoot(
-                                    TtmlNode.buildBody(parser.getTimeAttribute("dur"))
-                                )
+                                val hasRoot =
+                                    nodeTree.addRoot(
+                                        TtmlNode.buildBody(parser.getTimeAttribute("dur")),
+                                    )
                                 if (!hasRoot) break
                             }
 
                             TtmlNode.TAG_DIV -> {
                                 // Sections (div) group multiple lines together
-                                val openSection = nodeTree.openSection(
-                                    TtmlNode.buildSection(
-                                        begin = parser.getTimeAttribute("begin"),
-                                        end = parser.getTimeAttribute("end"),
-                                        dur = parser.getTimeAttribute("dur")
+                                val openSection =
+                                    nodeTree.openSection(
+                                        TtmlNode.buildSection(
+                                            begin = parser.getTimeAttribute("begin"),
+                                            end = parser.getTimeAttribute("end"),
+                                            dur = parser.getTimeAttribute("dur"),
+                                        ),
                                     )
-                                )
                                 if (!openSection && nodeTree.hasRoot) break
                             }
 
                             TtmlNode.TAG_PARAGRAPH -> {
                                 // Paragraphs (p) represent a single line of lyrics
                                 val agentAttribute = parser.getAttributeValue(null, "ttm:agent")
-                                val openLine = nodeTree.openLine(
-                                    TtmlNode.buildLine(
-                                        begin = parser.getTimeAttribute("begin"),
-                                        end = parser.getTimeAttribute("end"),
-                                        dur = parser.getTimeAttribute("dur"),
-                                        key = parser.getAttributeValue(null, "itunes:key"),
-                                        agent = agentAttribute?.let { nodeTree.getAgent(it) }
+                                val openLine =
+                                    nodeTree.openLine(
+                                        TtmlNode.buildLine(
+                                            begin = parser.getTimeAttribute("begin"),
+                                            end = parser.getTimeAttribute("end"),
+                                            dur = parser.getTimeAttribute("dur"),
+                                            key = parser.getAttributeValue(null, "itunes:key"),
+                                            agent = agentAttribute?.let { nodeTree.getAgent(it) },
+                                        ),
                                     )
-                                )
                                 if (!openLine && nodeTree.hasRoot) break
                             }
 
@@ -160,19 +174,21 @@ class TtmlLyricsParser : LyricsParser {
                                 val lang = parser.getAttributeValue(null, "xml:lang")
                                 if (role == null) {
                                     // Default span is treated as a word
-                                    val openWord = nodeTree.openWord(
-                                        TtmlNode.buildWord(
-                                            begin = parser.getTimeAttribute("begin"),
-                                            end = parser.getTimeAttribute("end"),
-                                            dur = parser.getTimeAttribute("dur")
+                                    val openWord =
+                                        nodeTree.openWord(
+                                            TtmlNode.buildWord(
+                                                begin = parser.getTimeAttribute("begin"),
+                                                end = parser.getTimeAttribute("end"),
+                                                dur = parser.getTimeAttribute("dur"),
+                                            ),
                                         )
-                                    )
                                     if (!openWord && nodeTree.hasRoot) break
                                 } else {
                                     when (role) {
                                         "x-bg" -> {
                                             nodeTree.enterBackground()
                                         }
+
                                         "x-translation" -> {
                                             nodeTree.prepareTranslationForCurrentLine(lang)
                                         }
@@ -190,11 +206,27 @@ class TtmlLyricsParser : LyricsParser {
                         }
                         when (name) {
                             TtmlNode.TAG_TRANSLITERATION,
-                            TtmlNode.TAG_TRANSLATION -> if (!nodeTree.closeAccompaniment()) break
-                            TtmlNode.TAG_TEXT -> if (!nodeTree.finishAccompanimentText()) break
-                            TtmlNode.TAG_BODY -> if (!nodeTree.closeNode(TtmlNode.NODE_BODY)) break
-                            TtmlNode.TAG_DIV -> if (!nodeTree.closeNode(TtmlNode.NODE_SECTION)) break
-                            TtmlNode.TAG_PARAGRAPH -> if (!nodeTree.closeNode(TtmlNode.NODE_LINE)) break
+                            TtmlNode.TAG_TRANSLATION,
+                            -> {
+                                if (!nodeTree.closeAccompaniment()) break
+                            }
+
+                            TtmlNode.TAG_TEXT -> {
+                                if (!nodeTree.finishAccompanimentText()) break
+                            }
+
+                            TtmlNode.TAG_BODY -> {
+                                if (!nodeTree.closeNode(TtmlNode.NODE_BODY)) break
+                            }
+
+                            TtmlNode.TAG_DIV -> {
+                                if (!nodeTree.closeNode(TtmlNode.NODE_SECTION)) break
+                            }
+
+                            TtmlNode.TAG_PARAGRAPH -> {
+                                if (!nodeTree.closeNode(TtmlNode.NODE_LINE)) break
+                            }
+
                             TtmlNode.TAG_SPAN -> {
                                 if (!nodeTree.finishTranslationForCurrentLine()) {
                                     val closeWord = nodeTree.closeNode(TtmlNode.NODE_WORD)
@@ -260,20 +292,26 @@ class TtmlLyricsParser : LyricsParser {
         matcher = CLOCK_TIME_SIMPLE.matcher(time)
         if (matcher.matches()) {
             val seconds = matcher.group(1)?.toLongOrNull() ?: 0L
-            val millis = matcher.group(2)?.padEnd(3, '0')?.take(3)?.toLongOrNull() ?: 0L
+            val millis =
+                matcher
+                    .group(2)
+                    ?.padEnd(3, '0')
+                    ?.take(3)
+                    ?.toLongOrNull() ?: 0L
             return (seconds * 1000) + millis
         }
         matcher = OFFSET_TIME.matcher(time)
         if (matcher.matches()) {
             val timeValue = matcher.group(1)?.toDouble() ?: 0.0
             val unit = matcher.group(2)
-            val offsetMillis = when(unit) {
-                "h" -> (timeValue * 3600_000).toLong()
-                "m" -> (timeValue * 60_000).toLong()
-                "s" -> (timeValue * 1_000).toLong()
-                "ms" -> timeValue.toLong()
-                else -> 0L
-            }
+            val offsetMillis =
+                when (unit) {
+                    "h" -> (timeValue * 3600_000).toLong()
+                    "m" -> (timeValue * 60_000).toLong()
+                    "s" -> (timeValue * 1_000).toLong()
+                    "ms" -> timeValue.toLong()
+                    else -> 0L
+                }
             return offsetMillis
         }
         throw XmlPullParserException("Malformed time expression: $time")

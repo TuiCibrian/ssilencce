@@ -25,33 +25,38 @@ import java.util.Locale
 enum class WebSearchEngine(
     @StringRes val nameRes: Int,
     private val baseUrl: String,
-    private val localizedUrl: String? = null
+    private val localizedUrl: String? = null,
 ) {
     Google(
         nameRes = R.string.google,
-        baseUrl = "https://www.google.com/search?q="
+        baseUrl = "https://www.google.com/search?q=",
     ),
     LastFm(
         nameRes = R.string.lastfm,
         baseUrl = "https://www.last.fm/music/",
-        localizedUrl = "https://www.last.fm/%s/music/"
+        localizedUrl = "https://www.last.fm/%s/music/",
     ),
     Wikipedia(
         nameRes = R.string.wikipedia,
         baseUrl = "https://www.wikipedia.org/wiki/Special:Search?search=",
-        localizedUrl = "https://%s.wikipedia.org/wiki/Special:Search?search="
+        localizedUrl = "https://%s.wikipedia.org/wiki/Special:Search?search=",
     ),
     YouTube(
         nameRes = R.string.youtube,
-        baseUrl = "https://www.youtube.com/results?search_query="
-    );
+        baseUrl = "https://www.youtube.com/results?search_query=",
+    ),
+    ;
 
-    fun getURLForQuery(query: String, locale: Locale = Locale.getDefault()): String {
-        val url = if (locale != Locale.ENGLISH && localizedUrl != null) {
-            String.format(localizedUrl, locale.language)
-        } else {
-            baseUrl
-        }
+    fun getURLForQuery(
+        query: String,
+        locale: Locale = Locale.getDefault(),
+    ): String {
+        val url =
+            if (locale != Locale.ENGLISH && localizedUrl != null) {
+                String.format(localizedUrl, locale.language)
+            } else {
+                baseUrl
+            }
         return runCatching { url + URLEncoder.encode(query, "UTF-8") }.getOrDefault(url + query)
     }
 }

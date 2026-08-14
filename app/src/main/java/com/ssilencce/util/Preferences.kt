@@ -55,7 +55,6 @@ import java.io.File
  * @author Christians M. A. (mardous)
  */
 object Preferences : KoinComponent {
-
     private val preferences: SharedPreferences by inject()
 
     fun registerOnSharedPreferenceChangeListener(listener: OnSharedPreferenceChangeListener) {
@@ -66,35 +65,45 @@ object Preferences : KoinComponent {
         preferences.unregisterOnSharedPreferenceChangeListener(listener)
     }
 
-    fun getGeneralTheme(isBlackMode: Boolean): String {
-        return if (isBlackMode) {
+    fun getGeneralTheme(isBlackMode: Boolean): String =
+        if (isBlackMode) {
             GeneralTheme.BLACK
         } else {
             preferences.requireString(GENERAL_THEME, GeneralTheme.AUTO)
         }
-    }
 
     var generalTheme: String
         get() = getGeneralTheme(blackTheme)
         set(value) = preferences.edit { putString(GENERAL_THEME, value) }
 
-    fun getThemeMode(themeName: String) = when (themeName) {
-        GeneralTheme.LIGHT -> AppTheme.Mode.Light
-        GeneralTheme.DARK -> AppTheme.Mode.Dark
-        GeneralTheme.BLACK -> AppTheme.Mode.Black
-        else -> AppTheme.Mode.FollowSystem
-    }
-
-    fun getDayNightMode(themeName: String = generalTheme) = when (themeName) {
-        GeneralTheme.LIGHT -> AppCompatDelegate.MODE_NIGHT_NO
-        GeneralTheme.DARK,
-        GeneralTheme.BLACK -> AppCompatDelegate.MODE_NIGHT_YES
-        else -> if (hasQ()) {
-            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-        } else {
-            AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY
+    fun getThemeMode(themeName: String) =
+        when (themeName) {
+            GeneralTheme.LIGHT -> AppTheme.Mode.Light
+            GeneralTheme.DARK -> AppTheme.Mode.Dark
+            GeneralTheme.BLACK -> AppTheme.Mode.Black
+            else -> AppTheme.Mode.FollowSystem
         }
-    }
+
+    fun getDayNightMode(themeName: String = generalTheme) =
+        when (themeName) {
+            GeneralTheme.LIGHT -> {
+                AppCompatDelegate.MODE_NIGHT_NO
+            }
+
+            GeneralTheme.DARK,
+            GeneralTheme.BLACK,
+            -> {
+                AppCompatDelegate.MODE_NIGHT_YES
+            }
+
+            else -> {
+                if (hasQ()) {
+                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                } else {
+                    AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY
+                }
+            }
+        }
 
     val blackTheme: Boolean
         get() = preferences.getBoolean(BLACK_THEME, false)
@@ -106,16 +115,18 @@ object Preferences : KoinComponent {
         get() = preferences.getBoolean(USE_CUSTOM_FONT, true)
 
     val appBarMode: TopAppBarLayout.AppBarMode
-        get() = when (preferences.requireString(APPBAR_MODE, AppBarMode.COMPACT)) {
-            AppBarMode.COMPACT -> TopAppBarLayout.AppBarMode.SIMPLE
-            AppBarMode.EXPANDED -> TopAppBarLayout.AppBarMode.COLLAPSING
-            else -> TopAppBarLayout.AppBarMode.SIMPLE
-        }
+        get() =
+            when (preferences.requireString(APPBAR_MODE, AppBarMode.COMPACT)) {
+                AppBarMode.COMPACT -> TopAppBarLayout.AppBarMode.SIMPLE
+                AppBarMode.EXPANDED -> TopAppBarLayout.AppBarMode.COLLAPSING
+                else -> TopAppBarLayout.AppBarMode.SIMPLE
+            }
 
     var libraryCategories: List<CategoryInfo>
-        get() = preferences.nullString(LIBRARY_CATEGORIES).deserialize(
-            getDefaultLibraryCategoryInfos()
-        )
+        get() =
+            preferences.nullString(LIBRARY_CATEGORIES).deserialize(
+                getDefaultLibraryCategoryInfos(),
+            )
         set(categories) = preferences.edit { putString(LIBRARY_CATEGORIES, categories.serialize()) }
 
     fun getDefaultLibraryCategoryInfos() =
@@ -132,12 +143,13 @@ object Preferences : KoinComponent {
 
     @LabelVisibility
     val bottomTitlesMode: Int
-        get() = when (preferences.nullString(TAB_TITLES_MODE)) {
-            BottomTitlesMode.SELECTED -> NavigationBarView.LABEL_VISIBILITY_SELECTED
-            BottomTitlesMode.LABELED -> NavigationBarView.LABEL_VISIBILITY_LABELED
-            BottomTitlesMode.UNLABELED -> NavigationBarView.LABEL_VISIBILITY_UNLABELED
-            else -> NavigationBarView.LABEL_VISIBILITY_SELECTED
-        }
+        get() =
+            when (preferences.nullString(TAB_TITLES_MODE)) {
+                BottomTitlesMode.SELECTED -> NavigationBarView.LABEL_VISIBILITY_SELECTED
+                BottomTitlesMode.LABELED -> NavigationBarView.LABEL_VISIBILITY_LABELED
+                BottomTitlesMode.UNLABELED -> NavigationBarView.LABEL_VISIBILITY_UNLABELED
+                else -> NavigationBarView.LABEL_VISIBILITY_SELECTED
+            }
 
     val holdTabToSearch: Boolean
         get() = preferences.getBoolean(HOLD_TAB_TO_SEARCH, true)
@@ -198,20 +210,23 @@ object Preferences : KoinComponent {
         get() = preferences.getBoolean(LOCKED_QUEUE, false)
         set(value) = preferences.edit { putBoolean(LOCKED_QUEUE, value) }
 
-    fun getNowPlayingColorSchemeKey(nps: NowPlayingScreen) =
-        "player_${nps.name.lowercase()}_color_scheme"
+    fun getNowPlayingColorSchemeKey(nps: NowPlayingScreen) = "player_${nps.name.lowercase()}_color_scheme"
 
     fun getNowPlayingColorSchemeMode(nps: NowPlayingScreen): PlayerColorSchemeMode {
         val defaultScheme = nps.defaultColorScheme
-        val schemeName = preferences.nullString(getNowPlayingColorSchemeKey(nps))
-            ?: defaultScheme.name
+        val schemeName =
+            preferences.nullString(getNowPlayingColorSchemeKey(nps))
+                ?: defaultScheme.name
         if (nps.supportedColorSchemes.any { it.name == schemeName }) {
             return schemeName.toEnum<PlayerColorSchemeMode>() ?: defaultScheme
         }
         return defaultScheme
     }
 
-    fun setNowPlayingColorSchemeMode(nps: NowPlayingScreen, schemeMode: PlayerColorSchemeMode) {
+    fun setNowPlayingColorSchemeMode(
+        nps: NowPlayingScreen,
+        schemeMode: PlayerColorSchemeMode,
+    ) {
         val schemeName = schemeMode.name
         if (nps.supportedColorSchemes.any { it.name == schemeName }) {
             preferences.edit {
@@ -223,26 +238,28 @@ object Preferences : KoinComponent {
     val isSmallImage: Boolean
         get() = preferences.getBoolean(NOW_PLAYING_SMALL_IMAGE, false)
 
-    fun getNowPlayingImageCornerRadius(context: Context): Int =
-        preferences.getInt(NOW_PLAYING_IMAGE_CORNER_RADIUS, context.intRes(R.integer.now_playing_corner_radius))
+    fun getNowPlayingImageCornerRadius(context: Context): Int = preferences.getInt(NOW_PLAYING_IMAGE_CORNER_RADIUS, context.intRes(R.integer.now_playing_corner_radius))
 
     val isCarouselEffect: Boolean
         get() = preferences.getBoolean(CAROUSEL_EFFECT, false)
 
-    fun getNowPlayingTransitionKey(nps: NowPlayingScreen) =
-        "player_${nps.name.lowercase()}_transition"
+    fun getNowPlayingTransitionKey(nps: NowPlayingScreen) = "player_${nps.name.lowercase()}_transition"
 
     fun getNowPlayingTransition(nps: NowPlayingScreen): PlayerTransition {
         val defaultTransition = nps.defaultTransition
-        val transitionName = preferences.nullString(getNowPlayingTransitionKey(nps))
-            ?: defaultTransition.name
+        val transitionName =
+            preferences.nullString(getNowPlayingTransitionKey(nps))
+                ?: defaultTransition.name
         if (nps.supportedTransitions.any { it.name == transitionName }) {
             return transitionName.toEnum<PlayerTransition>() ?: defaultTransition
         }
         return defaultTransition
     }
 
-    fun setNowPlayingTransition(nps: NowPlayingScreen, transition: PlayerTransition) {
+    fun setNowPlayingTransition(
+        nps: NowPlayingScreen,
+        transition: PlayerTransition,
+    ) {
         if (nps.supportedTransitions.contains(transition)) {
             preferences.edit {
                 putString(getNowPlayingTransitionKey(nps), transition.name)
@@ -280,10 +297,15 @@ object Preferences : KoinComponent {
     val displayExtraInfo: Boolean
         get() = preferences.getBoolean(DISPLAY_EXTRA_INFO, false)
 
-    fun getExtraInfoContent(key: String, defaultContent: List<MetadataField>) =
-        preferences.nullString(key).deserialize(defaultContent)
+    fun getExtraInfoContent(
+        key: String,
+        defaultContent: List<MetadataField>,
+    ) = preferences.nullString(key).deserialize(defaultContent)
 
-    fun setExtraInfoContent(key: String, newContent: List<MetadataField>) {
+    fun setExtraInfoContent(
+        key: String,
+        newContent: List<MetadataField>,
+    ) {
         preferences.edit { putString(key, newContent.serialize()) }
     }
 
@@ -292,8 +314,8 @@ object Preferences : KoinComponent {
             MetadataField(
                 content,
                 content == MetadataField.Content.Format ||
-                        content == MetadataField.Content.Bitrate ||
-                        content == MetadataField.Content.SampleRate
+                    content == MetadataField.Content.Bitrate ||
+                    content == MetadataField.Content.SampleRate,
             )
         }
 
@@ -322,11 +344,12 @@ object Preferences : KoinComponent {
         get() = preferences.getBoolean(PLAY_OPTION_ALWAYS_VISIBLE, false)
 
     val playOptionClickBehavior: SongClickBehavior
-        get() = if (preferences.getBoolean(PLAY_OPTION_PLAYS_WHOLE_LIST, false)) {
-            SongClickBehavior.PlayWholeList
-        } else {
-            SongClickBehavior.PlayOnlyThisSong
-        }
+        get() =
+            if (preferences.getBoolean(PLAY_OPTION_PLAYS_WHOLE_LIST, false)) {
+                SongClickBehavior.PlayWholeList
+            } else {
+                SongClickBehavior.PlayOnlyThisSong
+            }
 
     val playAllSongsWhenSearching: Boolean
         get() = preferences.getBoolean(PLAY_ALL_SONGS_WHEN_SEARCHING, false)
@@ -337,23 +360,30 @@ object Preferences : KoinComponent {
     val artistShuffleMode: GroupShuffleMode
         get() = getGroupShuffleMode(ARTIST_SHUFFLE_MODE, SelectedShuffleMode.SHUFFLE_ALL)
 
-    private fun getGroupShuffleMode(key: String, default: String) =
-        when(preferences.requireString(key, default)) {
-            SelectedShuffleMode.SHUFFLE_ARTISTS,
-            SelectedShuffleMode.SHUFFLE_ALBUMS -> GroupShuffleMode.ByGroup
-            SelectedShuffleMode.SHUFFLE_SONGS -> GroupShuffleMode.BySong
-            else -> GroupShuffleMode.FullRandom
+    private fun getGroupShuffleMode(
+        key: String,
+        default: String,
+    ) = when (preferences.requireString(key, default)) {
+        SelectedShuffleMode.SHUFFLE_ARTISTS,
+        SelectedShuffleMode.SHUFFLE_ALBUMS,
+        -> GroupShuffleMode.ByGroup
+
+        SelectedShuffleMode.SHUFFLE_SONGS -> GroupShuffleMode.BySong
+
+        else -> GroupShuffleMode.FullRandom
+    }
+
+    fun isResumeOnConnect(bluetooth: Boolean) =
+        when {
+            bluetooth -> preferences.getBoolean(RESUME_ON_BLUETOOTH_CONNECT, false)
+            else -> preferences.getBoolean(RESUME_ON_CONNECT, false)
         }
 
-    fun isResumeOnConnect(bluetooth: Boolean) = when {
-        bluetooth -> preferences.getBoolean(RESUME_ON_BLUETOOTH_CONNECT, false)
-        else -> preferences.getBoolean(RESUME_ON_CONNECT, false)
-    }
-
-    fun isPauseOnDisconnect(bluetooth: Boolean) = when {
-        bluetooth -> preferences.getBoolean(PAUSE_ON_BLUETOOTH_DISCONNECT, false)
-        else -> preferences.getBoolean(PAUSE_ON_DISCONNECT, false)
-    }
+    fun isPauseOnDisconnect(bluetooth: Boolean) =
+        when {
+            bluetooth -> preferences.getBoolean(PAUSE_ON_BLUETOOTH_DISCONNECT, false)
+            else -> preferences.getBoolean(PAUSE_ON_DISCONNECT, false)
+        }
 
     var onlyAlbumArtists: Boolean
         get() = preferences.getBoolean(ONLY_ALBUM_ARTISTS, true)
@@ -365,37 +395,38 @@ object Preferences : KoinComponent {
     val recursiveFolderActions: Set<FolderAction>
         get() {
             val notNullSet = mutableSetOf<FolderAction>()
-            preferences.getStringSet(RECURSIVE_FOLDER_ACTIONS, null)
+            preferences
+                .getStringSet(RECURSIVE_FOLDER_ACTIONS, null)
                 ?.mapNotNullTo(notNullSet) { string ->
                     FolderAction.entries.firstOrNull { it.preferenceValue == string }
                 }
             return notNullSet
         }
 
-    fun getLastAddedCutoff(context: Context): Cutoff =
-        getCutoff(context, LAST_ADDED_CUTOFF, true)
+    fun getLastAddedCutoff(context: Context): Cutoff = getCutoff(context, LAST_ADDED_CUTOFF, true)
 
-    fun getHistoryCutoff(context: Context): Cutoff =
-        getCutoff(context, HISTORY_CUTOFF)
+    fun getHistoryCutoff(context: Context): Cutoff = getCutoff(context, HISTORY_CUTOFF)
 
     private fun getCutoff(
         context: Context,
         preferenceKey: String,
-        asSeconds: Boolean = false
+        asSeconds: Boolean = false,
     ): Cutoff {
         val cutoff = preferences.requireString(preferenceKey, "")
-        val description = when (cutoff) {
-            PlaylistCutoff.TODAY -> context.getString(R.string.today)
-            PlaylistCutoff.YESTERDAY -> context.getString(R.string.yesterday)
-            PlaylistCutoff.THIS_WEEK -> context.getString(R.string.this_week)
-            PlaylistCutoff.PAST_THREE_MONTHS -> context.getString(R.string.past_three_months)
-            PlaylistCutoff.THIS_YEAR -> context.getString(R.string.this_year)
-            PlaylistCutoff.THIS_MONTH -> context.getString(R.string.this_month)
-            else -> context.getString(R.string.this_month)
-        }
-        val interval = calendarSingleton.getCutoffTimeMillis(cutoff).let { cutoffTimeMillis ->
-            if (asSeconds) cutoffTimeMillis / 1000 else cutoffTimeMillis
-        }
+        val description =
+            when (cutoff) {
+                PlaylistCutoff.TODAY -> context.getString(R.string.today)
+                PlaylistCutoff.YESTERDAY -> context.getString(R.string.yesterday)
+                PlaylistCutoff.THIS_WEEK -> context.getString(R.string.this_week)
+                PlaylistCutoff.PAST_THREE_MONTHS -> context.getString(R.string.past_three_months)
+                PlaylistCutoff.THIS_YEAR -> context.getString(R.string.this_year)
+                PlaylistCutoff.THIS_MONTH -> context.getString(R.string.this_month)
+                else -> context.getString(R.string.this_month)
+            }
+        val interval =
+            calendarSingleton.getCutoffTimeMillis(cutoff).let { cutoffTimeMillis ->
+                if (asSeconds) cutoffTimeMillis / 1000 else cutoffTimeMillis
+            }
         return Cutoff(description, interval)
     }
 
@@ -470,14 +501,20 @@ object Preferences : KoinComponent {
 
     fun SharedPreferences.nullString(key: String): String? = getString(key, null)
 
-    fun SharedPreferences.requireString(key: String, defaultValue: String): String =
-        requireNotNull(getString(key, defaultValue))
+    fun SharedPreferences.requireString(
+        key: String,
+        defaultValue: String,
+    ): String = requireNotNull(getString(key, defaultValue))
 
-    inline fun <reified T : Enum<T>> SharedPreferences.enumValue(key: String, defaultValue: T): T =
-        nullString(key)?.toEnum<T>() ?: defaultValue
+    inline fun <reified T : Enum<T>> SharedPreferences.enumValue(
+        key: String,
+        defaultValue: T,
+    ): T = nullString(key)?.toEnum<T>() ?: defaultValue
 
-    inline fun <reified T : Enum<T>> SharedPreferences.enumValueByOrdinal(key: String, defaultValue: T): T =
-        getInt(key, defaultValue.ordinal).toEnum<T>() ?: defaultValue
+    inline fun <reified T : Enum<T>> SharedPreferences.enumValueByOrdinal(
+        key: String,
+        defaultValue: T,
+    ): T = getInt(key, defaultValue.ordinal).toEnum<T>() ?: defaultValue
 }
 
 interface GeneralTheme {
@@ -520,7 +557,6 @@ interface SelectedShuffleMode {
         const val SHUFFLE_ALL = "shuffle_all"
     }
 }
-
 
 interface PlaylistCutoff {
     companion object {

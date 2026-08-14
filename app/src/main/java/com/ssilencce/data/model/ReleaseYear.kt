@@ -22,8 +22,11 @@ import com.ssilencce.data.SongProvider
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
-class ReleaseYear(val year: Int, override val songs: List<Song>) : Parcelable, SongProvider {
-
+class ReleaseYear(
+    val year: Int,
+    override val songs: List<Song>,
+) : Parcelable,
+    SongProvider {
     val name: String
         get() = year.toString()
 

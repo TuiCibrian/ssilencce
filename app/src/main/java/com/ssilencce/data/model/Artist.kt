@@ -28,11 +28,10 @@ data class Artist(
     val id: Long,
     val albums: List<Album>,
     val filterSingles: Boolean,
-    val isAlbumArtist: Boolean = false
+    val isAlbumArtist: Boolean = false,
 ) : SongProvider {
-
     constructor(artistName: String, albums: List<Album>, filterSingles: Boolean, isAlbumArtist: Boolean = true) :
-            this(albums.firstOrNull()?.artistId ?: -1, albums, filterSingles, true)
+        this(albums.firstOrNull()?.artistId ?: -1, albums, filterSingles, true)
 
     val name: String
         get() = if (isAlbumArtist) getAlbumArtistName() ?: "-" else getArtistName()
@@ -55,35 +54,25 @@ data class Artist(
     override val songs: List<Song>
         get() = albums.flatMap { it.songs }
 
-    fun safeGetFirstAlbum(): Album {
-        return albums.firstOrNull() ?: Album.empty
-    }
+    fun safeGetFirstAlbum(): Album = albums.firstOrNull() ?: Album.empty
 
-    private fun getArtistName(): String {
-        return safeGetFirstAlbum().safeGetFirstSong().artistName
-    }
+    private fun getArtistName(): String = safeGetFirstAlbum().safeGetFirstSong().artistName
 
-    private fun getAlbumArtistName(): String? {
-        return safeGetFirstAlbum().safeGetFirstSong().albumArtistName
-    }
+    private fun getAlbumArtistName(): String? = safeGetFirstAlbum().safeGetFirstSong().albumArtistName
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
         val artist = other as Artist
         return id == artist.id &&
-                songs == artist.songs &&
-                isAlbumArtist == artist.isAlbumArtist &&
-                filterSingles == artist.filterSingles
+            songs == artist.songs &&
+            isAlbumArtist == artist.isAlbumArtist &&
+            filterSingles == artist.filterSingles
     }
 
-    override fun hashCode(): Int {
-        return Objects.hash(id, songs, isAlbumArtist, filterSingles)
-    }
+    override fun hashCode(): Int = Objects.hash(id, songs, isAlbumArtist, filterSingles)
 
-    override fun toString(): String {
-        return "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles}"
-    }
+    override fun toString(): String = "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles}"
 
     companion object {
         const val UNKNOWN = "<unknown>"

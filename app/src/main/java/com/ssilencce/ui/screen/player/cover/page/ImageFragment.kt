@@ -33,7 +33,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class ImageFragment : Fragment() {
-
     private var isColorReady = false
     private lateinit var color: PaletteColor
     private lateinit var song: Song
@@ -60,11 +59,16 @@ class ImageFragment : Fragment() {
         song = BundleCompat.getParcelable(requireArguments(), EXTRA_SONG, Song::class.java)!!
     }
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        return inflater.inflate(getLayoutWithPlayerTheme(), container, false)
-    }
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View = inflater.inflate(getLayoutWithPlayerTheme(), container, false)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         albumCover = view.findViewById(R.id.player_image)
         setupImageStyle()
@@ -78,12 +82,16 @@ class ImageFragment : Fragment() {
     }
 
     private fun setupImageStyle() {
-        if (!nowPlayingScreen.supportsCustomCornerRadius)
+        if (!nowPlayingScreen.supportsCustomCornerRadius) {
             return
+        }
 
         val cornerRadius = Preferences.getNowPlayingImageCornerRadius(requireContext())
         when (val image = albumCover) {
-            is ShapeableImageView -> image.setCornerRadius(cornerRadius.toFloat())
+            is ShapeableImageView -> {
+                image.setCornerRadius(cornerRadius.toFloat())
+            }
+
             else -> {
                 val card = requestView { it.findViewById<View>(R.id.player_image_card) }
                 if (card is MaterialCardView) {
@@ -106,29 +114,31 @@ class ImageFragment : Fragment() {
 
     private fun loadAlbumCover() {
         disposable?.dispose()
-        disposable = albumCover?.songImage(song) {
-            crossfade(false)
-            memoryCacheKey("nowplaying:song:${song.id}")
-            listener(
-                onError = { request, result ->
-                    context?.let {
-                        setPalette(PaletteColor.errorColor(it))
-                    }
-                },
-                onSuccess = { request, result ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val color = withContext(Dispatchers.Default) {
-                            context?.let { fragmentCtx ->
-                                PaletteProcessor.getPaletteColor(fragmentCtx, result.image.toBitmap())
+        disposable =
+            albumCover?.songImage(song) {
+                crossfade(false)
+                memoryCacheKey("nowplaying:song:${song.id}")
+                listener(
+                    onError = { request, result ->
+                        context?.let {
+                            setPalette(PaletteColor.errorColor(it))
+                        }
+                    },
+                    onSuccess = { request, result ->
+                        viewLifecycleOwner.lifecycleScope.launch {
+                            val color =
+                                withContext(Dispatchers.Default) {
+                                    context?.let { fragmentCtx ->
+                                        PaletteProcessor.getPaletteColor(fragmentCtx, result.image.toBitmap())
+                                    }
+                                }
+                            if (isActive && color != null) {
+                                setPalette(color)
                             }
                         }
-                        if (isActive && color != null) {
-                            setPalette(color)
-                        }
-                    }
-                }
-            )
-        }
+                    },
+                )
+            }
     }
 
     private fun setPalette(color: PaletteColor) {
@@ -140,7 +150,10 @@ class ImageFragment : Fragment() {
         }
     }
 
-    fun receivePalette(paletteReceiver: ColorReceiver, request: Int) {
+    fun receivePalette(
+        paletteReceiver: ColorReceiver,
+        request: Int,
+    ) {
         if (isColorReady) {
             paletteReceiver.onColorReady(color, request)
         } else {
@@ -150,12 +163,16 @@ class ImageFragment : Fragment() {
     }
 
     interface ColorReceiver {
-        fun onColorReady(color: PaletteColor, request: Int)
+        fun onColorReady(
+            color: PaletteColor,
+            request: Int,
+        )
     }
 
     companion object {
-        fun newInstance(song: Song) = ImageFragment().withArgs {
-            putParcelable(EXTRA_SONG, song)
-        }
+        fun newInstance(song: Song) =
+            ImageFragment().withArgs {
+                putParcelable(EXTRA_SONG, song)
+            }
     }
 }

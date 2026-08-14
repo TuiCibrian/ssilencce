@@ -33,10 +33,11 @@ import com.ssilencce.extensions.resources.setMarkdownText
 import com.ssilencce.extensions.resources.show
 
 class HeaderAdapter(
-    private val onBind: (ItemDetailHeaderBinding) -> Unit
+    private val onBind: (ItemDetailHeaderBinding) -> Unit,
 ) : RecyclerView.Adapter<HeaderAdapter.ViewHolder>() {
-
-    class ViewHolder(val binding: ItemDetailHeaderBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(
+        val binding: ItemDetailHeaderBinding,
+    ) : RecyclerView.ViewHolder(binding.root)
 
     private val stableId = View.generateViewId().toLong()
 
@@ -44,11 +45,15 @@ class HeaderAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemDetailHeaderBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(ItemDetailHeaderBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         onBind(holder.binding)
     }
 
@@ -59,10 +64,11 @@ class HeaderAdapter(
 
 class SectionHeaderAdapter(
     private var title: String,
-    private val onSortClick: ((View) -> Unit)? = null
+    private val onSortClick: ((View) -> Unit)? = null,
 ) : RecyclerView.Adapter<SectionHeaderAdapter.ViewHolder>() {
-
-    class ViewHolder(val binding: ItemDetailSectionHeaderBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(
+        val binding: ItemDetailSectionHeaderBinding,
+    ) : RecyclerView.ViewHolder(binding.root)
 
     private val stableId = View.generateViewId().toLong()
     private var visible = true
@@ -85,11 +91,15 @@ class SectionHeaderAdapter(
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemDetailSectionHeaderBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(ItemDetailSectionHeaderBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         holder.binding.title.text = title
         holder.binding.sortOrder.isVisible = onSortClick != null
         holder.binding.sortOrder.setOnClickListener { onSortClick?.invoke(it) }
@@ -101,8 +111,9 @@ class SectionHeaderAdapter(
 }
 
 class WikiAdapter : RecyclerView.Adapter<WikiAdapter.ViewHolder>() {
-
-    class ViewHolder(val binding: ItemDetailWikiBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(
+        val binding: ItemDetailWikiBinding,
+    ) : RecyclerView.ViewHolder(binding.root)
 
     private val stableId = View.generateViewId().toLong()
     private var title: String? = null
@@ -113,17 +124,24 @@ class WikiAdapter : RecyclerView.Adapter<WikiAdapter.ViewHolder>() {
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    fun update(title: String?, content: String?) {
+    fun update(
+        title: String?,
+        content: String?,
+    ) {
         this.title = title
         this.content = content
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemDetailWikiBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(ItemDetailWikiBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         holder.binding.wikiTitle.text = title
         if (content != null) {
             holder.binding.wiki.show()
@@ -144,10 +162,11 @@ class WikiAdapter : RecyclerView.Adapter<WikiAdapter.ViewHolder>() {
 class HorizontalListAdapter(
     private var title: String,
     val innerAdapter: RecyclerView.Adapter<*>,
-    private val onSortClick: ((View) -> Unit)? = null
+    private val onSortClick: ((View) -> Unit)? = null,
 ) : RecyclerView.Adapter<HorizontalListAdapter.ViewHolder>() {
-
-    class ViewHolder(val binding: ItemDetailHorizontalListBinding) : RecyclerView.ViewHolder(binding.root)
+    class ViewHolder(
+        val binding: ItemDetailHorizontalListBinding,
+    ) : RecyclerView.ViewHolder(binding.root)
 
     private val stableId = View.generateViewId().toLong()
     private var visible = false
@@ -170,14 +189,19 @@ class HorizontalListAdapter(
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(ItemDetailHorizontalListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
-    }
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(ItemDetailHorizontalListBinding.inflate(LayoutInflater.from(parent.context), parent, false))
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         holder.binding.header.title.text = title
         holder.binding.header.sortOrder.isInvisible = onSortClick == null
-        holder.binding.header.sortOrder.setOnClickListener { onSortClick?.invoke(it) }
+        holder.binding.header.sortOrder
+            .setOnClickListener { onSortClick?.invoke(it) }
         holder.binding.recyclerView.apply {
             if (layoutManager == null) {
                 layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)

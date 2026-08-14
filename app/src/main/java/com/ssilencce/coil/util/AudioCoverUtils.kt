@@ -21,22 +21,25 @@ import java.io.IOException
 import java.io.InputStream
 
 object AudioCoverUtils {
-
     // TODO: find a cleaner way to do this
-    private val FALLBACKS = arrayOf(
-        "cover.jpg",
-        "album.jpg",
-        "folder.jpg",
-        "cover.png",
-        "album.png",
-        "folder.png",
-        "cover.jpeg",
-        "album.jpeg",
-        "folder.jpeg"
-    )
+    private val FALLBACKS =
+        arrayOf(
+            "cover.jpg",
+            "album.jpg",
+            "folder.jpg",
+            "cover.png",
+            "album.png",
+            "folder.png",
+            "cover.jpeg",
+            "album.jpeg",
+            "folder.jpeg",
+        )
 
     @Throws(IOException::class)
-    fun fallback(path: String, useFolderImage: Boolean): InputStream? {
+    fun fallback(
+        path: String,
+        useFolderImage: Boolean,
+    ): InputStream? {
         if (useFolderImage) {
             val parent = File(path).getParentFile()
             for (fallback in FALLBACKS) {

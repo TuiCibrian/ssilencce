@@ -27,26 +27,34 @@ import androidx.recyclerview.widget.RecyclerView
 import com.ssilencce.R
 
 abstract class AbsMultiSelectAdapter<VH : RecyclerView.ViewHolder, I>(
-    private val activity: FragmentActivity, @MenuRes protected var menuRes: Int
-) : RecyclerView.Adapter<VH>(), ActionMode.Callback {
-
+    private val activity: FragmentActivity,
+    @MenuRes protected var menuRes: Int,
+) : RecyclerView.Adapter<VH>(),
+    ActionMode.Callback {
     var actionMode: ActionMode? = null
         private set
     val isInQuickSelectMode: Boolean
         get() = actionMode != null
     private val checked: MutableList<I> = ArrayList()
 
-    override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+    override fun onCreateActionMode(
+        mode: ActionMode,
+        menu: Menu,
+    ): Boolean {
         val inflater = mode.menuInflater
         inflater?.inflate(menuRes, menu)
         return true
     }
 
-    override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean {
-        return false
-    }
+    override fun onPrepareActionMode(
+        mode: ActionMode,
+        menu: Menu,
+    ): Boolean = false
 
-    override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+    override fun onActionItemClicked(
+        mode: ActionMode,
+        item: MenuItem,
+    ): Boolean {
         if (item.itemId == R.id.action_multi_select_adapter_check_all) {
             checkAll()
         } else {
@@ -79,15 +87,14 @@ abstract class AbsMultiSelectAdapter<VH : RecyclerView.ViewHolder, I>(
 
     protected abstract fun getIdentifier(position: Int): I?
 
-    protected open fun getName(item: I): String? {
-        return item.toString()
-    }
+    protected open fun getName(item: I): String? = item.toString()
 
-    protected fun isChecked(identifier: I): Boolean {
-        return checked.contains(identifier)
-    }
+    protected fun isChecked(identifier: I): Boolean = checked.contains(identifier)
 
-    protected abstract fun onMultipleItemAction(menuItem: MenuItem, selection: List<I>)
+    protected abstract fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<I>,
+    )
 
     protected fun toggleChecked(position: Int): Boolean {
         val identifier = getIdentifier(position) ?: return false
@@ -117,12 +124,13 @@ abstract class AbsMultiSelectAdapter<VH : RecyclerView.ViewHolder, I>(
         }
     }
 
-    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            if (actionMode != null) {
-                actionMode?.finish()
-                remove()
+    private val onBackPressedCallback =
+        object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (actionMode != null) {
+                    actionMode?.finish()
+                    remove()
+                }
             }
         }
-    }
 }

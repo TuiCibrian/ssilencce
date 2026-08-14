@@ -24,7 +24,7 @@ fun PreferenceScreenItem(
     summary: String,
     @DrawableRes iconRes: Int,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     HorizontalPreferenceItem(
         title = title,
@@ -33,11 +33,11 @@ fun PreferenceScreenItem(
             Icon(
                 painter = painterResource(iconRes),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.secondary
+                tint = MaterialTheme.colorScheme.secondary,
             )
         },
         modifier = modifier,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -49,7 +49,7 @@ fun ProgressIndicatorPreferenceItem(
     iconRes: Int? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
 ) {
     HorizontalPreferenceItem(
         title = title,
@@ -59,22 +59,23 @@ fun ProgressIndicatorPreferenceItem(
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },
         trailingContent = {
             if (showIndicator) {
                 CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.Center)
-                        .size(24.dp)
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .size(24.dp),
                 )
             }
         },
         modifier = modifier,
         enabled = enabled,
-        onClick = onClick
+        onClick = onClick,
     )
 }
 
@@ -86,7 +87,7 @@ fun SwitchPreferenceItem(
     iconRes: Int? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onCheckedChanged: (Boolean) -> Unit
+    onCheckedChanged: (Boolean) -> Unit,
 ) {
     HorizontalPreferenceItem(
         title = title,
@@ -96,7 +97,7 @@ fun SwitchPreferenceItem(
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },
@@ -109,18 +110,18 @@ fun SwitchPreferenceItem(
                         Icon(
                             painter = painterResource(R.drawable.ic_check_24dp),
                             contentDescription = null,
-                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                            modifier = Modifier.size(SwitchDefaults.IconSize),
                         )
                     }
                 },
-                onCheckedChange = onCheckedChanged
+                onCheckedChange = onCheckedChanged,
             )
         },
         modifier = modifier,
         enabled = enabled,
         onClick = {
             onCheckedChanged(!enabled)
-        }
+        },
     )
 }
 
@@ -135,7 +136,7 @@ fun SliderPreferenceItem(
     iconRes: Int? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onValueChanged: (Float) -> Unit
+    onValueChanged: (Float) -> Unit,
 ) {
     ExpandableVerticalPreferenceItem(
         title = title,
@@ -145,7 +146,7 @@ fun SliderPreferenceItem(
                 Icon(
                     painter = painterResource(iconRes),
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary
+                    tint = MaterialTheme.colorScheme.secondary,
                 )
             }
         },
@@ -155,11 +156,11 @@ fun SliderPreferenceItem(
                 value = value,
                 valueRange = valueFrom..valueTo,
                 onValueChange = onValueChanged,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         modifier = modifier,
-        enabled = enabled
+        enabled = enabled,
     )
 }
 
@@ -171,29 +172,30 @@ fun HorizontalPreferenceItem(
     trailingContent: (@Composable BoxScope.() -> Unit)? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onClick: () -> Unit = {}
+    onClick: () -> Unit = {},
 ) {
     PreferenceItemSurface(
         enabled = enabled,
         onClick = onClick,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             PreferenceItemContent(
                 title = title,
                 summary = summary,
                 leadingIcon = leadingIcon,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 16.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp),
             )
             trailingContent?.let { content ->
                 Box(
                     modifier = Modifier.wrapContentSize(),
-                    contentAlignment = Alignment.Center
+                    contentAlignment = Alignment.Center,
                 ) {
                     content.invoke(this)
                 }
@@ -210,32 +212,35 @@ fun VerticalPreferenceItem(
     bottomContent: (@Composable BoxScope.() -> Unit)? = null,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    onClick: (() -> Unit)? = null
+    onClick: (() -> Unit)? = null,
 ) {
     PreferenceItemSurface(
         enabled = enabled,
         onClick = { onClick?.invoke() },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             PreferenceItemContent(
                 title = title,
                 summary = summary,
                 leadingIcon = leadingIcon,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 16.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp),
             )
             bottomContent?.let { content ->
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 56.dp, end = 12.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(start = 56.dp, end = 12.dp),
                 ) {
                     content.invoke(this)
                 }
@@ -251,7 +256,7 @@ fun ExpandableVerticalPreferenceItem(
     leadingIcon: @Composable BoxScope.() -> Unit = {},
     bottomContent: (@Composable BoxScope.() -> Unit)? = null,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
     val trailingIconRotation by animateFloatAsState(targetValue = if (expanded) 180f else 0f)
@@ -259,13 +264,14 @@ fun ExpandableVerticalPreferenceItem(
     PreferenceItemSurface(
         enabled = enabled,
         onClick = { expanded = !expanded },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .wrapContentHeight(),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .wrapContentHeight(),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             PreferenceItemContent(
                 title = title,
@@ -277,23 +283,25 @@ fun ExpandableVerticalPreferenceItem(
                             painter = painterResource(R.drawable.ic_arrow_drop_down_24dp),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.rotate(trailingIconRotation)
+                            modifier = Modifier.rotate(trailingIconRotation),
                         )
                     }
                 },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(end = 12.dp)
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
             )
             bottomContent?.let { content ->
                 AnimatedVisibility(
                     visible = expanded,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 48.dp, end = 12.dp)
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(start = 48.dp, end = 12.dp),
                     ) {
                         content.invoke(this)
                     }
@@ -309,33 +317,35 @@ private fun PreferenceItemContent(
     summary: String? = null,
     leadingIcon: @Composable BoxScope.() -> Unit = {},
     trailingIcon: (@Composable BoxScope.() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        verticalAlignment = Alignment.CenterVertically
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 20.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(
-            modifier = Modifier
-                .wrapContentSize()
-                .padding(horizontal = 16.dp),
-            contentAlignment = Alignment.Center
+            modifier =
+                Modifier
+                    .wrapContentSize()
+                    .padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center,
         ) {
             leadingIcon()
         }
 
         Column(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
                 text = title,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleMedium,
-                fontSize = 18.sp
+                fontSize = 18.sp,
             )
 
             if (!summary.isNullOrEmpty()) {
@@ -343,17 +353,18 @@ private fun PreferenceItemContent(
                     text = summary,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
 
         trailingIcon?.let { icon ->
             Box(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    Modifier
+                        .wrapContentSize()
+                        .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 icon.invoke(this)
             }
@@ -366,15 +377,16 @@ private fun PreferenceItemSurface(
     enabled: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceContainer,
-        modifier = modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .clip(RoundedCornerShape(4.dp))
-            .clickable(enabled = enabled, onClick = onClick)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .wrapContentHeight()
+                .clip(RoundedCornerShape(4.dp))
+                .clickable(enabled = enabled, onClick = onClick),
     ) {
         content()
     }

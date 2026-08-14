@@ -47,26 +47,26 @@ object MenuDefaults {
         actionContainerColor: Color = Color.Unspecified,
         actionContentColor: Color = contentColorFor(actionContainerColor),
         overflowContainerColor: Color = Color.Unspecified,
-        overflowIconColor: Color = contentColorFor(overflowContainerColor)
+        overflowIconColor: Color = contentColorFor(overflowContainerColor),
     ) = MenuColors(
         containerColor = containerColor,
         actionContainerColor = actionContainerColor,
         actionContentColor = actionContentColor,
         overflowContainerColor = overflowContainerColor,
-        overflowIconColor = overflowIconColor
+        overflowIconColor = overflowIconColor,
     )
 
     @Composable
     fun dropDownMenuColors(
         containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
         overflowContainerColor: Color = Color.Unspecified,
-        overflowIconColor: Color = contentColorFor(overflowContainerColor)
+        overflowIconColor: Color = contentColorFor(overflowContainerColor),
     ) = MenuColors(
         containerColor = containerColor,
         actionContainerColor = Color.Unspecified,
         actionContentColor = Color.Unspecified,
         overflowContainerColor = overflowContainerColor,
-        overflowIconColor = overflowIconColor
+        overflowIconColor = overflowIconColor,
     )
 }
 
@@ -75,7 +75,7 @@ class MenuColors(
     val actionContainerColor: Color,
     val actionContentColor: Color,
     val overflowContainerColor: Color,
-    val overflowIconColor: Color
+    val overflowIconColor: Color,
 )
 
 @Composable
@@ -86,14 +86,14 @@ fun TopAppBarMenu(
     overflowIcon: Painter = MenuDefaults.OverflowIcon,
     overflowDescription: String = MenuDefaults.OverflowDescription,
     colors: MenuColors = MenuDefaults.topAppBarMenuColors(),
-    state: MutableState<Boolean> = remember { mutableStateOf(false) }
+    state: MutableState<Boolean> = remember { mutableStateOf(false) },
 ) {
     val actionItems = items.filterIsInstance<MenuItem.Button.Action>().toSet()
     val dropDownItems = (items - actionItems).toSet()
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+        modifier = modifier,
     ) {
         actionItems.forEach { action ->
             if (action.visible) {
@@ -101,21 +101,22 @@ fun TopAppBarMenu(
                     if (colors.actionContainerColor.isSpecified) {
                         FilledIconButton(
                             onClick = action.onClick,
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = colors.actionContainerColor,
-                                contentColor = colors.actionContentColor
-                            )
+                            colors =
+                                IconButtonDefaults.filledIconButtonColors(
+                                    containerColor = colors.actionContainerColor,
+                                    contentColor = colors.actionContentColor,
+                                ),
                         ) {
                             Icon(
                                 painter = action.icon,
-                                contentDescription = action.text
+                                contentDescription = action.text,
                             )
                         }
                     } else {
                         IconButton(onClick = action.onClick) {
                             Icon(
                                 painter = action.icon,
-                                contentDescription = action.text
+                                contentDescription = action.text,
                             )
                         }
                     }
@@ -124,7 +125,7 @@ fun TopAppBarMenu(
                         Text(
                             text = action.text,
                             maxLines = 1,
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
                         )
                     }
                 }
@@ -138,7 +139,7 @@ fun TopAppBarMenu(
                 colors = colors,
                 icon = overflowIcon,
                 contentDescription = overflowDescription,
-                state = state
+                state = state,
             )
         }
     }
@@ -153,36 +154,37 @@ fun OverflowMenu(
     icon: Painter = MenuDefaults.OverflowIcon,
     contentDescription: String? = MenuDefaults.OverflowDescription,
     colors: MenuColors = MenuDefaults.dropDownMenuColors(),
-    state: MutableState<Boolean> = remember { mutableStateOf(false) }
+    state: MutableState<Boolean> = remember { mutableStateOf(false) },
 ) {
     var expanded by state
 
     Box(
         contentAlignment = Alignment.CenterEnd,
-        modifier = modifier
+        modifier = modifier,
     ) {
         if (colors.overflowContainerColor.isSpecified) {
             FilledIconButton(
                 onClick = { expanded = !expanded },
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = colors.overflowContainerColor,
-                    contentColor = colors.overflowIconColor
-                ),
-                enabled = enabled
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = colors.overflowContainerColor,
+                        contentColor = colors.overflowIconColor,
+                    ),
+                enabled = enabled,
             ) {
                 Icon(
                     painter = icon,
-                    contentDescription = contentDescription
+                    contentDescription = contentDescription,
                 )
             }
         } else {
             IconButton(
                 onClick = { expanded = !expanded },
-                enabled = enabled
+                enabled = enabled,
             ) {
                 Icon(
                     painter = icon,
-                    contentDescription = contentDescription
+                    contentDescription = contentDescription,
                 )
             }
         }
@@ -192,7 +194,7 @@ fun OverflowMenu(
             expanded = expanded,
             showIcons = showItemIcons,
             onDismissRequest = { expanded = false },
-            colors = colors
+            colors = colors,
         )
     }
 }
@@ -203,71 +205,77 @@ private fun DropDownMenuInternal(
     expanded: Boolean,
     showIcons: Boolean,
     onDismissRequest: () -> Unit,
-    colors: MenuColors
+    colors: MenuColors,
 ) {
     DropdownMenu(
         shape = RoundedCornerShape(16.dp),
         containerColor = colors.containerColor,
         expanded = expanded,
-        onDismissRequest = onDismissRequest
+        onDismissRequest = onDismissRequest,
     ) {
         items.forEach {
-            if (it.visible) when (it) {
-                is MenuItem.Button -> {
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = it.text,
-                                color = if (it.dangerous) {
-                                    MaterialTheme.colorScheme.error
-                                } else {
-                                    Color.Unspecified
-                                },
-                            )
-                        },
-                        leadingIcon = if (showIcons) {
-                            {
-                                if (it.icon != null) {
-                                    Icon(
-                                        painter = it.icon,
-                                        contentDescription = null,
-                                        tint = if (it.dangerous) {
+            if (it.visible) {
+                when (it) {
+                    is MenuItem.Button -> {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = it.text,
+                                    color =
+                                        if (it.dangerous) {
                                             MaterialTheme.colorScheme.error
                                         } else {
-                                            LocalContentColor.current
+                                            Color.Unspecified
+                                        },
+                                )
+                            },
+                            leadingIcon =
+                                if (showIcons) {
+                                    {
+                                        if (it.icon != null) {
+                                            Icon(
+                                                painter = it.icon,
+                                                contentDescription = null,
+                                                tint =
+                                                    if (it.dangerous) {
+                                                        MaterialTheme.colorScheme.error
+                                                    } else {
+                                                        LocalContentColor.current
+                                                    },
+                                            )
                                         }
-                                    )
-                                }
-                            }
-                        } else {
-                            null
-                        },
-                        trailingIcon = {
-                            if (it is MenuItem.Button.Checkable) {
-                                if (it.isSingleSelection) {
-                                    RadioButton(
-                                        selected = it.isChecked,
-                                        enabled = it.enabled,
-                                        onClick = null
-                                    )
+                                    }
                                 } else {
-                                    Checkbox(
-                                        checked = it.isChecked,
-                                        enabled = it.enabled,
-                                        onCheckedChange = null
-                                    )
+                                    null
+                                },
+                            trailingIcon = {
+                                if (it is MenuItem.Button.Checkable) {
+                                    if (it.isSingleSelection) {
+                                        RadioButton(
+                                            selected = it.isChecked,
+                                            enabled = it.enabled,
+                                            onClick = null,
+                                        )
+                                    } else {
+                                        Checkbox(
+                                            checked = it.isChecked,
+                                            enabled = it.enabled,
+                                            onCheckedChange = null,
+                                        )
+                                    }
                                 }
-                            }
-                        },
-                        onClick = {
-                            it.onClick()
-                            onDismissRequest()
-                        },
-                        enabled = it.enabled
-                    )
-                }
-                is MenuItem.Divider -> {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                            },
+                            onClick = {
+                                it.onClick()
+                                onDismissRequest()
+                            },
+                            enabled = it.enabled,
+                        )
+                    }
+
+                    is MenuItem.Divider -> {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                    }
                 }
             }
         }

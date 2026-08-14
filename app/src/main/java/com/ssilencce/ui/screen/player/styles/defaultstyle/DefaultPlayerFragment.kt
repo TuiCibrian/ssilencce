@@ -46,9 +46,9 @@ import com.ssilencce.util.Preferences
 /**
  * @author Christians M. A. (mardous)
  */
-class DefaultPlayerFragment : AbsPlayerFragment(R.layout.fragment_default_player),
+class DefaultPlayerFragment :
+    AbsPlayerFragment(R.layout.fragment_default_player),
     SharedPreferences.OnSharedPreferenceChangeListener {
-
     private var _binding: FragmentDefaultPlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -68,7 +68,10 @@ class DefaultPlayerFragment : AbsPlayerFragment(R.layout.fragment_default_player
 
     private var primaryControlColor: Int = 0
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDefaultPlayerBinding.bind(view)
         setupToolbar()
@@ -94,7 +97,7 @@ class DefaultPlayerFragment : AbsPlayerFragment(R.layout.fragment_default_player
         primaryControlColor = scheme.onSurfaceColor
         return mutableListOf(
             binding.root.surfaceTintTarget(scheme.surfaceColor),
-            binding.toolbar.tintTarget(oldPrimaryControlColor, scheme.onSurfaceColor)
+            binding.toolbar.tintTarget(oldPrimaryControlColor, scheme.onSurfaceColor),
         ).also {
             it.addAll(playerControlsFragment.getTintTargets(scheme))
         }
@@ -120,7 +123,10 @@ class DefaultPlayerFragment : AbsPlayerFragment(R.layout.fragment_default_player
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String?,
+    ) {
         if (key == DISPLAY_NEXT_SONG) {
             setupQueueMenuItem()
         }

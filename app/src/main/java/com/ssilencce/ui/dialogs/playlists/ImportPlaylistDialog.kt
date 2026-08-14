@@ -45,21 +45,20 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
  * @author Christians M. A. (mardous)
  */
 class ImportPlaylistDialog : DialogFragment() {
-
     private var binding: DialogProgressRecyclerViewBinding? = null
     private val viewModel: LibraryViewModel by activityViewModel()
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext())
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext())
             .also {
-                binding = DialogProgressRecyclerViewBinding.inflate(layoutInflater.cloneInContext(it.context)).apply {
-                    recyclerView.apply {
-                        layoutManager = LinearLayoutManager(requireContext())
-                        setHasFixedSize(true)
+                binding =
+                    DialogProgressRecyclerViewBinding.inflate(layoutInflater.cloneInContext(it.context)).apply {
+                        recyclerView.apply {
+                            layoutManager = LinearLayoutManager(requireContext())
+                            setHasFixedSize(true)
+                        }
                     }
-                }
-            }
-            .setTitle(R.string.action_import_playlist)
+            }.setTitle(R.string.action_import_playlist)
             .setView(binding!!.root)
             .setNegativeButton(android.R.string.cancel, null)
             .create {
@@ -67,13 +66,14 @@ class ImportPlaylistDialog : DialogFragment() {
                     if (result.isEmpty()) {
                         showToast(R.string.there_are_no_importable_playlists)
                         dismiss()
-                    } else requestContext {
-                        binding?.progressIndicator?.hide()
-                        binding?.recyclerView?.adapter = Adapter(it, result)
+                    } else {
+                        requestContext {
+                            binding?.progressIndicator?.hide()
+                            binding?.recyclerView?.adapter = Adapter(it, result)
+                        }
                     }
                 }
             }
-    }
 
     private fun playlistSelected(selected: ImportablePlaylistResult) {
         val items = selected.songs.getSpannedTitles(requireContext())
@@ -83,8 +83,7 @@ class ImportPlaylistDialog : DialogFragment() {
             .setTitle(R.string.select_songs_title)
             .setMultiChoiceItems(items.toTypedArray(), checkedItems) { _: DialogInterface, i: Int, b: Boolean ->
                 if (b) checked.add(i) else checked.remove(i)
-            }
-            .setPositiveButton(R.string.import_action) { _: DialogInterface, _: Int ->
+            }.setPositiveButton(R.string.import_action) { _: DialogInterface, _: Int ->
                 val importSongs = selected.songs.filterIndexed { index, _ -> checked.contains(index) }
                 if (importSongs.isEmpty()) {
                     showToast(getString(R.string.playlist_x_not_imported, selected.playlistName))
@@ -93,15 +92,18 @@ class ImportPlaylistDialog : DialogFragment() {
                         showToast(result.resultMessage)
                     }
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
-    private inner class Adapter(private val context: Context, private val playlists: List<ImportablePlaylistResult>) :
-        RecyclerView.Adapter<Adapter.ViewHolder>() {
-
-        inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView), View.OnClickListener {
+    private inner class Adapter(
+        private val context: Context,
+        private val playlists: List<ImportablePlaylistResult>,
+    ) : RecyclerView.Adapter<Adapter.ViewHolder>() {
+        inner class ViewHolder(
+            itemView: View,
+        ) : RecyclerView.ViewHolder(itemView),
+            View.OnClickListener {
             val icon: ImageView = itemView.findViewById(R.id.icon_view)
             val title: TextView = itemView.findViewById(R.id.title)
             val text: TextView = itemView.findViewById(R.id.text)
@@ -118,11 +120,15 @@ class ImportPlaylistDialog : DialogFragment() {
             }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-            return ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_dialog_list, parent, false))
-        }
+        override fun onCreateViewHolder(
+            parent: ViewGroup,
+            viewType: Int,
+        ): ViewHolder = ViewHolder(LayoutInflater.from(context).inflate(R.layout.item_dialog_list, parent, false))
 
-        override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: ViewHolder,
+            position: Int,
+        ) {
             holder.title.text = playlists[position].playlistName
         }
 

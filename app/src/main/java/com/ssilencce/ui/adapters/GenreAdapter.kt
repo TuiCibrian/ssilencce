@@ -43,8 +43,9 @@ class GenreAdapter(
     @LayoutRes
     private val itemLayoutRes: Int,
     private val callback: IGenreCallback?,
-) : RecyclerView.Adapter<GenreAdapter.ViewHolder>(), PopupTextProvider, KoinComponent {
-
+) : RecyclerView.Adapter<GenreAdapter.ViewHolder>(),
+    PopupTextProvider,
+    KoinComponent {
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Genre>, _: List<Genre> ->
         notifyDataSetChanged()
     }
@@ -53,33 +54,39 @@ class GenreAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
         return ViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val genre = dataSet[position]
         holder.title?.text = genre.name
         holder.text?.text = genre.songCount.asNumberOfSongs(holder.itemView.context)
         holder.loadPaletteImage(genre, DEFAULT_GENRE_IMAGE)
     }
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].id
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].id
 
-    override fun getPopupText(view: View, position: Int): CharSequence {
+    override fun getPopupText(
+        view: View,
+        position: Int,
+    ): CharSequence {
         val genre = dataSet.getOrNull(position) ?: return ""
         return if (genre.id != -1L) genre.name.asSectionName() else ""
     }
 
-    inner class ViewHolder(itemView: View) : MediaEntryViewHolder(itemView) {
-
+    inner class ViewHolder(
+        itemView: View,
+    ) : MediaEntryViewHolder(itemView) {
         private val genre: Genre
             get() = dataSet[bindingAdapterPosition]
 

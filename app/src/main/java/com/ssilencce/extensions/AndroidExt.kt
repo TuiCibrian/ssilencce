@@ -36,15 +36,22 @@ fun hasT() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
 
 fun hasU() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE
 
-fun PackageManager.packageInfo(context: Context, packageName: String = context.packageName) =
-    runCatching {
-        if (hasT()) getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-        else getPackageInfo(packageName, 0)
-    }.getOrNull()
+fun PackageManager.packageInfo(
+    context: Context,
+    packageName: String = context.packageName,
+) = runCatching {
+    if (hasT()) {
+        getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
+    } else {
+        getPackageInfo(packageName, 0)
+    }
+}.getOrNull()
 
 fun PackageManager.resolveActivity(intent: Intent) =
-    if (hasT())
+    if (hasT()) {
         resolveActivity(intent, ResolveInfoFlags.of(0))
-    else resolveActivity(intent, 0)
+    } else {
+        resolveActivity(intent, 0)
+    }
 
 fun CharSequence.toHtml() = HtmlCompat.fromHtml(this.toString(), HtmlCompat.FROM_HTML_MODE_COMPACT)

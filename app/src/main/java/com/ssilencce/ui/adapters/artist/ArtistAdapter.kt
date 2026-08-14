@@ -51,7 +51,6 @@ class ArtistAdapter constructor(
     private val callback: IArtistCallback? = null,
 ) : AbsMultiSelectAdapter<ArtistAdapter.ViewHolder, Artist>(activity, R.menu.menu_media_selection),
     PopupTextProvider {
-
     private var albumArtistsOnly = false
 
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Artist>, _: List<Artist> ->
@@ -59,12 +58,18 @@ class ArtistAdapter constructor(
         notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
         return ViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val artist: Artist = dataSet[position]
         val isChecked = isChecked(artist)
         holder.isActivated = isChecked
@@ -80,55 +85,50 @@ class ArtistAdapter constructor(
         holder.loadPaletteImage(artist, DEFAULT_ARTIST_IMAGE)
     }
 
-    private fun getArtistTitle(artist: Artist): String {
-        return artist.displayName()
-    }
+    private fun getArtistTitle(artist: Artist): String = artist.displayName()
 
-    private fun getArtistText(holder: ViewHolder, artist: Artist): String {
-        return artist.artistInfo(holder.itemView.context)
-    }
+    private fun getArtistText(
+        holder: ViewHolder,
+        artist: Artist,
+    ): String = artist.artistInfo(holder.itemView.context)
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].id
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].id
 
-    override fun getIdentifier(position: Int): Artist? {
-        return dataSet[position]
-    }
+    override fun getIdentifier(position: Int): Artist? = dataSet[position]
 
-    override fun getName(item: Artist): String? {
-        return item.displayName()
-    }
+    override fun getName(item: Artist): String? = item.displayName()
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<Artist>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Artist>,
+    ) {
         callback?.artistsMenuItemClick(selection, menuItem)
     }
 
-    override fun getPopupText(view: View, position: Int): CharSequence {
-        return dataSet.getOrNull(position)?.displayName()?.asSectionName(sortMode) ?: ""
-    }
+    override fun getPopupText(
+        view: View,
+        position: Int,
+    ): CharSequence = dataSet.getOrNull(position)?.displayName()?.asSectionName(sortMode) ?: ""
 
-    open inner class ViewHolder(itemView: View) : MediaEntryViewHolder(itemView) {
-
+    open inner class ViewHolder(
+        itemView: View,
+    ) : MediaEntryViewHolder(itemView) {
         protected val artist: Artist
             get() = dataSet[bindingAdapterPosition]
 
         protected val sharedElements: Array<Pair<View, String>>?
-            get() = if (imageContainer != null) {
-                arrayOf(imageContainer to imageContainer.transitionName)
-            } else if (image != null) {
-                arrayOf(image to image.transitionName)
-            } else {
-                null
-            }
+            get() =
+                if (imageContainer != null) {
+                    arrayOf(imageContainer to imageContainer.transitionName)
+                } else if (image != null) {
+                    arrayOf(image to image.transitionName)
+                } else {
+                    null
+                }
 
-        protected open fun onArtistMenuItemClick(item: MenuItem): Boolean {
-            return callback?.artistMenuItemClick(artist, item, sharedElements) ?: false
-        }
+        protected open fun onArtistMenuItemClick(item: MenuItem): Boolean = callback?.artistMenuItemClick(artist, item, sharedElements) ?: false
 
         override fun onClick(view: View) {
             if (isInQuickSelectMode) {
@@ -138,23 +138,22 @@ class ArtistAdapter constructor(
             }
         }
 
-        override fun onLongClick(view: View): Boolean {
-            return toggleChecked(bindingAdapterPosition)
-        }
+        override fun onLongClick(view: View): Boolean = toggleChecked(bindingAdapterPosition)
 
         init {
-            menu?.setOnClickListener(object : OnClickMenu() {
-                override val popupMenuRes: Int
-                    get() = R.menu.menu_item_artist
+            menu?.setOnClickListener(
+                object : OnClickMenu() {
+                    override val popupMenuRes: Int
+                        get() = R.menu.menu_item_artist
 
-                override fun onMenuItemClick(item: MenuItem): Boolean {
-                    return onArtistMenuItemClick(item)
-                }
-            })
+                    override fun onMenuItemClick(item: MenuItem): Boolean = onArtistMenuItemClick(item)
+                },
+            )
             play?.setOnClickListener {
-                val artistSongs = with(SongSortMode.ArtistSongs) {
-                    artist.songs.sorted()
-                }
+                val artistSongs =
+                    with(SongSortMode.ArtistSongs) {
+                        artist.songs.sorted()
+                    }
                 getViewModel<PlayerViewModel>()?.openQueue(artistSongs)
             }
         }

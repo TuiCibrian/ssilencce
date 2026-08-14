@@ -69,14 +69,14 @@ import com.ssilencce.ui.screen.library.ReloadType
 /**
  * @author Christians M. A. (mardous)
  */
-class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
+class HomeFragment :
+    AbsMainActivityFragment(R.layout.fragment_home),
     View.OnClickListener,
     ISongCallback,
     IAlbumCallback,
     IArtistCallback,
     IHomeCallback,
     IScrollHelper {
-
     private var _binding: HomeBinding? = null
     private val binding get() = _binding!!
 
@@ -85,7 +85,10 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
     private val currentContent: SuggestedResult
         get() = libraryViewModel.getSuggestions().value ?: SuggestedResult.Idle
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         val homeBinding = FragmentHomeBinding.bind(view)
         _binding = HomeBinding(homeBinding)
@@ -97,9 +100,10 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
         setupListeners()
         checkForMargins()
 
-        homeAdapter = HomeAdapter(arrayListOf(), this).also {
-            it.registerAdapterDataObserver(adapterDataObserver)
-        }
+        homeAdapter =
+            HomeAdapter(arrayListOf(), this).also {
+                it.registerAdapterDataObserver(adapterDataObserver)
+            }
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(activity)
             adapter = homeAdapter
@@ -108,32 +112,35 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
         }
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
             binding.recyclerView.updatePadding(
-                bottom = it.getWithSpace(16.dp(resources), includeInsets = false)
+                bottom = it.getWithSpace(16.dp(resources), includeInsets = false),
             )
         }
-        libraryViewModel.getSuggestions().apply {
-            observe(viewLifecycleOwner) { result ->
-                if (result.isLoading && homeAdapter.isNullOrEmpty) {
-                    binding.progressIndicator.show()
-                } else {
-                    binding.progressIndicator.hide()
+        libraryViewModel
+            .getSuggestions()
+            .apply {
+                observe(viewLifecycleOwner) { result ->
+                    if (result.isLoading && homeAdapter.isNullOrEmpty) {
+                        binding.progressIndicator.show()
+                    } else {
+                        binding.progressIndicator.hide()
+                    }
+                    homeAdapter?.dataSet = result.data
                 }
-                homeAdapter?.dataSet = result.data
+            }.also { liveData ->
+                if (liveData.value == SuggestedResult.Idle) {
+                    libraryViewModel.forceReload(ReloadType.Suggestions)
+                }
             }
-        }.also { liveData ->
-            if (liveData.value == SuggestedResult.Idle) {
-                libraryViewModel.forceReload(ReloadType.Suggestions)
-            }
-        }
 
         applyWindowInsetsFromView(view)
     }
 
-    private val adapterDataObserver = object : RecyclerView.AdapterDataObserver() {
-        override fun onChanged() {
-            checkIsEmpty()
+    private val adapterDataObserver =
+        object : RecyclerView.AdapterDataObserver() {
+            override fun onChanged() {
+                checkIsEmpty()
+            }
         }
-    }
 
     private fun setupTitle() {
         binding.appBarLayout.toolbar.setNavigationOnClickListener {
@@ -209,35 +216,45 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
     }
 
     @Suppress("UNCHECKED_CAST")
-    override fun createSuggestionAdapter(suggestion: Suggestion): RecyclerView.Adapter<*> {
-        return when (suggestion.type) {
+    override fun createSuggestionAdapter(suggestion: Suggestion): RecyclerView.Adapter<*> =
+        when (suggestion.type) {
             ContentType.TopArtists,
-            ContentType.RecentArtists -> ArtistAdapter(
-                activity = mainActivity,
-                dataSet = (suggestion.items as List<Artist>),
-                itemLayoutRes = R.layout.item_artist,
-                callback = this
-            )
+            ContentType.RecentArtists,
+            -> {
+                ArtistAdapter(
+                    activity = mainActivity,
+                    dataSet = (suggestion.items as List<Artist>),
+                    itemLayoutRes = R.layout.item_artist,
+                    callback = this,
+                )
+            }
 
             ContentType.TopAlbums,
-            ContentType.RecentAlbums -> AlbumAdapter(
-                activity = mainActivity,
-                dataSet = (suggestion.items as List<Album>),
-                itemLayoutRes = R.layout.item_album_gradient,
-                callback = this
-            )
+            ContentType.RecentAlbums,
+            -> {
+                AlbumAdapter(
+                    activity = mainActivity,
+                    dataSet = (suggestion.items as List<Album>),
+                    itemLayoutRes = R.layout.item_album_gradient,
+                    callback = this,
+                )
+            }
 
             ContentType.Favorites,
-            ContentType.NotRecentlyPlayed -> SongAdapter(
-                activity = mainActivity,
-                dataSet = (suggestion.items as List<Song>),
-                itemLayoutRes = R.layout.item_image,
-                callback = this
-            )
+            ContentType.NotRecentlyPlayed,
+            -> {
+                SongAdapter(
+                    activity = mainActivity,
+                    dataSet = (suggestion.items as List<Song>),
+                    itemLayoutRes = R.layout.item_image,
+                    callback = this,
+                )
+            }
 
-            else -> throw IllegalArgumentException("Unexpected suggestion type: ${suggestion.type}")
+            else -> {
+                throw IllegalArgumentException("Unexpected suggestion type: ${suggestion.type}")
+            }
         }
-    }
 
     override fun suggestionClick(suggestion: Suggestion) {
         when (suggestion.type) {
@@ -256,52 +273,70 @@ class HomeFragment : AbsMainActivityFragment(R.layout.fragment_home),
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 
-    override fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>?) {
+    override fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun albumMenuItemClick(
         album: Album,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = album.onAlbumMenu(this, menuItem)
 
-    override fun albumsMenuItemClick(albums: List<Album>, menuItem: MenuItem) {
+    override fun albumsMenuItemClick(
+        albums: List<Album>,
+        menuItem: MenuItem,
+    ) {
         albums.onAlbumsMenu(this, menuItem)
     }
 
-    override fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>?) {
+    override fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun artistMenuItemClick(
         artist: Artist,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = artist.onArtistMenu(this, menuItem)
 
-    override fun artistsMenuItemClick(artists: List<Artist>, menuItem: MenuItem) {
+    override fun artistsMenuItemClick(
+        artists: List<Artist>,
+        menuItem: MenuItem,
+    ) {
         artists.onArtistsMenu(this, menuItem)
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {
         menuInflater.inflate(R.menu.menu_library, menu)
         menu.removeItem(R.id.action_scan)
         menu.removeItem(R.id.action_equalizer)

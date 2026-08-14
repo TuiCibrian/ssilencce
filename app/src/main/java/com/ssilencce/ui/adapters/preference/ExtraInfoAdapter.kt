@@ -23,9 +23,13 @@ import com.ssilencce.ui.adapters.DraggableItemAdapter
 /**
  * @author Christians M. A. (mardous)
  */
-class ExtraInfoAdapter(extraInfo: MutableList<MetadataField>) : DraggableItemAdapter<MetadataField>(extraInfo) {
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+class ExtraInfoAdapter(
+    extraInfo: MutableList<MetadataField>,
+) : DraggableItemAdapter<MetadataField>(extraInfo) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         super.onBindViewHolder(holder, position)
         val extraInfo = items[position]
 

@@ -26,6 +26,7 @@ import androidx.core.view.isGone
 import androidx.fragment.app.FragmentActivity
 import com.ssilencce.R
 import com.ssilencce.coil.DEFAULT_ALBUM_IMAGE
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.SongSortMode
@@ -37,7 +38,6 @@ import com.ssilencce.extensions.media.asSectionName
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.songCountStr
 import com.ssilencce.extensions.utilities.buildInfoString
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.IAlbumCallback
 import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
 import com.ssilencce.ui.component.base.MediaEntryViewHolder
@@ -56,21 +56,27 @@ open class AlbumAdapter(
     protected val callback: IAlbumCallback? = null,
 ) : AbsMultiSelectAdapter<AlbumAdapter.ViewHolder, Album>(activity, R.menu.menu_media_selection),
     PopupTextProvider {
-
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Album>, _: List<Album> ->
         notifyDataSetChanged()
     }
 
-    protected open fun createViewHolder(view: View, viewType: Int): ViewHolder {
-        return ViewHolder(view)
-    }
+    protected open fun createViewHolder(
+        view: View,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(view)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
         return createViewHolder(view, viewType)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val album: Album = dataSet[position]
         val isChecked = isChecked(album)
         holder.isActivated = isChecked
@@ -87,38 +93,37 @@ open class AlbumAdapter(
         holder.loadPaletteImage(album, DEFAULT_ALBUM_IMAGE)
     }
 
-    private fun getAlbumTitle(album: Album): String {
-        return album.name
-    }
+    private fun getAlbumTitle(album: Album): String = album.name
 
-    protected open fun getAlbumText(holder: ViewHolder, album: Album): String? {
+    protected open fun getAlbumText(
+        holder: ViewHolder,
+        album: Album,
+    ): String? {
         if (sortMode?.selectedKey == SortKey.SongCount) {
             return buildInfoString(album.displayArtistName(), album.songCountStr(holder.itemView.context))
         }
         return album.albumInfo()
     }
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].id
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].id
 
-    override fun getIdentifier(position: Int): Album? {
-        return dataSet[position]
-    }
+    override fun getIdentifier(position: Int): Album? = dataSet[position]
 
-    override fun getName(item: Album): String? {
-        return item.name
-    }
+    override fun getName(item: Album): String? = item.name
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<Album>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Album>,
+    ) {
         callback?.albumsMenuItemClick(selection, menuItem)
     }
 
-    override fun getPopupText(view: View, position: Int): CharSequence {
+    override fun getPopupText(
+        view: View,
+        position: Int,
+    ): CharSequence {
         val album = dataSet.getOrNull(position) ?: return ""
         return when (sortMode?.selectedKey) {
             SortKey.Artist -> album.displayArtistName().asSectionName(sortMode)
@@ -127,18 +132,21 @@ open class AlbumAdapter(
         }
     }
 
-    open inner class ViewHolder(itemView: View) : MediaEntryViewHolder(itemView) {
+    open inner class ViewHolder(
+        itemView: View,
+    ) : MediaEntryViewHolder(itemView) {
         protected open val album: Album
             get() = dataSet[bindingAdapterPosition]
 
         protected val sharedElements: Array<Pair<View, String>>?
-            get() = if (imageContainer != null) {
-                arrayOf(imageContainer to imageContainer.transitionName)
-            } else if (image != null) {
-                arrayOf(image to image.transitionName)
-            } else {
-                null
-            }
+            get() =
+                if (imageContainer != null) {
+                    arrayOf(imageContainer to imageContainer.transitionName)
+                } else if (image != null) {
+                    arrayOf(image to image.transitionName)
+                } else {
+                    null
+                }
 
         override fun onClick(view: View) {
             if (isInQuickSelectMode) {
@@ -154,18 +162,19 @@ open class AlbumAdapter(
         }
 
         init {
-            menu?.setOnClickListener(object : OnClickMenu() {
-                override val popupMenuRes: Int
-                    get() = R.menu.menu_item_album
+            menu?.setOnClickListener(
+                object : OnClickMenu() {
+                    override val popupMenuRes: Int
+                        get() = R.menu.menu_item_album
 
-                override fun onMenuItemClick(item: MenuItem): Boolean {
-                    return callback?.albumMenuItemClick(album, item, sharedElements) ?: false
-                }
-            })
+                    override fun onMenuItemClick(item: MenuItem): Boolean = callback?.albumMenuItemClick(album, item, sharedElements) ?: false
+                },
+            )
             play?.setOnClickListener {
-                val albumSongs = with(SongSortMode.AlbumSongs) {
-                    album.songs.sorted()
-                }
+                val albumSongs =
+                    with(SongSortMode.AlbumSongs) {
+                        album.songs.sorted()
+                    }
                 getViewModel<PlayerViewModel>()
                     ?.openQueue(albumSongs, shuffleMode = OpenShuffleMode.Off)
             }

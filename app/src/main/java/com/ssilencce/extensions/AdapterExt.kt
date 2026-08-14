@@ -52,36 +52,38 @@ private fun MediaEntryViewHolder.setColor(color: PaletteColor) {
     imageText?.setTextColor(color.secondaryTextColor)
     menu?.iconTint = color.secondaryTextColor.toColorStateList()
     play?.backgroundTintList = color.primaryTextColor.withAlpha(0.85f).toColorStateList()
-    play?.iconTint = getPrimaryTextColor(itemView.context, isDark = color.primaryTextColor.isColorLight)
-        .toColorStateList()
+    play?.iconTint =
+        getPrimaryTextColor(itemView.context, isDark = color.primaryTextColor.isColorLight)
+            .toColorStateList()
 }
 
 fun MediaEntryViewHolder.loadPaletteImage(
     data: Any?,
     placeholderRes: Int,
-    builder: ImageRequest.Builder.() -> Unit = {}
-) =
-    image?.load(data) {
-        placeholderDrawableRes(itemView.context, placeholderRes)
-        builder()
-        listener(
-            onError = { request, result ->
-                setColor(PaletteColor.errorColor(itemView.context))
-            },
-            onSuccess = { request, result ->
-                if (paletteColorContainer != null) {
-                    itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
-                        val color = withContext(Dispatchers.Default) {
+    builder: ImageRequest.Builder.() -> Unit = {},
+) = image?.load(data) {
+    placeholderDrawableRes(itemView.context, placeholderRes)
+    builder()
+    listener(
+        onError = { request, result ->
+            setColor(PaletteColor.errorColor(itemView.context))
+        },
+        onSuccess = { request, result ->
+            if (paletteColorContainer != null) {
+                itemView.findViewTreeLifecycleOwner()?.lifecycleScope?.launch {
+                    val color =
+                        withContext(Dispatchers.Default) {
                             PaletteProcessor.getPaletteColor(
                                 itemView.context,
-                                result.image.toBitmap()
+                                result.image.toBitmap(),
                             )
                         }
-                        if (isActive) setColor(color)
-                    }
+                    if (isActive) setColor(color)
                 }
-            })
-    }
+            }
+        },
+    )
+}
 
 var MediaEntryViewHolder.isActivated: Boolean
     get() = if (itemView is MaterialCardView) (itemView as MaterialCardView).isChecked else itemView.isActivated

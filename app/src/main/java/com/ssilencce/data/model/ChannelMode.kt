@@ -20,7 +20,10 @@ package com.ssilencce.data.model
 import androidx.annotation.StringRes
 import com.ssilencce.R
 
-enum class ChannelMode(val channels: Int, @StringRes val labelRes: Int) {
+enum class ChannelMode(
+    val channels: Int,
+    @StringRes val labelRes: Int,
+) {
     MONO(1, R.string.channel_mono),
     STEREO(2, R.string.channel_stereo),
     STEREO_2_1(3, R.string.channel_stereo_2_1),
@@ -31,11 +34,10 @@ enum class ChannelMode(val channels: Int, @StringRes val labelRes: Int) {
     SURROUND_7_1(8, R.string.channel_surround_7_1),
     SURROUND_9_1(10, R.string.channel_surround_9_1),
     SURROUND_11_1(12, R.string.channel_surround_11_1),
-    SURROUND_13_1(14, R.string.channel_surround_13_1);
+    SURROUND_13_1(14, R.string.channel_surround_13_1),
+    ;
 
     companion object {
-        fun fromChannels(channels: Int): ChannelMode? {
-            return entries.find { it.channels == channels }
-        }
+        fun fromChannels(channels: Int): ChannelMode? = entries.find { it.channels == channels }
     }
 }

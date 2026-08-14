@@ -55,7 +55,6 @@ import java.util.LinkedList
  * @author Christians M. A. (mardous)
  */
 class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_default_player_playback_controls) {
-
     private var _binding: FragmentDefaultPlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -86,7 +85,10 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
     override val songInfoView: TextView?
         get() = binding.songInfo
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDefaultPlayerPlaybackControlsBinding.bind(view)
         binding.playPauseButton.doOnLayout { it.centerPivot() }
@@ -99,11 +101,12 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
         setupQueueInfoView()
     }
 
-    override fun onCreatePlayerAnimator(): PlayerAnimator {
-        return DefaultPlayerAnimator(binding, isControlAnimationEnabled)
-    }
+    override fun onCreatePlayerAnimator(): PlayerAnimator = DefaultPlayerAnimator(binding, isControlAnimationEnabled)
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {
         _binding?.let { nonNullBinding ->
             nonNullBinding.title.text = currentSong.title
             nonNullBinding.text.text = getSongArtist(currentSong)
@@ -133,8 +136,14 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
     override fun onClick(view: View) {
         super.onClick(view)
         when (view) {
-            binding.repeatButton -> playerViewModel.cycleRepeatMode()
-            binding.shuffleButton -> playerViewModel.toggleShuffleMode()
+            binding.repeatButton -> {
+                playerViewModel.cycleRepeatMode()
+            }
+
+            binding.shuffleButton -> {
+                playerViewModel.toggleShuffleMode()
+            }
+
             binding.playPauseButton -> {
                 playerViewModel.togglePlayPause()
                 if (isControlAnimationEnabled) {
@@ -155,9 +164,12 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
         }
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String?,
+    ) {
         super.onSharedPreferenceChanged(sharedPreferences, key)
-        when(key) {
+        when (key) {
             DISPLAY_NEXT_SONG -> {
                 setupQueueInfoView()
             }
@@ -170,31 +182,35 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
     }
 
     override fun getTintTargets(scheme: PlayerColorScheme): List<PlayerTintTarget> {
-        val oldPlayPauseColor = binding.playPauseButton.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldPlayPauseColor =
+            binding.playPauseButton.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
 
         val oldControlColor = binding.nextButton.iconTint.defaultColor
         val oldSliderColor = binding.progressSlider.currentColor
         val oldPrimaryTextColor = binding.title.currentTextColor
         val oldSecondaryTextColor = binding.text.currentTextColor
 
-        val newEmphasisColor = if (scheme.mode == PlayerColorSchemeMode.VibrantColor) {
-            scheme.onSurfaceColor
-        } else {
-            scheme.primaryColor
-        }
+        val newEmphasisColor =
+            if (scheme.mode == PlayerColorSchemeMode.VibrantColor) {
+                scheme.onSurfaceColor
+            } else {
+                scheme.primaryColor
+            }
         val oldShuffleColor = getPlaybackControlsColor(isShuffleModeOn)
-        val newShuffleColor = getPlaybackControlsColor(
-            isShuffleModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newShuffleColor =
+            getPlaybackControlsColor(
+                isShuffleModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         val oldRepeatColor = getPlaybackControlsColor(isRepeatModeOn)
-        val newRepeatColor = getPlaybackControlsColor(
-            isRepeatModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newRepeatColor =
+            getPlaybackControlsColor(
+                isRepeatModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         return listOfNotNull(
             binding.playPauseButton.tintTarget(oldPlayPauseColor, newEmphasisColor),
             binding.progressSlider.progressView?.tintTarget(oldSliderColor, newEmphasisColor),
@@ -207,24 +223,28 @@ class DefaultPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragmen
             binding.songInfo?.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.queueInfo.tintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
             binding.songCurrentProgress.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
-            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         )
     }
 
     private class DefaultPlayerAnimator(
         private val binding: FragmentDefaultPlayerPlaybackControlsBinding,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ) : PlayerAnimator(isEnabled) {
-        override fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {
+        override fun onAddAnimation(
+            animators: LinkedList<Animator>,
+            interpolator: TimeInterpolator,
+        ) {
             animators.add(
-                ObjectAnimator.ofPropertyValuesHolder(
-                    binding.playPauseButton,
-                    PropertyValuesHolder.ofFloat(View.SCALE_X, 1f),
-                    PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f),
-                    PropertyValuesHolder.ofFloat(View.ROTATION, 360f)
-                ).apply {
-                    setInterpolator(DecelerateInterpolator())
-                }
+                ObjectAnimator
+                    .ofPropertyValuesHolder(
+                        binding.playPauseButton,
+                        PropertyValuesHolder.ofFloat(View.SCALE_X, 1f),
+                        PropertyValuesHolder.ofFloat(View.SCALE_Y, 1f),
+                        PropertyValuesHolder.ofFloat(View.ROTATION, 360f),
+                    ).apply {
+                        setInterpolator(DecelerateInterpolator())
+                    },
             )
             addScaleAnimation(animators, binding.shuffleButton, interpolator, 100)
             addScaleAnimation(animators, binding.repeatButton, interpolator, 100)

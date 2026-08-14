@@ -21,12 +21,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class LastFmSessionResponse(
-    val session: LastFmSession? = null
+    val session: LastFmSession? = null,
 )
 
 @Serializable
 data class LastFmSession(
     val name: String,
     val key: String,
-    val subscriber: Int
+    val subscriber: Int,
 )

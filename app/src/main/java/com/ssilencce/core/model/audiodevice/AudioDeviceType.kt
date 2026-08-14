@@ -28,90 +28,99 @@ enum class AudioDeviceType(
     @param:StringRes internal val nameRes: Int,
     internal val isProduct: Boolean,
     internal val audioDeviceTypes: Array<Int>,
-    internal val mediaRouteTypes: Array<Int>
+    internal val mediaRouteTypes: Array<Int>,
 ) {
     BluetoothA2dp(
         iconRes = R.drawable.ic_media_bluetooth_on_24dp,
         nameRes = R.string.audio_device_bluetooth_a2dp,
         isProduct = true,
         audioDeviceTypes = arrayOf(AudioDeviceInfo.TYPE_BLUETOOTH_A2DP),
-        mediaRouteTypes = arrayOf(MediaRouter.RouteInfo.DEVICE_TYPE_BLUETOOTH_A2DP)
+        mediaRouteTypes = arrayOf(MediaRouter.RouteInfo.DEVICE_TYPE_BLUETOOTH_A2DP),
     ),
     UsbHeadset(
         iconRes = R.drawable.ic_usb_24dp,
         nameRes = R.string.audio_device_usb_headset,
         isProduct = true,
         audioDeviceTypes = arrayOf(AudioDeviceInfo.TYPE_USB_HEADSET),
-        mediaRouteTypes = arrayOf(MediaRouter.RouteInfo.DEVICE_TYPE_USB_HEADSET)
+        mediaRouteTypes = arrayOf(MediaRouter.RouteInfo.DEVICE_TYPE_USB_HEADSET),
     ),
     UsbDevice(
         iconRes = R.drawable.ic_usb_24dp,
         nameRes = R.string.audio_device_usb_device,
         isProduct = true,
-        audioDeviceTypes = arrayOf(
-            AudioDeviceInfo.TYPE_USB_ACCESSORY,
-            AudioDeviceInfo.TYPE_USB_DEVICE
-        ),
-        mediaRouteTypes = arrayOf(
-            MediaRouter.RouteInfo.DEVICE_TYPE_USB_ACCESSORY,
-            MediaRouter.RouteInfo.DEVICE_TYPE_USB_DEVICE
-        )
+        audioDeviceTypes =
+            arrayOf(
+                AudioDeviceInfo.TYPE_USB_ACCESSORY,
+                AudioDeviceInfo.TYPE_USB_DEVICE,
+            ),
+        mediaRouteTypes =
+            arrayOf(
+                MediaRouter.RouteInfo.DEVICE_TYPE_USB_ACCESSORY,
+                MediaRouter.RouteInfo.DEVICE_TYPE_USB_DEVICE,
+            ),
     ),
     Headset(
         iconRes = R.drawable.ic_headphones_24dp,
         nameRes = R.string.audio_device_headset,
         isProduct = false,
-        audioDeviceTypes = arrayOf(
-            AudioDeviceInfo.TYPE_WIRED_HEADSET,
-            AudioDeviceInfo.TYPE_WIRED_HEADPHONES
-        ),
-        mediaRouteTypes = arrayOf(
-            MediaRouter.RouteInfo.DEVICE_TYPE_WIRED_HEADSET,
-            MediaRouter.RouteInfo.DEVICE_TYPE_WIRED_HEADPHONES
-        )
+        audioDeviceTypes =
+            arrayOf(
+                AudioDeviceInfo.TYPE_WIRED_HEADSET,
+                AudioDeviceInfo.TYPE_WIRED_HEADPHONES,
+            ),
+        mediaRouteTypes =
+            arrayOf(
+                MediaRouter.RouteInfo.DEVICE_TYPE_WIRED_HEADSET,
+                MediaRouter.RouteInfo.DEVICE_TYPE_WIRED_HEADPHONES,
+            ),
     ),
     Hdmi(
         iconRes = R.drawable.ic_hdmi_24dp,
         nameRes = R.string.audio_device_hdmi,
         isProduct = false,
-        audioDeviceTypes = arrayOf(
-            AudioDeviceInfo.TYPE_HDMI,
-            AudioDeviceInfo.TYPE_HDMI_ARC,
-            AudioDeviceInfo.TYPE_HDMI_EARC
-        ),
-        mediaRouteTypes = arrayOf(
-            MediaRouter.RouteInfo.DEVICE_TYPE_HDMI,
-            MediaRouter.RouteInfo.DEVICE_TYPE_HDMI_ARC,
-            MediaRouter.RouteInfo.DEVICE_TYPE_HDMI_EARC
-        )
+        audioDeviceTypes =
+            arrayOf(
+                AudioDeviceInfo.TYPE_HDMI,
+                AudioDeviceInfo.TYPE_HDMI_ARC,
+                AudioDeviceInfo.TYPE_HDMI_EARC,
+            ),
+        mediaRouteTypes =
+            arrayOf(
+                MediaRouter.RouteInfo.DEVICE_TYPE_HDMI,
+                MediaRouter.RouteInfo.DEVICE_TYPE_HDMI_ARC,
+                MediaRouter.RouteInfo.DEVICE_TYPE_HDMI_EARC,
+            ),
     ),
     Aux(
         iconRes = R.drawable.ic_speaker_24dp,
         nameRes = R.string.audio_device_aux_line,
         isProduct = false,
         audioDeviceTypes = arrayOf(AudioDeviceInfo.TYPE_AUX_LINE),
-        mediaRouteTypes = emptyArray()
+        mediaRouteTypes = emptyArray(),
     ),
     BuiltinSpeaker(
         iconRes = R.drawable.ic_speaker_24dp,
         nameRes = R.string.audio_device_builtin_speaker,
         isProduct = false,
-        audioDeviceTypes = arrayOf(
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
-            AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
-            AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-        ),
-        mediaRouteTypes = arrayOf(
-            MediaRouter.RouteInfo.DEVICE_TYPE_BUILTIN_SPEAKER
-        )
+        audioDeviceTypes =
+            arrayOf(
+                AudioDeviceInfo.TYPE_BUILTIN_SPEAKER,
+                AudioDeviceInfo.TYPE_BUILTIN_SPEAKER_SAFE,
+                AudioDeviceInfo.TYPE_BUILTIN_EARPIECE,
+            ),
+        mediaRouteTypes =
+            arrayOf(
+                MediaRouter.RouteInfo.DEVICE_TYPE_BUILTIN_SPEAKER,
+            ),
     ),
     Unknown(
         iconRes = R.drawable.ic_speaker_24dp,
         nameRes = R.string.audio_device_builtin_speaker,
         isProduct = false,
         audioDeviceTypes = arrayOf(AudioDeviceInfo.TYPE_UNKNOWN),
-        mediaRouteTypes = emptyArray()
-    );
+        mediaRouteTypes = emptyArray(),
+    ),
+    ;
 
     val isThisDeviceOutput: Boolean
         get() = this == BuiltinSpeaker || this == Unknown

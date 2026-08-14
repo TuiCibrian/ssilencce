@@ -73,53 +73,67 @@ data class PlayerColorScheme(
     @param:ColorInt val primaryColor: Int,
     @param:ColorInt val secondaryContainerColor: Int,
     @param:ColorInt val onSurfaceColor: Int,
-    @param:ColorInt val onSurfaceVariantColor: Int
+    @param:ColorInt val onSurfaceVariantColor: Int,
 ) {
-
-    val primary = androidx.compose.ui.graphics.Color(primaryColor)
-    val onPrimary = androidx.compose.ui.graphics.Color(primaryColor).onThis()
-    val surface = androidx.compose.ui.graphics.Color(surfaceColor)
-    val onSurface = androidx.compose.ui.graphics.Color(onSurfaceColor)
-    val onSurfaceVariant = androidx.compose.ui.graphics.Color(onSurfaceVariantColor)
+    val primary =
+        androidx.compose.ui.graphics
+            .Color(primaryColor)
+    val onPrimary =
+        androidx.compose.ui.graphics
+            .Color(primaryColor)
+            .onThis()
+    val surface =
+        androidx.compose.ui.graphics
+            .Color(surfaceColor)
+    val onSurface =
+        androidx.compose.ui.graphics
+            .Color(onSurfaceColor)
+    val onSurfaceVariant =
+        androidx.compose.ui.graphics
+            .Color(onSurfaceVariantColor)
 
     enum class Mode(
         @param:StringRes val titleRes: Int,
         @param:StringRes val descriptionRes: Int,
-        val preferredAnimDuration: Long = 500
+        val preferredAnimDuration: Long = 500,
     ) {
         AppTheme(
             R.string.player_color_mode_app_theme_title,
-            R.string.player_color_mode_app_theme_description
+            R.string.player_color_mode_app_theme_description,
         ),
         SimpleColor(
             R.string.player_color_mode_simple_color_title,
-            R.string.player_color_mode_simple_color_description
+            R.string.player_color_mode_simple_color_description,
         ),
         VibrantColor(
             R.string.player_color_mode_vibrant_color_title,
-            R.string.player_color_mode_vibrant_color_description
+            R.string.player_color_mode_vibrant_color_description,
         ),
         MaterialYou(
             R.string.player_color_mode_material_you_title,
             R.string.player_color_mode_material_you_description,
-            preferredAnimDuration = 1000
+            preferredAnimDuration = 1000,
         ),
         Blur(
             R.string.player_color_mode_blur_title,
-            R.string.player_color_mode_blur_description
-        )
+            R.string.player_color_mode_blur_description,
+        ),
     }
 
-    class BlurToken(val isBlur: Boolean, val blurRadius: Float) {
+    class BlurToken(
+        val isBlur: Boolean,
+        val blurRadius: Float,
+    ) {
         companion object {
             val None = BlurToken(isBlur = false, blurRadius = 0f)
         }
     }
 
-    class AppThemeToken(private val isDark: Boolean, private val isMaterialYou: Boolean) {
-        fun isValid(context: Context): Boolean {
-            return context.isNightMode == isDark && Preferences.isMaterialYouTheme == isMaterialYou
-        }
+    class AppThemeToken(
+        private val isDark: Boolean,
+        private val isMaterialYou: Boolean,
+    ) {
+        fun isValid(context: Context): Boolean = context.isNightMode == isDark && Preferences.isMaterialYouTheme == isMaterialYou
 
         companion object {
             val None = AppThemeToken(isDark = false, isMaterialYou = false)
@@ -127,18 +141,18 @@ data class PlayerColorScheme(
     }
 
     companion object {
-
-        val Unspecified = PlayerColorScheme(
-            mode = Mode.SimpleColor,
-            appThemeToken = AppThemeToken.None,
-            blurToken = BlurToken.None,
-            surfaceColor = Color.TRANSPARENT,
-            surfaceContainerColor = Color.TRANSPARENT,
-            primaryColor = Color.TRANSPARENT,
-            secondaryContainerColor = Color.TRANSPARENT,
-            onSurfaceColor = Color.TRANSPARENT,
-            onSurfaceVariantColor = Color.TRANSPARENT
-        )
+        val Unspecified =
+            PlayerColorScheme(
+                mode = Mode.SimpleColor,
+                appThemeToken = AppThemeToken.None,
+                blurToken = BlurToken.None,
+                surfaceColor = Color.TRANSPARENT,
+                surfaceContainerColor = Color.TRANSPARENT,
+                primaryColor = Color.TRANSPARENT,
+                secondaryContainerColor = Color.TRANSPARENT,
+                onSurfaceColor = Color.TRANSPARENT,
+                onSurfaceVariantColor = Color.TRANSPARENT,
+            )
 
         /**
          * Returns a default color scheme based on the current app theme.
@@ -153,17 +167,18 @@ data class PlayerColorScheme(
             val onSurfaceVariantColor = onSurfaceColor.withAlpha(0.6f)
             return PlayerColorScheme(
                 mode = Mode.AppTheme,
-                appThemeToken = AppThemeToken(
-                    isDark = context.isNightMode,
-                    isMaterialYou = Preferences.isMaterialYouTheme
-                ),
+                appThemeToken =
+                    AppThemeToken(
+                        isDark = context.isNightMode,
+                        isMaterialYou = Preferences.isMaterialYouTheme,
+                    ),
                 blurToken = BlurToken.None,
                 surfaceColor = context.surfaceColor(),
                 surfaceContainerColor = context.resolveColor(M3R.attr.colorSurfaceContainerHigh),
                 primaryColor = context.primaryColor(),
                 secondaryContainerColor = context.resolveColor(M3R.attr.colorSecondaryContainer),
                 onSurfaceColor = onSurfaceColor,
-                onSurfaceVariantColor = onSurfaceVariantColor
+                onSurfaceVariantColor = onSurfaceVariantColor,
             )
         }
 
@@ -173,13 +188,17 @@ data class PlayerColorScheme(
          * @param color A [PaletteColor] with extracted media colors.
          * @return A raw [PlayerColorScheme] using unmodified colors.
          */
-        private fun simpleColorScheme(context: Context, color: PaletteColor): PlayerColorScheme {
+        private fun simpleColorScheme(
+            context: Context,
+            color: PaletteColor,
+        ): PlayerColorScheme {
             val themeColorScheme = themeColorScheme(context)
             val backgroundColor = themeColorScheme.surfaceColor
-            val emphasisColor = color.primaryTextColor
-                .ensureContrastAgainst(backgroundColor, 4.8)
-                .adjustSaturationIfTooHigh(backgroundColor, context.isNightMode)
-                .desaturateIfTooDarkComparedTo(backgroundColor)
+            val emphasisColor =
+                color.primaryTextColor
+                    .ensureContrastAgainst(backgroundColor, 4.8)
+                    .adjustSaturationIfTooHigh(backgroundColor, context.isNightMode)
+                    .desaturateIfTooDarkComparedTo(backgroundColor)
             return themeColorScheme.copy(mode = Mode.SimpleColor, primaryColor = emphasisColor)
         }
 
@@ -189,8 +208,8 @@ data class PlayerColorScheme(
          * @param color A [PaletteColor] with extracted media colors.
          * @return A raw [PlayerColorScheme] using unmodified colors.
          */
-        private fun vibrantColorScheme(color: PaletteColor): PlayerColorScheme {
-            return PlayerColorScheme(
+        private fun vibrantColorScheme(color: PaletteColor): PlayerColorScheme =
+            PlayerColorScheme(
                 mode = Mode.VibrantColor,
                 appThemeToken = AppThemeToken.None,
                 blurToken = BlurToken.None,
@@ -199,9 +218,8 @@ data class PlayerColorScheme(
                 primaryColor = color.backgroundColor,
                 secondaryContainerColor = ColorUtils.blendARGB(color.backgroundColor, color.secondaryTextColor, 0.4f),
                 onSurfaceColor = color.primaryTextColor,
-                onSurfaceVariantColor = color.secondaryTextColor.withAlpha(0.6f)
+                onSurfaceVariantColor = color.secondaryTextColor.withAlpha(0.6f),
             )
-        }
 
         /**
          * Generates a [PlayerColorScheme] using the m3color library (Monet). This allows us
@@ -216,14 +234,15 @@ data class PlayerColorScheme(
          */
         private suspend fun dynamicColorScheme(
             baseContext: Context,
-            seedColor: Int
+            seedColor: Int,
         ) = withContext(Dispatchers.IO) {
             val sourceHct = Hct.fromInt(seedColor)
-            val colorScheme = SchemeContent(
-                sourceHct,
-                baseContext.isNightMode,
-                baseContext.systemContrast.toDouble()
-            )
+            val colorScheme =
+                SchemeContent(
+                    sourceHct,
+                    baseContext.isNightMode,
+                    baseContext.systemContrast.toDouble(),
+                )
             PlayerColorScheme(
                 mode = Mode.MaterialYou,
                 appThemeToken = AppThemeToken.None,
@@ -233,38 +252,42 @@ data class PlayerColorScheme(
                 primaryColor = colorScheme.primary,
                 secondaryContainerColor = colorScheme.secondaryContainer,
                 onSurfaceColor = colorScheme.onSurface,
-                onSurfaceVariantColor = colorScheme.onSurfaceVariant.withAlpha(0.7f)
+                onSurfaceVariantColor = colorScheme.onSurfaceVariant.withAlpha(0.7f),
             )
         }
 
         private suspend fun blurColorScheme(
             context: Context,
-            color: PaletteColor
-        ) : PlayerColorScheme {
-            val blurRadius = PreferenceManager.getDefaultSharedPreferences(context)
-                .getInt(PLAYER_BLUR_RADIUS, context.resources.getInteger(R.integer.max_player_blur))
-                .toFloat()
+            color: PaletteColor,
+        ): PlayerColorScheme {
+            val blurRadius =
+                PreferenceManager
+                    .getDefaultSharedPreferences(context)
+                    .getInt(PLAYER_BLUR_RADIUS, context.resources.getInteger(R.integer.max_player_blur))
+                    .toFloat()
             return dynamicColorScheme(context, color.backgroundColor).copy(
                 mode = PlayerColorSchemeMode.Blur,
-                blurToken = BlurToken(
-                    isBlur = true,
-                    blurRadius = blurRadius
-                )
+                blurToken =
+                    BlurToken(
+                        isBlur = true,
+                        blurRadius = blurRadius,
+                    ),
             )
         }
 
         suspend fun autoColorScheme(
             context: Context,
             color: PaletteColor,
-            mode: PlayerColorSchemeMode
+            mode: PlayerColorSchemeMode,
         ): PlayerColorScheme {
-            val colorScheme = when (mode) {
-                Mode.AppTheme -> themeColorScheme(context)
-                Mode.SimpleColor -> simpleColorScheme(context, color)
-                Mode.VibrantColor -> vibrantColorScheme(color)
-                Mode.MaterialYou -> dynamicColorScheme(context, color.primaryColor)
-                Mode.Blur -> blurColorScheme(context, color)
-            }
+            val colorScheme =
+                when (mode) {
+                    Mode.AppTheme -> themeColorScheme(context)
+                    Mode.SimpleColor -> simpleColorScheme(context, color)
+                    Mode.VibrantColor -> vibrantColorScheme(color)
+                    Mode.MaterialYou -> dynamicColorScheme(context, color.primaryColor)
+                    Mode.Blur -> blurColorScheme(context, color)
+                }
             check(mode == colorScheme.mode)
             return colorScheme
         }

@@ -43,7 +43,6 @@ import java.util.LinkedList
  * @author Christians M. A. (mardous)
  */
 class PeekPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_peek_player_playback_controls) {
-
     private var _binding: FragmentPeekPlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -63,7 +62,10 @@ class PeekPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_p
         get() = binding.songTotalTime
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPeekPlayerPlaybackControlsBinding.bind(view)
         binding.playPauseButton.setOnClickListener(this)
@@ -78,22 +80,25 @@ class PeekPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_p
         val oldSliderColor = binding.progressSlider.currentColor
         val oldSecondaryTextColor = binding.songCurrentProgress.currentTextColor
         val oldShuffleColor = getPlaybackControlsColor(isShuffleModeOn)
-        val newShuffleColor = getPlaybackControlsColor(
-            isShuffleModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newShuffleColor =
+            getPlaybackControlsColor(
+                isShuffleModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         val oldRepeatColor = getPlaybackControlsColor(isRepeatModeOn)
-        val newRepeatColor = getPlaybackControlsColor(
-            isRepeatModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
-        val newSliderColor = if (scheme.mode == PlayerColorSchemeMode.VibrantColor) {
-            scheme.onSurfaceColor
-        } else {
-            scheme.primaryColor
-        }
+        val newRepeatColor =
+            getPlaybackControlsColor(
+                isRepeatModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
+        val newSliderColor =
+            if (scheme.mode == PlayerColorSchemeMode.VibrantColor) {
+                scheme.onSurfaceColor
+            } else {
+                scheme.primaryColor
+            }
         return listOfNotNull(
             binding.progressSlider.progressView?.tintTarget(oldSliderColor, newSliderColor),
             binding.songCurrentProgress.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
@@ -102,15 +107,16 @@ class PeekPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_p
             binding.nextButton.iconButtonTintTarget(oldControlColor, scheme.onSurfaceColor),
             binding.previousButton.iconButtonTintTarget(oldControlColor, scheme.onSurfaceColor),
             binding.shuffleButton.iconButtonTintTarget(oldShuffleColor, newShuffleColor),
-            binding.repeatButton.iconButtonTintTarget(oldRepeatColor, newRepeatColor)
+            binding.repeatButton.iconButtonTintTarget(oldRepeatColor, newRepeatColor),
         )
     }
 
-    override fun onCreatePlayerAnimator(): PlayerAnimator {
-        return PeekPlayerAnimator(binding, isControlAnimationEnabled)
-    }
+    override fun onCreatePlayerAnimator(): PlayerAnimator = PeekPlayerAnimator(binding, isControlAnimationEnabled)
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {}
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {}
 
     override fun onExtraInfoChanged(extraInfo: String?) {}
 
@@ -138,9 +144,12 @@ class PeekPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_p
 
     private class PeekPlayerAnimator(
         private val binding: FragmentPeekPlayerPlaybackControlsBinding,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ) : PlayerAnimator(isEnabled) {
-        override fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {
+        override fun onAddAnimation(
+            animators: LinkedList<Animator>,
+            interpolator: TimeInterpolator,
+        ) {
             addScaleAnimation(animators, binding.playPauseButton, interpolator, 100)
             addScaleAnimation(animators, binding.previousButton, interpolator, 200)
             addScaleAnimation(animators, binding.nextButton, interpolator, 200)

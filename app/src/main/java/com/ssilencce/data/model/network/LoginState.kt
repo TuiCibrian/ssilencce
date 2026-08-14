@@ -19,9 +19,17 @@ package com.ssilencce.data.model.network
 
 sealed class LoginState {
     object Empty : LoginState()
+
     object LoggingIn : LoginState()
-    class LoggedIn(val username: String, val url: String?) : LoginState()
-    class Failure(val message: String?) : LoginState()
+
+    class LoggedIn(
+        val username: String,
+        val url: String?,
+    ) : LoginState()
+
+    class Failure(
+        val message: String?,
+    ) : LoginState()
 }
 
 val LoginState.canLogIn: Boolean

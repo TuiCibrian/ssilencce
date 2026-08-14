@@ -24,8 +24,10 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
 object SortedCursorUtil : KoinComponent {
-
-    fun makeSortedCursor(cursor: Cursor?, idColumn: Int): SortedLongCursor? {
+    fun makeSortedCursor(
+        cursor: Cursor?,
+        idColumn: Int,
+    ): SortedLongCursor? {
         if (cursor != null && cursor.moveToFirst()) {
             // create the list of ids to select against
             val selection = StringBuilder()
@@ -53,7 +55,7 @@ object SortedCursorUtil : KoinComponent {
                 return SortedLongCursor(
                     songCursor,
                     order,
-                    AudioColumns._ID
+                    AudioColumns._ID,
                 )
             }
         }

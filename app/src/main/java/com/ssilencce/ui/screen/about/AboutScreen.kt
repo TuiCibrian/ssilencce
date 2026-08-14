@@ -69,6 +69,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -76,6 +78,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import coil3.compose.AsyncImage
+import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import com.ssilencce.App
 import com.ssilencce.BuildConfig
 import com.ssilencce.R
@@ -101,52 +105,54 @@ import com.ssilencce.util.Constants.TELEGRAM_LINK
 import com.ssilencce.util.Constants.TERMS_OF_SERVICE_LINK
 import com.ssilencce.util.Constants.TRANSLATIONS_LINK
 import com.ssilencce.util.Constants.WEBSITE_LINK
-import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
-import com.mikepenz.aboutlibraries.ui.compose.m3.LibrariesContainer
 import dev.jeziellago.compose.markdowntext.MarkdownText
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun AboutScreen(
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
 
-    val appVersion = try {
-        val packageManager = context.packageManager
-        val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
-        val versionName = packageInfo.versionName
-        if (BuildConfig.FLAVOR == "fdroid") {
-            "$versionName (F-Droid)"
-        } else versionName ?: "Unknown"
-    } catch (_: PackageManager.NameNotFoundException) {
-        "Unknown"
-    }
+    val appVersion =
+        try {
+            val packageManager = context.packageManager
+            val packageInfo = packageManager.getPackageInfo(context.packageName, 0)
+            val versionName = packageInfo.versionName
+            if (BuildConfig.FLAVOR == "fdroid") {
+                "$versionName (F-Droid)"
+            } else {
+                versionName ?: "Unknown"
+            }
+        } catch (_: PackageManager.NameNotFoundException) {
+            "Unknown"
+        }
 
     var showTranslatorsDialog by remember { mutableStateOf(false) }
     val translators by produceState(emptyList()) {
-        value = Contribution.loadContributions(context, "translators.json").map {
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_translate_24dp)) },
-                title = it.name,
-                markdown = it.description,
-                onClick = {}
-            )
-        }
+        value =
+            Contribution.loadContributions(context, "translators.json").map {
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_translate_24dp)) },
+                    title = it.name,
+                    markdown = it.description,
+                    onClick = {},
+                )
+            }
     }
 
     if (showTranslatorsDialog) {
-        ModalBottomSheet(onDismissRequest = { showTranslatorsDialog = false}) {
+        ModalBottomSheet(onDismissRequest = { showTranslatorsDialog = false }) {
             LazyColumn(
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
             ) {
-                itemsIndexed(translators) { index, item ->
+                itemsIndexed(translators, key = { _, item -> item.title }) { index, item ->
                     AboutListItem(
                         index = index,
                         itemCount = translators.size,
                         data = item,
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .8f)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .8f),
                     )
                 }
             }
@@ -156,38 +162,42 @@ fun AboutScreen(
     var showLicensesDialog by remember { mutableStateOf(false) }
     val libraries by produceLibraries(R.raw.aboutlibraries)
     if (showLicensesDialog) {
-        ModalBottomSheet(onDismissRequest = { showLicensesDialog = false}) {
+        ModalBottomSheet(onDismissRequest = { showLicensesDialog = false }) {
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
             ) {
                 LibrariesContainer(
                     libraries = libraries,
                     licenseDialogConfirmText = stringResource(R.string.close_action),
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(16.dp))
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .clip(RoundedCornerShape(16.dp)),
                 )
             }
         }
     }
 
-    val sections = getAboutSections(
-        onTranslatorsClick = { showTranslatorsDialog = true },
-        onLicensesClick = { showLicensesDialog = true }
-    )
+    val sections =
+        getAboutSections(
+            onTranslatorsClick = { showTranslatorsDialog = true },
+            onLicensesClick = { showLicensesDialog = true },
+        )
 
     CollapsibleAppBarScaffold(
         title = stringResource(R.string.about_title),
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
     ) { contentPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
             contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
         ) {
             item { AppHeader(version = appVersion) }
 
@@ -203,21 +213,21 @@ fun AboutScreen(
                                 .putExtra(Intent.EXTRA_EMAIL, arrayOf(SUPPORT_EMAIL))
                                 .putExtra(
                                     Intent.EXTRA_SUBJECT,
-                                    "ssilencce - Support & questions"
-                                )
+                                    "ssilencce - Support & questions",
+                                ),
                         )
                     },
-                    onDonateClick = { context.openUrl(DONATION_LINK) }
+                    onDonateClick = { context.openUrl(DONATION_LINK) },
                 )
             }
 
             for (section in sections) {
                 item { AboutSectionTitle(section.first) }
-                itemsIndexed(section.second) { index, item ->
+                itemsIndexed(section.second, key = { _, item -> item.title }) { index, item ->
                     AboutListItem(
                         index = index,
                         itemCount = section.second.size,
-                        data = item
+                        data = item,
                     )
                 }
             }
@@ -230,67 +240,68 @@ private fun AppHeader(version: String) {
     val context = LocalContext.current
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Surface(
             shape = CircleShape,
-            color = LocalContentColor.current.copy(alpha = 0.1f)
+            color = LocalContentColor.current.copy(alpha = 0.1f),
         ) {
             Icon(
                 painter = painterResource(R.drawable.app_logo_monochrome),
                 tint = LocalContentColor.current,
                 contentDescription = null,
-                modifier = Modifier.size(88.dp)
+                modifier = Modifier.size(88.dp),
             )
         }
         Spacer(Modifier.height(16.dp))
         Text(
             text = stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
-            maxLines = 1
+            maxLines = 1,
+            modifier = Modifier.semantics { heading() },
         )
         Text(
             text = stringResource(R.string.app_description),
             fontStyle = FontStyle.Italic,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(16.dp))
         ShapedText(
             text = stringResource(R.string.app_version_x, version),
             style = MaterialTheme.typography.bodySmall,
-            shape = CircleShape
+            shape = CircleShape,
         )
         if (BuildConfig.IS_CI_BUILD) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 8.dp)
+                modifier = Modifier.padding(top = 8.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_construction_24dp),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(16.dp),
                 )
                 Text(
                     text = "CI Build",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.secondary
+                    color = MaterialTheme.colorScheme.secondary,
                 )
             }
         }
         Spacer(Modifier.height(16.dp))
         Row(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
-            modifier = Modifier.clip(RoundedCornerShape(16.dp))
+            modifier = Modifier.clip(RoundedCornerShape(16.dp)),
         ) {
             if (!App.isPlayStoreBuild()) {
                 AboutHeaderButton(
                     icon = R.drawable.ic_history_24dp,
                     label = stringResource(R.string.changelog),
                     modifier = Modifier.weight(1f),
-                    onClick = { context.openUrl(RELEASES_LINK) }
+                    onClick = { context.openUrl(RELEASES_LINK) },
                 )
             }
 
@@ -298,21 +309,21 @@ private fun AppHeader(version: String) {
                 icon = R.drawable.ic_github_circle_24dp,
                 label = stringResource(R.string.github),
                 modifier = Modifier.weight(1f),
-                onClick = { context.openUrl(APP_GITHUB_URL) }
+                onClick = { context.openUrl(APP_GITHUB_URL) },
             )
 
             AboutHeaderButton(
                 icon = R.drawable.ic_help_24dp,
                 label = stringResource(R.string.faq),
                 modifier = Modifier.weight(1f),
-                onClick = { context.openUrl(FAQ_LINK) }
+                onClick = { context.openUrl(FAQ_LINK) },
             )
 
             AboutHeaderButton(
                 icon = R.drawable.ic_language_24dp,
                 label = stringResource(R.string.website),
                 modifier = Modifier.weight(1f),
-                onClick = { context.openUrl(WEBSITE_LINK) }
+                onClick = { context.openUrl(WEBSITE_LINK) },
             )
         }
     }
@@ -322,29 +333,31 @@ private fun AppHeader(version: String) {
 private fun AuthorSection(
     onGitHubClick: () -> Unit = {},
     onEmailClick: () -> Unit = {},
-    onDonateClick: () -> Unit = {}
+    onDonateClick: () -> Unit = {},
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
         shape = MaterialTheme.shapes.large,
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 AboutContributorImage(
                     username = "mardous",
-                    modifier = Modifier.size(88.dp)
+                    modifier = Modifier.size(88.dp),
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -352,29 +365,30 @@ private fun AuthorSection(
                 Text(
                     text = stringResource(R.string.mardous),
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
                 )
 
                 Text(
                     text = stringResource(R.string.mardous_summary),
-                    style = MaterialTheme.typography.bodyLarge
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .wrapContentSize()
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .wrapContentSize(),
             ) {
                 if (!App.isPlayStoreBuild()) {
                     Button(
                         onClick = onDonateClick,
-                        modifier = Modifier.wrapContentSize()
+                        modifier = Modifier.wrapContentSize(),
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.ic_volunteer_activism_24dp),
-                            contentDescription = null
+                            contentDescription = null,
                         )
                         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
                         Text(stringResource(R.string.support_my_work))
@@ -383,21 +397,21 @@ private fun AuthorSection(
 
                 IconButton(
                     onClick = onGitHubClick,
-                    modifier = Modifier.wrapContentSize()
+                    modifier = Modifier.wrapContentSize(),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_github_circle_24dp),
-                        contentDescription = "GitHub profile"
+                        contentDescription = "GitHub profile",
                     )
                 }
 
                 IconButton(
                     onClick = onEmailClick,
-                    modifier = Modifier.wrapContentSize()
+                    modifier = Modifier.wrapContentSize(),
                 ) {
                     Icon(
                         painter = painterResource(R.drawable.ic_email_24dp),
-                        contentDescription = "Write an email"
+                        contentDescription = "Write an email",
                     )
                 }
             }
@@ -408,34 +422,35 @@ private fun AuthorSection(
 @Composable
 private fun AboutSectionTitle(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
         style = MaterialTheme.typography.titleSmall,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier.padding(top = 16.dp, bottom = 4.dp, start = 16.dp)
+        modifier = modifier.padding(top = 16.dp, bottom = 4.dp, start = 16.dp),
     )
 }
 
 @Composable
 private fun AboutItemIcon(
     icon: Painter,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Surface(
         shape = CircleShape,
         color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-        modifier = modifier.size(48.dp)
+        modifier = modifier.size(48.dp),
     ) {
         Box {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier
-                    .align(Alignment.Center)
+                modifier =
+                    Modifier
+                        .align(Alignment.Center),
             )
         }
     }
@@ -444,13 +459,13 @@ private fun AboutItemIcon(
 @Composable
 private fun AboutContributorImage(
     username: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AsyncImage(
-        model = "file:///android_asset/images/${username}.png".toUri(),
+        model = "file:///android_asset/images/$username.png".toUri(),
         contentDescription = null,
         contentScale = ContentScale.Crop,
-        modifier = modifier.clip(CircleShape)
+        modifier = modifier.clip(CircleShape),
     )
 }
 
@@ -459,27 +474,28 @@ private fun AboutHeaderButton(
     icon: Int,
     label: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainer)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 4.dp)
+        modifier =
+            modifier
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .clickable(onClick = onClick)
+                .padding(vertical = 12.dp, horizontal = 4.dp),
     ) {
         Icon(
             painter = painterResource(icon),
-            contentDescription = null
+            contentDescription = null,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }
@@ -489,19 +505,19 @@ private enum class Contributor(
     @StringRes val title: Int,
     @StringRes val description: Int,
     val avatar: String,
-    val githubUser: String
+    val githubUser: String,
 ) {
     Dawid(R.string.contributor_dawid, R.string.contributor_dawid_description, "dawid", "hackzy01"),
     Lenard(R.string.contributor_lenard, R.string.contributor_lenard_description, "lenard", "lenardflx"),
     TTop(R.string.contributor_ttop, R.string.contributor_ttop_description, "ttop", "TheTerminatorOfProgramming"),
     Ray(R.string.contributor_ray, R.string.contributor_ray_description, "ray", "raycadle"),
-    Alex(R.string.contributor_alex, R.string.contributor_alex_description, "alex", "Paxsenix0")
+    Alex(R.string.contributor_alex, R.string.contributor_alex_description, "alex", "Paxsenix0"),
 }
 
 @Composable
 private fun getAboutSections(
     onTranslatorsClick: () -> Unit,
-    onLicensesClick: () -> Unit
+    onLicensesClick: () -> Unit,
 ): List<Pair<String, List<AboutItemData>>> {
     val context = LocalContext.current
 
@@ -518,77 +534,80 @@ private fun getAboutSections(
                 icon = {
                     AboutContributorImage(
                         username = contributor.avatar,
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier.size(48.dp),
                     )
                 },
                 title = stringResource(contributor.title),
                 summary = stringResource(contributor.description),
-                onClick = { openGithubProfile(contributor.githubUser) }
+                onClick = { openGithubProfile(contributor.githubUser) },
             )
-        } + listOf(
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_translate_24dp)) },
-                title = stringResource(R.string.translators_title),
-                summary = stringResource(R.string.translators_summary),
-                onClick = onTranslatorsClick
+        } +
+            listOf(
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_translate_24dp)) },
+                    title = stringResource(R.string.translators_title),
+                    summary = stringResource(R.string.translators_summary),
+                    onClick = onTranslatorsClick,
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_groups_24dp)) },
+                    title = stringResource(R.string.more_contributors_title),
+                    summary = stringResource(R.string.more_contributors_summary),
+                    onClick = { context.openUrl(COMMUNITY_LINK) },
+                ),
             ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_groups_24dp)) },
-                title = stringResource(R.string.more_contributors_title),
-                summary = stringResource(R.string.more_contributors_summary),
-                onClick = { context.openUrl(COMMUNITY_LINK) }
-            )
-        ),
-        stringResource(R.string.support_development) to listOf(
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_bug_report_24dp)) },
-                title = stringResource(R.string.report_bugs),
-                summary = stringResource(R.string.report_bugs_summary),
-                onClick = { context.openUrl(ISSUE_TRACKER_LINK) }
+        stringResource(R.string.support_development) to
+            listOf(
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_bug_report_24dp)) },
+                    title = stringResource(R.string.report_bugs),
+                    summary = stringResource(R.string.report_bugs_summary),
+                    onClick = { context.openUrl(ISSUE_TRACKER_LINK) },
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_language_24dp)) },
+                    title = stringResource(R.string.help_with_translations),
+                    summary = stringResource(R.string.help_with_translations_summary),
+                    onClick = { context.openUrl(TRANSLATIONS_LINK) },
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_telegram_24dp)) },
+                    title = stringResource(R.string.telegram_community),
+                    summary = stringResource(R.string.telegram_community_summary),
+                    onClick = { context.openUrl(TELEGRAM_LINK) },
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_share_24dp)) },
+                    title = stringResource(R.string.share_app),
+                    summary = stringResource(R.string.share_app_summary),
+                    onClick = {
+                        context.tryStartActivity(
+                            Intent(Intent.ACTION_SEND)
+                                .putExtra(Intent.EXTRA_TEXT, invitationMessage)
+                                .setType(MIME_TYPE_PLAIN_TEXT)
+                                .toChooser(sendInvitationTitle),
+                        )
+                    },
+                ),
             ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_language_24dp)) },
-                title = stringResource(R.string.help_with_translations),
-                summary = stringResource(R.string.help_with_translations_summary),
-                onClick = { context.openUrl(TRANSLATIONS_LINK) }
+        stringResource(R.string.legal) to
+            listOf(
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
+                    title = stringResource(R.string.licenses),
+                    onClick = onLicensesClick,
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
+                    title = stringResource(R.string.terms_of_service),
+                    onClick = { context.openUrl(TERMS_OF_SERVICE_LINK) },
+                ),
+                AboutItemData(
+                    icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
+                    title = stringResource(R.string.privacy_policy),
+                    onClick = { context.openUrl(PRIVACY_POLICY_LINK) },
+                ),
             ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_telegram_24dp)) },
-                title = stringResource(R.string.telegram_community),
-                summary = stringResource(R.string.telegram_community_summary),
-                onClick = { context.openUrl(TELEGRAM_LINK) }
-            ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_share_24dp)) },
-                title = stringResource(R.string.share_app),
-                summary = stringResource(R.string.share_app_summary),
-                onClick = {
-                    context.tryStartActivity(
-                        Intent(Intent.ACTION_SEND)
-                            .putExtra(Intent.EXTRA_TEXT, invitationMessage)
-                            .setType(MIME_TYPE_PLAIN_TEXT)
-                            .toChooser(sendInvitationTitle)
-                    )
-                }
-            )
-        ),
-        stringResource(R.string.legal) to listOf(
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
-                title = stringResource(R.string.licenses),
-                onClick = onLicensesClick
-            ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
-                title = stringResource(R.string.terms_of_service),
-                onClick = { context.openUrl(TERMS_OF_SERVICE_LINK) }
-            ),
-            AboutItemData(
-                icon = { AboutItemIcon(painterResource(R.drawable.ic_description_24dp)) },
-                title = stringResource(R.string.privacy_policy),
-                onClick = { context.openUrl(PRIVACY_POLICY_LINK) }
-            )
-        )
     )
 }
 
@@ -599,7 +618,7 @@ private fun AboutListItem(
     itemCount: Int,
     data: AboutItemData,
     modifier: Modifier = Modifier,
-    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer
+    containerColor: Color = MaterialTheme.colorScheme.surfaceContainer,
 ) {
     SegmentedListItem(
         onClick = data.onClick,
@@ -609,29 +628,30 @@ private fun AboutListItem(
             data.icon()
         },
         colors = ListItemDefaults.segmentedColors(containerColor = containerColor),
-        modifier = modifier
+        modifier = modifier,
     ) {
         Column(
-            modifier = Modifier.padding(vertical = 8.dp)
+            modifier = Modifier.padding(vertical = 8.dp),
         ) {
             Text(
                 text = data.title,
                 style = MaterialTheme.typography.titleMedium,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
             if (!data.markdown.isNullOrBlank()) {
                 MarkdownText(
                     markdown = data.markdown,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = LocalContentColor.current.copy(alpha = 0.8f),
-                    )
+                    style =
+                        MaterialTheme.typography.bodyMedium.copy(
+                            color = LocalContentColor.current.copy(alpha = 0.8f),
+                        ),
                 )
             } else if (!data.summary.isNullOrBlank()) {
                 Text(
                     text = data.summary,
                     style = MaterialTheme.typography.bodyMedium,
                     color = LocalContentColor.current.copy(alpha = 0.8f),
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
         }

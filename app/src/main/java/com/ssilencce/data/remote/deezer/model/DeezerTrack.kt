@@ -7,27 +7,29 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DeezerTrack(
     @SerialName("data")
-    val data: List<TrackData>
+    val data: List<TrackData>,
 ) {
     val imageUrl: String?
-        get() = data.firstOrNull()?.let {
-            it.album.largeImage ?: it.album.mediumImage ?: it.album.smallImage
-        }
+        get() =
+            data.firstOrNull()?.let {
+                it.album.largeImage ?: it.album.mediumImage ?: it.album.smallImage
+            }
 
     fun getBestImage(requestedImageSize: String): String? {
         val track = data.firstOrNull() ?: return null
-        val image = when (requestedImageSize) {
-            ImageSize.LARGE -> track.album.largeImage
-            ImageSize.SMALL -> track.album.smallImage
-            else -> track.album.mediumImage
-        } ?: track.album.image
+        val image =
+            when (requestedImageSize) {
+                ImageSize.LARGE -> track.album.largeImage
+                ImageSize.SMALL -> track.album.smallImage
+                else -> track.album.mediumImage
+            } ?: track.album.image
         return image?.takeIf { it.isNotBlank() && !it.contains("/images/artist//") }
     }
 
     @Serializable
     data class TrackData(
         @SerialName("album")
-        val album: Album
+        val album: Album,
     ) {
         @Serializable
         data class Album(
@@ -38,7 +40,7 @@ data class DeezerTrack(
             @SerialName("cover_medium")
             val mediumImage: String?,
             @SerialName("cover_big")
-            val largeImage: String?
+            val largeImage: String?,
         )
     }
 }

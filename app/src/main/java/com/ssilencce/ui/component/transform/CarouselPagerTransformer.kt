@@ -19,8 +19,9 @@ import android.view.View
 import androidx.viewpager.widget.ViewPager
 import kotlin.math.abs
 
-class CarouselPagerTransformer(context: Context) : ViewPager.PageTransformer {
-
+class CarouselPagerTransformer(
+    context: Context,
+) : ViewPager.PageTransformer {
     private val maxTranslateOffsetX: Int
     private var viewPager: ViewPager? = null
 
@@ -28,7 +29,10 @@ class CarouselPagerTransformer(context: Context) : ViewPager.PageTransformer {
         this.maxTranslateOffsetX = dp2px(context, 180f)
     }
 
-    override fun transformPage(view: View, position: Float) {
+    override fun transformPage(
+        view: View,
+        position: Float,
+    ) {
         if (viewPager == null) {
             viewPager = view.parent as ViewPager
         }
@@ -45,7 +49,10 @@ class CarouselPagerTransformer(context: Context) : ViewPager.PageTransformer {
         }
     }
 
-    private fun dp2px(context: Context, dipValue: Float): Int {
+    private fun dp2px(
+        context: Context,
+        dipValue: Float,
+    ): Int {
         val m = context.resources.displayMetrics.density
         return (dipValue * m + 0.5f).toInt()
     }

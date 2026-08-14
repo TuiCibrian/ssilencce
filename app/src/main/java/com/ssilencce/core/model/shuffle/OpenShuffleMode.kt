@@ -18,5 +18,7 @@
 package com.ssilencce.core.model.shuffle
 
 enum class OpenShuffleMode {
-    On, Off, Remember
+    On,
+    Off,
+    Remember,
 }

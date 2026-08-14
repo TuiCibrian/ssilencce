@@ -33,7 +33,6 @@ import com.ssilencce.ui.screen.library.LibraryViewModel
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class DeletePlaylistDialog : DialogFragment() {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val playlists: List<PlaylistEntity> by extraNotNull(EXTRA_PLAYLISTS)
 
@@ -53,15 +52,12 @@ class DeletePlaylistDialog : DialogFragment() {
             .setMessage(content)
             .setPositiveButton(R.string.delete_action) { _: DialogInterface, _: Int ->
                 libraryViewModel.deletePlaylists(playlists)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .create()
     }
 
     companion object {
-        fun create(playlist: PlaylistWithSongs): DeletePlaylistDialog {
-            return create(listOf(playlist))
-        }
+        fun create(playlist: PlaylistWithSongs): DeletePlaylistDialog = create(listOf(playlist))
 
         fun create(playlists: List<PlaylistWithSongs>): DeletePlaylistDialog {
             val playlistEntities = playlists.map { it.playlistEntity }

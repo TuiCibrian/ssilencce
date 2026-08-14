@@ -54,103 +54,252 @@ import java.io.File
 const val MAX_ITEMS_PER_CHUNK = 900
 
 interface Repository {
-
     suspend fun allSongs(): List<Song>
+
     suspend fun allAlbums(): List<Album>
+
     suspend fun allArtists(): List<Artist>
+
     suspend fun allAlbumArtists(): List<Artist>
+
     suspend fun allGenres(): List<Genre>
+
     suspend fun allYears(): List<ReleaseYear>
+
     suspend fun allFolders(): FileSystemQuery
+
     suspend fun filesInPath(path: String): FileSystemQuery
+
     suspend fun playlistSongs(playlistId: Long): List<SongEntity>
+
     suspend fun devicePlaylists(): List<Playlist>
+
     suspend fun devicePlaylistSongs(playlist: Playlist): List<Song>
+
     suspend fun devicePlaylist(playlistId: Long): Playlist
+
     suspend fun playlistsWithSongs(): List<PlaylistWithSongs>
+
     suspend fun playlistsWithSongs(sorted: Boolean): List<PlaylistWithSongs>
+
     suspend fun searchPlaylists(searchQuery: String): List<PlaylistWithSongs>
+
     suspend fun playlistWithSongs(playlistId: Long): PlaylistWithSongs
+
     fun playlistWithSongsObservable(playlistId: Long): LiveData<PlaylistWithSongs>
+
     suspend fun isSongFavorite(songId: Long): Boolean
+
     suspend fun favoriteSongs(): List<Song>
+
     fun favoriteSongsFlow(): Flow<List<Song>>
+
     suspend fun favoritePlaylist(): PlaylistEntity
+
     suspend fun checkFavoritePlaylist(): PlaylistEntity?
+
     suspend fun toggleFavorite(song: Song): Boolean
+
     suspend fun findSongsInFavorites(songs: List<Song>): List<SongEntity>
-    suspend fun findSongInPlaylist(playlistId: Long, song: Song): SongEntity?
-    suspend fun findSongsInPlaylist(playlistId: Long, songs: List<Song>): List<SongEntity>
+
+    suspend fun findSongInPlaylist(
+        playlistId: Long,
+        song: Song,
+    ): SongEntity?
+
+    suspend fun findSongsInPlaylist(
+        playlistId: Long,
+        songs: List<Song>,
+    ): List<SongEntity>
+
     fun checkPlaylistExists(playListId: Long): LiveData<Boolean>
+
     suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity>
-    suspend fun checkSongExistInPlaylist(playlistEntity: PlaylistEntity, song: Song): Boolean
+
+    suspend fun checkSongExistInPlaylist(
+        playlistEntity: PlaylistEntity,
+        song: Song,
+    ): Boolean
+
     suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long
+
     suspend fun deletePlaylists(playlists: List<PlaylistEntity>)
-    suspend fun renamePlaylist(playlistId: Long, name: String)
+
+    suspend fun renamePlaylist(
+        playlistId: Long,
+        name: String,
+    )
+
     suspend fun updatePlaylist(playlist: PlaylistEntity)
+
     suspend fun insertSongsInPlaylist(songs: List<SongEntity>)
+
     suspend fun deleteSongsInPlaylist(songs: List<SongEntity>)
+
     suspend fun deleteSong(songId: Long): Song
+
     suspend fun deleteSongs(songs: List<Song>)
+
     suspend fun deleteMissingContent()
+
     suspend fun albumById(albumId: Long): Album
+
     suspend fun albumByIdAsync(albumId: Long): Album
+
     suspend fun similarAlbums(album: Album): List<Album>
+
     fun artistById(artistId: Long): Artist
+
     fun albumArtistByName(name: String): Artist
+
     suspend fun similarAlbumArtists(artist: Artist): List<Artist>
+
     fun songById(songId: Long): Song
+
     suspend fun songsByGenre(genreId: Long): List<Song>
+
     fun songByGenre(genreId: Long): Song
+
     suspend fun genreBySong(song: Song): Genre
+
     suspend fun yearById(year: Int): ReleaseYear
+
     suspend fun songsByYear(year: Int): List<Song>
+
     suspend fun folderByPath(path: String): Folder
+
     suspend fun songsByUri(uri: Uri): List<Song>
+
     suspend fun songsByMediaItems(mediaItems: List<MediaItem>): Pair<List<Song>, List<MediaItem>>
+
     suspend fun songByMediaItem(mediaItem: MediaItem?): Song
-    suspend fun songsByFolder(folderPath: String, includeSubfolders: Boolean): List<Song>
-    suspend fun songByFilePath(path: String, ignoreBlacklist: Boolean): Song
+
+    suspend fun songsByFolder(
+        folderPath: String,
+        includeSubfolders: Boolean,
+    ): List<Song>
+
+    suspend fun songByFilePath(
+        path: String,
+        ignoreBlacklist: Boolean,
+    ): Song
+
     suspend fun homeSuggestions(): List<Suggestion>
+
     suspend fun topArtistsSuggestion(): Suggestion
+
     suspend fun topAlbumsSuggestion(): Suggestion
+
     suspend fun recentArtistsSuggestion(): Suggestion
+
     suspend fun recentAlbumsSuggestion(): Suggestion
+
     suspend fun favoritesSuggestion(): Suggestion
+
     suspend fun recommendedSongSuggestion(): Suggestion
+
     suspend fun recentSongs(): List<Song>
+
     suspend fun topArtists(): List<Artist>
+
     suspend fun recentArtists(): List<Artist>
+
     suspend fun topAlbums(): List<Album>
+
     suspend fun recentAlbums(): List<Album>
+
     suspend fun playCountSongs(): List<Song>
+
     fun playCountSongsFlow(): Flow<List<Song>>
+
     suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity>
+
     suspend fun findSongInPlayCount(songId: Long): PlayCountEntity?
-    suspend fun insertOrIncrementPlayCount(song: Song, timePlayed: Long)
+
+    suspend fun insertOrIncrementPlayCount(
+        song: Song,
+        timePlayed: Long,
+    )
+
     suspend fun insertOrIncrementSkipCount(song: Song)
+
     suspend fun clearPlayCount()
+
     suspend fun upsertSongInHistory(currentSong: Song)
+
     suspend fun deleteSongInHistory(songId: Long)
+
     suspend fun clearSongHistory()
+
     suspend fun historySongs(): List<Song>
+
     fun historySongsFlow(): Flow<List<Song>>
+
     suspend fun notRecentlyPlayedSongs(): List<Song>
+
     suspend fun initializeBlacklist()
-    suspend fun search(query: SearchQuery, filter: SearchFilter?): List<Any>
+
+    suspend fun search(
+        query: SearchQuery,
+        filter: SearchFilter?,
+    ): List<Any>
+
     suspend fun searchSongs(query: String): List<Song>
+
     fun getLoginState(service: ScrobblingService): Flow<LoginState>
-    suspend fun loginToService(service: ScrobblingService, params: LoginParams)
+
+    suspend fun loginToService(
+        service: ScrobblingService,
+        params: LoginParams,
+    )
+
     suspend fun logoutFromService(service: ScrobblingService)
-    suspend fun scrobble(service: ScrobblingService, song: Song, timestamp: Long): ScrobblingResult
-    suspend fun updateNowPlaying(service: ScrobblingService, song: Song): ScrobblingResult
-    suspend fun deezerTrack(artist: String, title: String): DeezerTrack?
-    suspend fun deezerArtist(name: String, limit: Int, index: Int): DeezerArtist?
-    suspend fun deezerAlbum(artist: String, name: String): DeezerAlbum?
-    suspend fun musicBrainzRecording(title: String, artist: String): MusicBrainzSearchResponse?
+
+    suspend fun scrobble(
+        service: ScrobblingService,
+        song: Song,
+        timestamp: Long,
+    ): ScrobblingResult
+
+    suspend fun updateNowPlaying(
+        service: ScrobblingService,
+        song: Song,
+    ): ScrobblingResult
+
+    suspend fun deezerTrack(
+        artist: String,
+        title: String,
+    ): DeezerTrack?
+
+    suspend fun deezerArtist(
+        name: String,
+        limit: Int,
+        index: Int,
+    ): DeezerArtist?
+
+    suspend fun deezerAlbum(
+        artist: String,
+        name: String,
+    ): DeezerAlbum?
+
+    suspend fun musicBrainzRecording(
+        title: String,
+        artist: String,
+    ): MusicBrainzSearchResponse?
+
     suspend fun musicBrainzRecordingDetails(id: String): MusicBrainzRecording?
-    suspend fun artistInfo(name: String, lang: String?, cache: String?): LastFmArtist?
-    suspend fun albumInfo(artist: String, album: String, lang: String?): LastFmAlbum?
+
+    suspend fun artistInfo(
+        name: String,
+        lang: String?,
+        cache: String?,
+    ): LastFmArtist?
+
+    suspend fun albumInfo(
+        artist: String,
+        album: String,
+        lang: String?,
+    ): LastFmAlbum?
 }
 
 class RealRepository(
@@ -163,9 +312,8 @@ class RealRepository(
     private val specialRepository: SpecialRepository,
     private val playlistRepository: PlaylistRepository,
     private val searchRepository: SearchRepository,
-    private val networkRepository: NetworkRepository
+    private val networkRepository: NetworkRepository,
 ) : Repository {
-
     override suspend fun allSongs(): List<Song> = songRepository.songs()
 
     override suspend fun allAlbums(): List<Album> = albumRepository.albums()
@@ -182,89 +330,71 @@ class RealRepository(
 
     override suspend fun filesInPath(path: String): FileSystemQuery = specialRepository.musicFilesInPath(path)
 
-    override suspend fun playlistSongs(playlistId: Long): List<SongEntity> =
-        playlistRepository.playlistSongs(playlistId)
+    override suspend fun playlistSongs(playlistId: Long): List<SongEntity> = playlistRepository.playlistSongs(playlistId)
 
-    override suspend fun devicePlaylists(): List<Playlist> =
-        playlistRepository.devicePlaylists()
+    override suspend fun devicePlaylists(): List<Playlist> = playlistRepository.devicePlaylists()
 
-    override suspend fun devicePlaylistSongs(playlist: Playlist): List<Song> =
-        playlistRepository.devicePlaylistSongs(playlist.id)
+    override suspend fun devicePlaylistSongs(playlist: Playlist): List<Song> = playlistRepository.devicePlaylistSongs(playlist.id)
 
-    override suspend fun devicePlaylist(playlistId: Long): Playlist =
-        playlistRepository.devicePlaylist(playlistId)
+    override suspend fun devicePlaylist(playlistId: Long): Playlist = playlistRepository.devicePlaylist(playlistId)
 
-    override suspend fun playlistsWithSongs(): List<PlaylistWithSongs> =
-        playlistRepository.playlistsWithSongs()
+    override suspend fun playlistsWithSongs(): List<PlaylistWithSongs> = playlistRepository.playlistsWithSongs()
 
-    override suspend fun playlistsWithSongs(sorted: Boolean): List<PlaylistWithSongs> =
-        playlistRepository.playlistsWithSongs(sorted)
+    override suspend fun playlistsWithSongs(sorted: Boolean): List<PlaylistWithSongs> = playlistRepository.playlistsWithSongs(sorted)
 
-    override suspend fun searchPlaylists(searchQuery: String): List<PlaylistWithSongs> =
-        playlistRepository.searchPlaylists(searchQuery)
+    override suspend fun searchPlaylists(searchQuery: String): List<PlaylistWithSongs> = playlistRepository.searchPlaylists(searchQuery)
 
-    override suspend fun playlistWithSongs(playlistId: Long): PlaylistWithSongs =
-        playlistRepository.playlistWithSongs(playlistId)
+    override suspend fun playlistWithSongs(playlistId: Long): PlaylistWithSongs = playlistRepository.playlistWithSongs(playlistId)
 
-    override fun playlistWithSongsObservable(playlistId: Long): LiveData<PlaylistWithSongs> =
-        playlistRepository.playlistWithSongsObservable(playlistId)
+    override fun playlistWithSongsObservable(playlistId: Long): LiveData<PlaylistWithSongs> = playlistRepository.playlistWithSongsObservable(playlistId)
 
-    override suspend fun isSongFavorite(songId: Long): Boolean =
-        playlistRepository.isSongFavorite(songId)
+    override suspend fun isSongFavorite(songId: Long): Boolean = playlistRepository.isSongFavorite(songId)
 
-    override suspend fun favoriteSongs(): List<Song> =
-        playlistRepository.favoriteSongs()
+    override suspend fun favoriteSongs(): List<Song> = playlistRepository.favoriteSongs()
 
-    override fun favoriteSongsFlow(): Flow<List<Song>> =
-        playlistRepository.favoriteSongsFlow()
+    override fun favoriteSongsFlow(): Flow<List<Song>> = playlistRepository.favoriteSongsFlow()
 
-    override suspend fun favoritePlaylist(): PlaylistEntity =
-        playlistRepository.favoritePlaylist()
+    override suspend fun favoritePlaylist(): PlaylistEntity = playlistRepository.favoritePlaylist()
 
-    override suspend fun checkFavoritePlaylist(): PlaylistEntity? =
-        playlistRepository.checkFavoritePlaylist()
+    override suspend fun checkFavoritePlaylist(): PlaylistEntity? = playlistRepository.checkFavoritePlaylist()
 
-    override suspend fun toggleFavorite(song: Song): Boolean =
-        playlistRepository.toggleFavorite(song)
+    override suspend fun toggleFavorite(song: Song): Boolean = playlistRepository.toggleFavorite(song)
 
-    override suspend fun findSongsInFavorites(songs: List<Song>): List<SongEntity> =
-        playlistRepository.findSongsInFavorites(songs)
+    override suspend fun findSongsInFavorites(songs: List<Song>): List<SongEntity> = playlistRepository.findSongsInFavorites(songs)
 
-    override suspend fun findSongInPlaylist(playlistId: Long, song: Song): SongEntity? =
-        playlistRepository.findSongInPlaylist(playlistId, song)
+    override suspend fun findSongInPlaylist(
+        playlistId: Long,
+        song: Song,
+    ): SongEntity? = playlistRepository.findSongInPlaylist(playlistId, song)
 
-    override suspend fun findSongsInPlaylist(playlistId: Long, songs: List<Song>): List<SongEntity> =
-        playlistRepository.findSongsInPlaylist(playlistId, songs)
+    override suspend fun findSongsInPlaylist(
+        playlistId: Long,
+        songs: List<Song>,
+    ): List<SongEntity> = playlistRepository.findSongsInPlaylist(playlistId, songs)
 
-    override fun checkPlaylistExists(playListId: Long): LiveData<Boolean> =
-        playlistRepository.checkPlaylistExists(playListId)
+    override fun checkPlaylistExists(playListId: Long): LiveData<Boolean> = playlistRepository.checkPlaylistExists(playListId)
 
-    override suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity> =
-        playlistRepository.checkPlaylistExists(playlistName)
+    override suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity> = playlistRepository.checkPlaylistExists(playlistName)
 
     override suspend fun checkSongExistInPlaylist(
         playlistEntity: PlaylistEntity,
-        song: Song
-    ): Boolean =
-        playlistRepository.checkSongExistInPlaylist(playlistEntity, song)
+        song: Song,
+    ): Boolean = playlistRepository.checkSongExistInPlaylist(playlistEntity, song)
 
-    override suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long =
-        playlistRepository.createPlaylist(playlistEntity)
+    override suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long = playlistRepository.createPlaylist(playlistEntity)
 
-    override suspend fun deletePlaylists(playlists: List<PlaylistEntity>) =
-        playlistRepository.deletePlaylists(playlists)
+    override suspend fun deletePlaylists(playlists: List<PlaylistEntity>) = playlistRepository.deletePlaylists(playlists)
 
-    override suspend fun renamePlaylist(playlistId: Long, name: String) =
-        playlistRepository.renamePlaylistEntity(playlistId, name)
+    override suspend fun renamePlaylist(
+        playlistId: Long,
+        name: String,
+    ) = playlistRepository.renamePlaylistEntity(playlistId, name)
 
-    override suspend fun updatePlaylist(playlist: PlaylistEntity) =
-        playlistRepository.updatePlaylist(playlist)
+    override suspend fun updatePlaylist(playlist: PlaylistEntity) = playlistRepository.updatePlaylist(playlist)
 
-    override suspend fun insertSongsInPlaylist(songs: List<SongEntity>) =
-        playlistRepository.insertSongs(songs)
+    override suspend fun insertSongsInPlaylist(songs: List<SongEntity>) = playlistRepository.insertSongs(songs)
 
-    override suspend fun deleteSongsInPlaylist(songs: List<SongEntity>) =
-        playlistRepository.deleteSongsFromPlaylist(songs)
+    override suspend fun deleteSongsInPlaylist(songs: List<SongEntity>) = playlistRepository.deleteSongsFromPlaylist(songs)
 
     override suspend fun deleteSong(songId: Long): Song {
         val song = songRepository.song(songId)
@@ -289,9 +419,10 @@ class RealRepository(
         // Clean up playlists
         val playlists = playlistRepository.playlistsWithSongs()
         playlists.forEach { playlistWithSongs ->
-            val missingSongs = playlistWithSongs.songs.filterNot {
-                File(it.data).exists()
-            }
+            val missingSongs =
+                playlistWithSongs.songs.filterNot {
+                    File(it.data).exists()
+                }
             playlistRepository.deleteSongsFromPlaylist(missingSongs)
         }
     }
@@ -300,15 +431,13 @@ class RealRepository(
 
     override suspend fun albumByIdAsync(albumId: Long): Album = albumRepository.album(albumId)
 
-    override suspend fun similarAlbums(album: Album): List<Album> =
-        albumRepository.similarAlbums(album)
+    override suspend fun similarAlbums(album: Album): List<Album> = albumRepository.similarAlbums(album)
 
     override fun artistById(artistId: Long): Artist = artistRepository.artist(artistId)
 
     override fun albumArtistByName(name: String): Artist = artistRepository.albumArtist(name)
 
-    override suspend fun similarAlbumArtists(artist: Artist): List<Artist> =
-        artistRepository.similarAlbumArtists(artist)
+    override suspend fun similarAlbumArtists(artist: Artist): List<Artist> = artistRepository.similarAlbumArtists(artist)
 
     override fun songById(songId: Long): Song = songRepository.song(songId)
 
@@ -326,30 +455,31 @@ class RealRepository(
 
     override suspend fun songsByUri(uri: Uri): List<Song> = songRepository.songsByUri(uri)
 
-    override suspend fun songsByMediaItems(mediaItems: List<MediaItem>): Pair<List<Song>, List<MediaItem>> =
-        songRepository.songsByMediaItems(mediaItems)
+    override suspend fun songsByMediaItems(mediaItems: List<MediaItem>): Pair<List<Song>, List<MediaItem>> = songRepository.songsByMediaItems(mediaItems)
 
-    override suspend fun songByMediaItem(mediaItem: MediaItem?): Song =
-        songRepository.songByMediaItem(mediaItem)
+    override suspend fun songByMediaItem(mediaItem: MediaItem?): Song = songRepository.songByMediaItem(mediaItem)
 
-    override suspend fun songsByFolder(folderPath: String, includeSubfolders: Boolean) =
-        specialRepository.songsByFolder(folderPath, includeSubfolders)
+    override suspend fun songsByFolder(
+        folderPath: String,
+        includeSubfolders: Boolean,
+    ) = specialRepository.songsByFolder(folderPath, includeSubfolders)
 
-    override suspend fun songByFilePath(path: String, ignoreBlacklist: Boolean) =
-        songRepository.songByFilePath(path, ignoreBlacklist)
+    override suspend fun songByFilePath(
+        path: String,
+        ignoreBlacklist: Boolean,
+    ) = songRepository.songByFilePath(path, ignoreBlacklist)
 
-    override suspend fun homeSuggestions(): List<Suggestion> {
-        return listOf(
+    override suspend fun homeSuggestions(): List<Suggestion> =
+        listOf(
             topArtistsSuggestion(),
             topAlbumsSuggestion(),
             recentArtistsSuggestion(),
             recentAlbumsSuggestion(),
             favoritesSuggestion(),
-            recommendedSongSuggestion()
+            recommendedSongSuggestion(),
         ).filter {
             it.items.isNotEmpty()
         }
-    }
 
     override suspend fun topArtistsSuggestion(): Suggestion {
         val artists = smartRepository.topAlbumArtists().take(10)
@@ -395,81 +525,94 @@ class RealRepository(
 
     override fun playCountSongsFlow(): Flow<List<Song>> = smartRepository.playCountSongsFlow()
 
-    override suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity> =
-        smartRepository.findSongsInPlayCount(songs)
+    override suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity> = smartRepository.findSongsInPlayCount(songs)
 
-    override suspend fun findSongInPlayCount(songId: Long): PlayCountEntity? =
-        smartRepository.findSongInPlayCount(songId)
+    override suspend fun findSongInPlayCount(songId: Long): PlayCountEntity? = smartRepository.findSongInPlayCount(songId)
 
-    override suspend fun insertOrIncrementPlayCount(song: Song, timePlayed: Long) =
-        smartRepository.insetOrIncrementPlayCount(song, timePlayed)
+    override suspend fun insertOrIncrementPlayCount(
+        song: Song,
+        timePlayed: Long,
+    ) = smartRepository.insetOrIncrementPlayCount(song, timePlayed)
 
-    override suspend fun insertOrIncrementSkipCount(song: Song) =
-        smartRepository.insetOrIncrementSkipCount(song)
+    override suspend fun insertOrIncrementSkipCount(song: Song) = smartRepository.insetOrIncrementSkipCount(song)
 
     override suspend fun clearPlayCount() = smartRepository.clearPlayCount()
 
-    override suspend fun upsertSongInHistory(currentSong: Song) =
-        smartRepository.upsertSongInHistory(currentSong)
+    override suspend fun upsertSongInHistory(currentSong: Song) = smartRepository.upsertSongInHistory(currentSong)
 
-    override suspend fun deleteSongInHistory(songId: Long) =
-        smartRepository.deleteSongInHistory(songId)
+    override suspend fun deleteSongInHistory(songId: Long) = smartRepository.deleteSongInHistory(songId)
 
-    override suspend fun clearSongHistory() =
-        smartRepository.clearSongHistory()
+    override suspend fun clearSongHistory() = smartRepository.clearSongHistory()
 
-    override suspend fun historySongs(): List<Song> =
-        smartRepository.historySongs()
+    override suspend fun historySongs(): List<Song> = smartRepository.historySongs()
 
-    override fun historySongsFlow(): Flow<List<Song>> =
-        smartRepository.historySongsFlow()
+    override fun historySongsFlow(): Flow<List<Song>> = smartRepository.historySongsFlow()
 
-    override suspend fun notRecentlyPlayedSongs(): List<Song> =
-        smartRepository.notRecentlyPlayedSongs()
+    override suspend fun notRecentlyPlayedSongs(): List<Song> = smartRepository.notRecentlyPlayedSongs()
 
     override suspend fun initializeBlacklist() {
         songRepository.initializeBlacklist()
     }
 
-    override suspend fun search(query: SearchQuery, filter: SearchFilter?): List<Any> =
-        searchRepository.searchAll(context, query, filter)
+    override suspend fun search(
+        query: SearchQuery,
+        filter: SearchFilter?,
+    ): List<Any> = searchRepository.searchAll(context, query, filter)
 
     override suspend fun searchSongs(query: String): List<Song> = songRepository.songs(query)
 
-    override fun getLoginState(service: ScrobblingService): Flow<LoginState> =
-        networkRepository.getLoginState(service)
+    override fun getLoginState(service: ScrobblingService): Flow<LoginState> = networkRepository.getLoginState(service)
 
-    override suspend fun loginToService(service: ScrobblingService, params: LoginParams) =
-        networkRepository.loginToService(service, params)
+    override suspend fun loginToService(
+        service: ScrobblingService,
+        params: LoginParams,
+    ) = networkRepository.loginToService(service, params)
 
-    override suspend fun logoutFromService(service: ScrobblingService) =
-        networkRepository.logoutFromService(service)
+    override suspend fun logoutFromService(service: ScrobblingService) = networkRepository.logoutFromService(service)
 
-    override suspend fun scrobble(service: ScrobblingService, song: Song, timestamp: Long): ScrobblingResult =
-        networkRepository.scrobble(service, song, timestamp)
+    override suspend fun scrobble(
+        service: ScrobblingService,
+        song: Song,
+        timestamp: Long,
+    ): ScrobblingResult = networkRepository.scrobble(service, song, timestamp)
 
-    override suspend fun updateNowPlaying(service: ScrobblingService, song: Song): ScrobblingResult =
-        networkRepository.updateNowPlaying(service, song)
+    override suspend fun updateNowPlaying(
+        service: ScrobblingService,
+        song: Song,
+    ): ScrobblingResult = networkRepository.updateNowPlaying(service, song)
 
-    override suspend fun deezerTrack(artist: String, title: String) =
-        networkRepository.deezerTrack(artist, title)
+    override suspend fun deezerTrack(
+        artist: String,
+        title: String,
+    ) = networkRepository.deezerTrack(artist, title)
 
-    override suspend fun deezerArtist(name: String, limit: Int, index: Int) =
-        networkRepository.deezerArtist(name, limit, index)
+    override suspend fun deezerArtist(
+        name: String,
+        limit: Int,
+        index: Int,
+    ) = networkRepository.deezerArtist(name, limit, index)
 
-    override suspend fun deezerAlbum(artist: String, name: String) =
-        networkRepository.deezerAlbum(artist, name)
+    override suspend fun deezerAlbum(
+        artist: String,
+        name: String,
+    ) = networkRepository.deezerAlbum(artist, name)
 
-    override suspend fun musicBrainzRecording(title: String, artist: String) =
-        networkRepository.musicBrainzRecording(title, artist)
+    override suspend fun musicBrainzRecording(
+        title: String,
+        artist: String,
+    ) = networkRepository.musicBrainzRecording(title, artist)
 
-    override suspend fun musicBrainzRecordingDetails(id: String) =
-        networkRepository.musicBrainzRecordingDetails(id)
+    override suspend fun musicBrainzRecordingDetails(id: String) = networkRepository.musicBrainzRecordingDetails(id)
 
-    override suspend fun artistInfo(name: String, lang: String?, cache: String?) =
-        networkRepository.artistInfo(name, lang, cache)
+    override suspend fun artistInfo(
+        name: String,
+        lang: String?,
+        cache: String?,
+    ) = networkRepository.artistInfo(name, lang, cache)
 
-    override suspend fun albumInfo(artist: String, album: String, lang: String?) =
-        networkRepository.albumInfo(artist, album, lang)
-
+    override suspend fun albumInfo(
+        artist: String,
+        album: String,
+        lang: String?,
+    ) = networkRepository.albumInfo(artist, album, lang)
 }

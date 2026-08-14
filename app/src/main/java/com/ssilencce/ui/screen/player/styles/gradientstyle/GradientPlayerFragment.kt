@@ -37,8 +37,9 @@ import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
 import com.ssilencce.ui.component.base.AbsPlayerFragment
 import com.ssilencce.util.Preferences
 
-class GradientPlayerFragment : AbsPlayerFragment(R.layout.fragment_gradient_player), View.OnClickListener {
-
+class GradientPlayerFragment :
+    AbsPlayerFragment(R.layout.fragment_gradient_player),
+    View.OnClickListener {
     private var _binding: FragmentGradientPlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -50,7 +51,10 @@ class GradientPlayerFragment : AbsPlayerFragment(R.layout.fragment_gradient_play
     override val playerControlsFragment: AbsPlayerControlsFragment
         get() = controlsFragment
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentGradientPlayerBinding.bind(view)
         ViewCompat.setOnApplyWindowInsetsListener(binding.bottomActionContainer) { v: View, insets: WindowInsetsCompat ->
@@ -77,7 +81,10 @@ class GradientPlayerFragment : AbsPlayerFragment(R.layout.fragment_gradient_play
         }
     }
 
-    override fun onIsFavoriteChanged(isFavorite: Boolean, withAnimation: Boolean) {
+    override fun onIsFavoriteChanged(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         controlsFragment.setFavorite(isFavorite, withAnimation)
     }
 
@@ -100,21 +107,25 @@ class GradientPlayerFragment : AbsPlayerFragment(R.layout.fragment_gradient_play
     }
 
     override fun getTintTargets(scheme: PlayerColorScheme): List<PlayerTintTarget> {
-        val oldMaskColor = binding.mask.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldMaskColor =
+            binding.mask.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
         val oldPrimaryTextColor = binding.openQueueButton.iconTint.defaultColor
         return mutableListOf(
             binding.colorBackground.surfaceTintTarget(scheme.surfaceColor),
             binding.mask.tintTarget(oldMaskColor, scheme.surfaceColor),
             binding.openQueueButton.iconButtonTintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
             binding.showLyricsButton.iconButtonTintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
-            binding.soundSettingsButton.iconButtonTintTarget(oldPrimaryTextColor, scheme.onSurfaceColor)
+            binding.soundSettingsButton.iconButtonTintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
         ).also {
             it.addAll(playerControlsFragment.getTintTargets(scheme))
         }
     }
 
-    override fun onLyricsVisibilityChange(animatorSet: AnimatorSet, lyricsVisible: Boolean) {
+    override fun onLyricsVisibilityChange(
+        animatorSet: AnimatorSet,
+        lyricsVisible: Boolean,
+    ) {
         _binding?.showLyricsButton?.let {
             if (lyricsVisible) {
                 it.setIconResource(R.drawable.ic_lyrics_24dp)

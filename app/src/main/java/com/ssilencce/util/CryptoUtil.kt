@@ -37,7 +37,6 @@ fun String.encodeMd5(): String {
  * Secure encryption for sensitive strings using Android Keystore.
  */
 object CryptoUtil {
-
     private const val ANDROID_KEY_STORE = "AndroidKeyStore"
     private const val KEY_ALIAS = "SsilencceCryptoKey"
     private const val ALGORITHM = KeyProperties.KEY_ALGORITHM_AES
@@ -51,10 +50,11 @@ object CryptoUtil {
 
         val keyGenerator = KeyGenerator.getInstance(ALGORITHM, ANDROID_KEY_STORE)
         keyGenerator.init(
-            KeyGenParameterSpec.Builder(KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+            KeyGenParameterSpec
+                .Builder(KEY_ALIAS, KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 .setBlockModes(BLOCK_MODE)
                 .setEncryptionPaddings(PADDING)
-                .build()
+                .build(),
         )
         return keyGenerator.generateKey()
     }

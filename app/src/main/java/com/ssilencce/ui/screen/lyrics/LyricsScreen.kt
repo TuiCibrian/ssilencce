@@ -84,24 +84,40 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinActivityViewModel
 
-sealed class LyricsUiState(open val id: Long) {
-    data class Loading(override val id: Long) : LyricsUiState(id)
-    data class Empty(override val id: Long) : LyricsUiState(id)
-    data class Instrumental(override val id: Long) : LyricsUiState(id)
-    data class Plain(override val id: Long, val lyrics: String) : LyricsUiState(id)
-    data class Synced(override val id: Long, val syncedLyrics: SyncedLyrics) : LyricsUiState(id)
+sealed class LyricsUiState(
+    open val id: Long,
+) {
+    data class Loading(
+        override val id: Long,
+    ) : LyricsUiState(id)
+
+    data class Empty(
+        override val id: Long,
+    ) : LyricsUiState(id)
+
+    data class Instrumental(
+        override val id: Long,
+    ) : LyricsUiState(id)
+
+    data class Plain(
+        override val id: Long,
+        val lyrics: String,
+    ) : LyricsUiState(id)
+
+    data class Synced(
+        override val id: Long,
+        val syncedLyrics: SyncedLyrics,
+    ) : LyricsUiState(id)
 }
 
 @Composable
-private fun rememberLyricsViewState(lyrics: SyncedLyrics): LyricsViewState {
-    return remember(lyrics) { LyricsViewState(lyrics) }
-}
+private fun rememberLyricsViewState(lyrics: SyncedLyrics): LyricsViewState = remember(lyrics) { LyricsViewState(lyrics) }
 
 @Composable
 fun rememberSmoothPlaybackPosition(
     playerPosition: Long,
     playbackSpeed: Float,
-    isPlaying: Boolean
+    isPlaying: Boolean,
 ): State<Long> {
     val position = remember { mutableLongStateOf(playerPosition) }
     LaunchedEffect(playerPosition, isPlaying) {
@@ -127,7 +143,7 @@ fun LyricsScreen(
     libraryViewModel: LibraryViewModel = koinActivityViewModel(),
     lyricsViewModel: LyricsViewModel = koinActivityViewModel(),
     playerViewModel: PlayerViewModel = koinActivityViewModel(),
-    onEditClick: (Song) -> Unit
+    onEditClick: (Song) -> Unit,
 ) {
     val context = LocalContext.current
     val isPowerSaveMode = context.isPowerSaveMode()
@@ -142,23 +158,27 @@ fun LyricsScreen(
 
     var gradientColors by remember { mutableStateOf<List<Color>>(emptyList()) }
     LaunchedEffect(song) {
-        if (isPowerSaveMode)
+        if (isPowerSaveMode) {
             return@LaunchedEffect
+        }
 
         if (lyricsViewSettings.backgroundEffect == BackgroundEffect.Gradient) {
             withContext(Dispatchers.Default) {
-                val result = SingletonImageLoader.get(context).execute(
-                    ImageRequest.Builder(context)
-                        .data(song)
-                        .build()
-                )
-                gradientColors = if (result is SuccessResult) {
-                    result.image.toBitmap().extractGradientColors(
-                        context.resolveColor(PlaceholderDrawable.BACKGROUND_COLOR)
+                val result =
+                    SingletonImageLoader.get(context).execute(
+                        ImageRequest
+                            .Builder(context)
+                            .data(song)
+                            .build(),
                     )
-                } else {
-                    emptyList()
-                }
+                gradientColors =
+                    if (result is SuccessResult) {
+                        result.image.toBitmap().extractGradientColors(
+                            context.resolveColor(PlaceholderDrawable.BACKGROUND_COLOR),
+                        )
+                    } else {
+                        emptyList()
+                    }
             }
         }
     }
@@ -166,36 +186,38 @@ fun LyricsScreen(
     var hasBackgroundEffects by remember { mutableStateOf(false) }
 
     Scaffold(
-        contentWindowInsets = WindowInsets
-            .navigationBars
-            .add(WindowInsets(bottom = miniPlayerMargin.totalMargin)),
+        contentWindowInsets =
+            WindowInsets
+                .navigationBars
+                .add(WindowInsets(bottom = miniPlayerMargin.totalMargin)),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEditClick(song) },
                 containerColor = MaterialTheme.colorScheme.surface,
-                contentColor = MaterialTheme.colorScheme.onSurface
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_edit_note_24dp),
-                    contentDescription = stringResource(R.string.action_lyrics_editor)
+                    contentDescription = stringResource(R.string.action_lyrics_editor),
                 )
             }
         },
-        modifier = Modifier.keepScreenOn()
+        modifier = Modifier.keepScreenOn(),
     ) { innerPadding ->
         Box(modifier = Modifier.fillMaxSize()) {
             AnimatedContent(
                 targetState = Pair(lyricsViewSettings.backgroundEffect, gradientColors),
                 transitionSpec = {
                     fadeIn(tween(1000)).togetherWith(fadeOut(tween(1000)))
-                }
+                },
             ) { (effect, gradientColors) ->
                 when {
                     effect.isGradient && gradientColors.size >= 2 -> {
                         Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .animatedGradient(gradientColors, isPlaying)
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .animatedGradient(gradientColors, isPlaying),
                         )
                         hasBackgroundEffects = true
                     }
@@ -208,23 +230,26 @@ fun LyricsScreen(
                                 model = song,
                                 contentDescription = null,
                                 contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blur(90.dp)
-                                    .drawWithContent {
-                                        drawContent()
+                                modifier =
+                                    Modifier
+                                        .fillMaxSize()
+                                        .blur(90.dp)
+                                        .drawWithContent {
+                                            drawContent()
 
-                                        drawRect(
-                                            brush = Brush.radialGradient(
-                                                colors = listOf(
-                                                    Color.Transparent,
-                                                    backgroundColor.copy(alpha = 0.8f),
-                                                    backgroundColor
-                                                ),
-                                                radius = size.minDimension * 0.9f
+                                            drawRect(
+                                                brush =
+                                                    Brush.radialGradient(
+                                                        colors =
+                                                            listOf(
+                                                                Color.Transparent,
+                                                                backgroundColor.copy(alpha = 0.8f),
+                                                                backgroundColor,
+                                                            ),
+                                                        radius = size.minDimension * 0.9f,
+                                                    ),
                                             )
-                                        )
-                                    }
+                                        },
                             )
                         }
                         hasBackgroundEffects = true
@@ -252,9 +277,10 @@ fun LyricsScreen(
                         playerViewModel.play()
                     }
                 },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
             )
         }
     }
@@ -265,7 +291,7 @@ fun CoverLyricsScreen(
     lyricsViewModel: LyricsViewModel,
     playerViewModel: PlayerViewModel,
     onExpandClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val isPowerSaveMode = context.isPowerSaveMode()
@@ -276,7 +302,7 @@ fun CoverLyricsScreen(
     val uiState by lyricsViewModel.lyricsUiState.collectAsState()
 
     val playerColorScheme by playerViewModel.colorSchemeFlow.collectAsState(
-        initial = PlayerColorScheme.themeColorScheme(context)
+        initial = PlayerColorScheme.themeColorScheme(context),
     )
 
     PlayerTheme(playerColorScheme) {
@@ -301,19 +327,21 @@ fun CoverLyricsScreen(
             )
 
             FilledIconButton(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.onSurface,
-                    contentColor = MaterialTheme.colorScheme.surface
-                ),
-                onClick = onExpandClick
+                modifier =
+                    Modifier
+                        .wrapContentSize()
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp),
+                colors =
+                    IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.onSurface,
+                        contentColor = MaterialTheme.colorScheme.surface,
+                    ),
+                onClick = onExpandClick,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_open_in_full_24dp),
-                    contentDescription = stringResource(R.string.action_lyrics_editor)
+                    contentDescription = stringResource(R.string.action_lyrics_editor),
                 )
             }
         }
@@ -333,16 +361,22 @@ private fun LyricsSurface(
     isPowerSaveMode: Boolean,
     hasBackgroundEffects: Boolean,
     onSeekTo: (Long) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val contentColor = when {
-        hasBackgroundEffects -> Color.White
-        else -> when (settings.mode) {
-            LyricsViewSettings.Mode.Player -> colorScheme.onSurface
-            else -> colorScheme.secondary
+    val contentColor =
+        when {
+            hasBackgroundEffects -> {
+                Color.White
+            }
+
+            else -> {
+                when (settings.mode) {
+                    LyricsViewSettings.Mode.Player -> colorScheme.onSurface
+                    else -> colorScheme.secondary
+                }
+            }
         }
-    }
     Box(modifier) {
         when (uiState) {
             is LyricsUiState.Empty -> {
@@ -350,16 +384,17 @@ private fun LyricsSurface(
                     text = stringResource(R.string.no_lyrics_found),
                     color = contentColor,
                     style = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .align(Alignment.Center)
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp)
+                            .align(Alignment.Center),
                 )
             }
 
             is LyricsUiState.Loading -> {
                 CircularWavyProgressIndicator(
                     color = contentColor,
-                    modifier = Modifier.align(Alignment.Center)
+                    modifier = Modifier.align(Alignment.Center),
                 )
             }
 
@@ -368,9 +403,10 @@ private fun LyricsSurface(
                     color = contentColor,
                     isPlaying = isPlaying,
                     barCount = 5,
-                    modifier = Modifier
-                        .size(56.dp)
-                        .align(Alignment.Center)
+                    modifier =
+                        Modifier
+                            .size(56.dp)
+                            .align(Alignment.Center),
                 )
             }
 
@@ -383,19 +419,20 @@ private fun LyricsSurface(
                 }
 
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(rememberNestedScrollInteropConnection())
-                        .fadingEdges(fadingEdges)
-                        .verticalScroll(scrollState)
-                        .padding(contentPadding)
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .nestedScroll(rememberNestedScrollInteropConnection())
+                            .fadingEdges(fadingEdges)
+                            .verticalScroll(scrollState)
+                            .padding(contentPadding),
                 ) {
                     Text(
                         text = uiState.lyrics,
                         color = contentColor,
                         textAlign = textAlign,
                         style = settings.unsyncedStyle,
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
             }
@@ -409,7 +446,7 @@ private fun LyricsSurface(
                 val smoothProgress by rememberSmoothPlaybackPosition(
                     playerPosition = playerPosition,
                     playbackSpeed = playbackSpeed,
-                    isPlaying = isPlaying
+                    isPlaying = isPlaying,
                 )
 
                 LaunchedEffect(playerPosition) {
@@ -424,7 +461,7 @@ private fun LyricsSurface(
                     contentColor = contentColor,
                     isPowerSaveMode = isPowerSaveMode,
                     hasBackgroundEffects = hasBackgroundEffects,
-                    onSeekTo = onSeekTo
+                    onSeekTo = onSeekTo,
                 )
             }
         }

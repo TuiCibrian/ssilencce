@@ -28,35 +28,37 @@ class AudioCoverFetcher(
     private val options: Options,
     private val repository: Repository,
     private val cover: AudioCover,
-    private val imageSize: String
+    private val imageSize: String,
 ) : Fetcher {
-
     private val contentResolver get() = options.context.contentResolver
 
     override suspend fun fetch(): FetchResult? {
-        val stream = try {
-            if (cover.isIgnoreMediaStore) {
-                AudioCoverUtils.fallback(cover.path, cover.isUseFolderArt)
-                    ?: contentResolver.openFileDescriptor(cover.uri, "r")?.use { fd ->
-                        TagLib.getFrontCover(fd.dup().detachFd())?.data?.inputStream()
-                    }
-            } else {
-                contentResolver.openInputStream(cover.albumId.asAlbumCoverUri())
+        val stream =
+            try {
+                if (cover.isIgnoreMediaStore) {
+                    AudioCoverUtils.fallback(cover.path, cover.isUseFolderArt)
+                        ?: contentResolver.openFileDescriptor(cover.uri, "r")?.use { fd ->
+                            TagLib.getFrontCover(fd.dup().detachFd())?.data?.inputStream()
+                        }
+                } else {
+                    contentResolver.openInputStream(cover.albumId.asAlbumCoverUri())
+                }
+            } catch (e: IOException) {
+                Log.e("AudioCoverFetcher", "Unable to decode cover image for ${cover.path}", e)
+                null
             }
-        } catch (e: IOException) {
-            Log.e("AudioCoverFetcher", "Unable to decode cover image for ${cover.path}", e)
-            null
-        }
 
         if (stream == null &&
             !cover.artistName.isArtistNameUnknown() &&
-            NetworkFeature.Images.Albums.isEnabled) {
-            val imageUrl = if (cover.isAlbum) {
-                repository.deezerAlbum(cover.artistName, cover.albumName)?.getBestImage(cover.albumName, imageSize)
-                    ?: repository.deezerTrack(cover.artistName, cover.title)?.getBestImage(imageSize)
-            } else {
-                repository.deezerTrack(cover.artistName, cover.title)?.getBestImage(imageSize)
-            }
+            NetworkFeature.Images.Albums.isEnabled
+        ) {
+            val imageUrl =
+                if (cover.isAlbum) {
+                    repository.deezerAlbum(cover.artistName, cover.albumName)?.getBestImage(cover.albumName, imageSize)
+                        ?: repository.deezerTrack(cover.artistName, cover.title)?.getBestImage(imageSize)
+                } else {
+                    repository.deezerTrack(cover.artistName, cover.title)?.getBestImage(imageSize)
+                }
             if (imageUrl != null) {
                 val data = loader.components.map(imageUrl, options)
                 val output = loader.components.newFetcher(data, options, loader)
@@ -67,32 +69,32 @@ class AudioCoverFetcher(
 
         if (stream == null) return null
         return SourceFetchResult(
-            source = ImageSource(
-                source = stream.source().buffer(),
-                fileSystem = options.fileSystem,
-                metadata = null
-            ),
+            source =
+                ImageSource(
+                    source = stream.source().buffer(),
+                    fileSystem = options.fileSystem,
+                    metadata = null,
+                ),
             mimeType = null,
-            dataSource = DataSource.DISK
+            dataSource = DataSource.DISK,
         )
     }
 
     class Factory(
         private val preferences: SharedPreferences,
-        private val repository: Repository
+        private val repository: Repository,
     ) : Fetcher.Factory<AudioCover> {
         override fun create(
             data: AudioCover,
             options: Options,
-            imageLoader: ImageLoader
-        ): Fetcher {
-            return AudioCoverFetcher(
+            imageLoader: ImageLoader,
+        ): Fetcher =
+            AudioCoverFetcher(
                 loader = imageLoader,
                 options = options,
                 repository = repository,
                 cover = data,
-                imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM)
+                imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM),
             )
-        }
     }
 }

@@ -44,7 +44,6 @@ import java.util.LinkedList
  * @author Christians M. A. (mardous)
  */
 class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_player_playback_controls) {
-
     private var _binding: FragmentM3PlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -75,7 +74,10 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
     override val songInfoView: TextView?
         get() = binding.songInfo
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentM3PlayerPlaybackControlsBinding.bind(view)
         binding.playPauseButton.setOnClickListener(this)
@@ -85,11 +87,12 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
         binding.previousButton.setOnTouchListener(getSkipButtonTouchHandler(DIRECTION_PREVIOUS))
     }
 
-    override fun onCreatePlayerAnimator(): PlayerAnimator {
-        return M3PlayerAnimator(binding, isControlAnimationEnabled)
-    }
+    override fun onCreatePlayerAnimator(): PlayerAnimator = M3PlayerAnimator(binding, isControlAnimationEnabled)
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {
         _binding?.let { nonNullBinding ->
             nonNullBinding.title.text = currentSong.title
             nonNullBinding.text.text = getSongArtist(currentSong)
@@ -116,8 +119,9 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
     }
 
     override fun getTintTargets(scheme: PlayerColorScheme): List<PlayerTintTarget> {
-        val oldPlayPauseColor = binding.playPauseButton.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldPlayPauseColor =
+            binding.playPauseButton.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
 
         val oldControlColor = binding.nextButton.iconTint.defaultColor
         val oldSliderColor = binding.progressSlider.currentColor
@@ -125,17 +129,19 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
         val oldSecondaryTextColor = binding.text.currentTextColor
 
         val oldShuffleColor = getPlaybackControlsColor(isShuffleModeOn)
-        val newShuffleColor = getPlaybackControlsColor(
-            isShuffleModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newShuffleColor =
+            getPlaybackControlsColor(
+                isShuffleModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         val oldRepeatColor = getPlaybackControlsColor(isRepeatModeOn)
-        val newRepeatColor = getPlaybackControlsColor(
-            isRepeatModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newRepeatColor =
+            getPlaybackControlsColor(
+                isRepeatModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
 
         return listOfNotNull(
             binding.playPauseButton.tintTarget(oldPlayPauseColor, scheme.primaryColor),
@@ -148,7 +154,7 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
             binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songInfo.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songCurrentProgress.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
-            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         )
     }
 
@@ -168,9 +174,12 @@ class M3PlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_m3_
 
     private class M3PlayerAnimator(
         private val binding: FragmentM3PlayerPlaybackControlsBinding,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ) : PlayerAnimator(isEnabled) {
-        override fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {
+        override fun onAddAnimation(
+            animators: LinkedList<Animator>,
+            interpolator: TimeInterpolator,
+        ) {
             addScaleAnimation(animators, binding.shuffleButton, interpolator, 100)
             addScaleAnimation(animators, binding.repeatButton, interpolator, 100)
             addScaleAnimation(animators, binding.previousButton, interpolator, 100)

@@ -24,7 +24,7 @@ fun AnimatedEqBars(
     gap: Dp = 3.dp,
     minHeightFraction: Float = 0.10f,
     maxHeightFraction: Float = 0.95f,
-    basePeriodMillis: Int = 1800
+    basePeriodMillis: Int = 1800,
 ) {
     val density = LocalDensity.current
     val barWidthPx = with(density) { barWidth.toPx() }
@@ -35,17 +35,18 @@ fun AnimatedEqBars(
     val t by transition.animateFloat(
         initialValue = 0f,
         targetValue = (2f * Math.PI).toFloat(),
-        animationSpec = infiniteRepeatable(
-            animation = tween(basePeriodMillis, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "time"
+        animationSpec =
+            infiniteRepeatable(
+                animation = tween(basePeriodMillis, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse,
+            ),
+        label = "time",
     )
 
     val activity by animateFloatAsState(
         targetValue = if (isPlaying) 1f else 0f,
         animationSpec = tween(220, easing = FastOutSlowInEasing),
-        label = "activity"
+        label = "activity",
     )
 
     Canvas(modifier = modifier) {
@@ -59,7 +60,8 @@ fun AnimatedEqBars(
             val wave = (sin(phase) + 1f) * 0.5f
             val shaped = wave * wave
 
-            val frac = minHeightFraction + (maxHeightFraction - minHeightFraction) *
+            val frac =
+                minHeightFraction + (maxHeightFraction - minHeightFraction) *
                     shaped * activity + minHeightFraction * (1f - activity)
 
             val barH = h * frac
@@ -69,7 +71,7 @@ fun AnimatedEqBars(
                 color = color,
                 topLeft = Offset(x, y),
                 size = Size(barWidthPx, barH),
-                cornerRadius = CornerRadius(barWidthPx / 2f)
+                cornerRadius = CornerRadius(barWidthPx / 2f),
             )
 
             x += barWidthPx + gapPx

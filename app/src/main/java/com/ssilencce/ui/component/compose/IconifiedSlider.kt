@@ -30,7 +30,7 @@ fun IconifiedSliderTrack(
     trackCornerSize: Dp = SliderTokens.TrackCornerSize,
     enabled: Boolean = true,
     iconPadding: Dp = 10.dp,
-    iconSize: Dp = 24.dp
+    iconSize: Dp = 24.dp,
 ) {
     val iconDpSize = DpSize(iconSize, iconSize)
     val activeIconColor = colors.activeTickColor
@@ -38,33 +38,34 @@ fun IconifiedSliderTrack(
 
     SliderDefaults.Track(
         sliderState = state,
-        modifier = modifier
-            .drawWithContent {
-                drawContent()
-                val yOffset = size.height / 2 - iconDpSize.toSize().height / 2
-                val fraction = state.coercedValueAsFraction
-                val thumbGapPx = thumbTrackGapSize.toPx()
-                val activeTrackEnd = size.width * fraction - thumbGapPx
-                val inactiveTrackStart = activeTrackEnd + thumbGapPx * 2
-                val inactiveTrackWidth = size.width - inactiveTrackStart
+        modifier =
+            modifier
+                .drawWithContent {
+                    drawContent()
+                    val yOffset = size.height / 2 - iconDpSize.toSize().height / 2
+                    val fraction = state.coercedValueAsFraction
+                    val thumbGapPx = thumbTrackGapSize.toPx()
+                    val activeTrackEnd = size.width * fraction - thumbGapPx
+                    val inactiveTrackStart = activeTrackEnd + thumbGapPx * 2
+                    val inactiveTrackWidth = size.width - inactiveTrackStart
 
-                drawTrackIcon(
-                    icon = icon,
-                    disabledIcon = disabledIcon,
-                    iconSize = iconDpSize,
-                    iconPadding = iconPadding,
-                    yOffset = yOffset,
-                    activeTrackWidth = activeTrackEnd,
-                    inactiveTrackStart = inactiveTrackStart,
-                    inactiveTrackWidth = inactiveTrackWidth,
-                    activeIconColor = activeIconColor,
-                    inactiveIconColor = inactiveIconColor
-                )
-            },
+                    drawTrackIcon(
+                        icon = icon,
+                        disabledIcon = disabledIcon,
+                        iconSize = iconDpSize,
+                        iconPadding = iconPadding,
+                        yOffset = yOffset,
+                        activeTrackWidth = activeTrackEnd,
+                        inactiveTrackStart = inactiveTrackStart,
+                        inactiveTrackWidth = inactiveTrackWidth,
+                        activeIconColor = activeIconColor,
+                        inactiveIconColor = inactiveIconColor,
+                    )
+                },
         colors = colors,
         enabled = enabled,
         thumbTrackGapSize = thumbTrackGapSize,
-        trackCornerSize = trackCornerSize
+        trackCornerSize = trackCornerSize,
     )
 }
 
@@ -78,7 +79,7 @@ private fun DrawScope.drawTrackIcon(
     inactiveTrackStart: Float,
     inactiveTrackWidth: Float,
     activeIconColor: Color,
-    inactiveIconColor: Color
+    inactiveIconColor: Color,
 ) {
     val iconSizePx = iconSize.toSize()
     val iconPaddingPx = iconPadding.toPx()

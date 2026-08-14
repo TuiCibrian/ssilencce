@@ -29,9 +29,9 @@ import java.io.File
 class StorageDevice(
     override val filePath: String,
     override val fileName: String,
-    val iconRes: Int
-) : Parcelable, FileSystemItem {
-
+    val iconRes: Int,
+) : Parcelable,
+    FileSystemItem {
     val file: File
         get() = File(filePath)
 
@@ -53,7 +53,5 @@ class StorageDevice(
         return result
     }
 
-    override fun toString(): String {
-        return "StorageDevice{path='$filePath', name='$fileName'}"
-    }
+    override fun toString(): String = "StorageDevice{path='$filePath', name='$fileName'}"
 }

@@ -18,7 +18,6 @@ import java.util.Locale
  * @author Christians Martínez A. (mardous)
  */
 internal class TtmlNodeTree {
-
     private var rootNode: TtmlNode? = null
 
     private val accompaniments = linkedMapOf<TtmlAccompaniment.Type, TtmlAccompaniment>()
@@ -50,7 +49,7 @@ internal class TtmlNodeTree {
     }
 
     private inline fun <reified T : TtmlAccompaniment> getOpenAccompaniment(
-        type: TtmlAccompaniment.Type?
+        type: TtmlAccompaniment.Type?,
     ): T? {
         if (type == null) return null
         val openAccompaniment = accompaniments[type]?.takeIf { !it.closed }
@@ -58,27 +57,28 @@ internal class TtmlNodeTree {
         return null
     }
 
-    private fun getClosedTransliteration(): TtmlTransliteration? {
-        return accompaniments.values
+    private fun getClosedTransliteration(): TtmlTransliteration? =
+        accompaniments.values
             .filterIsInstance<TtmlTransliteration>()
             .singleOrNull { it.closed }
-    }
 
     private fun getClosedTranslation(): TtmlTranslation? {
         val systemLocale = Locale.getDefault()
-        val closedTranslations = accompaniments.values
-            .filterIsInstance<TtmlTranslation>()
-            .filter { it.closed }
+        val closedTranslations =
+            accompaniments.values
+                .filterIsInstance<TtmlTranslation>()
+                .filter { it.closed }
 
         if (closedTranslations.size == 1) {
             return closedTranslations.single()
         }
 
-        val matchingLocale = closedTranslations.firstOrNull {
-            Locale.forLanguageTag(it.type.lang).let { locale ->
-                locale == systemLocale || locale.language == systemLocale.language
+        val matchingLocale =
+            closedTranslations.firstOrNull {
+                Locale.forLanguageTag(it.type.lang).let { locale ->
+                    locale == systemLocale || locale.language == systemLocale.language
+                }
             }
-        }
 
         if (matchingLocale != null) {
             return matchingLocale
@@ -96,14 +96,15 @@ internal class TtmlNodeTree {
         return hasRoot
     }
 
-    fun addAgent(id: String, type: String): Boolean {
+    fun addAgent(
+        id: String,
+        type: String,
+    ): Boolean {
         val agent = TtmlAgent(id, type)
         return agents.add(agent)
     }
 
-    fun getAgent(id: String): TtmlAgent? {
-        return agents.firstOrNull { it.id == id }
-    }
+    fun getAgent(id: String): TtmlAgent? = agents.firstOrNull { it.id == id }
 
     fun openSection(node: TtmlNode): Boolean {
         if (!hasRoot) return false
@@ -146,8 +147,10 @@ internal class TtmlNodeTree {
 
     fun setText(text: String?): Boolean {
         if (openTranslation?.set(text) == true ||
-            openTransliteration?.set(text) == true)
+            openTransliteration?.set(text) == true
+        ) {
             return true
+        }
 
         if (!hasRoot) return false
 
@@ -163,8 +166,10 @@ internal class TtmlNodeTree {
 
     fun enterBackground(): Boolean {
         if (openTranslation?.background(true) == true ||
-            openTransliteration?.background(true) == true)
+            openTransliteration?.background(true) == true
+        ) {
             return true
+        }
 
         if (!hasRoot) return false
 
@@ -177,8 +182,10 @@ internal class TtmlNodeTree {
 
     fun closeBackground(): Boolean {
         if (openTranslation?.background(false) == true ||
-            openTransliteration?.background(false) == true)
+            openTransliteration?.background(false) == true
+        ) {
             return true
+        }
 
         if (!hasRoot) return false
 
@@ -201,7 +208,10 @@ internal class TtmlNodeTree {
         return null
     }
 
-    fun createTranslation(language: String, inLine: Boolean = false): TtmlTranslation? {
+    fun createTranslation(
+        language: String,
+        inLine: Boolean = false,
+    ): TtmlTranslation? {
         val translationType = TtmlAccompaniment.Type.Translation(language)
         val openTranslation = getOpenAccompaniment<TtmlTranslation>(translationType)
         if (openTranslation == null && language.isNotEmpty()) {
@@ -214,17 +224,19 @@ internal class TtmlNodeTree {
     }
 
     fun prepareTranslationForCurrentLine(lang: String?): Boolean {
-        if (lang == null)
+        if (lang == null) {
             return false
+        }
 
         val openLine = getOpenNode(TtmlNode.NODE_LINE)
         if (openLine != null && openLine.key != null) {
             var openTranslation = this.openTranslation
             if (openTranslation == null || openTranslation.type.lang != lang) {
-                openTranslation = accompaniments.values
-                    .firstNotNullOfOrNull { acc ->
-                        if (acc is TtmlTranslation && acc.type.lang == lang) acc else null
-                    }
+                openTranslation =
+                    accompaniments.values
+                        .firstNotNullOfOrNull { acc ->
+                            if (acc is TtmlTranslation && acc.type.lang == lang) acc else null
+                        }
             }
             if (openTranslation == null) {
                 openTranslation = createTranslation(lang, inLine = true)
@@ -242,14 +254,11 @@ internal class TtmlNodeTree {
         return false
     }
 
-    fun prepareAccompanimentText(key: String) =
-        accompaniments.values.lastOrNull()?.prepare(key) == true
+    fun prepareAccompanimentText(key: String) = accompaniments.values.lastOrNull()?.prepare(key) == true
 
-    fun finishAccompanimentText() =
-        accompaniments.values.lastOrNull()?.finish() == true
+    fun finishAccompanimentText() = accompaniments.values.lastOrNull()?.finish() == true
 
-    fun closeAccompaniment() =
-        accompaniments.values.lastOrNull()?.close() == true
+    fun closeAccompaniment() = accompaniments.values.lastOrNull()?.close() == true
 
     fun closeNode(type: Int): Boolean {
         if (type == TtmlNode.NODE_WORD && isInTransliteration) {
@@ -320,37 +329,46 @@ internal class TtmlNodeTree {
 
                 // Logic to map TTML agents to Voice1/Voice2/Group.
                 // It alternates between Voice1 and Voice2 when the agent ID changes.
-                val actor: LyricsActor? = line.agent?.let { agent ->
-                    when (agent.type) {
-                        TtmlAgent.Type.Person -> {
-                            if (lastAgentId == null) {
-                                lastLateralActor = LyricsActor.Voice1
-                                lateralDefined = true
-                            } else if (agent.id != lastAgentId) {
-                                lastLateralActor = if (lastLateralActor == LyricsActor.Voice1)
-                                    LyricsActor.Voice2
-                                else LyricsActor.Voice1
+                val actor: LyricsActor? =
+                    line.agent?.let { agent ->
+                        when (agent.type) {
+                            TtmlAgent.Type.Person -> {
+                                if (lastAgentId == null) {
+                                    lastLateralActor = LyricsActor.Voice1
+                                    lateralDefined = true
+                                } else if (agent.id != lastAgentId) {
+                                    lastLateralActor =
+                                        if (lastLateralActor == LyricsActor.Voice1) {
+                                            LyricsActor.Voice2
+                                        } else {
+                                            LyricsActor.Voice1
+                                        }
+                                }
+                                lastAgentId = agent.id
+                                lastLateralActor
                             }
-                            lastAgentId = agent.id
-                            lastLateralActor
-                        }
 
-                        TtmlAgent.Type.Other -> {
-                            if (!lateralDefined) {
-                                lastLateralActor = LyricsActor.Voice2
-                                lateralDefined = true
-                            } else {
-                                lastLateralActor = if (lastLateralActor == LyricsActor.Voice1)
-                                    LyricsActor.Voice2
-                                else LyricsActor.Voice1
+                            TtmlAgent.Type.Other -> {
+                                if (!lateralDefined) {
+                                    lastLateralActor = LyricsActor.Voice2
+                                    lateralDefined = true
+                                } else {
+                                    lastLateralActor =
+                                        if (lastLateralActor == LyricsActor.Voice1) {
+                                            LyricsActor.Voice2
+                                        } else {
+                                            LyricsActor.Voice1
+                                        }
+                                }
+                                lastAgentId = agent.id
+                                lastLateralActor
                             }
-                            lastAgentId = agent.id
-                            lastLateralActor
-                        }
 
-                        TtmlAgent.Type.Group -> LyricsActor.Group
+                            TtmlAgent.Type.Group -> {
+                                LyricsActor.Group
+                            }
+                        }
                     }
-                }
 
                 // If end time is not specified, use the start time of the next line
                 if (line.end == -1L) {
@@ -371,8 +389,8 @@ internal class TtmlNodeTree {
                             transliteration = transliteration,
                             translation = translation,
                             mainContent = wordsToTextContent(words),
-                            actor = actor
-                        )
+                            actor = actor,
+                        ),
                     )
                 } else {
                     // Simple line with static text
@@ -381,36 +399,40 @@ internal class TtmlNodeTree {
                             line = line,
                             transliteration = transliteration,
                             translation = translation,
-                            mainContent = SyncedLyrics.TextContent(
-                                content = line.text.orEmpty(),
-                                backgroundContent = null,
-                                rawContent = null,
-                                syllables = emptyList()
-                            ),
-                            actor = actor
-                        )
+                            mainContent =
+                                SyncedLyrics.TextContent(
+                                    content = line.text.orEmpty(),
+                                    backgroundContent = null,
+                                    rawContent = null,
+                                    syllables = emptyList(),
+                                ),
+                            actor = actor,
+                        ),
                     )
                 }
             }
 
-            val linesWithOffset = lines
-                .distinctBy { it.id }
-                .toMutableList().apply {
-                    sortBy { it.start }
-                }
+            val linesWithOffset =
+                lines
+                    .distinctBy { it.id }
+                    .toMutableList()
+                    .apply {
+                        sortBy { it.start }
+                    }
 
             if (linesWithOffset.isNotEmpty()) {
                 val firstLine = linesWithOffset.first()
                 if (firstLine.start > SyncedLyrics.MIN_OFFSET_TIME) {
-                    linesWithOffset.add(0,
+                    linesWithOffset.add(
+                        0,
                         SyncedLyrics.Line(
                             start = 0,
                             end = firstLine.start,
                             content = SyncedLyrics.EmptyContent,
                             transliteration = null,
                             translation = null,
-                            actor = firstLine.actor
-                        )
+                            actor = firstLine.actor,
+                        ),
                     )
                 }
             }
@@ -425,16 +447,19 @@ internal class TtmlNodeTree {
         transliteration: TtmlTransliteration?,
         translation: TtmlTranslation?,
         mainContent: SyncedLyrics.TextContent,
-        actor: LyricsActor?
+        actor: LyricsActor?,
     ): SyncedLyrics.Line {
         fun resolveAccompaniment(acc: TtmlAccompaniment?): SyncedLyrics.TextContent? =
             accompanimentToTextContent(line, acc, actor)?.let { content ->
-                val resolved = if (content.backgroundContent == mainContent.backgroundContent) {
-                    content.copy(
-                        backgroundContent = null,
-                        syllables = content.syllables.filterNot { it.isBackground }
-                    )
-                } else content
+                val resolved =
+                    if (content.backgroundContent == mainContent.backgroundContent) {
+                        content.copy(
+                            backgroundContent = null,
+                            syllables = content.syllables.filterNot { it.isBackground },
+                        )
+                    } else {
+                        content
+                    }
 
                 resolved.takeUnless { it.content == mainContent.content && it.backgroundContent == null }
             }
@@ -446,7 +471,7 @@ internal class TtmlNodeTree {
             content = mainContent,
             transliteration = resolveAccompaniment(transliteration),
             translation = resolveAccompaniment(translation),
-            actor = actor
+            actor = actor,
         )
     }
 
@@ -457,7 +482,7 @@ internal class TtmlNodeTree {
     private fun nodesToWords(
         line: TtmlNode,
         wordNodes: List<TtmlNode>,
-        actor: LyricsActor?
+        actor: LyricsActor?,
     ): List<SyncedLyrics.Word> {
         val words = mutableListOf<SyncedLyrics.Word>()
         if (wordNodes.isNotEmpty()) {
@@ -473,8 +498,10 @@ internal class TtmlNodeTree {
                 }
                 val text = word.text.orEmpty()
                 // Calculate character indices for highlighting during playback
-                val startIndex = words.filter { it.isBackground == word.background }
-                    .sumOf { it.content.length }
+                val startIndex =
+                    words
+                        .filter { it.isBackground == word.background }
+                        .sumOf { it.content.length }
                 val endIndex = startIndex + (text.length - 1)
                 words.add(
                     SyncedLyrics.Word(
@@ -484,8 +511,8 @@ internal class TtmlNodeTree {
                         end = word.end,
                         endIndex = endIndex,
                         duration = word.dur,
-                        actor = actor?.asBackground(word.background)
-                    )
+                        actor = actor?.asBackground(word.background),
+                    ),
                 )
             }
         }
@@ -493,29 +520,33 @@ internal class TtmlNodeTree {
     }
 
     private fun wordsToTextContent(
-        syllables: List<SyncedLyrics.Word>
+        syllables: List<SyncedLyrics.Word>,
     ): SyncedLyrics.TextContent {
         val blankSpace = "\\s{2,}".toRegex()
-        val content = syllables.filterNot { it.isBackground }
-            .joinToString("") { it.content.replace(blankSpace, " ") }
-            .trim()
+        val content =
+            syllables
+                .filterNot { it.isBackground }
+                .joinToString("") { it.content.replace(blankSpace, " ") }
+                .trim()
 
-        val backgroundContent = syllables.filter { it.isBackground }
-            .joinToString("") { it.content.replace(blankSpace, " ") }
-            .trim()
+        val backgroundContent =
+            syllables
+                .filter { it.isBackground }
+                .joinToString("") { it.content.replace(blankSpace, " ") }
+                .trim()
 
         return SyncedLyrics.TextContent(
             content = content,
             backgroundContent = backgroundContent,
             rawContent = null,
-            syllables = syllables
+            syllables = syllables,
         )
     }
 
     private fun accompanimentToTextContent(
         line: TtmlNode,
         accompaniment: TtmlAccompaniment?,
-        actor: LyricsActor?
+        actor: LyricsActor?,
     ): SyncedLyrics.TextContent? {
         if (accompaniment == null) return null
 
@@ -529,7 +560,7 @@ internal class TtmlNodeTree {
                     content = text.content,
                     backgroundContent = text.backgroundContent,
                     rawContent = null,
-                    syllables = emptyList()
+                    syllables = emptyList(),
                 )
             }
         }

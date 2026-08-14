@@ -44,8 +44,9 @@ import kotlin.math.abs
  * Based on [Metrolist](https://github.com/MetrolistGroup/Metrolist) and
  * [SongSync](https://github.com/Lambada10/SongSync) implementations.
  */
-class LyricallyApi(private val client: HttpClient) : LyricsApi {
-
+class LyricallyApi(
+    private val client: HttpClient,
+) : LyricsApi {
     override val name: String = "Lyrically"
     override val networkFeature = NetworkFeature.Lyrics.Lyrically
 
@@ -54,7 +55,7 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
     override suspend fun downloadLyrics(
         song: Song,
         title: String,
-        artist: String
+        artist: String,
     ): RawLyrics.Remote? {
         val searchResponse = searchHelper.getAppleMusicSearchResponse(title, artist)
         if (searchResponse != null && searchResponse.size > 0) {
@@ -64,9 +65,11 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
             for ((result, score) in scoredIds.take(5)) {
                 if (score <= 0.0) continue
 
-                val lyricsResponse = client.paxsenix(LYRICALLY_API_URL) {
-                    parameter("id", result)
-                }.body<LyricallyLyricsResponse>()
+                val lyricsResponse =
+                    client
+                        .paxsenix(LYRICALLY_API_URL) {
+                            parameter("id", result)
+                        }.body<LyricallyLyricsResponse>()
 
                 val newLyrics = parseLyricallyResponse(lyricsResponse)
 
@@ -83,17 +86,18 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
     }
 
     private fun parseLyricallyResponse(response: LyricallyLyricsResponse): RawLyrics.Remote {
-        var lyrics = if (!response.ttml.isNullOrEmpty()) {
-            RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.ttml))
-        } else if (!response.elrcMultiPerson.isNullOrEmpty()) {
-            RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.elrcMultiPerson))
-        } else if (!response.elrc.isNullOrEmpty()) {
-            RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.elrc))
-        } else if (!response.lrc.isNullOrEmpty()) {
-            RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.lrc))
-        } else {
-            RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, parseLyricallyContent(response)))
-        }
+        var lyrics =
+            if (!response.ttml.isNullOrEmpty()) {
+                RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.ttml))
+            } else if (!response.elrcMultiPerson.isNullOrEmpty()) {
+                RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.elrcMultiPerson))
+            } else if (!response.elrc.isNullOrEmpty()) {
+                RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.elrc))
+            } else if (!response.lrc.isNullOrEmpty()) {
+                RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, response.lrc))
+            } else {
+                RawLyrics.Remote(synced = RawLyrics.Remote.Content(name, parseLyricallyContent(response)))
+            }
         if (!response.plain.isNullOrEmpty()) {
             lyrics = lyrics.copy(plain = RawLyrics.Remote.Content(name, response.plain))
         }
@@ -136,7 +140,10 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
         return syncedLyrics.toString().dropLast(1)
     }
 
-    private fun formatSyllableToLrc(output: StringBuilder, content: List<LyricallyLyricText>) {
+    private fun formatSyllableToLrc(
+        output: StringBuilder,
+        content: List<LyricallyLyricText>,
+    ) {
         for (syllable in content) {
             val formatedBeginTimestamp = "<${syllable.timestamp.toLrcTimestamp()}>"
             val formatedEndTimestamp = "<${syllable.endtime.toLrcTimestamp()}>"
@@ -155,31 +162,39 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
         songTitle: String,
         songArtist: String,
         songDurationInMillis: Long,
-        searchResponse: ITunesSearchResponse
-    ): List<Pair<Long, Double>> {
-        return searchResponse.results.map { song ->
-            val songId = song.id
+        searchResponse: ITunesSearchResponse,
+    ): List<Pair<Long, Double>> =
+        searchResponse.results
+            .map { song ->
+                val songId = song.id
 
-            val titleScore = JW_SIMILARITY.apply(songTitle, song.name)
-            val artistScore = JW_SIMILARITY.apply(songArtist, song.artist)
+                val titleScore = JW_SIMILARITY.apply(songTitle, song.name)
+                val artistScore = JW_SIMILARITY.apply(songArtist, song.artist)
 
-            val durationDiff = song.durationInMillis
-                ?.let { duration -> abs(duration - songDurationInMillis) } ?: 0
+                val durationDiff =
+                    song.durationInMillis
+                        ?.let { duration -> abs(duration - songDurationInMillis) } ?: 0
 
-            val durationScore = when {
-                durationDiff <= 2000 -> 1.0 // Excellent match
-                durationDiff <= 5000 -> 0.6 // Good match
-                durationDiff <= 10000 -> 0.2 // Acceptable match
-                else -> -1.0 // Likely wrong version
-            }
+                val durationScore =
+                    when {
+                        durationDiff <= 2000 -> 1.0
 
-            songId to (artistScore + titleScore + durationScore)
-        }.sortedByDescending { it.second }
-    }
+                        // Excellent match
+                        durationDiff <= 5000 -> 0.6
+
+                        // Good match
+                        durationDiff <= 10000 -> 0.2
+
+                        // Acceptable match
+                        else -> -1.0 // Likely wrong version
+                    }
+
+                songId to (artistScore + titleScore + durationScore)
+            }.sortedByDescending { it.second }
 
     private suspend fun HttpClient.paxsenix(
         url: String,
-        block: HttpRequestBuilder.() -> Unit = {}
+        block: HttpRequestBuilder.() -> Unit = {},
     ) = get(url) {
         header(HttpHeaders.Accept, "application/json")
         header(HttpHeaders.ContentType, "application/json")
@@ -197,11 +212,18 @@ class LyricallyApi(private val client: HttpClient) : LyricsApi {
         val seconds = (this % 60000) / 1000
         val milliseconds = this % 1000
 
-        val leadingZeros: Array<String> = arrayOf(
-            if (minutes < 10) "0" else "",
-            if (seconds < 10) "0" else "",
-            if (milliseconds < 10) "00" else if (milliseconds < 100) "0" else ""
-        )
+        val leadingZeros: Array<String> =
+            arrayOf(
+                if (minutes < 10) "0" else "",
+                if (seconds < 10) "0" else "",
+                if (milliseconds < 10) {
+                    "00"
+                } else if (milliseconds < 100) {
+                    "0"
+                } else {
+                    ""
+                },
+            )
 
         return "${leadingZeros[0]}$minutes:${leadingZeros[1]}$seconds.${leadingZeros[2]}$milliseconds"
     }

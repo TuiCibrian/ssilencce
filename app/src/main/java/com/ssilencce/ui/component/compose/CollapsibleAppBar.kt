@@ -22,56 +22,59 @@ fun CollapsibleAppBarScaffold(
     collapsibleAppBar: Boolean = Preferences.appBarMode == TopAppBarLayout.AppBarMode.COLLAPSING,
     miniPlayerMargin: Int = 0,
     onBackClick: () -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
-    val scrollBehavior = if (collapsibleAppBar) {
-        TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
-    } else {
-        TopAppBarDefaults.enterAlwaysScrollBehavior()
-    }
+    val scrollBehavior =
+        if (collapsibleAppBar) {
+            TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+        } else {
+            TopAppBarDefaults.enterAlwaysScrollBehavior()
+        }
     Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .nestedScroll(scrollBehavior.nestedScrollConnection),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             if (collapsibleAppBar) {
                 MediumTopAppBar(
                     title = { Text(text = title) },
                     navigationIcon = {
                         if (showNavigationButton) {
-                            IconButton(onClick = onBackClick,) {
+                            IconButton(onClick = onBackClick) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_back_24dp),
-                                    contentDescription = stringResource(R.string.back_action)
+                                    contentDescription = stringResource(R.string.back_action),
                                 )
                             }
                         }
                     },
                     actions = actions,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
                 )
             } else {
                 TopAppBar(
                     title = { Text(text = title) },
                     navigationIcon = {
                         if (showNavigationButton) {
-                            IconButton(onClick = onBackClick,) {
+                            IconButton(onClick = onBackClick) {
                                 Icon(
                                     painter = painterResource(R.drawable.ic_back_24dp),
-                                    contentDescription = stringResource(R.string.back_action)
+                                    contentDescription = stringResource(R.string.back_action),
                                 )
                             }
                         }
                     },
                     actions = actions,
-                    scrollBehavior = scrollBehavior
+                    scrollBehavior = scrollBehavior,
                 )
             }
         },
         snackbarHost = snackbarHost,
-        contentWindowInsets = WindowInsets.safeDrawing
-            .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
-            .add(WindowInsets(bottom = miniPlayerMargin))
+        contentWindowInsets =
+            WindowInsets.safeDrawing
+                .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+                .add(WindowInsets(bottom = miniPlayerMargin)),
     ) { contentPadding ->
         content(contentPadding)
     }

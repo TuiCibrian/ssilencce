@@ -50,58 +50,73 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
 /**
  * @author Christians M. A. (mardous)
  */
-abstract class AbsMainActivityFragment @JvmOverloads constructor(@LayoutRes layoutRes: Int = 0) :
-    Fragment(layoutRes), MenuProvider {
+abstract class AbsMainActivityFragment
+    @JvmOverloads
+    constructor(
+        @LayoutRes layoutRes: Int = 0,
+    ) : Fragment(layoutRes),
+        MenuProvider {
+        val playerViewModel: PlayerViewModel by activityViewModel()
+        val libraryViewModel: LibraryViewModel by activityViewModel()
 
-    val playerViewModel: PlayerViewModel by activityViewModel()
-    val libraryViewModel: LibraryViewModel by activityViewModel()
+        protected val preferences: SharedPreferences by inject()
+        protected val mainActivity: MainActivity
+            get() = requireActivity() as MainActivity
 
-    protected val preferences: SharedPreferences by inject()
-    protected val mainActivity: MainActivity
-        get() = requireActivity() as MainActivity
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-        val menuHost: MenuHost = requireActivity()
-        menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.STARTED)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                playerViewModel.mediaEvent.collect {
-                    when (it) {
-                        MediaEvent.FavoriteContentChanged -> onFavoriteContentChanged()
-                        MediaEvent.MediaContentChanged -> onMediaContentChanged()
-                        MediaEvent.PlaybackRestored -> {
-                            val mode = preferences.requireString(PLAY_ON_STARTUP_MODE, PlayOnStartupMode.NEVER)
-                            if (mode == WITH_EXPANDED_PLAYER) {
-                                mainActivity.expandPanel()
+        override fun onViewCreated(
+            view: View,
+            savedInstanceState: Bundle?,
+        ) {
+            super.onViewCreated(view, savedInstanceState)
+            val menuHost: MenuHost = requireActivity()
+            menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.STARTED)
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    playerViewModel.mediaEvent.collect {
+                        when (it) {
+                            MediaEvent.FavoriteContentChanged -> {
+                                onFavoriteContentChanged()
                             }
-                        }
-                        MediaEvent.PlaybackStarted -> {
-                            if (preferences.getBoolean(OPEN_ON_PLAY, false)) {
-                                mainActivity.expandPanel()
+
+                            MediaEvent.MediaContentChanged -> {
+                                onMediaContentChanged()
+                            }
+
+                            MediaEvent.PlaybackRestored -> {
+                                val mode = preferences.requireString(PLAY_ON_STARTUP_MODE, PlayOnStartupMode.NEVER)
+                                if (mode == WITH_EXPANDED_PLAYER) {
+                                    mainActivity.expandPanel()
+                                }
+                            }
+
+                            MediaEvent.PlaybackStarted -> {
+                                if (preferences.getBoolean(OPEN_ON_PLAY, false)) {
+                                    mainActivity.expandPanel()
+                                }
                             }
                         }
                     }
                 }
             }
         }
-    }
 
-    protected open fun onMediaContentChanged() {}
+        protected open fun onMediaContentChanged() {}
 
-    protected open fun onFavoriteContentChanged() {}
+        protected open fun onFavoriteContentChanged() {}
 
-    protected fun applyWindowInsetsFromView(view: View) {
-        view.applyWindowInsets(
-            left = isLandscape() && mainActivity.navigationView.isGone, right = true, bottom = true
-        )
-    }
+        protected fun applyWindowInsetsFromView(view: View) {
+            view.applyWindowInsets(
+                left = isLandscape() && mainActivity.navigationView.isGone,
+                right = true,
+                bottom = true,
+            )
+        }
 
-    protected fun checkForMargins(view: View) {
-        if (mainActivity.isBottomNavVisible) {
-            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = dip(R.dimen.bottom_nav_height)
+        protected fun checkForMargins(view: View) {
+            if (mainActivity.isBottomNavVisible) {
+                view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                    bottomMargin = dip(R.dimen.bottom_nav_height)
+                }
             }
         }
     }
-}

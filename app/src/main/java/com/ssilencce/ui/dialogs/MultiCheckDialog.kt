@@ -42,8 +42,9 @@ typealias MultiCheckCallback2 = (DialogInterface, List<Int>, List<String>) -> Bo
 /**
  * @author Christians M. A. (mardous)
  */
-open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<String> {
-
+open class MultiCheckDialog :
+    DialogFragment(),
+    SimpleItemAdapter.Callback<String> {
     private val extraConfig: MultiCheckConfig by extraNotNull(EXTRA_MULTI_CHECK_CONFIG)
 
     private var _binding: DialogMultiCheckBinding? = null
@@ -61,11 +62,12 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
         } else {
             binding.message.text = actualConfig.message
         }
-        adapter = SimpleItemAdapter(
-            R.layout.item_checkable,
-            items = actualConfig.items,
-            callback = this
-        )
+        adapter =
+            SimpleItemAdapter(
+                R.layout.item_checkable,
+                items = actualConfig.items,
+                callback = this,
+            )
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
         return MaterialAlertDialogBuilder(requireContext())
@@ -75,9 +77,10 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
             .setNegativeButton(android.R.string.cancel, null)
             .create { dialog ->
                 dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener {
-                    val checkedItems = adapter!!.items.filterIndexed { index, _ ->
-                        checkedPositions.contains(index)
-                    }
+                    val checkedItems =
+                        adapter!!.items.filterIndexed { index, _ ->
+                            checkedPositions.contains(index)
+                        }
                     if (processMultiCheck(dialog, checkedPositions, checkedItems)) {
                         dialog.dismiss()
                     }
@@ -85,7 +88,11 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
             }
     }
 
-    override fun itemClick(itemView: View, position: Int, item: String) {
+    override fun itemClick(
+        itemView: View,
+        position: Int,
+        item: String,
+    ) {
         val checkBox = itemView.findViewById<CheckBox>(android.R.id.checkbox)
         checkBox.toggle()
         if (checkBox.isChecked) {
@@ -103,7 +110,7 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
     protected open fun processMultiCheck(
         dialog: DialogInterface,
         whichPos: List<Int>,
-        whichItems: List<String>
+        whichItems: List<String>,
     ) = callback?.invoke(dialog, whichPos, whichItems) == true
 
     protected open fun multiCheckConfig() = extraConfig
@@ -113,22 +120,31 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
         val title: String,
         val positiveText: String,
         val message: String? = null,
-        val items: List<String>
+        val items: List<String>,
     ) : Parcelable
 
-    class Builder(private val context: Context) {
+    class Builder(
+        private val context: Context,
+    ) {
         private var title: String? = null
         private var message: String? = null
         private var positiveText: String? = null
         private var items: List<String> by Delegates.notNull()
 
         fun title(title: Int) = title(context.getString(title))
+
         fun title(title: String) = apply { this.title = title }
+
         fun message(message: Int) = message(context.getString(message))
+
         fun message(message: String) = apply { this.message = message }
+
         fun positiveText(positiveRes: Int) = positiveText(context.getString(positiveRes))
+
         fun positiveText(positiveText: String) = apply { this.positiveText = positiveText }
+
         fun items(items: List<String>) = apply { this.items = items }
+
         fun items(items: Array<String>) = apply { this.items = items.toList() }
 
         fun createConfig(): MultiCheckConfig {
@@ -143,17 +159,17 @@ open class MultiCheckDialog : DialogFragment(), SimpleItemAdapter.Callback<Strin
                 title = title!!,
                 positiveText = positiveText!!,
                 message = message,
-                items = items
+                items = items,
             )
         }
 
-        fun createDialog(callback: MultiCheckCallback2): MultiCheckDialog {
-            return MultiCheckDialog().withArgs {
-                putParcelable(EXTRA_MULTI_CHECK_CONFIG, createConfig())
-            }.apply {
-                this.callback = callback
-            }
-        }
+        fun createDialog(callback: MultiCheckCallback2): MultiCheckDialog =
+            MultiCheckDialog()
+                .withArgs {
+                    putParcelable(EXTRA_MULTI_CHECK_CONFIG, createConfig())
+                }.apply {
+                    this.callback = callback
+                }
     }
 
     companion object {

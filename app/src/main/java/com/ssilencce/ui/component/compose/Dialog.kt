@@ -34,7 +34,7 @@ fun ConfirmDialog(
     confirmButton: String,
     dismissButton: String = stringResource(android.R.string.cancel),
     title: String? = null,
-    icon: Painter? = null
+    icon: Painter? = null,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -42,7 +42,7 @@ fun ConfirmDialog(
             icon?.let {
                 Icon(
                     painter = it,
-                    contentDescription = null
+                    contentDescription = null,
                 )
             }
         },
@@ -59,7 +59,7 @@ fun ConfirmDialog(
             TextButton(onClick = onDismiss) {
                 Text(dismissButton)
             }
-        }
+        },
     )
 }
 
@@ -95,9 +95,9 @@ fun InputDialog(
             DialogCheckBox(
                 text = checkBoxPrompt,
                 isChecked = isChecked,
-                onValueChange = { isChecked = it }
+                onValueChange = { isChecked = it },
             )
-        }
+        },
     )
 }
 
@@ -113,7 +113,7 @@ fun InputDialog(
     inputHint: String? = null,
     inputPrefill: String = "",
     inputMaxLength: Int = Int.MAX_VALUE,
-    additionalContent: @Composable (ColumnScope.() -> Unit)? = null
+    additionalContent: @Composable (ColumnScope.() -> Unit)? = null,
 ) {
     val inputState = rememberTextFieldState(initialText = inputPrefill)
 
@@ -127,7 +127,7 @@ fun InputDialog(
             icon?.let {
                 Icon(
                     painter = it,
-                    contentDescription = null
+                    contentDescription = null,
                 )
             }
         },
@@ -136,13 +136,14 @@ fun InputDialog(
         },
         text = {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
             ) {
                 Text(
                     text = message,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -156,10 +157,11 @@ fun InputDialog(
                             Text("$inputLength/$inputMaxLength")
                         }
                     },
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                        ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 Spacer(Modifier.height(8.dp))
@@ -170,7 +172,7 @@ fun InputDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(inputState.text.toString()) },
-                enabled = isInputValid
+                enabled = isInputValid,
             ) {
                 Text(confirmButton)
             }
@@ -179,6 +181,6 @@ fun InputDialog(
             TextButton(onClick = onDismiss) {
                 Text(dismissButton)
             }
-        }
+        },
     )
 }

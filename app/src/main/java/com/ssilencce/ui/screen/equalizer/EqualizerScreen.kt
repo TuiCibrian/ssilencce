@@ -116,9 +116,11 @@ import java.util.Locale
 
 private const val PRESET_NAME_MAX_LENGTH = 48
 
-private enum class ProfilesMode(@StringRes val nameRes: Int) {
+private enum class ProfilesMode(
+    @StringRes val nameRes: Int,
+) {
     EQ(R.string.eq_profiles_title),
-    AutoEq(R.string.autoeq_profiles_title)
+    AutoEq(R.string.autoeq_profiles_title),
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -126,20 +128,22 @@ private enum class ProfilesMode(@StringRes val nameRes: Int) {
 fun EqualizerScreen(
     libraryViewModel: LibraryViewModel,
     eqViewModel: EqualizerViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
 
     val hasSystemEqualizer = remember { eqViewModel.hasSystemEqualizer(context) }
 
-    val importProfileLauncher = rememberLauncherForActivityResult(OpenDocument()) { data: Uri? ->
-        eqViewModel.requestImport(data)
-    }
+    val importProfileLauncher =
+        rememberLauncherForActivityResult(OpenDocument()) { data: Uri? ->
+            eqViewModel.requestImport(data)
+        }
 
-    val importAutoEqProfileLauncher = rememberLauncherForActivityResult(OpenDocument()) { data: Uri? ->
-        eqViewModel.requestAutoEqImport(context, data)
-    }
+    val importAutoEqProfileLauncher =
+        rememberLauncherForActivityResult(OpenDocument()) { data: Uri? ->
+            eqViewModel.requestAutoEqImport(context, data)
+        }
 
     var exportableContent by remember { mutableStateOf<String?>(null) }
     val exportProfileLauncher =
@@ -161,11 +165,16 @@ fun EqualizerScreen(
         }
     }
 
-    fun shareConfiguration(data: Uri, mimeType: String) {
-        val builder = ShareCompat.IntentBuilder(context)
-            .setChooserTitle(R.string.share_eq_profiles)
-            .setStream(data)
-            .setType(mimeType)
+    fun shareConfiguration(
+        data: Uri,
+        mimeType: String,
+    ) {
+        val builder =
+            ShareCompat
+                .IntentBuilder(context)
+                .setChooserTitle(R.string.share_eq_profiles)
+                .setStream(data)
+                .setType(mimeType)
         try {
             builder.startChooser()
         } catch (_: ActivityNotFoundException) {
@@ -190,17 +199,19 @@ fun EqualizerScreen(
     val limiter by eqViewModel.limiterState.collectAsState()
     val replayGain by eqViewModel.replayGainState.collectAsState()
 
-    val availableBandCounts = remember(eqBandCapabilities, eqState.proMode) {
-        eqBandCapabilities.getAvailableBandCounts(eqState.proMode)
-    }
+    val availableBandCounts =
+        remember(eqBandCapabilities, eqState.proMode) {
+            eqBandCapabilities.getAvailableBandCounts(eqState.proMode)
+        }
 
-    val bandResponseValues = remember(eqBands) {
-        mutableStateListOf<Float>().also { values ->
-            eqBands.forEach { band ->
-                values.add(band.value)
+    val bandResponseValues =
+        remember(eqBands) {
+            mutableStateListOf<Float>().also { values ->
+                eqBands.forEach { band ->
+                    values.add(band.value)
+                }
             }
         }
-    }
 
     var editProfileState by remember { mutableStateOf<Pair<EqProfile, Boolean>?>(null) }
     var deleteProfileState by remember { mutableStateOf<Pair<EqProfile, Boolean>?>(null) }
@@ -210,13 +221,17 @@ fun EqualizerScreen(
         val currentData = shareProfileState
         if (currentData != null) {
             val (data, mimeType) = currentData
-            val result = snackbarHostState.showSnackbar(
-                message = context.getString(R.string.profiles_exported_successfully),
-                actionLabel = context.getString(R.string.action_share),
-                duration = SnackbarDuration.Long
-            )
+            val result =
+                snackbarHostState.showSnackbar(
+                    message = context.getString(R.string.profiles_exported_successfully),
+                    actionLabel = context.getString(R.string.action_share),
+                    duration = SnackbarDuration.Long,
+                )
             when (result) {
-                SnackbarResult.Dismissed -> shareProfileState = null
+                SnackbarResult.Dismissed -> {
+                    shareProfileState = null
+                }
+
                 SnackbarResult.ActionPerformed -> {
                     shareConfiguration(data, mimeType)
                     shareProfileState = null
@@ -268,7 +283,7 @@ fun EqualizerScreen(
             onConfirm = { selectedProfiles ->
                 eqViewModel.importProfiles(selectedProfiles)
                 showImportDialog = false
-            }
+            },
         )
     }
 
@@ -297,7 +312,7 @@ fun EqualizerScreen(
                 onConfirm = { name, isChecked ->
                     eqViewModel.importAutoEqProfile(profile, name, isChecked)
                 },
-                onDismiss = { importAutoEqProfileState = null }
+                onDismiss = { importAutoEqProfileState = null },
             )
         }
     }
@@ -357,7 +372,7 @@ fun EqualizerScreen(
             onConfirm = { selectedProfiles ->
                 eqViewModel.generateExportData(selectedProfiles)
                 showExportDialog = false
-            }
+            },
         )
     }
 
@@ -372,7 +387,7 @@ fun EqualizerScreen(
             onConfirm = { selectedProfiles ->
                 eqViewModel.shareProfiles(context, selectedProfiles)
                 showShareProfileDialog = false
-            }
+            },
         )
     }
 
@@ -391,7 +406,7 @@ fun EqualizerScreen(
             onConfirm = { profileName: String, allowReplace: Boolean, associatedDevices: Set<AudioDeviceType> ->
                 eqViewModel.saveProfile(profileName, allowReplace, associatedDevices)
             },
-            onDismiss = { showProfileSaverDialog = false }
+            onDismiss = { showProfileSaverDialog = false },
         )
     }
 
@@ -412,7 +427,7 @@ fun EqualizerScreen(
                 onConfirm = { newName, newAssociations ->
                     eqViewModel.editProfile(targetProfile, newName, newAssociations)
                 },
-                onDismiss = { editProfileState = null }
+                onDismiss = { editProfileState = null },
             )
         }
     }
@@ -423,11 +438,11 @@ fun EqualizerScreen(
             if (it.success && deleteProfileState != null) {
                 if (it.autoEqProfile) {
                     context.showToast(
-                        context.getString(R.string.autoeq_profile_x_deleted, it.profileName)
+                        context.getString(R.string.autoeq_profile_x_deleted, it.profileName),
                     )
                 } else {
                     context.showToast(
-                        context.getString(R.string.profile_x_deleted, it.profileName)
+                        context.getString(R.string.profile_x_deleted, it.profileName),
                     )
                 }
             }
@@ -446,7 +461,7 @@ fun EqualizerScreen(
                 confirmButton = stringResource(R.string.action_delete),
                 dismissButton = stringResource(R.string.no),
                 onConfirm = { eqViewModel.deleteProfile(context, targetProfile) },
-                onDismiss = { deleteProfileState = null }
+                onDismiss = { deleteProfileState = null },
             )
         }
     }
@@ -476,7 +491,7 @@ fun EqualizerScreen(
                     showBandCountSelector = false
                     changeBandCountState = null
                 },
-                onDismiss = { changeBandCountState = null }
+                onDismiss = { changeBandCountState = null },
             )
         }
     }
@@ -498,7 +513,7 @@ fun EqualizerScreen(
             onDeleteEqProfile = { profile -> deleteProfileState = Pair(profile, true) },
             onDeleteAutoEqProfile = { eqViewModel.deleteAutoEqProfile(it) },
             onImportAutoEqProfile = { importProfiles(autoEq = true) },
-            onDismiss = { showProfileSelectorDialog = false }
+            onDismiss = { showProfileSelectorDialog = false },
         )
     }
 
@@ -511,7 +526,7 @@ fun EqualizerScreen(
             },
             onDismiss = {
                 showSetEngineDialog = false
-            }
+            },
         )
     }
 
@@ -525,7 +540,7 @@ fun EqualizerScreen(
                 eqViewModel.resetEqualizer()
                 showResetEqDialog = false
             },
-            onDismiss = { showResetEqDialog = false }
+            onDismiss = { showResetEqDialog = false },
         )
     }
 
@@ -533,75 +548,78 @@ fun EqualizerScreen(
         title = stringResource(R.string.equalizer_label),
         actions = {
             TopAppBarMenu(
-                items = listOf(
-                    MenuItem.Button.Action(
-                        text = stringResource(R.string.action_external_eq),
-                        icon = painterResource(R.drawable.ic_equalizer_24dp),
-                        onClick = { eqViewModel.openSystemEqualizer(context) },
-                        visible = !eqState.isDisabledByReason && hasSystemEqualizer
+                items =
+                    listOf(
+                        MenuItem.Button.Action(
+                            text = stringResource(R.string.action_external_eq),
+                            icon = painterResource(R.drawable.ic_equalizer_24dp),
+                            onClick = { eqViewModel.openSystemEqualizer(context) },
+                            visible = !eqState.isDisabledByReason && hasSystemEqualizer,
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.share_profiles),
+                            icon = painterResource(R.drawable.ic_share_24dp),
+                            onClick = { showShareProfileDialog = true },
+                            enabled = eqState.isUsable && eqProfiles.isNotEmpty(),
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.export_profiles),
+                            icon = painterResource(R.drawable.ic_file_export_24dp),
+                            onClick = { showExportDialog = true },
+                            enabled = eqState.isUsable && eqProfiles.isNotEmpty(),
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.import_profiles),
+                            icon = painterResource(R.drawable.ic_file_open_24dp),
+                            onClick = { importProfiles(autoEq = false) },
+                            enabled = eqState.isUsable,
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.import_autoeq_profile),
+                            icon = painterResource(R.drawable.ic_graphic_eq_24dp),
+                            onClick = { importProfiles(autoEq = true) },
+                            enabled = eqState.isUsable,
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.set_eq_engine_title),
+                            icon = painterResource(R.drawable.ic_equalizer_24dp),
+                            onClick = { showSetEngineDialog = true },
+                            enabled = !eqState.isDisabledByReason,
+                            visible = EqEngineMode.isSwitchingSupported(),
+                        ),
+                        MenuItem.Button.Checkable(
+                            text = stringResource(R.string.eq_pro_mode),
+                            icon = painterResource(R.drawable.ic_instant_mix_24dp),
+                            onCheckedChange = { eqViewModel.setProMode(it) },
+                            isChecked = eqState.proMode,
+                            enabled = eqState.isUsable,
+                            visible = eqState.engineMode.supportsProMode,
+                        ),
+                        MenuItem.Button.DropDown(
+                            text = stringResource(R.string.reset_equalizer),
+                            icon = painterResource(R.drawable.ic_restart_alt_24dp),
+                            onClick = { showResetEqDialog = true },
+                            dangerous = true,
+                            enabled = eqState.isUsable,
+                        ),
                     ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.share_profiles),
-                        icon = painterResource(R.drawable.ic_share_24dp),
-                        onClick = { showShareProfileDialog = true },
-                        enabled = eqState.isUsable && eqProfiles.isNotEmpty()
-                    ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.export_profiles),
-                        icon = painterResource(R.drawable.ic_file_export_24dp),
-                        onClick = { showExportDialog = true },
-                        enabled = eqState.isUsable && eqProfiles.isNotEmpty()
-                    ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.import_profiles),
-                        icon = painterResource(R.drawable.ic_file_open_24dp),
-                        onClick = { importProfiles(autoEq = false) },
-                        enabled = eqState.isUsable
-                    ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.import_autoeq_profile),
-                        icon = painterResource(R.drawable.ic_graphic_eq_24dp),
-                        onClick = { importProfiles(autoEq = true) },
-                        enabled = eqState.isUsable
-                    ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.set_eq_engine_title),
-                        icon = painterResource(R.drawable.ic_equalizer_24dp),
-                        onClick = { showSetEngineDialog = true },
-                        enabled = !eqState.isDisabledByReason,
-                        visible = EqEngineMode.isSwitchingSupported()
-                    ),
-                    MenuItem.Button.Checkable(
-                        text = stringResource(R.string.eq_pro_mode),
-                        icon = painterResource(R.drawable.ic_instant_mix_24dp),
-                        onCheckedChange = { eqViewModel.setProMode(it) },
-                        isChecked = eqState.proMode,
-                        enabled = eqState.isUsable,
-                        visible = eqState.engineMode.supportsProMode
-                    ),
-                    MenuItem.Button.DropDown(
-                        text = stringResource(R.string.reset_equalizer),
-                        icon = painterResource(R.drawable.ic_restart_alt_24dp),
-                        onClick = { showResetEqDialog = true },
-                        dangerous = true,
-                        enabled = eqState.isUsable
-                    )
-                )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         miniPlayerMargin = miniPlayerMargin.totalMargin,
-        onBackClick = onBackClick
+        onBackClick = onBackClick,
     ) { contentPadding ->
         LazyColumn(
-            contentPadding = PaddingValues(
-                horizontal = if (configuration.isLandscape) 64.dp else 16.dp,
-                vertical = 16.dp
-            ),
+            contentPadding =
+                PaddingValues(
+                    horizontal = if (configuration.isLandscape) 64.dp else 16.dp,
+                    vertical = 16.dp,
+                ),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(contentPadding)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(contentPadding),
         ) {
             if (eqState.isDisabledByReason) {
                 eqState.disableReason?.let {
@@ -609,7 +627,7 @@ fun EqualizerScreen(
                         EmptyView(
                             icon = painterResource(R.drawable.ic_equalizer_24dp),
                             title = stringResource(it.titleRes),
-                            modifier = Modifier.fillParentMaxSize()
+                            modifier = Modifier.fillParentMaxSize(),
                         )
                     }
                 }
@@ -622,7 +640,7 @@ fun EqualizerScreen(
                         enabled = eqState.supported,
                         onClick = {
                             eqViewModel.setEqualizerState(isEnabled = eqState.enabled.not())
-                        }
+                        },
                     )
                 }
 
@@ -631,31 +649,32 @@ fun EqualizerScreen(
                         TitledCard(
                             title = stringResource(R.string.eq_profile_title),
                             icon = painterResource(R.drawable.ic_equalizer_24dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
                         ) { cardContentPadding ->
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.padding(cardContentPadding)
+                                modifier = Modifier.padding(cardContentPadding),
                             ) {
-                                val containerColor = if (eqState.isUsable) {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
-                                }
+                                val containerColor =
+                                    if (eqState.isUsable) {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh
+                                    } else {
+                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+                                    }
                                 val contentColor = contentColorFor(containerColor)
 
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clip(MaterialTheme.shapes.medium)
-                                        .background(containerColor)
-                                        .clickable(
-                                            enabled = eqState.isUsable,
-                                            onClick = { showProfileSelectorDialog = true }
-                                        )
-                                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                                    modifier =
+                                        Modifier
+                                            .fillMaxWidth()
+                                            .clip(MaterialTheme.shapes.medium)
+                                            .background(containerColor)
+                                            .clickable(
+                                                enabled = eqState.isUsable,
+                                                onClick = { showProfileSelectorDialog = true },
+                                            ).padding(horizontal = 16.dp, vertical = 12.dp),
                                 ) {
                                     Text(
                                         text = eqCurrentProfile.getName(context),
@@ -663,38 +682,40 @@ fun EqualizerScreen(
                                         color = contentColor,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     )
 
                                     Icon(
                                         painter = painterResource(R.drawable.ic_arrow_drop_down_24dp),
                                         contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(24.dp),
                                     )
                                 }
 
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     val deleteInteractionSource = remember { MutableInteractionSource() }
                                     val deleteIsPressed by deleteInteractionSource.collectIsPressedAsState()
                                     Button(
                                         onClick = { deleteProfileState = Pair(eqCurrentProfile, true) },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = MaterialTheme.colorScheme.errorContainer,
-                                            contentColor = MaterialTheme.colorScheme.onErrorContainer
-                                        ),
-                                        shape = if (deleteIsPressed) {
-                                            ButtonGroupDefaults.connectedLeadingButtonPressShape
-                                        } else {
-                                            ButtonGroupDefaults.connectedLeadingButtonShape
-                                        },
+                                        colors =
+                                            ButtonDefaults.buttonColors(
+                                                containerColor = MaterialTheme.colorScheme.errorContainer,
+                                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                            ),
+                                        shape =
+                                            if (deleteIsPressed) {
+                                                ButtonGroupDefaults.connectedLeadingButtonPressShape
+                                            } else {
+                                                ButtonGroupDefaults.connectedLeadingButtonShape
+                                            },
                                         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                                         enabled = eqState.isUsable && !eqCurrentProfile.isCustom,
                                         interactionSource = deleteInteractionSource,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     ) {
                                         Icon(painterResource(R.drawable.ic_delete_24dp), null)
                                         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
@@ -705,15 +726,16 @@ fun EqualizerScreen(
                                     val saveIsPressed by saveInteractionSource.collectIsPressedAsState()
                                     Button(
                                         onClick = { showProfileSaverDialog = true },
-                                        shape = if (saveIsPressed) {
-                                            ButtonGroupDefaults.connectedTrailingButtonPressShape
-                                        } else {
-                                            ButtonGroupDefaults.connectedTrailingButtonShape
-                                        },
+                                        shape =
+                                            if (saveIsPressed) {
+                                                ButtonGroupDefaults.connectedTrailingButtonPressShape
+                                            } else {
+                                                ButtonGroupDefaults.connectedTrailingButtonShape
+                                            },
                                         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
                                         enabled = eqState.isUsable && eqCurrentProfile.isCustom,
                                         interactionSource = saveInteractionSource,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     ) {
                                         Icon(painterResource(R.drawable.ic_save_24dp), null)
                                         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
@@ -731,31 +753,33 @@ fun EqualizerScreen(
                             titleEndContent = {
                                 if (eqBandCapabilities.hasMultipleBandConfigurations) {
                                     ShapedText(
-                                        text = stringResource(
-                                            R.string.graphic_eq_band_count,
-                                            eqState.preferredBandCount
-                                        ),
+                                        text =
+                                            stringResource(
+                                                R.string.graphic_eq_band_count,
+                                                eqState.preferredBandCount,
+                                            ),
                                         style = MaterialTheme.typography.bodySmallEmphasized,
                                         containerColor = MaterialTheme.colorScheme.primaryContainer,
                                         shape = CircleShape,
                                         enabled = eqState.isUsable,
                                         onClick = {
                                             showBandCountSelector = showBandCountSelector.not()
-                                        }
+                                        },
                                     )
                                 }
                             },
-                            color = MaterialTheme.colorScheme.surfaceContainerLow
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
                         ) { cardContentPadding ->
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .wrapContentHeight()
-                                    .padding(cardContentPadding)
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .wrapContentHeight()
+                                        .padding(cardContentPadding),
                             ) {
                                 AnimatedVisibility(
-                                    visible = eqState.enabled && showBandCountSelector
+                                    visible = eqState.enabled && showBandCountSelector,
                                 ) {
                                     ButtonGroup(
                                         onSelected = { newBandCount ->
@@ -765,10 +789,11 @@ fun EqualizerScreen(
                                         },
                                         buttonItems = availableBandCounts,
                                         buttonStateResolver = { it == eqState.preferredBandCount },
-                                        modifier = Modifier.padding(
-                                            vertical = 8.dp,
-                                            horizontal = 16.dp
-                                        )
+                                        modifier =
+                                            Modifier.padding(
+                                                vertical = 8.dp,
+                                                horizontal = 16.dp,
+                                            ),
                                     )
                                 }
 
@@ -777,10 +802,11 @@ fun EqualizerScreen(
                                         bands = bandResponseValues,
                                         valueRange = eqBandCapabilities.bandRange,
                                         enabled = eqState.isUsable,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(100.dp)
-                                            .padding(vertical = 8.dp)
+                                        modifier =
+                                            Modifier
+                                                .fillMaxWidth()
+                                                .height(100.dp)
+                                                .padding(vertical = 8.dp),
                                     )
                                     eqBands.forEachIndexed { index, band ->
                                         EQBandSlider(
@@ -790,9 +816,9 @@ fun EqualizerScreen(
                                             onValueChangeFinished = { bandGain ->
                                                 eqViewModel.setCustomProfileBandGain(
                                                     band.index,
-                                                    bandGain
+                                                    bandGain,
                                                 )
-                                            }
+                                            },
                                         )
                                     }
                                 } else {
@@ -800,7 +826,7 @@ fun EqualizerScreen(
                                         text = stringResource(R.string.eq_empty_bands),
                                         style = MaterialTheme.typography.bodyMedium,
                                         textAlign = TextAlign.Center,
-                                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                                        modifier = Modifier.align(Alignment.CenterHorizontally),
                                     )
                                 }
                             }
@@ -818,12 +844,12 @@ fun EqualizerScreen(
                                 title = stringResource(R.string.virtualizer_label),
                                 icon = painterResource(R.drawable.ic_headphones_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable
+                                enabled = eqState.isUsable,
                             ) { cardContentPadding ->
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding)
+                                    modifier = Modifier.padding(cardContentPadding),
                                 ) {
                                     Slider(
                                         steps = 10,
@@ -834,7 +860,7 @@ fun EqualizerScreen(
                                         },
                                         valueRange = virtualizer.strengthRange,
                                         enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     )
 
                                     EQValueText(
@@ -856,12 +882,12 @@ fun EqualizerScreen(
                                 title = stringResource(R.string.bassboost_label),
                                 icon = painterResource(R.drawable.ic_edit_audio_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable
+                                enabled = eqState.isUsable,
                             ) { cardContentPadding ->
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding)
+                                    modifier = Modifier.padding(cardContentPadding),
                                 ) {
                                     Slider(
                                         steps = 10,
@@ -872,11 +898,11 @@ fun EqualizerScreen(
                                         },
                                         valueRange = bassBoost.strengthRange,
                                         enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     )
 
                                     EQValueText(
-                                        text = "${((bassBoostStrength * 100) / bassBoost.strengthRange.endInclusive).toInt()}%"
+                                        text = "${((bassBoostStrength * 100) / bassBoost.strengthRange.endInclusive).toInt()}%",
                                     )
                                 }
                             }
@@ -894,12 +920,12 @@ fun EqualizerScreen(
                                 title = stringResource(R.string.loudness_enhancer),
                                 icon = painterResource(R.drawable.ic_volume_up_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable
+                                enabled = eqState.isUsable,
                             ) { cardContentPadding ->
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                                     verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding)
+                                    modifier = Modifier.padding(cardContentPadding),
                                 ) {
                                     Slider(
                                         value = loudnessGainValue,
@@ -911,11 +937,11 @@ fun EqualizerScreen(
                                         },
                                         valueRange = loudnessGain.gainRange,
                                         enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f)
+                                        modifier = Modifier.weight(1f),
                                     )
 
                                     EQValueText(
-                                        text = "%.1f dB".format(Locale.ROOT, loudnessGainValue)
+                                        text = "%.1f dB".format(Locale.ROOT, loudnessGainValue),
                                     )
                                 }
                             }
@@ -930,11 +956,11 @@ fun EqualizerScreen(
                                 title = stringResource(R.string.compressor_label),
                                 icon = painterResource(R.drawable.ic_instant_mix_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable
+                                enabled = eqState.isUsable,
                             ) { cardContentPadding ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(cardContentPadding)
+                                    modifier = Modifier.padding(cardContentPadding),
                                 ) {
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_threshold),
@@ -942,7 +968,7 @@ fun EqualizerScreen(
                                         range = compressor.thresholdRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(threshold = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_ratio),
@@ -950,7 +976,7 @@ fun EqualizerScreen(
                                         range = compressor.ratioRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(ratio = it) },
                                         format = "%.1f:1",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_attack_time),
@@ -958,7 +984,7 @@ fun EqualizerScreen(
                                         range = compressor.attackTimeRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(attackTimeMs = it) },
                                         unit = " ms",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_release_time),
@@ -966,7 +992,7 @@ fun EqualizerScreen(
                                         range = compressor.releaseTimeRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(releaseTimeMs = it) },
                                         unit = " ms",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_knee_width),
@@ -974,7 +1000,7 @@ fun EqualizerScreen(
                                         range = compressor.kneeWidthRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(kneeWidth = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_noise_gate),
@@ -982,7 +1008,7 @@ fun EqualizerScreen(
                                         range = compressor.noiseGateThresholdRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(noiseGateThreshold = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_pre_gain),
@@ -990,7 +1016,7 @@ fun EqualizerScreen(
                                         range = compressor.preGainRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(preGain = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_post_gain),
@@ -998,13 +1024,13 @@ fun EqualizerScreen(
                                         range = compressor.postGainRange,
                                         onValueChangeFinished = { eqViewModel.setCompressor(postGain = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     ResetButton(
                                         onClick = {
                                             eqViewModel.resetCompressor()
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -1019,11 +1045,11 @@ fun EqualizerScreen(
                                 title = stringResource(R.string.limiter_label),
                                 icon = painterResource(R.drawable.ic_instant_mix_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable
+                                enabled = eqState.isUsable,
                             ) { cardContentPadding ->
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(cardContentPadding)
+                                    modifier = Modifier.padding(cardContentPadding),
                                 ) {
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_threshold),
@@ -1031,7 +1057,7 @@ fun EqualizerScreen(
                                         range = limiter.thresholdRange,
                                         onValueChangeFinished = { eqViewModel.setLimiter(threshold = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_ratio),
@@ -1039,7 +1065,7 @@ fun EqualizerScreen(
                                         range = limiter.ratioRange,
                                         onValueChangeFinished = { eqViewModel.setLimiter(ratio = it) },
                                         format = "%.1f:1",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_attack_time),
@@ -1047,7 +1073,7 @@ fun EqualizerScreen(
                                         range = limiter.attackTimeRange,
                                         onValueChangeFinished = { eqViewModel.setLimiter(attackTimeMs = it) },
                                         unit = " ms",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_release_time),
@@ -1055,7 +1081,7 @@ fun EqualizerScreen(
                                         range = limiter.releaseTimeRange,
                                         onValueChangeFinished = { eqViewModel.setLimiter(releaseTimeMs = it) },
                                         unit = " ms",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.eq_post_gain),
@@ -1063,13 +1089,13 @@ fun EqualizerScreen(
                                         range = limiter.postGainRange,
                                         onValueChangeFinished = { eqViewModel.setLimiter(postGain = it) },
                                         unit = " dB",
-                                        enabled = eqState.isUsable
+                                        enabled = eqState.isUsable,
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     ResetButton(
                                         onClick = {
                                             eqViewModel.resetLimiter()
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -1082,10 +1108,10 @@ fun EqualizerScreen(
                         title = stringResource(R.string.replay_gain),
                         icon = painterResource(R.drawable.ic_sound_sampler_24dp),
                         color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     ) { cardContentPadding ->
                         Column(
-                            modifier = Modifier.padding(cardContentPadding)
+                            modifier = Modifier.padding(cardContentPadding),
                         ) {
                             ReplayGainModeSelector(replayGain) {
                                 eqViewModel.setReplayGain(mode = it)
@@ -1093,11 +1119,11 @@ fun EqualizerScreen(
 
                             AnimatedVisibility(
                                 visible = replayGain.mode.isOn,
-                                modifier = Modifier.padding(top = 8.dp)
+                                modifier = Modifier.padding(top = 8.dp),
                             ) {
                                 Column(
                                     horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 ) {
                                     ParameterSlider(
                                         label = stringResource(R.string.rg_with_tag),
@@ -1107,7 +1133,7 @@ fun EqualizerScreen(
                                             eqViewModel.setReplayGain(preamp = it)
                                         },
                                         format = "%+.1f",
-                                        unit = " dB"
+                                        unit = " dB",
                                     )
                                     ParameterSlider(
                                         label = stringResource(R.string.rg_without_tag),
@@ -1117,16 +1143,16 @@ fun EqualizerScreen(
                                             eqViewModel.setReplayGain(preampWithoutGain = it)
                                         },
                                         format = "%+.1f",
-                                        unit = " dB"
+                                        unit = " dB",
                                     )
                                     Spacer(Modifier.height(4.dp))
                                     ResetButton(
                                         onClick = {
                                             eqViewModel.setReplayGain(
                                                 preamp = 0f,
-                                                preampWithoutGain = 0f
+                                                preampWithoutGain = 0f,
                                             )
-                                        }
+                                        },
                                     )
                                 }
                             }
@@ -1152,9 +1178,10 @@ private fun EQBandSlider(
     Row(
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
     ) {
         Text(
             text = band.readableFrequency,
@@ -1162,7 +1189,7 @@ private fun EQBandSlider(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             textAlign = TextAlign.Center,
-            modifier = Modifier.width(48.dp)
+            modifier = Modifier.width(48.dp),
         )
 
         Slider(
@@ -1174,11 +1201,11 @@ private fun EQBandSlider(
             onValueChangeFinished = { onValueChangeFinished(bandLevel) },
             valueRange = band.valueRange,
             enabled = enabled,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
         )
 
         EQValueText(
-            text = "%+.1f dB".format(Locale.ROOT, bandLevel)
+            text = "%+.1f dB".format(Locale.ROOT, bandLevel),
         )
     }
 }
@@ -1195,19 +1222,19 @@ private fun ProfileSelectorDialog(
     onDeleteEqProfile: (EqProfile) -> Unit,
     onDeleteAutoEqProfile: (AutoEqProfile) -> Unit,
     onImportAutoEqProfile: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var profilesMode by remember { mutableStateOf(ProfilesMode.EQ) }
 
     ModalBottomSheet(
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 24.dp)
+            modifier = Modifier.padding(horizontal = 24.dp),
         ) {
             Text(
                 text = stringResource(R.string.select_profile),
-                style = MaterialTheme.typography.headlineSmallEmphasized
+                style = MaterialTheme.typography.headlineSmallEmphasized,
             )
 
             Spacer(Modifier.height(16.dp))
@@ -1216,7 +1243,7 @@ private fun ProfileSelectorDialog(
                 onSelected = { profilesMode = it },
                 buttonItems = ProfilesMode.entries,
                 buttonTextResolver = { stringResource(it.nameRes) },
-                buttonStateResolver = { it == profilesMode }
+                buttonStateResolver = { it == profilesMode },
             )
 
             Spacer(Modifier.height(8.dp))
@@ -1225,16 +1252,16 @@ private fun ProfileSelectorDialog(
                 ProfilesMode.EQ -> {
                     LazyColumn(
                         contentPadding = PaddingValues(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                        verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                     ) {
-                        itemsIndexed(profiles) { index, profile ->
+                        itemsIndexed(profiles, key = { _, profile -> profile.name }) { index, profile ->
                             EqualizerProfileItem(
                                 shapes = ListItemDefaults.segmentedShapes(index, profiles.size),
                                 profile = profile,
                                 isCurrentProfile = profile == selectedProfile,
                                 onClick = { onSelectEqProfile(profile) },
                                 onEditClick = { onEditEqProfile(profile) },
-                                onDeleteClick = { onDeleteEqProfile(profile) }
+                                onDeleteClick = { onDeleteEqProfile(profile) },
                             )
                         }
                     }
@@ -1249,25 +1276,25 @@ private fun ProfileSelectorDialog(
                                 Button(onClick = onImportAutoEqProfile) {
                                     Icon(
                                         painter = painterResource(R.drawable.ic_file_open_24dp),
-                                        contentDescription = null
+                                        contentDescription = null,
                                     )
                                     Spacer(Modifier.size(ButtonDefaults.IconSpacing))
                                     Text(stringResource(R.string.import_autoeq_profile))
                                 }
                             },
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize(),
                         )
                     } else {
                         LazyColumn(
                             contentPadding = PaddingValues(bottom = 24.dp),
-                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
+                            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
                         ) {
-                            itemsIndexed(autoEqProfiles) { index, profile ->
+                            itemsIndexed(autoEqProfiles, key = { _, profile -> profile.name }) { index, profile ->
                                 AutoEqProfileItem(
                                     shapes = ListItemDefaults.segmentedShapes(index, autoEqProfiles.size),
                                     profile = profile,
                                     onClick = { onSelectAutoEqProfile(profile) },
-                                    onDeleteClick = { onDeleteAutoEqProfile(profile) }
+                                    onDeleteClick = { onDeleteAutoEqProfile(profile) },
                                 )
                             }
                         }
@@ -1281,7 +1308,7 @@ private fun ProfileSelectorDialog(
 @Composable
 private fun ProfileSaverDialog(
     onConfirm: (profileName: String, allowReplace: Boolean, associatedDevices: Set<AudioDeviceType>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var allowReplace by remember { mutableStateOf(true) }
     val associatedDevices = remember { mutableStateSetOf<AudioDeviceType>() }
@@ -1296,7 +1323,7 @@ private fun ProfileSaverDialog(
             DialogCheckBox(
                 text = stringResource(R.string.replace_profile_with_same_name),
                 isChecked = allowReplace,
-                onValueChange = { allowReplace = it }
+                onValueChange = { allowReplace = it },
             )
 
             Spacer(Modifier.height(4.dp))
@@ -1304,17 +1331,19 @@ private fun ProfileSaverDialog(
             ProfileAssociationView(
                 isChecked = { associatedDevices.contains(it) },
                 onDeviceStateChange = { device, isChecked ->
-                    if (isChecked)
+                    if (isChecked) {
                         associatedDevices.add(device)
-                    else associatedDevices.remove(device)
-                }
+                    } else {
+                        associatedDevices.remove(device)
+                    }
+                },
             )
         },
         confirmButton = stringResource(R.string.action_save),
         onConfirm = { profileName ->
             onConfirm(profileName, allowReplace, associatedDevices)
         },
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     )
 }
 
@@ -1322,7 +1351,7 @@ private fun ProfileSaverDialog(
 private fun ProfileEditorDialog(
     profile: EqProfile,
     onConfirm: (String, Set<AudioDeviceType>) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     val mutableAssociations = remember { mutableStateSetOf(*profile.associations.toTypedArray()) }
 
@@ -1337,15 +1366,17 @@ private fun ProfileEditorDialog(
             ProfileAssociationView(
                 isChecked = { mutableAssociations.contains(it) },
                 onDeviceStateChange = { device, isChecked ->
-                    if (isChecked)
+                    if (isChecked) {
                         mutableAssociations.add(device)
-                    else mutableAssociations.remove(device)
-                }
+                    } else {
+                        mutableAssociations.remove(device)
+                    }
+                },
             )
         },
         confirmButton = stringResource(R.string.action_save),
         onConfirm = { input -> onConfirm(input, mutableAssociations) },
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     )
 }
 
@@ -1357,32 +1388,33 @@ private fun ProfileCheckDialog(
     confirmButton: String,
     profiles: List<EqProfile>,
     onDismiss: () -> Unit,
-    onConfirm: (List<EqProfile>) -> Unit
+    onConfirm: (List<EqProfile>) -> Unit,
 ) {
-    val selectedProfiles = remember {
-        mutableStateListOf<EqProfile>()
-            .apply { addAll(profiles.filterNot { it.isCustom }) }
-    }
+    val selectedProfiles =
+        remember {
+            mutableStateListOf<EqProfile>()
+                .apply { addAll(profiles.filterNot { it.isCustom }) }
+        }
 
     AlertDialog(
         icon = {
             Icon(
                 painter = icon,
-                contentDescription = null
+                contentDescription = null,
             )
         },
         title = { Text(title) },
         text = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(
                     text = message,
-                    style = MaterialTheme.typography.bodyMedium
+                    style = MaterialTheme.typography.bodyMedium,
                 )
 
                 LazyColumn {
-                    items(profiles) { profile ->
+                    items(profiles, key = { it.name }) { profile ->
                         if (profile.isCustom.not()) {
                             val isChecked = selectedProfiles.contains(profile)
                             DialogListItemWithCheckBox(
@@ -1396,7 +1428,7 @@ private fun ProfileCheckDialog(
                                 },
                                 isSelected = isChecked,
                                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                                modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                                modifier = Modifier.clip(RoundedCornerShape(8.dp)),
                             )
                         }
                     }
@@ -1406,7 +1438,7 @@ private fun ProfileCheckDialog(
         confirmButton = {
             Button(
                 onClick = { onConfirm(selectedProfiles) },
-                enabled = selectedProfiles.isNotEmpty()
+                enabled = selectedProfiles.isNotEmpty(),
             ) {
                 Text(confirmButton)
             }
@@ -1416,7 +1448,7 @@ private fun ProfileCheckDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     )
 }
 
@@ -1424,29 +1456,32 @@ private fun ProfileCheckDialog(
 private fun ProfileAssociationView(
     isChecked: (AudioDeviceType) -> Boolean,
     onDeviceStateChange: (AudioDeviceType, Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     OutlinedCard(
         shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
-        ),
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp)
+        colors =
+            CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainer,
+            ),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp),
     ) {
         Text(
             text = stringResource(R.string.use_with_devices_title),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier
-                .padding(horizontal = 12.dp)
-                .padding(top = 12.dp)
+            modifier =
+                Modifier
+                    .padding(horizontal = 12.dp)
+                    .padding(top = 12.dp),
         )
 
         HorizontalDivider(
-            modifier = Modifier.padding(top = 8.dp)
+            modifier = Modifier.padding(top = 8.dp),
         )
 
         AudioDeviceType.entries
@@ -1455,35 +1490,35 @@ private fun ProfileAssociationView(
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .toggleable(
-                            value = isChecked(device),
-                            onValueChange = { isChecked ->
-                                onDeviceStateChange(device, isChecked)
-                            },
-                            role = Role.Checkbox
-                        )
-                        .padding(12.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = isChecked(device),
+                                onValueChange = { isChecked ->
+                                    onDeviceStateChange(device, isChecked)
+                                },
+                                role = Role.Checkbox,
+                            ).padding(12.dp),
                 ) {
                     Icon(
                         painter = painterResource(device.iconRes),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
                     )
 
                     Column(Modifier.weight(1f)) {
                         Text(
                             text = stringResource(device.nameRes),
                             style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1
+                            maxLines = 1,
                         )
                     }
 
                     Checkbox(
                         checked = isChecked(device),
-                        onCheckedChange = null
+                        onCheckedChange = null,
                     )
                 }
             }
@@ -1505,13 +1540,14 @@ private fun EqualizerProfileItem(
         onClick = onClick,
         selected = isCurrentProfile,
         shapes = shapes,
-        colors = ListItemDefaults.segmentedColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
+        colors =
+            ListItemDefaults.segmentedColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         leadingContent = {
             Icon(
                 painter = painterResource(R.drawable.ic_equalizer_24dp),
-                contentDescription = null
+                contentDescription = null,
             )
         },
         trailingContent = {
@@ -1520,13 +1556,13 @@ private fun EqualizerProfileItem(
                     IconButton(onClick = onEditClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_edit_24dp),
-                            contentDescription = "Edit profile ${profile.getName(LocalContext.current)}"
+                            contentDescription = "Edit profile ${profile.getName(LocalContext.current)}",
                         )
                     }
                     IconButton(onClick = onDeleteClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_delete_24dp),
-                            contentDescription = "Delete profile ${profile.getName(LocalContext.current)}"
+                            contentDescription = "Delete profile ${profile.getName(LocalContext.current)}",
                         )
                     }
                 }
@@ -1538,16 +1574,16 @@ private fun EqualizerProfileItem(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                overflow = TextOverflow.Ellipsis,
             )
         },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Text(
             text = profile.getName(LocalContext.current),
             style = MaterialTheme.typography.bodyLarge,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -1564,30 +1600,31 @@ private fun AutoEqProfileItem(
     SegmentedListItem(
         onClick = onClick,
         shapes = shapes,
-        colors = ListItemDefaults.segmentedColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
+        colors =
+            ListItemDefaults.segmentedColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
         leadingContent = {
             Icon(
                 painter = painterResource(R.drawable.ic_equalizer_24dp),
-                contentDescription = null
+                contentDescription = null,
             )
         },
         trailingContent = {
             IconButton(onClick = onDeleteClick) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete_24dp),
-                    contentDescription = "Delete profile ${profile.name}"
+                    contentDescription = "Delete profile ${profile.name}",
                 )
             }
         },
-        modifier = modifier
+        modifier = modifier,
     ) {
         Text(
             text = profile.name,
             style = MaterialTheme.typography.bodyLarge,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -1596,7 +1633,7 @@ private fun AutoEqProfileItem(
 private fun EngineSelectorDialog(
     currentEngine: EqEngineMode,
     onConfirm: (EqEngineMode) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var selectedMode by remember { mutableStateOf(currentEngine) }
 
@@ -1604,7 +1641,7 @@ private fun EngineSelectorDialog(
         icon = {
             Icon(
                 painter = painterResource(R.drawable.ic_equalizer_24dp),
-                contentDescription = null
+                contentDescription = null,
             )
         },
         title = { Text(stringResource(R.string.set_eq_engine_title)) },
@@ -1617,7 +1654,7 @@ private fun EngineSelectorDialog(
                         title = stringResource(mode.titleRes),
                         subtitle = stringResource(mode.descriptionRes),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                        modifier = Modifier.clip(RoundedCornerShape(8.dp)),
                     )
                 }
 
@@ -1628,7 +1665,7 @@ private fun EngineSelectorDialog(
                 item {
                     TipView(
                         text = stringResource(R.string.set_eq_engine_reset_warning),
-                        containerColor = MaterialTheme.colorScheme.errorContainer
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
                     )
                 }
             }
@@ -1643,24 +1680,26 @@ private fun EngineSelectorDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
-        onDismissRequest = onDismiss
+        onDismissRequest = onDismiss,
     )
 }
 
 @Composable
 private fun ReplayGainModeSelector(
     replayGain: ReplayGainState,
-    onModeSelected: (ReplayGainMode) -> Unit
+    onModeSelected: (ReplayGainMode) -> Unit,
 ) {
     ButtonGroup(
         onSelected = onModeSelected,
         buttonItems = replayGain.availableModes.toList(),
         buttonStateResolver = { mode -> mode == replayGain.mode },
         buttonIconResolver = { mode, isChecked ->
-            if (isChecked) when (mode) {
-                ReplayGainMode.Album -> painterResource(R.drawable.ic_album_24dp)
-                ReplayGainMode.Track -> painterResource(R.drawable.ic_music_note_24dp)
-                else -> null
+            if (isChecked) {
+                when (mode) {
+                    ReplayGainMode.Album -> painterResource(R.drawable.ic_album_24dp)
+                    ReplayGainMode.Track -> painterResource(R.drawable.ic_music_note_24dp)
+                    else -> null
+                }
             } else {
                 null
             }
@@ -1672,7 +1711,7 @@ private fun ReplayGainModeSelector(
                 else -> stringResource(R.string.label_none)
             }
         },
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
@@ -1684,25 +1723,25 @@ private fun ParameterSlider(
     onValueChangeFinished: (Float) -> Unit,
     format: String = "%.1f",
     unit: String = "",
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     var paramLevel by remember(value) {
         mutableFloatStateOf(value)
     }
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.padding(vertical = 8.dp)
+        modifier = Modifier.padding(vertical = 8.dp),
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Ellipsis,
         )
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Slider(
                 value = paramLevel,
@@ -1710,11 +1749,11 @@ private fun ParameterSlider(
                 onValueChangeFinished = { onValueChangeFinished(paramLevel) },
                 valueRange = range,
                 enabled = enabled,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
 
             EQValueText(
-                text = (format + unit).format(Locale.ROOT, paramLevel)
+                text = (format + unit).format(Locale.ROOT, paramLevel),
             )
         }
     }
@@ -1723,7 +1762,7 @@ private fun ParameterSlider(
 @Composable
 private fun EQValueText(
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Text(
         text = text,
@@ -1732,7 +1771,7 @@ private fun EQValueText(
         maxLines = 1,
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
-        modifier = modifier.width(56.dp)
+        modifier = modifier.width(56.dp),
     )
 }
 
@@ -1741,7 +1780,7 @@ private fun ResetButton(onClick: () -> Unit) {
     TextButton(onClick = onClick) {
         Icon(
             painter = painterResource(R.drawable.ic_restart_alt_24dp),
-            contentDescription = null
+            contentDescription = null,
         )
         Spacer(Modifier.width(ButtonDefaults.IconSpacing))
         Text(stringResource(R.string.reset_action))

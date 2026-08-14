@@ -45,7 +45,6 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
  * @author SifouByte
  */
 class EditPlaylistDialog : DialogFragment() {
-
     private val libraryViewModel: LibraryViewModel by activityViewModel()
     private val playlistEntity: PlaylistEntity by extraNotNull(EXTRA_PLAYLIST)
 
@@ -54,12 +53,13 @@ class EditPlaylistDialog : DialogFragment() {
 
     private var selectedImageUri: String? = null
 
-    private val pickMedia = registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        uri?.let {
-            selectedImageUri = it.toString()
-            loadImage(it)
+    private val pickMedia =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            uri?.let {
+                selectedImageUri = it.toString()
+                loadImage(it)
+            }
         }
-    }
 
     private fun loadImage(uri: Uri?) {
         binding.playlistCoverImage.load(uri) {
@@ -89,8 +89,14 @@ class EditPlaylistDialog : DialogFragment() {
             .setTitle(R.string.action_edit_playlist)
             .setView(binding.root)
             .setPositiveButton(R.string.action_save) { _, _ ->
-                val playlistName = binding.playlistNameEditText.text?.toString()?.trim()
-                val description = binding.playlistDescriptionEditText.text?.toString()?.trim()
+                val playlistName =
+                    binding.playlistNameEditText.text
+                        ?.toString()
+                        ?.trim()
+                val description =
+                    binding.playlistDescriptionEditText.text
+                        ?.toString()
+                        ?.trim()
 
                 if (playlistName.isNullOrEmpty()) {
                     showToast(R.string.playlist_name_cannot_be_empty)
@@ -101,13 +107,12 @@ class EditPlaylistDialog : DialogFragment() {
                     playlist = playlistEntity,
                     newName = playlistName,
                     newImageUri = selectedImageUri,
-                    newDescription = description?.ifEmpty { null }
+                    newDescription = description?.ifEmpty { null },
                 )
 
                 libraryViewModel.forceReload(ReloadType.Playlists)
                 showToast(R.string.playlist_updated)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .create()
     }
 
@@ -119,7 +124,6 @@ class EditPlaylistDialog : DialogFragment() {
     companion object {
         private const val EXTRA_PLAYLIST = "extra_playlist"
 
-        fun create(playlist: PlaylistEntity) =
-            EditPlaylistDialog().withArgs { putParcelable(EXTRA_PLAYLIST, playlist) }
+        fun create(playlist: PlaylistEntity) = EditPlaylistDialog().withArgs { putParcelable(EXTRA_PLAYLIST, playlist) }
     }
 }

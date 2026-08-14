@@ -28,44 +28,52 @@ import com.ssilencce.util.Preferences
 
 interface AlbumRepository {
     fun album(albumId: Long): Album
+
     fun albums(): List<Album>
+
     fun albums(query: String): List<Album>
+
     fun similarAlbums(album: Album): List<Album>
 }
 
-class RealAlbumRepository(private val songRepository: RealSongRepository) : AlbumRepository {
-
+class RealAlbumRepository(
+    private val songRepository: RealSongRepository,
+) : AlbumRepository {
     override fun album(albumId: Long): Album {
-        val cursor = songRepository.makeSongCursor(
-            AudioColumns.ALBUM_ID + "=?",
-            arrayOf(albumId.toString()),
-            DEFAULT_SORT_ORDER
-        )
-        val songs = with(SongSortMode.AlbumSongs) {
-            songRepository.songs(cursor).sorted()
-        }
+        val cursor =
+            songRepository.makeSongCursor(
+                AudioColumns.ALBUM_ID + "=?",
+                arrayOf(albumId.toString()),
+                DEFAULT_SORT_ORDER,
+            )
+        val songs =
+            with(SongSortMode.AlbumSongs) {
+                songRepository.songs(cursor).sorted()
+            }
         return getAlbumFromSongs(albumId, songs)
     }
 
     override fun albums(query: String): List<Album> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(
-                selection = "${AudioColumns.ALBUM} LIKE ? OR ${AudioColumns.ALBUM_ARTIST} LIKE ?",
-                selectionValues = arrayOf("%$query%", "%$query"),
-                sortOrder = DEFAULT_SORT_ORDER
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(
+                    selection = "${AudioColumns.ALBUM} LIKE ? OR ${AudioColumns.ALBUM_ARTIST} LIKE ?",
+                    selectionValues = arrayOf("%$query%", "%$query"),
+                    sortOrder = DEFAULT_SORT_ORDER,
+                ),
             )
-        )
         return splitIntoAlbums(
             with(SongSortMode.AlbumSongs) {
                 songs.sorted()
-            }
+            },
         )
     }
 
     override fun albums(): List<Album> {
-        val songs = songRepository.songs(
-            songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER)
-        )
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(null, null, DEFAULT_SORT_ORDER),
+            )
         val minSongCount = Preferences.minimumSongCountForAlbum
         return splitIntoAlbums(songs).filter {
             it.songCount >= minSongCount
@@ -73,19 +81,20 @@ class RealAlbumRepository(private val songRepository: RealSongRepository) : Albu
     }
 
     override fun similarAlbums(album: Album): List<Album> {
-        val songCursor = if (!album.albumArtistName.isNullOrEmpty()) {
-            songRepository.makeSongCursor(
-                "${AudioColumns.ALBUM_ARTIST} = ? AND ${AudioColumns.ALBUM_ID} != ?",
-                arrayOf(album.albumArtistName, album.id.toString()),
-                DEFAULT_SORT_ORDER
-            )
-        } else {
-            songRepository.makeSongCursor(
-                "${AudioColumns.ARTIST_ID} = ? AND ${AudioColumns.ALBUM_ID} != ?",
-                arrayOf(album.artistId.toString(), album.id.toString()),
-                DEFAULT_SORT_ORDER
-            )
-        }
+        val songCursor =
+            if (!album.albumArtistName.isNullOrEmpty()) {
+                songRepository.makeSongCursor(
+                    "${AudioColumns.ALBUM_ARTIST} = ? AND ${AudioColumns.ALBUM_ID} != ?",
+                    arrayOf(album.albumArtistName, album.id.toString()),
+                    DEFAULT_SORT_ORDER,
+                )
+            } else {
+                songRepository.makeSongCursor(
+                    "${AudioColumns.ARTIST_ID} = ? AND ${AudioColumns.ALBUM_ID} != ?",
+                    arrayOf(album.artistId.toString(), album.id.toString()),
+                    DEFAULT_SORT_ORDER,
+                )
+            }
         val minSongCount = Preferences.minimumSongCountForAlbum
         val songs = songRepository.songs(songCursor)
         return splitIntoAlbums(songs, sortMode = AlbumSortMode.SimilarAlbums).filter {
@@ -96,15 +105,20 @@ class RealAlbumRepository(private val songRepository: RealSongRepository) : Albu
     fun splitIntoAlbums(
         songs: List<Song>,
         sorted: Boolean = true,
-        sortMode: AlbumSortMode = AlbumSortMode.AllAlbums
+        sortMode: AlbumSortMode = AlbumSortMode.AllAlbums,
     ): List<Album> {
-        val grouped = songs.groupBy { it.albumId }
-            .map { getAlbumFromSongs(it.key, it.value) }
+        val grouped =
+            songs
+                .groupBy { it.albumId }
+                .map { getAlbumFromSongs(it.key, it.value) }
         if (!sorted) return grouped
         return with(sortMode) { grouped.sorted() }
     }
 
-    private fun getAlbumFromSongs(id: Long, songs: List<Song>): Album {
+    private fun getAlbumFromSongs(
+        id: Long,
+        songs: List<Song>,
+    ): Album {
         var artistName: String? = null
         var albumArtistName: String? = null
         var minYear = Int.MAX_VALUE
@@ -136,7 +150,7 @@ class RealAlbumRepository(private val songRepository: RealSongRepository) : Albu
             albumArtistName = albumArtistName,
             year = if (minYear == Int.MAX_VALUE) 0 else minYear,
             firstSongIndex = firstSongIndex.coerceAtLeast(0),
-            songs = songs
+            songs = songs,
         )
     }
 

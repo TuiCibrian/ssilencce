@@ -30,52 +30,59 @@ import com.ssilencce.util.Preferences
 /**
  * @author Christians M. A. (mardous)
  */
-class ThemePreference @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle
-) : Preference(context, attrs, defStyleAttr), MaterialButtonToggleGroup.OnButtonCheckedListener {
+class ThemePreference
+    @JvmOverloads
+    constructor(
+        context: Context,
+        attrs: AttributeSet? = null,
+        defStyleAttr: Int = androidx.preference.R.attr.preferenceStyle,
+    ) : Preference(context, attrs, defStyleAttr),
+        MaterialButtonToggleGroup.OnButtonCheckedListener {
+        var customCallback: Callback? = null
 
-    var customCallback: Callback? = null
+        private var widgetView: View? = null
+        private val selectorIds =
+            hashMapOf(
+                GeneralTheme.LIGHT to R.id.lightTheme,
+                GeneralTheme.DARK to R.id.darkTheme,
+                GeneralTheme.AUTO to R.id.systemDefault,
+            )
 
-    private var widgetView: View? = null
-    private val selectorIds = hashMapOf(
-        GeneralTheme.LIGHT to R.id.lightTheme,
-        GeneralTheme.DARK to R.id.darkTheme,
-        GeneralTheme.AUTO to R.id.systemDefault
-    )
+        override fun onBindViewHolder(holder: PreferenceViewHolder) {
+            super.onBindViewHolder(holder)
+            // Disable ripple effect
+            holder.itemView.background = null
 
-    override fun onBindViewHolder(holder: PreferenceViewHolder) {
-        super.onBindViewHolder(holder)
-        // Disable ripple effect
-        holder.itemView.background = null
-
-        val generalTheme = Preferences.generalTheme
-        widgetView = holder.findViewById(android.R.id.widget_frame)
-        widgetView?.findViewById<MaterialButtonToggleGroup>(R.id.buttonGroup)?.apply {
-            isEnabled = (generalTheme != GeneralTheme.BLACK)
-            check(generalTheme.let { selectorIds[it] ?: R.id.systemDefault })
-            addOnButtonCheckedListener(this@ThemePreference)
-        }
-    }
-
-    override fun onPrepareForRemoval() {
-        super.onPrepareForRemoval()
-        customCallback = null
-        widgetView = null
-    }
-
-    override fun onButtonChecked(group: MaterialButtonToggleGroup, checkedId: Int, isChecked: Boolean) {
-        if (isChecked) {
-            when (checkedId) {
-                R.id.lightTheme -> customCallback?.onThemeSelected(GeneralTheme.LIGHT)
-                R.id.darkTheme -> customCallback?.onThemeSelected(GeneralTheme.DARK)
-                R.id.systemDefault -> customCallback?.onThemeSelected(GeneralTheme.AUTO)
+            val generalTheme = Preferences.generalTheme
+            widgetView = holder.findViewById(android.R.id.widget_frame)
+            widgetView?.findViewById<MaterialButtonToggleGroup>(R.id.buttonGroup)?.apply {
+                isEnabled = (generalTheme != GeneralTheme.BLACK)
+                check(generalTheme.let { selectorIds[it] ?: R.id.systemDefault })
+                addOnButtonCheckedListener(this@ThemePreference)
             }
         }
-    }
 
-    interface Callback {
-        fun onThemeSelected(themeName: String)
+        override fun onPrepareForRemoval() {
+            super.onPrepareForRemoval()
+            customCallback = null
+            widgetView = null
+        }
+
+        override fun onButtonChecked(
+            group: MaterialButtonToggleGroup,
+            checkedId: Int,
+            isChecked: Boolean,
+        ) {
+            if (isChecked) {
+                when (checkedId) {
+                    R.id.lightTheme -> customCallback?.onThemeSelected(GeneralTheme.LIGHT)
+                    R.id.darkTheme -> customCallback?.onThemeSelected(GeneralTheme.DARK)
+                    R.id.systemDefault -> customCallback?.onThemeSelected(GeneralTheme.AUTO)
+                }
+            }
+        }
+
+        interface Callback {
+            fun onThemeSelected(themeName: String)
+        }
     }
-}
