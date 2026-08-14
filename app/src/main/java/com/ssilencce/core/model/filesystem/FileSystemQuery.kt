@@ -28,18 +28,15 @@ class FileSystemQuery(
     val path: String?,
     val parentPath: String?,
     val children: List<FileSystemItem>,
-    val isStorageRoot: Boolean = false
+    val isStorageRoot: Boolean = false,
 ) : KoinComponent {
-
     constructor(children: List<FileSystemItem>) : this(null, null, null, children)
 
     val isFlatView: Boolean = path.isNullOrEmpty()
 
     val canGoUp: Boolean = !parentPath.isNullOrEmpty() && !isFlatView && !isStorageRoot
 
-    fun getSortedChildren(sortMode: FileSortMode): List<FileSystemItem> {
-        return with(sortMode) { children.sorted() }
-    }
+    fun getSortedChildren(sortMode: FileSortMode): List<FileSystemItem> = with(sortMode) { children.sorted() }
 
     fun getNavigableChildren(sortMode: FileSortMode): List<FileSystemItem> {
         if (isFlatView) {
@@ -61,22 +58,19 @@ class FileSystemQuery(
     class GoUpFileSystemItem internal constructor(
         override val fileId: Long = GO_UP_ID,
         override val fileName: String,
-        override val filePath: String
-    ) : Parcelable, FileSystemItem {
-
+        override val filePath: String,
+    ) : Parcelable,
+        FileSystemItem {
         @IgnoredOnParcel
         override val fileDateAdded: Long = -1
 
         @IgnoredOnParcel
         override val fileDateModified: Long = -1
-
     }
 
     companion object {
         private const val GO_UP_ID = -2L
 
-        fun isNavigablePath(path: String): Boolean {
-            return StorageUtil.storageVolumes.none { it.file.parent == path }
-        }
+        fun isNavigablePath(path: String): Boolean = StorageUtil.storageVolumes.none { it.file.parent == path }
     }
 }

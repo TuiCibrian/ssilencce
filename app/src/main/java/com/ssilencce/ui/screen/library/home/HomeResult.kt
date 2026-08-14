@@ -21,7 +21,7 @@ import com.ssilencce.data.model.Suggestion
 
 data class SuggestedResult(
     val state: State = State.Idle,
-    val data: List<Suggestion> = arrayListOf()
+    val data: List<Suggestion> = arrayListOf(),
 ) {
     val isLoading: Boolean
         get() = state == State.Loading
@@ -29,11 +29,10 @@ data class SuggestedResult(
     enum class State {
         Ready,
         Loading,
-        Idle
+        Idle,
     }
 
     companion object {
         val Idle = SuggestedResult(State.Idle)
     }
 }
-

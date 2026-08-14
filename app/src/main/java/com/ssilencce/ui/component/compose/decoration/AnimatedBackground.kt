@@ -37,97 +37,108 @@ import kotlin.math.sin
 @Composable
 fun Modifier.animatedGradient(
     colors: List<Color>,
-    animating: Boolean
-): Modifier = composed {
-    val time = remember { Animatable(0f) }
+    animating: Boolean,
+): Modifier =
+    composed {
+        val time = remember { Animatable(0f) }
 
-    LaunchedEffect(animating) {
-        if (animating) {
-            val period = (2f * Math.PI.toFloat() * 10f)
-            val speed = period / 120000f
-            var lastFrameTime = -1L
+        LaunchedEffect(animating) {
+            if (animating) {
+                val period = (2f * Math.PI.toFloat() * 10f)
+                val speed = period / 120000f
+                var lastFrameTime = -1L
 
-            while (true) {
-                val frameTime = withFrameMillis { it }
-                if (lastFrameTime != -1L) {
-                    val deltaMillis = frameTime - lastFrameTime
-                    val nextValue = (time.value + (deltaMillis * speed)) % period
-                    time.snapTo(nextValue)
+                while (true) {
+                    val frameTime = withFrameMillis { it }
+                    if (lastFrameTime != -1L) {
+                        val deltaMillis = frameTime - lastFrameTime
+                        val nextValue = (time.value + (deltaMillis * speed)) % period
+                        time.snapTo(nextValue)
+                    }
+                    lastFrameTime = frameTime
                 }
-                lastFrameTime = frameTime
             }
         }
-    }
 
-    val effectiveTime = time.value
+        val effectiveTime = time.value
 
-    val safeSize = colors.size.coerceAtLeast(1)
-    val rawBase = colors.getOrNull(0) ?: Color.Transparent
+        val safeSize = colors.size.coerceAtLeast(1)
+        val rawBase = colors.getOrNull(0) ?: Color.Transparent
 
-    val targetBase = remember(colors, rawBase) {
-        if (rawBase != Color.Transparent) adjustColorForBackground(rawBase) else rawBase
-    }
-    val target1 = remember(colors, safeSize, targetBase) {
-        val c = colors.getOrElse(1 % safeSize) { targetBase }
-        if (c != Color.Transparent) adjustColorForBackground(c) else c
-    }
-    val target2 = remember(colors, safeSize, targetBase) {
-        val c = colors.getOrElse(2 % safeSize) { targetBase }
-        if (c != Color.Transparent) adjustColorForBackground(c) else c
-    }
-    val target3 = remember(colors, safeSize, targetBase) {
-        val c = colors.getOrElse(3 % safeSize) { targetBase }
-        if (c != Color.Transparent) adjustColorForBackground(c) else c
-    }
+        val targetBase =
+            remember(colors, rawBase) {
+                if (rawBase != Color.Transparent) adjustColorForBackground(rawBase) else rawBase
+            }
+        val target1 =
+            remember(colors, safeSize, targetBase) {
+                val c = colors.getOrElse(1 % safeSize) { targetBase }
+                if (c != Color.Transparent) adjustColorForBackground(c) else c
+            }
+        val target2 =
+            remember(colors, safeSize, targetBase) {
+                val c = colors.getOrElse(2 % safeSize) { targetBase }
+                if (c != Color.Transparent) adjustColorForBackground(c) else c
+            }
+        val target3 =
+            remember(colors, safeSize, targetBase) {
+                val c = colors.getOrElse(3 % safeSize) { targetBase }
+                if (c != Color.Transparent) adjustColorForBackground(c) else c
+            }
 
-    val baseColor by animateColorAsState(targetBase, tween(1500), label = "baseColor")
-    val color1 by animateColorAsState(target1, tween(1500), label = "color1")
-    val color2 by animateColorAsState(target2, tween(1500), label = "color2")
-    val color3 by animateColorAsState(target3, tween(1500), label = "color3")
+        val baseColor by animateColorAsState(targetBase, tween(1500), label = "baseColor")
+        val color1 by animateColorAsState(target1, tween(1500), label = "color1")
+        val color2 by animateColorAsState(target2, tween(1500), label = "color2")
+        val color3 by animateColorAsState(target3, tween(1500), label = "color3")
 
-    this.drawBehind {
-        if (baseColor == Color.Transparent && color1 == Color.Transparent && 
-            color2 == Color.Transparent && color3 == Color.Transparent) return@drawBehind
+        this.drawBehind {
+            if (baseColor == Color.Transparent && color1 == Color.Transparent &&
+                color2 == Color.Transparent && color3 == Color.Transparent
+            ) {
+                return@drawBehind
+            }
 
-        drawRect(baseColor)
+            drawRect(baseColor)
 
-        val x1 = (0.5f + 0.35f * sin(effectiveTime * 0.5f)).coerceIn(0f, 1f)
-        val y1 = (0.5f + 0.35f * cos(effectiveTime * 0.3f)).coerceIn(0f, 1f)
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(color1.copy(alpha = 0.8f), Color.Transparent),
+            val x1 = (0.5f + 0.35f * sin(effectiveTime * 0.5f)).coerceIn(0f, 1f)
+            val y1 = (0.5f + 0.35f * cos(effectiveTime * 0.3f)).coerceIn(0f, 1f)
+            drawCircle(
+                brush =
+                    Brush.radialGradient(
+                        colors = listOf(color1.copy(alpha = 0.8f), Color.Transparent),
+                        center = Offset(x1 * size.width, y1 * size.height),
+                        radius = size.minDimension * 0.9f,
+                    ),
                 center = Offset(x1 * size.width, y1 * size.height),
-                radius = size.minDimension * 0.9f
-            ),
-            center = Offset(x1 * size.width, y1 * size.height),
-            radius = size.minDimension * 0.9f
-        )
+                radius = size.minDimension * 0.9f,
+            )
 
-        val x2 = (0.5f + 0.4f * cos(effectiveTime * 0.2f)).coerceIn(0f, 1f)
-        val y2 = (0.5f + 0.4f * sin(effectiveTime * 0.4f)).coerceIn(0f, 1f)
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(color2.copy(alpha = 0.7f), Color.Transparent),
+            val x2 = (0.5f + 0.4f * cos(effectiveTime * 0.2f)).coerceIn(0f, 1f)
+            val y2 = (0.5f + 0.4f * sin(effectiveTime * 0.4f)).coerceIn(0f, 1f)
+            drawCircle(
+                brush =
+                    Brush.radialGradient(
+                        colors = listOf(color2.copy(alpha = 0.7f), Color.Transparent),
+                        center = Offset(x2 * size.width, y2 * size.height),
+                        radius = size.minDimension * 1.1f,
+                    ),
                 center = Offset(x2 * size.width, y2 * size.height),
-                radius = size.minDimension * 1.1f
-            ),
-            center = Offset(x2 * size.width, y2 * size.height),
-            radius = size.minDimension * 1.1f
-        )
+                radius = size.minDimension * 1.1f,
+            )
 
-        val x3 = (0.5f + 0.3f * sin(effectiveTime * 0.7f + 2f)).coerceIn(0f, 1f)
-        val y3 = (0.5f + 0.3f * cos(effectiveTime * 0.6f + 1f)).coerceIn(0f, 1f)
-        drawCircle(
-            brush = Brush.radialGradient(
-                colors = listOf(color3.copy(alpha = 0.6f), Color.Transparent),
+            val x3 = (0.5f + 0.3f * sin(effectiveTime * 0.7f + 2f)).coerceIn(0f, 1f)
+            val y3 = (0.5f + 0.3f * cos(effectiveTime * 0.6f + 1f)).coerceIn(0f, 1f)
+            drawCircle(
+                brush =
+                    Brush.radialGradient(
+                        colors = listOf(color3.copy(alpha = 0.6f), Color.Transparent),
+                        center = Offset(x3 * size.width, y3 * size.height),
+                        radius = size.minDimension * 0.8f,
+                    ),
                 center = Offset(x3 * size.width, y3 * size.height),
-                radius = size.minDimension * 0.8f
-            ),
-            center = Offset(x3 * size.width, y3 * size.height),
-            radius = size.minDimension * 0.8f
-        )
+                radius = size.minDimension * 0.8f,
+            )
+        }
     }
-}
 
 private fun adjustColorForBackground(color: Color): Color {
     val r = color.red
@@ -144,11 +155,12 @@ private fun adjustColorForBackground(color: Color): Color {
 
     if (max != min) {
         s = if (l < 0.5f) delta / (max + min) else delta / (2f - max - min)
-        h = when (max) {
-            r -> (g - b) / delta + (if (g < b) 6f else 0f)
-            g -> (b - r) / delta + 2f
-            else -> (r - g) / delta + 4f
-        }
+        h =
+            when (max) {
+                r -> (g - b) / delta + (if (g < b) 6f else 0f)
+                g -> (b - r) / delta + 2f
+                else -> (r - g) / delta + 4f
+            }
         h *= 60f
     }
 
@@ -162,7 +174,12 @@ private fun adjustColorForBackground(color: Color): Color {
     return hslToColor(h, targetS, targetL, color.alpha)
 }
 
-private fun hslToColor(h: Float, s: Float, l: Float, a: Float): Color {
+private fun hslToColor(
+    h: Float,
+    s: Float,
+    l: Float,
+    a: Float,
+): Color {
     if (s == 0f) {
         return Color(red = l, green = l, blue = l, alpha = a)
     }
@@ -178,7 +195,11 @@ private fun hslToColor(h: Float, s: Float, l: Float, a: Float): Color {
     return Color(red = r, green = g, blue = b, alpha = a)
 }
 
-private fun hueToRgbComponent(p: Float, q: Float, t: Float): Float {
+private fun hueToRgbComponent(
+    p: Float,
+    q: Float,
+    t: Float,
+): Float {
     var tempT = t
     if (tempT < 0f) tempT += 1f
     if (tempT > 1f) tempT -= 1f

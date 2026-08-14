@@ -10,30 +10,35 @@ import org.apache.commons.text.similarity.JaroWinklerSimilarity
 class DeezerArtist(
     @SerialName("data")
     val result: List<Result>,
-    val total: Int
+    val total: Int,
 ) {
-
-    fun getBestImage(requestedName: String, requestedImageSize: String): Pair<Boolean, String?> {
+    fun getBestImage(
+        requestedName: String,
+        requestedImageSize: String,
+    ): Pair<Boolean, String?> {
         val normRequested = requestedName.normalize()
-        val best = result.map { artist ->
-                val normArtist = artist.artistName.normalize()
-                val score = JW_SIMILARITY.apply(normArtist, normRequested)
-                artist to score
-            }
-            .maxByOrNull { it.second }
+        val best =
+            result
+                .map { artist ->
+                    val normArtist = artist.artistName.normalize()
+                    val score = JW_SIMILARITY.apply(normArtist, normRequested)
+                    artist to score
+                }.maxByOrNull { it.second }
 
         if (best == null || best.second < 0.90) {
             return false to null
         }
 
         val artist = best.first
-        val tentativeImage = when (requestedImageSize) {
-            ImageSize.LARGE -> artist.largeImage
-            ImageSize.SMALL -> artist.smallImage
-            else -> artist.mediumImage
-        } ?: artist.image
-        return true to tentativeImage
-            ?.takeIf { it.isNotBlank() && !it.contains("/images/artist//") }
+        val tentativeImage =
+            when (requestedImageSize) {
+                ImageSize.LARGE -> artist.largeImage
+                ImageSize.SMALL -> artist.smallImage
+                else -> artist.mediumImage
+            } ?: artist.image
+        return true to
+            tentativeImage
+                ?.takeIf { it.isNotBlank() && !it.contains("/images/artist//") }
     }
 
     @Serializable
@@ -47,7 +52,7 @@ class DeezerArtist(
         @SerialName("picture_medium")
         val mediumImage: String?,
         @SerialName("picture_big")
-        val largeImage: String?
+        val largeImage: String?,
     )
 
     companion object {

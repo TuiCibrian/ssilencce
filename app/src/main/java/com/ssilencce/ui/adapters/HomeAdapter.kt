@@ -37,9 +37,8 @@ import kotlin.reflect.KProperty
 @SuppressLint("NotifyDataSetChanged")
 class HomeAdapter(
     dataSet: List<Suggestion>,
-    private val callback: IHomeCallback
+    private val callback: IHomeCallback,
 ) : RecyclerView.Adapter<HomeAdapter.ViewHolder>() {
-
     var dataSet: List<Suggestion> by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Suggestion>, _: List<Suggestion> ->
         notifyDataSetChanged()
     }
@@ -48,12 +47,18 @@ class HomeAdapter(
         setHasStableIds(true)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val itemView = LayoutInflater.from(parent.context).inflate(R.layout.item_suggestion, parent, false)
         return ViewHolder(itemView)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val suggestion = dataSet[position]
         holder.headingTitle?.setText(suggestion.type.titleRes)
         if (holder.recyclerView != null) {
@@ -63,15 +68,13 @@ class HomeAdapter(
         }
     }
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].hashCode().toLong()
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].hashCode().toLong()
 
-    inner class ViewHolder internal constructor(itemView: View) : RecyclerView.ViewHolder(itemView),
+    inner class ViewHolder internal constructor(
+        itemView: View,
+    ) : RecyclerView.ViewHolder(itemView),
         View.OnClickListener {
         internal val headingTitle: TextView? = itemView.findViewById(R.id.heading_title)
         internal val openSuggestion: MaterialButton? = itemView.findViewById(R.id.open)

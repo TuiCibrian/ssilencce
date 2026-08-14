@@ -25,20 +25,52 @@ import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.model.*
 
 interface ISongCallback {
-    fun songMenuItemClick(song: Song, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?): Boolean
-    fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem)
+    fun songMenuItemClick(
+        song: Song,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean
+
+    fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    )
 }
 
 interface IAlbumCallback {
-    fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>?)
-    fun albumMenuItemClick(album: Album, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?): Boolean
-    fun albumsMenuItemClick(albums: List<Album>, menuItem: MenuItem)
+    fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>?,
+    )
+
+    fun albumMenuItemClick(
+        album: Album,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean
+
+    fun albumsMenuItemClick(
+        albums: List<Album>,
+        menuItem: MenuItem,
+    )
 }
 
 interface IArtistCallback {
-    fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>?)
-    fun artistMenuItemClick(artist: Artist, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?): Boolean
-    fun artistsMenuItemClick(artists: List<Artist>, menuItem: MenuItem)
+    fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>?,
+    )
+
+    fun artistMenuItemClick(
+        artist: Artist,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean
+
+    fun artistsMenuItemClick(
+        artists: List<Artist>,
+        menuItem: MenuItem,
+    )
 }
 
 interface IGenreCallback {
@@ -47,36 +79,96 @@ interface IGenreCallback {
 
 interface IYearCallback {
     fun yearClick(year: ReleaseYear)
-    fun yearMenuItemClick(year: ReleaseYear, menuItem: MenuItem): Boolean
-    fun yearsMenuItemClick(selection: List<ReleaseYear>, menuItem: MenuItem): Boolean
+
+    fun yearMenuItemClick(
+        year: ReleaseYear,
+        menuItem: MenuItem,
+    ): Boolean
+
+    fun yearsMenuItemClick(
+        selection: List<ReleaseYear>,
+        menuItem: MenuItem,
+    ): Boolean
 }
 
 interface IFileCallback {
     fun fileClick(file: FileSystemItem)
-    fun fileMenuItemClick(file: FileSystemItem, menuItem: MenuItem): Boolean
-    fun filesMenuItemClick(selection: List<FileSystemItem>, menuItem: MenuItem): Boolean
+
+    fun fileMenuItemClick(
+        file: FileSystemItem,
+        menuItem: MenuItem,
+    ): Boolean
+
+    fun filesMenuItemClick(
+        selection: List<FileSystemItem>,
+        menuItem: MenuItem,
+    ): Boolean
 }
 
 interface IPlaylistCallback {
     fun playlistClick(playlist: PlaylistWithSongs)
-    fun playlistMenuItemClick(playlist: PlaylistWithSongs, menuItem: MenuItem): Boolean
-    fun playlistsMenuItemClick(playlists: List<PlaylistWithSongs>, menuItem: MenuItem)
+
+    fun playlistMenuItemClick(
+        playlist: PlaylistWithSongs,
+        menuItem: MenuItem,
+    ): Boolean
+
+    fun playlistsMenuItemClick(
+        playlists: List<PlaylistWithSongs>,
+        menuItem: MenuItem,
+    )
 }
 
 interface ISearchCallback {
-    fun songClick(song: Song, results: List<Any>)
-    fun songMenuItemClick(song: Song, menuItem: MenuItem): Boolean
-    fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>)
-    fun albumMenuItemClick(album: Album, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>): Boolean
-    fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>)
-    fun artistMenuItemClick(artist: Artist, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>): Boolean
+    fun songClick(
+        song: Song,
+        results: List<Any>,
+    )
+
+    fun songMenuItemClick(
+        song: Song,
+        menuItem: MenuItem,
+    ): Boolean
+
+    fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>,
+    )
+
+    fun albumMenuItemClick(
+        album: Album,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>,
+    ): Boolean
+
+    fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>,
+    )
+
+    fun artistMenuItemClick(
+        artist: Artist,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>,
+    ): Boolean
+
     fun playlistClick(playlist: PlaylistWithSongs)
-    fun playlistMenuItemClick(playlist: PlaylistWithSongs, menuItem: MenuItem): Boolean
+
+    fun playlistMenuItemClick(
+        playlist: PlaylistWithSongs,
+        menuItem: MenuItem,
+    ): Boolean
+
     fun genreClick(genre: Genre)
-    fun onMultipleItemAction(menuItem: MenuItem, selection: List<Song>)
+
+    fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Song>,
+    )
 }
 
 interface IHomeCallback {
     fun createSuggestionAdapter(suggestion: Suggestion): RecyclerView.Adapter<*>?
+
     fun suggestionClick(suggestion: Suggestion)
 }

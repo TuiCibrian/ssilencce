@@ -46,10 +46,9 @@ class PlaylistSongAdapter(
     @LayoutRes
     itemLayoutRes: Int,
     isLockDrag: Boolean,
-    callback: ISongCallback? = null
+    callback: ISongCallback? = null,
 ) : SongAdapter(activity, dataSet, itemLayoutRes, null, callback),
     DraggableItemAdapter<PlaylistSongAdapter.ViewHolder> {
-
     var isLockDrag = isLockDrag
         private set
 
@@ -57,37 +56,49 @@ class PlaylistSongAdapter(
     private val mutableDataSet: MutableList<Song>
         get() = dataSet as MutableList
 
-    override fun createViewHolder(view: View, viewType: Int): SongAdapter.ViewHolder {
-        return ViewHolder(view)
-    }
+    override fun createViewHolder(
+        view: View,
+        viewType: Int,
+    ): SongAdapter.ViewHolder = ViewHolder(view)
 
-    override fun onBindViewHolder(holder: SongAdapter.ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: SongAdapter.ViewHolder,
+        position: Int,
+    ) {
         super.onBindViewHolder(holder, position)
         holder.dragView?.isGone = isLockDrag
     }
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].id
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].id
 
-    override fun onCheckCanStartDrag(holder: ViewHolder, position: Int, x: Int, y: Int): Boolean {
+    override fun onCheckCanStartDrag(
+        holder: ViewHolder,
+        position: Int,
+        x: Int,
+        y: Int,
+    ): Boolean {
         if (isLockDrag || isInQuickSelectMode) {
             return false
         }
         return (holder.dragView?.hitTest(x, y) ?: false)
     }
 
-    override fun onGetItemDraggableRange(holder: ViewHolder, position: Int): ItemDraggableRange? {
-        return null
-    }
+    override fun onGetItemDraggableRange(
+        holder: ViewHolder,
+        position: Int,
+    ): ItemDraggableRange? = null
 
-    override fun onMoveItem(fromPosition: Int, toPosition: Int) {
+    override fun onMoveItem(
+        fromPosition: Int,
+        toPosition: Int,
+    ) {
         mutableDataSet.add(toPosition, mutableDataSet.removeAt(fromPosition))
     }
 
-    override fun onCheckCanDrop(draggingPosition: Int, dropPosition: Int): Boolean {
-        return true
-    }
+    override fun onCheckCanDrop(
+        draggingPosition: Int,
+        dropPosition: Int,
+    ): Boolean = true
 
     @SuppressLint("NotifyDataSetChanged")
     override fun onItemDragStarted(position: Int) {
@@ -95,13 +106,18 @@ class PlaylistSongAdapter(
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onItemDragFinished(fromPosition: Int, toPosition: Int, result: Boolean) {
+    override fun onItemDragFinished(
+        fromPosition: Int,
+        toPosition: Int,
+        result: Boolean,
+    ) {
         notifyDataSetChanged()
     }
 
     fun saveSongs(playlistEntity: PlaylistEntity) {
-        if (playlistEntity == PlaylistEntity.Empty)
+        if (playlistEntity == PlaylistEntity.Empty) {
             return
+        }
 
         activity.lifecycleScope.launch(Dispatchers.IO) {
             libraryViewModel.insertSongs(dataSet.toSongsEntity(playlistEntity))
@@ -114,22 +130,19 @@ class PlaylistSongAdapter(
         notifyDataSetChanged()
     }
 
-    inner class ViewHolder internal constructor(itemView: View) : SongAdapter.ViewHolder(itemView),
+    inner class ViewHolder internal constructor(
+        itemView: View,
+    ) : SongAdapter.ViewHolder(itemView),
         DraggableItemViewHolder {
-
         private val mDragItemState: DraggableItemState
 
         override val songMenuRes: Int
             get() = R.menu.menu_item_playlist_song
 
-        override fun getDragState(): DraggableItemState {
-            return mDragItemState
-        }
+        override fun getDragState(): DraggableItemState = mDragItemState
 
         @DraggableItemStateFlags
-        override fun getDragStateFlags(): Int {
-            return mDragItemState.flags
-        }
+        override fun getDragStateFlags(): Int = mDragItemState.flags
 
         override fun setDragStateFlags(flags: Int) {
             mDragItemState.flags = flags

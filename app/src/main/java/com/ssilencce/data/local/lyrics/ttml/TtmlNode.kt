@@ -22,9 +22,8 @@ data class TtmlNode(
     var end: Long,
     var dur: Long,
     val key: String? = null,
-    val agent: TtmlAgent? = null
+    val agent: TtmlAgent? = null,
 ) {
-
     private val children = mutableListOf<TtmlNode>()
 
     var background: Boolean = false
@@ -82,22 +81,21 @@ data class TtmlNode(
     fun addChildNode(node: TtmlNode): Boolean {
         if (closed || node.closed) return false
 
-        if (this.type == NODE_BODY && node.type == NODE_SECTION ||
-            this.type == NODE_SECTION && node.type == NODE_LINE ||
-            this.type == NODE_LINE && node.type == NODE_WORD
+        if ((this.type == NODE_BODY && node.type == NODE_SECTION) ||
+            (this.type == NODE_SECTION && node.type == NODE_LINE) ||
+            (this.type == NODE_LINE && node.type == NODE_WORD)
         ) {
-
             if (node.begin > -1 || node.type == NODE_SECTION) {
                 return children.add(node)
             }
-
         }
         return false
     }
 
     fun close(): Boolean {
         if (!closed) {
-            children.filterNot { it.closed }
+            children
+                .filterNot { it.closed }
                 .forEach { it.close() }
             closed = true
             return true
@@ -106,23 +104,24 @@ data class TtmlNode(
     }
 
     override fun toString(): String {
-        val typeString = when (type) {
-            NODE_BODY -> "NODE_BODY"
-            NODE_SECTION -> "NODE_SECTION"
-            NODE_LINE -> "NODE_LINE"
-            NODE_WORD -> "NODE_WORD"
-            else -> "NODE_UNKNOWN"
-        }
+        val typeString =
+            when (type) {
+                NODE_BODY -> "NODE_BODY"
+                NODE_SECTION -> "NODE_SECTION"
+                NODE_LINE -> "NODE_LINE"
+                NODE_WORD -> "NODE_WORD"
+                else -> "NODE_UNKNOWN"
+            }
         return "TtmlNode{" +
-                "type=$typeString, " +
-                "begin=$begin, " +
-                "end=$end, " +
-                "dur=$dur, " +
-                "background=$background, " +
-                "agent=$agent, " +
-                "text='$text', " +
-                "closed=$closed" +
-                "}"
+            "type=$typeString, " +
+            "begin=$begin, " +
+            "end=$end, " +
+            "dur=$dur, " +
+            "background=$background, " +
+            "agent=$agent, " +
+            "text='$text', " +
+            "closed=$closed" +
+            "}"
     }
 
     companion object {
@@ -143,28 +142,34 @@ data class TtmlNode(
 
         fun isSupportedTag(name: String?) =
             name == TAG_BODY ||
-                    name == TAG_DIV ||
-                    name == TAG_PARAGRAPH ||
-                    name == TAG_SPAN ||
-                    name == TAG_TRANSLITERATION ||
-                    name == TAG_TRANSLATION ||
-                    name == TAG_AGENT ||
-                    name == TAG_TEXT
+                name == TAG_DIV ||
+                name == TAG_PARAGRAPH ||
+                name == TAG_SPAN ||
+                name == TAG_TRANSLITERATION ||
+                name == TAG_TRANSLATION ||
+                name == TAG_AGENT ||
+                name == TAG_TEXT
 
-        fun buildBody(dur: Long): TtmlNode {
-            return TtmlNode(type = NODE_BODY, begin = -1, end = -1, dur = dur)
-        }
+        fun buildBody(dur: Long): TtmlNode = TtmlNode(type = NODE_BODY, begin = -1, end = -1, dur = dur)
 
-        fun buildSection(begin: Long, end: Long, dur: Long): TtmlNode {
-            return TtmlNode(type = NODE_SECTION, begin = begin, end = end, dur = dur)
-        }
+        fun buildSection(
+            begin: Long,
+            end: Long,
+            dur: Long,
+        ): TtmlNode = TtmlNode(type = NODE_SECTION, begin = begin, end = end, dur = dur)
 
-        fun buildLine(begin: Long, end: Long, dur: Long, key: String?, agent: TtmlAgent?): TtmlNode {
-            return TtmlNode(type = NODE_LINE, begin = begin, end = end, dur = dur, key = key, agent = agent)
-        }
+        fun buildLine(
+            begin: Long,
+            end: Long,
+            dur: Long,
+            key: String?,
+            agent: TtmlAgent?,
+        ): TtmlNode = TtmlNode(type = NODE_LINE, begin = begin, end = end, dur = dur, key = key, agent = agent)
 
-        fun buildWord(begin: Long, end: Long, dur: Long): TtmlNode {
-            return TtmlNode(type = NODE_WORD, begin = begin, end = end, dur = dur)
-        }
+        fun buildWord(
+            begin: Long,
+            end: Long,
+            dur: Long,
+        ): TtmlNode = TtmlNode(type = NODE_WORD, begin = begin, end = end, dur = dur)
     }
 }

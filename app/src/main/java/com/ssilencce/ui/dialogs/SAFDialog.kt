@@ -32,7 +32,6 @@ import com.ssilencce.extensions.create
 import com.ssilencce.extensions.files.saveTreeUri
 
 class SAFDialog : DialogFragment() {
-
     private lateinit var documentTreeLauncher: ActivityResultLauncher<Uri?>
 
     interface SAFResultListener {
@@ -41,18 +40,19 @@ class SAFDialog : DialogFragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        documentTreeLauncher = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
-            val listener = listener
-            if (result != null) {
-                listener?.onSAFResult(context?.saveTreeUri(result))
-            } else {
-                listener?.onSAFResult(null)
+        documentTreeLauncher =
+            registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { result ->
+                val listener = listener
+                if (result != null) {
+                    listener?.onSAFResult(context?.saveTreeUri(result))
+                } else {
+                    listener?.onSAFResult(null)
+                }
             }
-        }
     }
 
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireActivity())
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireActivity())
             .setTitle(R.string.saf_access_required_title)
             .setMessage(R.string.saf_access_required_message)
             .setPositiveButton(R.string.saf_show_files_button, null)
@@ -61,7 +61,6 @@ class SAFDialog : DialogFragment() {
                     documentTreeLauncher.launch(null)
                 }
             }
-    }
 
     private val listener: SAFResultListener?
         get() = (parentFragment as? SAFResultListener) ?: (activity as? SAFResultListener)

@@ -32,34 +32,45 @@ import java.io.OutputStream
 /**
  * @author Christians M. A. (mardous)
  */
-class MediaStoreWriter(private val context: Context, private val contentResolver: ContentResolver) {
-
+class MediaStoreWriter(
+    private val context: Context,
+    private val contentResolver: ContentResolver,
+) {
     class Request(
         val displayName: String,
         val relativePath: String,
         val mimeType: String,
-        val valuesInterceptor: ((ContentValues) -> Unit)? = null
+        val valuesInterceptor: ((ContentValues) -> Unit)? = null,
     ) {
-
         companion object {
-            fun forImage(displayName: String, subFolder: String? = null, imageMimeType: String): Request {
-                val relativePath = if (subFolder.isNullOrEmpty())
-                    Environment.DIRECTORY_PICTURES else "${Environment.DIRECTORY_PICTURES}/$subFolder"
+            fun forImage(
+                displayName: String,
+                subFolder: String? = null,
+                imageMimeType: String,
+            ): Request {
+                val relativePath =
+                    if (subFolder.isNullOrEmpty()) {
+                        Environment.DIRECTORY_PICTURES
+                    } else {
+                        "${Environment.DIRECTORY_PICTURES}/$subFolder"
+                    }
 
                 return Request(displayName, relativePath, imageMimeType)
             }
 
-            fun forPlaylist(displayName: String): Request {
-                return Request(
+            fun forPlaylist(displayName: String): Request =
+                Request(
                     displayName,
                     String.format("%s/%s", Environment.DIRECTORY_MUSIC, PLAYLISTS_DIRECTORY_NAME),
-                    "vnd.android.cursor.dir/playlist"
+                    "vnd.android.cursor.dir/playlist",
                 )
-            }
         }
     }
 
-    class Result(val resultCode: Int, val uri: Uri? = null) {
+    class Result(
+        val resultCode: Int,
+        val uri: Uri? = null,
+    ) {
         class Code {
             companion object {
                 const val SUCCESS = 0
@@ -72,19 +83,21 @@ class MediaStoreWriter(private val context: Context, private val contentResolver
     fun toMediaStore(
         contentUri: Uri,
         request: Request,
-        streamConsumer: (OutputStream) -> Boolean
+        streamConsumer: (OutputStream) -> Boolean,
     ): Result {
         if (!hasQ()) {
             return Result(Result.Code.NO_SCOPED_STORAGE)
         }
 
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, request.displayName)
-            put(MediaStore.MediaColumns.RELATIVE_PATH, request.relativePath)
-            put(MediaStore.MediaColumns.MIME_TYPE, request.mimeType)
-        }.also { contentValues ->
-            request.valuesInterceptor?.invoke(contentValues)
-        }
+        val values =
+            ContentValues()
+                .apply {
+                    put(MediaStore.MediaColumns.DISPLAY_NAME, request.displayName)
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, request.relativePath)
+                    put(MediaStore.MediaColumns.MIME_TYPE, request.mimeType)
+                }.also { contentValues ->
+                    request.valuesInterceptor?.invoke(contentValues)
+                }
 
         var uri: Uri? = null
 
@@ -104,7 +117,7 @@ class MediaStoreWriter(private val context: Context, private val contentResolver
     fun toContentResolver(
         contentUri: Uri?,
         dest: Uri,
-        streamConsumer: (OutputStream) -> Boolean
+        streamConsumer: (OutputStream) -> Boolean,
     ): Result {
         try {
             contentResolver.openOutputStream(dest).use { outputStream ->
@@ -123,17 +136,26 @@ class MediaStoreWriter(private val context: Context, private val contentResolver
         return Result(Result.Code.ERROR)
     }
 
-    fun toFile(directory: File? = null, fileName: String, streamConsumer: (OutputStream) -> Boolean): File? {
-        val result = runCatching {
-            val file = File(directory ?: context.filesDir, fileName)
-            if (file.createNewFile()) {
-                file.outputStream().use {
-                    if (streamConsumer(it))
-                        return file
-                    else null
+    fun toFile(
+        directory: File? = null,
+        fileName: String,
+        streamConsumer: (OutputStream) -> Boolean,
+    ): File? {
+        val result =
+            runCatching {
+                val file = File(directory ?: context.filesDir, fileName)
+                if (file.createNewFile()) {
+                    file.outputStream().use {
+                        if (streamConsumer(it)) {
+                            return file
+                        } else {
+                            null
+                        }
+                    }
+                } else {
+                    null
                 }
-            } else null
-        }
+            }
         return result.getOrNull()
     }
 }

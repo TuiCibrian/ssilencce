@@ -33,7 +33,6 @@ import com.ssilencce.ui.screen.MainActivity
  * @author Christians M. A. (mardous)
  */
 class PermissionsActivity : AbsBaseActivity() {
-
     private var _binding: ActivityPermissionBinding? = null
     private val binding get() = _binding!!
 
@@ -52,16 +51,22 @@ class PermissionsActivity : AbsBaseActivity() {
         if (binding.readImages.isVisible) {
             binding.readImages.setButtonOnClickListener {
                 if (!binding.readImages.isGranted() && hasT()) {
-                    ActivityCompat.requestPermissions(this,
-                        arrayOf(READ_MEDIA_IMAGES), PERMISSION_REQUEST)
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(READ_MEDIA_IMAGES),
+                        PERMISSION_REQUEST,
+                    )
                 }
             }
         }
         if (binding.nearbyDevices.isVisible) {
             binding.nearbyDevices.setButtonOnClickListener {
                 if (!binding.nearbyDevices.isGranted() && hasS()) {
-                    ActivityCompat.requestPermissions(this,
-                        arrayOf(BLUETOOTH_CONNECT), BLUETOOTH_PERMISSION_REQUEST)
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(BLUETOOTH_CONNECT),
+                        BLUETOOTH_PERMISSION_REQUEST,
+                    )
                 }
             }
         }
@@ -76,17 +81,20 @@ class PermissionsActivity : AbsBaseActivity() {
             if (hasPermissions()) {
                 startActivity(
                     Intent(this, MainActivity::class.java)
-                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
                 )
                 finish()
             }
         }
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                finishAffinity()
-                remove()
-            }
-        })
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    finishAffinity()
+                    remove()
+                }
+            },
+        )
     }
 
     override fun onResume() {
@@ -101,10 +109,11 @@ class PermissionsActivity : AbsBaseActivity() {
 
     private fun setupAppTitle() {
         val appName = getString(R.string.app_name).trim()
-        val styledAppName = SpannableStringBuilder(getString(R.string.welcome_to_x, appName).trim()).apply {
-            setSpan(StyleSpan(Typeface.BOLD), this.indexOf(appName), length, SPAN_INCLUSIVE_INCLUSIVE)
-            setSpan(ForegroundColorSpan(primaryColor()), this.lastIndexOf(" "), length, SPAN_EXCLUSIVE_EXCLUSIVE)
-        }
+        val styledAppName =
+            SpannableStringBuilder(getString(R.string.welcome_to_x, appName).trim()).apply {
+                setSpan(StyleSpan(Typeface.BOLD), this.indexOf(appName), length, SPAN_INCLUSIVE_INCLUSIVE)
+                setSpan(ForegroundColorSpan(primaryColor()), this.lastIndexOf(" "), length, SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
         binding.welcomeLabel.text = styledAppName
     }
 
@@ -144,14 +153,11 @@ class PermissionsActivity : AbsBaseActivity() {
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun hasNearbyDevicesPermission(): Boolean =
-        checkSelfPermission(BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
+    private fun hasNearbyDevicesPermission(): Boolean = checkSelfPermission(BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
-    private fun hasReadImagesPermission(): Boolean =
-        checkSelfPermission(READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
+    private fun hasReadImagesPermission(): Boolean = checkSelfPermission(READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED
 
     @RequiresApi(Build.VERSION_CODES.S)
-    private fun canScheduleExactAlarms(): Boolean =
-        getSystemService<AlarmManager>()?.canScheduleExactAlarms() == true
+    private fun canScheduleExactAlarms(): Boolean = getSystemService<AlarmManager>()?.canScheduleExactAlarms() == true
 }

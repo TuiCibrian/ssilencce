@@ -32,8 +32,10 @@ import org.koin.core.component.inject
  * @author Christians M. A. (mardous)
  */
 @Parcelize
-class LastAddedSearchFilter(private val name: CharSequence) : SearchFilter, KoinComponent {
-
+class LastAddedSearchFilter(
+    private val name: CharSequence,
+) : SearchFilter,
+    KoinComponent {
     @IgnoredOnParcel
     private val smartRepository by inject<SmartRepository>()
 
@@ -43,20 +45,20 @@ class LastAddedSearchFilter(private val name: CharSequence) : SearchFilter, Koin
     @IgnoredOnParcel
     private val artistRepository by inject<RealArtistRepository>()
 
-    override fun getName(): CharSequence {
-        return name
-    }
+    override fun getName(): CharSequence = name
 
-    override fun getCompatibleModes(): List<FilterMode> {
-        return listOf(FilterMode.Songs, FilterMode.Albums, FilterMode.Artists)
-    }
+    override fun getCompatibleModes(): List<FilterMode> = listOf(FilterMode.Songs, FilterMode.Albums, FilterMode.Artists)
 
-    override suspend fun getResults(searchMode: FilterMode, query: String): List<Any> {
-        val contentType = when (searchMode) {
-            FilterMode.Albums -> ContentType.RecentAlbums
-            FilterMode.Artists -> ContentType.RecentArtists
-            else -> ContentType.RecentSongs
-        }
+    override suspend fun getResults(
+        searchMode: FilterMode,
+        query: String,
+    ): List<Any> {
+        val contentType =
+            when (searchMode) {
+                FilterMode.Albums -> ContentType.RecentAlbums
+                FilterMode.Artists -> ContentType.RecentArtists
+                else -> ContentType.RecentSongs
+            }
         val songs = smartRepository.recentSongs(query, contentType)
         return when (contentType) {
             ContentType.RecentAlbums -> albumRepository.splitIntoAlbums(songs, false)

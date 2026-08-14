@@ -28,31 +28,32 @@ import io.ktor.http.HttpHeaders
 import kotlinx.serialization.json.Json
 
 class PaxsenixSearchHelper(
-    private val client: HttpClient
+    private val client: HttpClient,
 ) {
-
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun getAppleMusicSearchResponse(
         songTitle: String,
-        artistName: String
+        artistName: String,
     ): ITunesSearchResponse? {
-        val response = client.get("${SEARCH_URL}/search") {
-            header(HttpHeaders.Accept, "application/json")
-            header(HttpHeaders.UserAgent, ITUNES_USER_AGENT)
-            parameter("media", "music")
-            parameter("entity", "song")
-            parameter("limit", "10")
-            url.encodedParameters.append("term", "$songTitle $artistName")
-        }
+        val response =
+            client.get("${SEARCH_URL}/search") {
+                header(HttpHeaders.Accept, "application/json")
+                header(HttpHeaders.UserAgent, ITUNES_USER_AGENT)
+                parameter("media", "music")
+                parameter("entity", "song")
+                parameter("limit", "10")
+                url.encodedParameters.append("term", "$songTitle $artistName")
+            }
 
         val responseBody = response.bodyAsText(Charsets.UTF_8)
-        val searchResponse = try {
-            json.decodeFromString<ITunesSearchResponse>(responseBody)
-        } catch (e: Exception) {
-            Log.e("PaxsenixSearchHelper", "Failed to decode search response", e)
-            return null
-        }
+        val searchResponse =
+            try {
+                json.decodeFromString<ITunesSearchResponse>(responseBody)
+            } catch (e: Exception) {
+                Log.e("PaxsenixSearchHelper", "Failed to decode search response", e)
+                return null
+            }
         return searchResponse
     }
 

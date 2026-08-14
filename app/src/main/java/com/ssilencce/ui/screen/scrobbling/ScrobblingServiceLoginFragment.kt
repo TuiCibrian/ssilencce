@@ -75,7 +75,6 @@ import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
-
     private val viewModel: LibraryViewModel by activityViewModel()
     private val service: ScrobblingService by extraNotNull("service")
 
@@ -90,11 +89,11 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return ComposeView(requireContext()).apply {
+        savedInstanceState: Bundle?,
+    ): View =
+        ComposeView(requireContext()).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -102,20 +101,20 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 }
             }
         }
-    }
 
     @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
     @Composable
     private fun LoginScreen(
         service: ScrobblingService,
-        viewModel: LibraryViewModel
+        viewModel: LibraryViewModel,
     ) {
         val uiState by viewModel.getLoginState(service).collectAsState(null)
 
-        val serviceName = when (service) {
-            ScrobblingService.Lastfm -> stringResource(R.string.lastfm_title)
-            ScrobblingService.ListenBrainz -> stringResource(R.string.listenbrainz_title)
-        }
+        val serviceName =
+            when (service) {
+                ScrobblingService.Lastfm -> stringResource(R.string.lastfm_title)
+                ScrobblingService.ListenBrainz -> stringResource(R.string.listenbrainz_title)
+            }
 
         DisposableEffect(Unit) {
             onDispose {
@@ -127,33 +126,35 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
 
         BottomSheetDialogSurface {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .nestedScroll(rememberNestedScrollInteropConnection())
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .nestedScroll(rememberNestedScrollInteropConnection()),
             ) {
                 BottomSheetDefaults.DragHandle(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
                 )
 
                 Text(
                     text = stringResource(R.string.sign_in_to_x_title, serviceName),
                     style = MaterialTheme.typography.headlineSmallEmphasized,
-                    modifier = Modifier.padding(horizontal = 24.dp)
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
 
                 Crossfade(uiState) { loginState ->
                     when (loginState) {
                         is LoginState.Empty,
                         is LoginState.LoggingIn,
-                        is LoginState.Failure -> {
+                        is LoginState.Failure,
+                        -> {
                             when (service) {
                                 ScrobblingService.Lastfm -> {
                                     LastFmForm(
                                         loginState = loginState,
                                         onLoginClick = { params ->
                                             viewModel.logInToService(service, params)
-                                        }
+                                        },
                                     )
                                 }
 
@@ -162,23 +163,23 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                                         loginState = loginState,
                                         onLoginClick = { params ->
                                             viewModel.logInToService(service, params)
-                                        }
+                                        },
                                     )
                                 }
                             }
-
                         }
 
                         is LoginState.LoggedIn -> {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                                modifier = Modifier
-                                    .padding(horizontal = 24.dp, vertical = 16.dp)
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = 24.dp, vertical = 16.dp),
                             ) {
                                 ConnectedUserCard(
                                     loggedInState = loginState,
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.fillMaxWidth(),
                                 )
 
                                 Button(onClick = { viewModel.logoutFromService(service) }) {
@@ -190,9 +191,10 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                         else -> {
                             Box(
                                 contentAlignment = Alignment.Center,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 24.dp, vertical = 48.dp)
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp, vertical = 48.dp),
                             ) {
                                 CircularWavyProgressIndicator()
                             }
@@ -208,7 +210,7 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
     private fun LastFmForm(
         loginState: LoginState,
         onLoginClick: (LoginParams) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         var username by remember { mutableStateOf("") }
         var password by remember { mutableStateOf("") }
@@ -216,10 +218,11 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(top = 8.dp, bottom = 24.dp)
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
         ) {
             OutlinedTextField(
                 value = username,
@@ -228,13 +231,13 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_person_24dp),
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = loginState.canLogIn,
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
             )
 
             Spacer(modifier = Modifier.height(4.dp))
@@ -248,37 +251,39 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_lock_24dp),
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 trailingIcon = {
-                    val icon = if (passwordVisible) {
-                        painterResource(R.drawable.ic_visibility_off_24dp)
-                    } else {
-                        painterResource(R.drawable.ic_visibility_24dp)
-                    }
+                    val icon =
+                        if (passwordVisible) {
+                            painterResource(R.drawable.ic_visibility_off_24dp)
+                        } else {
+                            painterResource(R.drawable.ic_visibility_24dp)
+                        }
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
                         Icon(
                             painter = icon,
-                            contentDescription = stringResource(R.string.lastfm_login_toggle_password_visibility)
+                            contentDescription = stringResource(R.string.lastfm_login_toggle_password_visibility),
                         )
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = loginState.canLogIn,
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             AnimatedVisibility(
-                visible = loginState.isLoading
+                visible = loginState.isLoading,
             ) {
                 LinearWavyProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
                 )
             }
 
@@ -288,18 +293,20 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 onClick = {
                     onLoginClick(LoginParams.Lastfm(username, password))
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 enabled = username.isNotBlank() && password.isNotBlank() && loginState.canLogIn,
             ) {
                 Text(
                     text = stringResource(R.string.login_action),
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
@@ -310,24 +317,26 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
     private fun ListenBrainzForm(
         loginState: LoginState,
         onLoginClick: (LoginParams) -> Unit,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         var token by remember { mutableStateOf("") }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
-                .padding(top = 8.dp, bottom = 24.dp)
+            modifier =
+                modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 8.dp, bottom = 24.dp),
         ) {
             Text(
                 text = stringResource(R.string.listenbrainz_login_summary),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
             )
 
             OutlinedTextField(
@@ -337,24 +346,25 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 leadingIcon = {
                     Icon(
                         painter = painterResource(R.drawable.ic_lock_24dp),
-                        contentDescription = null
+                        contentDescription = null,
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 enabled = loginState.canLogIn,
-                shape = MaterialTheme.shapes.medium
+                shape = MaterialTheme.shapes.medium,
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             AnimatedVisibility(
-                visible = loginState.isLoading
+                visible = loginState.isLoading,
             ) {
                 LinearWavyProgressIndicator(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
                 )
             }
 
@@ -364,18 +374,20 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                 onClick = {
                     onLoginClick(LoginParams.ListenBrainz(token))
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                 shape = MaterialTheme.shapes.extraLarge,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
                 enabled = token.isNotBlank() && loginState.canLogIn,
             ) {
                 Text(
                     text = stringResource(R.string.login_action),
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
                 )
             }
         }
@@ -387,15 +399,16 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
         genericMessageRes: Int,
     ) {
         AnimatedVisibility(
-            visible = loginState.isFailure
+            visible = loginState.isFailure,
         ) {
             if (loginState is LoginState.Failure) {
                 TipView(
                     text = loginState.message ?: stringResource(genericMessageRes),
                     icon = painterResource(R.drawable.ic_error_24dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
                 )
             }
         }
@@ -404,7 +417,7 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
     @Composable
     private fun ConnectedUserCard(
         loggedInState: LoginState.LoggedIn,
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
     ) {
         val context = LocalContext.current
 
@@ -414,30 +427,31 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                     context.openUrl(loggedInState.url)
                 }
             },
-            modifier = modifier.fillMaxWidth()
+            modifier = modifier.fillMaxWidth(),
         ) {
             Row(
-                modifier = Modifier
-                    .padding(16.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    Modifier
+                        .padding(16.dp)
+                        .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_person_24dp),
                     contentDescription = "User Icon",
                     modifier = Modifier.size(32.dp),
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.primary,
                 )
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 Column(
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
                 ) {
                     Text(
                         text = stringResource(R.string.connected_account_label),
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
                     Text(
@@ -446,7 +460,7 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                         color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
+                        maxLines = 1,
                     )
                 }
 
@@ -456,7 +470,7 @@ class ScrobblingServiceLoginFragment : BottomSheetDialogFragment() {
                     painter = painterResource(R.drawable.ic_open_in_new_24dp),
                     contentDescription = "Open in browser",
                     modifier = Modifier.size(24.dp),
-                    tint = MaterialTheme.colorScheme.outline
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
         }

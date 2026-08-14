@@ -15,43 +15,48 @@ class EqBandCapabilities(
     /**
      * How many bands the engine can handle when Pro Mode isn't enabled.
      */
-    val maxBandCountInNormalMode: Int
+    val maxBandCountInNormalMode: Int,
 ) {
     val hasMultipleBandConfigurations: Boolean = bandConfigurations.size > 1
 
     fun getAvailableBandCounts(isProMode: Boolean) =
-        bandConfigurations.filter { it.bandCount <= maxBandCountInNormalMode || isProMode }
+        bandConfigurations
+            .filter { it.bandCount <= maxBandCountInNormalMode || isProMode }
             .map { it.bandCount }
 
-    fun isBandCountSupported(bandCount: Int) =
-        bandConfigurations.any { it.bandCount == bandCount }
+    fun isBandCountSupported(bandCount: Int) = bandConfigurations.any { it.bandCount == bandCount }
 
-    fun getFrequencies(bandCount: Int): IntArray {
-        return bandConfigurations.first { it.bandCount == bandCount }.bandFrequenciesInHz
-    }
+    fun getFrequencies(bandCount: Int): IntArray = bandConfigurations.first { it.bandCount == bandCount }.bandFrequenciesInHz
 
-    fun getBands(profile: EqProfile, bandCount: Int): List<EqBand> {
-        if (bandConfigurations.isEmpty())
+    fun getBands(
+        profile: EqProfile,
+        bandCount: Int,
+    ): List<EqBand> {
+        if (bandConfigurations.isEmpty()) {
             return emptyList()
+        }
 
         val freqInHz = bandConfigurations.first { it.bandCount == bandCount }.bandFrequenciesInHz
-        val levels = if (profile.isValid && profile.levels.size == bandCount) {
-            profile.levels
-        } else {
-            FloatArray(bandCount)
-        }
+        val levels =
+            if (profile.isValid && profile.levels.size == bandCount) {
+                profile.levels
+            } else {
+                FloatArray(bandCount)
+            }
         return (0 until bandCount).map {
             EqBand(
                 index = it,
                 value = levels[it],
                 valueRange = bandRange,
-                frequencyInHz = freqInHz[it]
+                frequencyInHz = freqInHz[it],
             )
         }
     }
 
-    class BandConfiguration(val bandCount: Int, val bandFrequenciesInHz: IntArray) {
-
+    class BandConfiguration(
+        val bandCount: Int,
+        val bandFrequenciesInHz: IntArray,
+    ) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (javaClass != other?.javaClass) return false

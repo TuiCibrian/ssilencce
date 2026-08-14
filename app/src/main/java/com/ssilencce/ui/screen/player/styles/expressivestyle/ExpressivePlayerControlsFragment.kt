@@ -26,7 +26,6 @@ import com.ssilencce.ui.screen.player.PlayerAnimator
 import java.util.LinkedList
 
 class ExpressivePlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_expressive_player_playback_controls) {
-
     private var _binding: FragmentExpressivePlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -39,7 +38,10 @@ class ExpressivePlayerControlsFragment : AbsPlayerControlsFragment(R.layout.frag
     override val songTotalTime: TextView
         get() = binding.songTotalTime
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentExpressivePlayerPlaybackControlsBinding.bind(view)
         binding.playPauseButton.setOnClickListener(this)
@@ -47,29 +49,31 @@ class ExpressivePlayerControlsFragment : AbsPlayerControlsFragment(R.layout.frag
         binding.previousButton.setOnTouchListener(getSkipButtonTouchHandler(DIRECTION_PREVIOUS))
     }
 
-    override fun onCreatePlayerAnimator(): PlayerAnimator {
-        return ExpressivePlayerAnimator(binding, isControlAnimationEnabled)
-    }
+    override fun onCreatePlayerAnimator(): PlayerAnimator = ExpressivePlayerAnimator(binding, isControlAnimationEnabled)
 
     override fun onControlAnimationStateChanged(isEnabled: Boolean) {
         super.onControlAnimationStateChanged(isEnabled)
         _binding?.playPauseButton?.isRotating = playerViewModel.isPlaying && isControlAnimationEnabled
     }
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {}
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {}
 
     override fun onExtraInfoChanged(extraInfo: String?) {}
 
     override fun onUpdatePlayPause(isPlaying: Boolean) {
         _binding?.playPauseButton?.let {
-            val playPauseIcon = if (isPlaying) {
-                ContextCompat.getDrawable(it.context, R.drawable.avd_play)
-            } else {
-                ContextCompat.getDrawable(it.context, R.drawable.avd_pause)
-            }
+            val playPauseIcon =
+                if (isPlaying) {
+                    ContextCompat.getDrawable(it.context, R.drawable.avd_play)
+                } else {
+                    ContextCompat.getDrawable(it.context, R.drawable.avd_pause)
+                }
             it.setIcon(playPauseIcon)
             it.morphToShape(
-                if (isPlaying) MorphicIconButton.SHAPE_COOKIE_9 else MorphicIconButton.SHAPE_CIRCLE
+                if (isPlaying) MorphicIconButton.SHAPE_COOKIE_9 else MorphicIconButton.SHAPE_CIRCLE,
             )
             it.isRotating = isPlaying && isControlAnimationEnabled
         }
@@ -85,7 +89,7 @@ class ExpressivePlayerControlsFragment : AbsPlayerControlsFragment(R.layout.frag
             binding.songTotalTime.tintTarget(oldOnSurfaceVariantColor, scheme.onSurfaceVariantColor),
             binding.playPauseButton.tintTarget(oldButtonColor, scheme.primaryColor),
             binding.nextButton.tintTarget(oldButtonColor, scheme.primaryColor),
-            binding.previousButton.tintTarget(oldButtonColor, scheme.primaryColor)
+            binding.previousButton.tintTarget(oldButtonColor, scheme.primaryColor),
         )
     }
 
@@ -113,34 +117,38 @@ class ExpressivePlayerControlsFragment : AbsPlayerControlsFragment(R.layout.frag
 
     private class ExpressivePlayerAnimator(
         private val binding: FragmentExpressivePlayerPlaybackControlsBinding,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ) : PlayerAnimator(isEnabled) {
-
         private val skipButtonTranslationInPx: Float
             @Px get() = 32.dp(binding.root.context).toFloat()
 
-        override fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {
+        override fun onAddAnimation(
+            animators: LinkedList<Animator>,
+            interpolator: TimeInterpolator,
+        ) {
             animators.add(
-                ObjectAnimator.ofPropertyValuesHolder(
-                    binding.nextButton,
-                    PropertyValuesHolder.ofFloat(View.TRANSLATION_X, -skipButtonTranslationInPx, 0f),
-                    PropertyValuesHolder.ofFloat(View.ALPHA, 0f, 1f)
-                ).apply {
-                    setInterpolator(DecelerateInterpolator())
-                    duration = 250
-                    startDelay = 100
-                }
+                ObjectAnimator
+                    .ofPropertyValuesHolder(
+                        binding.nextButton,
+                        PropertyValuesHolder.ofFloat(View.TRANSLATION_X, -skipButtonTranslationInPx, 0f),
+                        PropertyValuesHolder.ofFloat(View.ALPHA, 0f, 1f),
+                    ).apply {
+                        setInterpolator(DecelerateInterpolator())
+                        duration = 250
+                        startDelay = 100
+                    },
             )
             animators.add(
-                ObjectAnimator.ofPropertyValuesHolder(
-                    binding.previousButton,
-                    PropertyValuesHolder.ofFloat(View.TRANSLATION_X, skipButtonTranslationInPx, 0f),
-                    PropertyValuesHolder.ofFloat(View.ALPHA, 0f, 1f)
-                ).apply {
-                    setInterpolator(DecelerateInterpolator())
-                    duration = 250
-                    startDelay = 100
-                }
+                ObjectAnimator
+                    .ofPropertyValuesHolder(
+                        binding.previousButton,
+                        PropertyValuesHolder.ofFloat(View.TRANSLATION_X, skipButtonTranslationInPx, 0f),
+                        PropertyValuesHolder.ofFloat(View.ALPHA, 0f, 1f),
+                    ).apply {
+                        setInterpolator(DecelerateInterpolator())
+                        duration = 250
+                        startDelay = 100
+                    },
             )
             addScaleAnimation(animators, binding.songCurrentProgress, interpolator, 200)
             addScaleAnimation(animators, binding.songTotalTime, interpolator, 200)

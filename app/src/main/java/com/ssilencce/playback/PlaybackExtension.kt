@@ -16,11 +16,10 @@ import com.ssilencce.data.model.Song
 typealias QueueItem = Pair<MediaItem, Int>
 
 @OptIn(UnstableApi::class)
-internal fun MediaSession.isRemoteController(controller: MediaSession.ControllerInfo): Boolean {
-    return isMediaNotificationController(controller) ||
-            isAutoCompanionController(controller) ||
-            isAutomotiveController(controller)
-}
+internal fun MediaSession.isRemoteController(controller: MediaSession.ControllerInfo): Boolean =
+    isMediaNotificationController(controller) ||
+        isAutoCompanionController(controller) ||
+        isAutomotiveController(controller)
 
 val Player.mediaItems: List<MediaItem>
     get() = (0 until mediaItemCount).map { getMediaItemAt(it) }
@@ -41,13 +40,15 @@ fun Player.getQueueItems(shuffleMode: Boolean = this.shuffleModeEnabled): List<Q
 
 fun List<Song>.toMediaItems() = map { it.toMediaItem() }
 
-fun MediaItem.withExtras(consumer: Bundle.() -> Unit) = buildUpon()
-    .setMediaMetadata(mediaMetadata.withExtras(consumer))
-    .build()
+fun MediaItem.withExtras(consumer: Bundle.() -> Unit) =
+    buildUpon()
+        .setMediaMetadata(mediaMetadata.withExtras(consumer))
+        .build()
 
-fun MediaMetadata.withExtras(consumer: Bundle.() -> Unit) = buildUpon()
-    .setExtras(getOrCreateExtras().apply(consumer))
-    .build()
+fun MediaMetadata.withExtras(consumer: Bundle.() -> Unit) =
+    buildUpon()
+        .setExtras(getOrCreateExtras().apply(consumer))
+        .build()
 
 fun MediaMetadata.getOrCreateExtras() = extras ?: Bundle()
 

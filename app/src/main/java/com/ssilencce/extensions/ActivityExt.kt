@@ -42,19 +42,28 @@ fun Activity.keepScreenOn(keepOn: Boolean) {
 }
 
 @Suppress("DEPRECATION")
-inline fun <reified T : Any> Activity.extra(key: String, default: T? = null) = lazy {
+inline fun <reified T : Any> Activity.extra(
+    key: String,
+    default: T? = null,
+) = lazy {
     val value = intent?.extras?.get(key)
     value as? T ?: default
 }
 
 @Suppress("DEPRECATION")
-inline fun <reified T : Any> Intent.extra(key: String, default: T? = null) = lazy {
+inline fun <reified T : Any> Intent.extra(
+    key: String,
+    default: T? = null,
+) = lazy {
     val value = extras?.get(key)
     value as? T ?: default
 }
 
 @Suppress("DEPRECATION")
-inline fun <reified T : Any> Activity.extraNotNull(key: String, default: T? = null) = lazy {
+inline fun <reified T : Any> Activity.extraNotNull(
+    key: String,
+    default: T? = null,
+) = lazy {
     val value = intent?.extras?.get(key)
     requireNotNull(value as? T ?: default) { key }
 }

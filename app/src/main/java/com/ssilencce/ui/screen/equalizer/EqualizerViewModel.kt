@@ -43,9 +43,8 @@ class EqualizerViewModel(
     private val contentResolver: ContentResolver,
     private val equalizerManager: EqualizerManager,
     private val audioOutputObserver: AudioOutputObserver,
-    private val mediaStoreWriter: MediaStoreWriter
+    private val mediaStoreWriter: MediaStoreWriter,
 ) : ViewModel() {
-
     val eqState = equalizerManager.eqState
     val eqBandCapabilities = equalizerManager.bandCapabilities
     val currentProfile = equalizerManager.eqCurrentProfile
@@ -67,14 +66,16 @@ class EqualizerViewModel(
 
     val autoEqProfiles = equalizerManager.autoEqProfiles
 
-    val eqProfiles = combine(
-        equalizerManager.eqProfiles,
-        equalizerManager.eqCustomProfile
-    ) { profiles, custom -> profiles + custom }
+    val eqProfiles =
+        combine(
+            equalizerManager.eqProfiles,
+            equalizerManager.eqCustomProfile,
+        ) { profiles, custom -> profiles + custom }
 
-    val eqBands = combine(eqState, eqBandCapabilities, currentProfile) { state, bandCapabilities, profile ->
-        bandCapabilities.getBands(profile, state.preferredBandCount)
-    }
+    val eqBands =
+        combine(eqState, eqBandCapabilities, currentProfile) { state, bandCapabilities, profile ->
+            bandCapabilities.getBands(profile, state.preferredBandCount)
+        }
 
     private val _exportRequestEvent = Channel<ProfileExportRequest>(Channel.BUFFERED)
     val exportRequestEvent: Flow<ProfileExportRequest> = _exportRequestEvent.receiveAsFlow()
@@ -109,120 +110,132 @@ class EqualizerViewModel(
     fun setEqualizerState(isEnabled: Boolean) {
         viewModelScope.launch(Dispatchers.IO) {
             equalizerManager.setEqualizerState(
-                eqState.value.copy(enabled = isEnabled)
+                eqState.value.copy(enabled = isEnabled),
             )
         }
     }
 
-    fun setEngineMode(engineMode: EqEngineMode) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setEngineMode(engineMode)
-    }
+    fun setEngineMode(engineMode: EqEngineMode) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setEngineMode(engineMode)
+        }
 
     fun setLoudnessGain(
         enabled: Boolean = loudnessGainState.value.isUsable,
-        gain: Float = loudnessGainState.value.gainInDb
+        gain: Float = loudnessGainState.value.gainInDb,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setLoudnessGain(
             loudnessGainState.value.copy(
                 enabled = enabled,
-                gainInDb = gain
-            )
+                gainInDb = gain,
+            ),
         )
     }
 
     fun setBassBoost(
         enabled: Boolean = bassBoostState.value.isUsable,
-        strength: Float = bassBoostState.value.strength
+        strength: Float = bassBoostState.value.strength,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setBassBoost(
             bassBoostState.value.copy(
                 enabled = enabled,
-                strength = strength
-            )
+                strength = strength,
+            ),
         )
     }
 
     fun setVirtualizer(
         enabled: Boolean = virtualizerState.value.isUsable,
-        strength: Float = virtualizerState.value.strength
+        strength: Float = virtualizerState.value.strength,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setVirtualizer(
             virtualizerState.value.copy(
                 enabled = enabled,
-                strength = strength
-            )
+                strength = strength,
+            ),
         )
     }
 
-    fun setBandCount(bandCount: Int) = viewModelScope.launch(Dispatchers.IO) {
-        _changeBandCountEvent.send(equalizerManager.setBandCount(bandCount) to bandCount)
-    }
+    fun setBandCount(bandCount: Int) =
+        viewModelScope.launch(Dispatchers.IO) {
+            _changeBandCountEvent.send(equalizerManager.setBandCount(bandCount) to bandCount)
+        }
 
-    fun setEqualizerProfile(eqProfile: EqProfile) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setCurrentProfile(eqProfile)
-    }
+    fun setEqualizerProfile(eqProfile: EqProfile) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setCurrentProfile(eqProfile)
+        }
 
-    fun setAutoEqProfile(profile: AutoEqProfile) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setAutoEqProfile(profile)
-    }
+    fun setAutoEqProfile(profile: AutoEqProfile) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setAutoEqProfile(profile)
+        }
 
-    fun setCustomProfileBandGain(band: Int, gainInDb: Float) = viewModelScope.launch(Dispatchers.IO) {
+    fun setCustomProfileBandGain(
+        band: Int,
+        gainInDb: Float,
+    ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setCustomProfileBandGain(band, gainInDb)
     }
 
-    fun setEnableBitPerfect(enable: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setEnableBitPerfect(enable)
-    }
+    fun setEnableBitPerfect(enable: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setEnableBitPerfect(enable)
+        }
 
-    fun setEnableAudioOffload(enable: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setEnableAudioOffload(enable)
-    }
+    fun setEnableAudioOffload(enable: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setEnableAudioOffload(enable)
+        }
 
-    fun setEnableAudioFloatOutput(enable: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setEnableAudioFloatOutput(enable)
-    }
+    fun setEnableAudioFloatOutput(enable: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setEnableAudioFloatOutput(enable)
+        }
 
-    fun setEnableSkipSilences(enable: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setEnableSkipSilence(enable)
-    }
+    fun setEnableSkipSilences(enable: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setEnableSkipSilence(enable)
+        }
 
-    fun setVolume(volume: Float) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setVolume(volume)
-    }
+    fun setVolume(volume: Float) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setVolume(volume)
+        }
 
     fun setBalance(
-        center: Float
+        center: Float,
     ) = viewModelScope.launch(Dispatchers.Default) {
         equalizerManager.setBalance(
-            balanceState.value.copy(center = center)
+            balanceState.value.copy(center = center),
         )
     }
 
     fun setTempo(
         speed: Float = tempoState.value.speed,
         pitch: Float = tempoState.value.pitch,
-        isFixedPitch: Boolean = tempoState.value.isFixedPitch
+        isFixedPitch: Boolean = tempoState.value.isFixedPitch,
     ) = viewModelScope.launch(Dispatchers.Default) {
         equalizerManager.setTempo(
             tempoState.value.copy(
                 speed = speed,
                 pitch = pitch,
-                isFixedPitch = isFixedPitch
-            )
+                isFixedPitch = isFixedPitch,
+            ),
         )
     }
 
     fun setReplayGain(
         mode: ReplayGainMode = replayGainState.value.mode,
         preamp: Float = replayGainState.value.preamp,
-        preampWithoutGain: Float = replayGainState.value.preampWithoutGain
+        preampWithoutGain: Float = replayGainState.value.preampWithoutGain,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setReplayGain(
             replayGainState.value.copy(
                 mode = mode,
                 preamp = preamp,
-                preampWithoutGain = preampWithoutGain
-            )
+                preampWithoutGain = preampWithoutGain,
+            ),
         )
     }
 
@@ -236,7 +249,7 @@ class EqualizerViewModel(
         postGain: Float = compressorState.value.postGain,
         ratio: Float = compressorState.value.ratio,
         expanderRatio: Float = compressorState.value.expanderRatio,
-        threshold: Float = compressorState.value.threshold
+        threshold: Float = compressorState.value.threshold,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setCompressor(
             compressorState.value.copy(
@@ -249,14 +262,15 @@ class EqualizerViewModel(
                 postGain = postGain,
                 ratio = ratio,
                 expanderRatio = expanderRatio,
-                threshold = threshold
-            )
+                threshold = threshold,
+            ),
         )
     }
 
-    fun resetCompressor() = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setCompressor(CompressorState.Unspecified.copy(enabled = true))
-    }
+    fun resetCompressor() =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setCompressor(CompressorState.Unspecified.copy(enabled = true))
+        }
 
     fun setLimiter(
         enabled: Boolean = limiterState.value.enabled,
@@ -264,7 +278,7 @@ class EqualizerViewModel(
         releaseTimeMs: Float = limiterState.value.releaseTimeMs,
         postGain: Float = limiterState.value.postGain,
         ratio: Float = limiterState.value.ratio,
-        threshold: Float = limiterState.value.threshold
+        threshold: Float = limiterState.value.threshold,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setLimiter(
             limiterState.value.copy(
@@ -273,18 +287,20 @@ class EqualizerViewModel(
                 releaseTimeMs = releaseTimeMs,
                 postGain = postGain,
                 ratio = ratio,
-                threshold = threshold
-            )
+                threshold = threshold,
+            ),
         )
     }
 
-    fun resetLimiter() = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setLimiter(LimiterState.Unspecified.copy(enabled = true))
-    }
+    fun resetLimiter() =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setLimiter(LimiterState.Unspecified.copy(enabled = true))
+        }
 
-    fun setProMode(enabled: Boolean) = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.setProMode(enabled)
-    }
+    fun setProMode(enabled: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setProMode(enabled)
+        }
 
     fun showOutputDeviceSelector(context: Context) {
         audioOutputObserver.showOutputDeviceSelector(context)
@@ -293,232 +309,256 @@ class EqualizerViewModel(
     fun saveProfile(
         profileName: String,
         canReplace: Boolean,
-        associatedDevices: Set<AudioDeviceType>
+        associatedDevices: Set<AudioDeviceType>,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (!canReplace && !equalizerManager.isProfileNameAvailable(profileName)) {
-            ProfileOpResult(false, R.string.that_name_is_already_in_use, canDismiss = false)
-        } else {
-            val newProfile = equalizerManager.getNewProfileFromCustom(profileName, associatedDevices)
-            if (equalizerManager.addProfile(newProfile, canReplace, useProfile = true)) {
-                ProfileOpResult(true, R.string.profile_saved_successfully)
+        val result =
+            if (!canReplace && !equalizerManager.isProfileNameAvailable(profileName)) {
+                ProfileOpResult(false, R.string.that_name_is_already_in_use, canDismiss = false)
             } else {
-                ProfileOpResult(false, R.string.the_profile_could_not_be_saved)
+                val newProfile = equalizerManager.getNewProfileFromCustom(profileName, associatedDevices)
+                if (equalizerManager.addProfile(newProfile, canReplace, useProfile = true)) {
+                    ProfileOpResult(true, R.string.profile_saved_successfully)
+                } else {
+                    ProfileOpResult(false, R.string.the_profile_could_not_be_saved)
+                }
             }
-        }
         _saveResultEvent.send(result)
     }
 
     fun editProfile(
         profile: EqProfile,
         newName: String?,
-        newAssociations: Set<AudioDeviceType>
+        newAssociations: Set<AudioDeviceType>,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (newName.isNullOrBlank()) {
-            ProfileOpResult(false, canDismiss = false)
-        } else {
-            if (equalizerManager.editProfile(profile, newName, newAssociations.toSet())) {
-                ProfileOpResult(true, R.string.profile_saved_successfully)
+        val result =
+            if (newName.isNullOrBlank()) {
+                ProfileOpResult(false, canDismiss = false)
             } else {
-                ProfileOpResult(false, R.string.the_profile_could_not_be_saved)
+                if (equalizerManager.editProfile(profile, newName, newAssociations.toSet())) {
+                    ProfileOpResult(true, R.string.profile_saved_successfully)
+                } else {
+                    ProfileOpResult(false, R.string.the_profile_could_not_be_saved)
+                }
             }
-        }
         _renameResultEvent.send(result)
     }
 
     fun deleteProfile(
         context: Context,
-        profile: EqProfile
+        profile: EqProfile,
     ) = viewModelScope.launch(Dispatchers.IO) {
         _deleteResultEvent.send(
             ProfileDeletionResult(
                 success = equalizerManager.removeProfile(profile),
                 profileName = profile.getName(context),
-                autoEqProfile = false
-            )
+                autoEqProfile = false,
+            ),
         )
     }
 
     fun deleteAutoEqProfile(
-        profile: AutoEqProfile
+        profile: AutoEqProfile,
     ) = viewModelScope.launch(Dispatchers.IO) {
         _deleteResultEvent.send(
             ProfileDeletionResult(
                 success = equalizerManager.deleteAutoEqProfile(profile),
                 profileName = profile.name,
-                autoEqProfile = true
-            )
+                autoEqProfile = true,
+            ),
         )
     }
 
-    fun generateExportData(profiles: List<EqProfile>) = viewModelScope.launch(Dispatchers.IO) {
-        val exportName = equalizerManager.getNewExportName()
-        val exportContent = runCatching { Json.encodeToString(profiles) }.getOrNull()
-        val result = if (exportName.isNotEmpty() && !exportContent.isNullOrEmpty()) {
-            ProfileExportRequest(success = true, profileExportData = Pair(exportName, exportContent))
-        } else {
-            ProfileExportRequest(false)
+    fun generateExportData(profiles: List<EqProfile>) =
+        viewModelScope.launch(Dispatchers.IO) {
+            val exportName = equalizerManager.getNewExportName()
+            val exportContent = runCatching { Json.encodeToString(profiles) }.getOrNull()
+            val result =
+                if (exportName.isNotEmpty() && !exportContent.isNullOrEmpty()) {
+                    ProfileExportRequest(success = true, profileExportData = Pair(exportName, exportContent))
+                } else {
+                    ProfileExportRequest(false)
+                }
+            _exportRequestEvent.send(result)
         }
-        _exportRequestEvent.send(result)
-    }
 
-    fun exportConfiguration(data: Uri?, content: String?) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (data == null || content.isNullOrEmpty()) {
-            ProfileExportResult(false)
-        } else {
-            val result = runCatching {
-                mediaStoreWriter.toContentResolver(null, data) { stream ->
-                    if (content.isNotEmpty()) {
-                        stream.bufferedWriter().use { bfw -> bfw.write(content) }
-                        true
-                    } else false
+    fun exportConfiguration(
+        data: Uri?,
+        content: String?,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        val result =
+            if (data == null || content.isNullOrEmpty()) {
+                ProfileExportResult(false)
+            } else {
+                val result =
+                    runCatching {
+                        mediaStoreWriter.toContentResolver(null, data) { stream ->
+                            if (content.isNotEmpty()) {
+                                stream.bufferedWriter().use { bfw -> bfw.write(content) }
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    }
+
+                if (result.isFailure || result.getOrThrow().resultCode == MediaStoreWriter.Result.Code.ERROR) {
+                    ProfileExportResult(false, R.string.an_unexpected_error_occurred)
+                } else {
+                    ProfileExportResult(
+                        success = true,
+                        messageRes = R.string.profiles_exported_successfully,
+                        data = data,
+                        mimeType = MIME_TYPE_APPLICATION,
+                    )
                 }
             }
-
-            if (result.isFailure || result.getOrThrow().resultCode == MediaStoreWriter.Result.Code.ERROR) {
-                ProfileExportResult(false, R.string.an_unexpected_error_occurred)
-            } else {
-                ProfileExportResult(
-                    success = true,
-                    messageRes = R.string.profiles_exported_successfully,
-                    data = data,
-                    mimeType = MIME_TYPE_APPLICATION
-                )
-            }
-        }
         _exportResultEvent.send(result)
     }
 
-    fun requestImport(data: Uri?) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (data == null) {
-            ProfileImportRequest(false, R.string.there_is_nothing_to_import)
-        } else {
-            val mimeType = contentResolver.getType(data)
-            val parseResult = runCatching {
-                if (mimeType == null || (
-                            mimeType != "application/json" &&
-                            mimeType != "text/plain" &&
-                            !mimeType.startsWith("application/"))) {
-                    throw IllegalArgumentException("Invalid MIME type: $mimeType")
-                }
+    fun requestImport(data: Uri?) =
+        viewModelScope.launch(Dispatchers.IO) {
+            val result =
+                if (data == null) {
+                    ProfileImportRequest(false, R.string.there_is_nothing_to_import)
+                } else {
+                    val mimeType = contentResolver.getType(data)
+                    val parseResult =
+                        runCatching {
+                            if (mimeType == null || (
+                                    mimeType != "application/json" &&
+                                        mimeType != "text/plain" &&
+                                        !mimeType.startsWith("application/")
+                                )
+                            ) {
+                                throw IllegalArgumentException("Invalid MIME type: $mimeType")
+                            }
 
-                // First, check if it starts as a JSON array without reading everything into memory
-                contentResolver.openInputStream(data)?.use { stream ->
-                    JsonReader(stream.bufferedReader()).use { reader ->
-                        if (reader.peek() != JsonToken.BEGIN_ARRAY) {
-                            throw IllegalArgumentException("Not a JSON array")
+                            // First, check if it starts as a JSON array without reading everything into memory
+                            contentResolver.openInputStream(data)?.use { stream ->
+                                JsonReader(stream.bufferedReader()).use { reader ->
+                                    if (reader.peek() != JsonToken.BEGIN_ARRAY) {
+                                        throw IllegalArgumentException("Not a JSON array")
+                                    }
+                                }
+                            }
+
+                            // If check passed, read and decode
+                            contentResolver.openInputStream(data)?.use { stream ->
+                                val content = stream.readString()
+                                Json.decodeFromString<List<EqProfile>>(content)
+                            }
                         }
+                    val profiles = parseResult.getOrNull()
+                    if (parseResult.isFailure || profiles == null) {
+                        ProfileImportRequest(false, R.string.there_is_nothing_to_import)
+                    } else {
+                        ProfileImportRequest(true, profiles = profiles)
                     }
                 }
-
-                // If check passed, read and decode
-                contentResolver.openInputStream(data)?.use { stream ->
-                    val content = stream.readString()
-                    Json.decodeFromString<List<EqProfile>>(content)
-                }
-            }
-            val profiles = parseResult.getOrNull()
-            if (parseResult.isFailure || profiles == null) {
-                ProfileImportRequest(false, R.string.there_is_nothing_to_import)
-            } else {
-                ProfileImportRequest(true, profiles = profiles)
-            }
+            _importRequestEvent.send(result)
         }
-        _importRequestEvent.send(result)
-    }
 
     fun requestAutoEqImport(
         context: Context,
-        uri: Uri?
+        uri: Uri?,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (uri == null) {
-            AutoEqImportRequest(false, R.string.there_is_nothing_to_import)
-        } else {
-            val mimeType = context.contentResolver.getType(uri)
-            if (mimeType == null || mimeType != MIME_TYPE_PLAIN_TEXT) {
+        val result =
+            if (uri == null) {
                 AutoEqImportRequest(false, R.string.there_is_nothing_to_import)
             } else {
-                val parseResult = runCatching {
-                    AutoEqTxtParser.parse(context, uri)
-                }
-                val profile = parseResult.getOrNull()
-                if (parseResult.isFailure || profile == null) {
-                    parseResult.exceptionOrNull()?.let {
-                        Log.e("EqualizerViewModel", "AutoEq profile parsing failed!", it)
-                    }
+                val mimeType = context.contentResolver.getType(uri)
+                if (mimeType == null || mimeType != MIME_TYPE_PLAIN_TEXT) {
                     AutoEqImportRequest(false, R.string.there_is_nothing_to_import)
                 } else {
-                    AutoEqImportRequest(true, profile = profile)
+                    val parseResult =
+                        runCatching {
+                            AutoEqTxtParser.parse(context, uri)
+                        }
+                    val profile = parseResult.getOrNull()
+                    if (parseResult.isFailure || profile == null) {
+                        parseResult.exceptionOrNull()?.let {
+                            Log.e("EqualizerViewModel", "AutoEq profile parsing failed!", it)
+                        }
+                        AutoEqImportRequest(false, R.string.there_is_nothing_to_import)
+                    } else {
+                        AutoEqImportRequest(true, profile = profile)
+                    }
                 }
             }
-        }
         _autoEqImportRequestEvent.send(result)
     }
 
-    fun importProfiles(profiles: List<EqProfile>) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (profiles.isNotEmpty()) {
-            ProfileImportResult(true, imported = equalizerManager.importProfiles(profiles))
-        } else {
-            ProfileImportResult(false, R.string.no_profile_imported)
+    fun importProfiles(profiles: List<EqProfile>) =
+        viewModelScope.launch(Dispatchers.IO) {
+            val result =
+                if (profiles.isNotEmpty()) {
+                    ProfileImportResult(true, imported = equalizerManager.importProfiles(profiles))
+                } else {
+                    ProfileImportResult(false, R.string.no_profile_imported)
+                }
+            _importResultEvent.send(result)
         }
-        _importResultEvent.send(result)
-    }
 
     fun importAutoEqProfile(
         profile: AutoEqProfile,
         profileName: String,
-        canReplace: Boolean
+        canReplace: Boolean,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (!canReplace && !equalizerManager.isAutoEqProfileNameAvailable(profileName)) {
-            ProfileOpResult(false, R.string.that_name_is_already_in_use, canDismiss = false)
-        } else {
-            if (equalizerManager.importAutoEqProfile(profile, profileName, canReplace)) {
-                ProfileOpResult(true, R.string.autoeq_profile_imported_successfully)
+        val result =
+            if (!canReplace && !equalizerManager.isAutoEqProfileNameAvailable(profileName)) {
+                ProfileOpResult(false, R.string.that_name_is_already_in_use, canDismiss = false)
             } else {
-                ProfileOpResult(false, R.string.no_profile_imported)
+                if (equalizerManager.importAutoEqProfile(profile, profileName, canReplace)) {
+                    ProfileOpResult(true, R.string.autoeq_profile_imported_successfully)
+                } else {
+                    ProfileOpResult(false, R.string.no_profile_imported)
+                }
             }
-        }
         _autoEqImportResultEvent.send(result)
     }
 
     fun shareProfiles(
         context: Context,
-        profiles: List<EqProfile>
+        profiles: List<EqProfile>,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        val result = if (profiles.isNotEmpty()) {
-            val cacheDir = context.externalCacheDir
-            if (cacheDir == null || (!cacheDir.exists() && !cacheDir.mkdirs())) {
-                ProfileExportResult(false, R.string.an_unexpected_error_occurred)
-            } else {
-                val name = equalizerManager.getNewExportName()
-                val result = runCatching {
-                    File(cacheDir, name)
-                        .also { it.writeText(Json.encodeToString(profiles)) }
-                        .getContentUri(context)
-                }
-                if (result.isSuccess) {
-                    ProfileExportResult(
-                        success = true,
-                        isShareRequest = true,
-                        data = result.getOrThrow(),
-                        mimeType = MIME_TYPE_APPLICATION
-                    )
+        val result =
+            if (profiles.isNotEmpty()) {
+                val cacheDir = context.externalCacheDir
+                if (cacheDir == null || (!cacheDir.exists() && !cacheDir.mkdirs())) {
+                    ProfileExportResult(false, R.string.an_unexpected_error_occurred)
                 } else {
-                    ProfileExportResult(
-                        success = false,
-                        isShareRequest = true,
-                        messageRes = R.string.an_unexpected_error_occurred
-                    )
+                    val name = equalizerManager.getNewExportName()
+                    val result =
+                        runCatching {
+                            File(cacheDir, name)
+                                .also { it.writeText(Json.encodeToString(profiles)) }
+                                .getContentUri(context)
+                        }
+                    if (result.isSuccess) {
+                        ProfileExportResult(
+                            success = true,
+                            isShareRequest = true,
+                            data = result.getOrThrow(),
+                            mimeType = MIME_TYPE_APPLICATION,
+                        )
+                    } else {
+                        ProfileExportResult(
+                            success = false,
+                            isShareRequest = true,
+                            messageRes = R.string.an_unexpected_error_occurred,
+                        )
+                    }
                 }
+            } else {
+                ProfileExportResult(false)
             }
-        } else {
-            ProfileExportResult(false)
-        }
         _exportResultEvent.send(result)
     }
 
-    fun resetEqualizer() = viewModelScope.launch(Dispatchers.IO) {
-        equalizerManager.resetConfiguration()
-    }
+    fun resetEqualizer() =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.resetConfiguration()
+        }
 
     fun hasSystemEqualizer(context: Context): Boolean {
         val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)

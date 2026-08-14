@@ -7,5 +7,5 @@ import androidx.room.PrimaryKey
 class QueueEntity(
     @PrimaryKey
     val id: String,
-    val order: Int
+    val order: Int,
 )

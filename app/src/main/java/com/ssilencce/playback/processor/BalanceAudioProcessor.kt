@@ -11,11 +11,13 @@ import java.nio.ByteOrder
 @OptIn(UnstableApi::class)
 class BalanceAudioProcessor(
     private var leftGain: Float = 1.0f,
-    private var rightGain: Float = 1.0f
+    private var rightGain: Float = 1.0f,
 ) : BaseAudioProcessor() {
-
     @Synchronized
-    fun setBalance(left: Float, right: Float) {
+    fun setBalance(
+        left: Float,
+        right: Float,
+    ) {
         leftGain = left
         rightGain = right
     }

@@ -24,7 +24,7 @@ import kotlinx.serialization.Serializable
 data class ITunesSearchResponse(
     @SerialName("resultCount")
     val size: Int,
-    val results: List<ITunesSearchResult>
+    val results: List<ITunesSearchResult>,
 )
 
 @Serializable
@@ -40,5 +40,5 @@ data class ITunesSearchResult(
     @SerialName("collectionName")
     val album: String,
     @SerialName("trackTimeMillis")
-    val durationInMillis: Long? = null
+    val durationInMillis: Long? = null,
 )

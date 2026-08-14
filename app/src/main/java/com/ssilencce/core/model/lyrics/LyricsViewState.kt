@@ -10,8 +10,9 @@ import com.ssilencce.data.model.lyrics.SyncedLyrics
 import kotlin.math.abs
 
 @Stable
-class LyricsViewState(val lyrics: SyncedLyrics?) {
-
+class LyricsViewState(
+    val lyrics: SyncedLyrics?,
+) {
     var position by mutableLongStateOf(0L)
         private set
 
@@ -39,7 +40,7 @@ class LyricsViewState(val lyrics: SyncedLyrics?) {
         previousLineIndex = if (lineJump <= 1) currentLineIndex else -1
         currentLineIndex = newLineIndex
         currentWordIndex = findWordIndexAt(position, currentLineIndex)
-        currentBackgroundIndex = findBackgroundIndexAt(position,  currentLineIndex)
+        currentBackgroundIndex = findBackgroundIndexAt(position, currentLineIndex)
     }
 
     private fun findLineIndexAt(position: Long): Int {
@@ -53,7 +54,10 @@ class LyricsViewState(val lyrics: SyncedLyrics?) {
         return -1
     }
 
-    private fun findWordIndexAt(position: Long, lineIndex: Int): Int {
+    private fun findWordIndexAt(
+        position: Long,
+        lineIndex: Int,
+    ): Int {
         if (lyrics == null || lineIndex !in lyrics.lines.indices) return -1
         val words = lyrics.lines[lineIndex].content.mainSyllables
         for (i in words.indices) {
@@ -64,7 +68,10 @@ class LyricsViewState(val lyrics: SyncedLyrics?) {
         return words.lastIndex
     }
 
-    private fun findBackgroundIndexAt(position: Long, lineIndex: Int): Int {
+    private fun findBackgroundIndexAt(
+        position: Long,
+        lineIndex: Int,
+    ): Int {
         if (lyrics == null || lineIndex !in lyrics.lines.indices) return -1
         val line = lyrics.lines[lineIndex]
         if (!line.hasBackgroundVocals) return -1

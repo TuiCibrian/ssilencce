@@ -55,7 +55,6 @@ import java.util.LinkedList
  * @author Christians M. A. (mardous)
  */
 class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragment_full_cover_player_playback_controls) {
-
     private var _binding: FragmentFullCoverPlayerPlaybackControlsBinding? = null
     private val binding get() = _binding!!
 
@@ -89,7 +88,10 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
     private var popupMenu: PopupMenu? = null
     private var isFavorite: Boolean = false
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentFullCoverPlayerPlaybackControlsBinding.bind(view)
 
@@ -121,8 +123,14 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
     override fun onClick(view: View) {
         super.onClick(view)
         when (view) {
-            binding.shuffleButton -> playerViewModel.toggleShuffleMode()
-            binding.repeatButton -> playerViewModel.cycleRepeatMode()
+            binding.shuffleButton -> {
+                playerViewModel.toggleShuffleMode()
+            }
+
+            binding.repeatButton -> {
+                playerViewModel.cycleRepeatMode()
+            }
+
             binding.playPauseButton -> {
                 playerViewModel.togglePlayPause()
                 if (isControlAnimationEnabled) {
@@ -132,13 +140,12 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
         }
     }
 
-    override fun onCreatePlayerAnimator(): PlayerAnimator {
-        return FullCoverPlayerAnimator(binding, isControlAnimationEnabled)
-    }
+    override fun onCreatePlayerAnimator(): PlayerAnimator = FullCoverPlayerAnimator(binding, isControlAnimationEnabled)
 
     override fun getTintTargets(scheme: PlayerColorScheme): List<PlayerTintTarget> {
-        val oldPlayPauseColor = binding.playPauseButton.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldPlayPauseColor =
+            binding.playPauseButton.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
 
         val oldControlColor = binding.nextButton.iconTint.defaultColor
         val oldSliderColor = binding.progressSlider.currentColor
@@ -146,17 +153,19 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
         val oldSecondaryTextColor = binding.text.currentTextColor
 
         val oldShuffleColor = getPlaybackControlsColor(isShuffleModeOn)
-        val newShuffleColor = getPlaybackControlsColor(
-            isShuffleModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newShuffleColor =
+            getPlaybackControlsColor(
+                isShuffleModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
         val oldRepeatColor = getPlaybackControlsColor(isRepeatModeOn)
-        val newRepeatColor = getPlaybackControlsColor(
-            isRepeatModeOn,
-            scheme.onSurfaceColor,
-            scheme.onSurfaceVariantColor
-        )
+        val newRepeatColor =
+            getPlaybackControlsColor(
+                isRepeatModeOn,
+                scheme.onSurfaceColor,
+                scheme.onSurfaceVariantColor,
+            )
 
         return listOfNotNull(
             binding.playPauseButton.tintTarget(oldPlayPauseColor, scheme.onSurfaceColor),
@@ -171,11 +180,14 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
             binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songInfo.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
             binding.songCurrentProgress.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
-            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.songTotalTime.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         )
     }
 
-    override fun onSongInfoChanged(currentSong: Song, nextSong: Song) {
+    override fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    ) {
         _binding?.let { nonNullBinding ->
             nonNullBinding.title.text = currentSong.title
             nonNullBinding.text.text = getSongArtist(currentSong)
@@ -201,7 +213,10 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
         }
     }
 
-    internal fun setFavorite(isFavorite: Boolean, withAnimation: Boolean) {
+    internal fun setFavorite(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         if (this.isFavorite != isFavorite) {
             this.isFavorite = isFavorite
             playerFragment?.let { nonNullPlayerFragment ->
@@ -217,7 +232,10 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
         _binding = null
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String?,
+    ) {
         super.onSharedPreferenceChanged(sharedPreferences, key)
         if (key == DISPLAY_NEXT_SONG) {
             setupQueueMenuItem()
@@ -226,16 +244,25 @@ class FullCoverPlayerControlsFragment : AbsPlayerControlsFragment(R.layout.fragm
 
     private class FullCoverPlayerAnimator(
         private val binding: FragmentFullCoverPlayerPlaybackControlsBinding,
-        isEnabled: Boolean
+        isEnabled: Boolean,
     ) : PlayerAnimator(isEnabled) {
-        private fun addAlphaAnimation(animators: LinkedList<Animator>, view: View, interpolator: TimeInterpolator) {
-            animators.add(ObjectAnimator.ofFloat(view, View.ALPHA, 0f, 1f).apply {
-                this.interpolator = interpolator
-                this.duration = 500
-            })
+        private fun addAlphaAnimation(
+            animators: LinkedList<Animator>,
+            view: View,
+            interpolator: TimeInterpolator,
+        ) {
+            animators.add(
+                ObjectAnimator.ofFloat(view, View.ALPHA, 0f, 1f).apply {
+                    this.interpolator = interpolator
+                    this.duration = 500
+                },
+            )
         }
 
-        override fun onAddAnimation(animators: LinkedList<Animator>, interpolator: TimeInterpolator) {
+        override fun onAddAnimation(
+            animators: LinkedList<Animator>,
+            interpolator: TimeInterpolator,
+        ) {
             addAlphaAnimation(animators, binding.playPauseButton, interpolator)
             addAlphaAnimation(animators, binding.nextButton, interpolator)
             addAlphaAnimation(animators, binding.previousButton, interpolator)

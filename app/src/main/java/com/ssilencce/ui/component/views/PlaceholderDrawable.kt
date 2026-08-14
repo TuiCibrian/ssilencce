@@ -12,23 +12,25 @@ import com.ssilencce.extensions.resources.getDrawableCompat
 import kotlin.math.min
 import com.google.android.material.R as M3R
 
-fun Context.getPlaceholderDrawable(@DrawableRes foregroundRes: Int) =
-    PlaceholderDrawable(this, foregroundRes)
+fun Context.getPlaceholderDrawable(
+    @DrawableRes foregroundRes: Int,
+) = PlaceholderDrawable(this, foregroundRes)
 
 class PlaceholderDrawable(
     context: Context,
     @DrawableRes
-    private val foregroundRes: Int
+    private val foregroundRes: Int,
 ) : Drawable() {
+    private val paint =
+        Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            color = MaterialColors.getColor(context, BACKGROUND_COLOR, Color.DKGRAY)
+        }
 
-    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.FILL
-        color = MaterialColors.getColor(context, BACKGROUND_COLOR, Color.DKGRAY)
-    }
-
-    private val foreground = context.getDrawableCompat(foregroundRes)?.apply {
-        setTintList(getColorStateList(context, FOREGROUND_COLOR, FALLBACK_TINT))
-    }
+    private val foreground =
+        context.getDrawableCompat(foregroundRes)?.apply {
+            setTintList(getColorStateList(context, FOREGROUND_COLOR, FALLBACK_TINT))
+        }
 
     override fun setAlpha(alpha: Int) {}
 
@@ -57,6 +59,7 @@ class PlaceholderDrawable(
 
         @AttrRes
         val BACKGROUND_COLOR = M3R.attr.colorSurfaceContainerHighest
+
         @AttrRes
         val FOREGROUND_COLOR = M3R.attr.colorOnSurfaceVariant
     }

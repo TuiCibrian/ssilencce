@@ -22,31 +22,30 @@ class ExpandedSong(
     val playCount: Int,
     val skipCount: Int,
     val lastPlayedAt: Long,
-    val isFavorite: Boolean
+    val isFavorite: Boolean,
 ) : Song(
-    id,
-    data,
-    title,
-    trackNumber,
-    year,
-    size,
-    duration,
-    dateAdded,
-    rawDateModified,
-    albumId,
-    albumName,
-    artistId,
-    artistName,
-    albumArtistName,
-    genreName
-) {
-
+        id,
+        data,
+        title,
+        trackNumber,
+        year,
+        size,
+        duration,
+        dateAdded,
+        rawDateModified,
+        albumId,
+        albumName,
+        artistId,
+        artistName,
+        albumArtistName,
+        genreName,
+    ) {
     constructor(
         song: Song,
         playCount: Int,
         skipCount: Int,
         lastPlayedAt: Long,
-        isFavorite: Boolean
+        isFavorite: Boolean,
     ) : this(
         song.id,
         song.data,
@@ -66,6 +65,6 @@ class ExpandedSong(
         playCount,
         skipCount,
         lastPlayedAt,
-        isFavorite
+        isFavorite,
     )
 }

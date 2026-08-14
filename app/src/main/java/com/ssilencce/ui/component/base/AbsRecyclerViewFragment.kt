@@ -55,8 +55,8 @@ import me.zhanghai.android.fastscroll.FastScroller
 import org.koin.android.ext.android.inject
 
 abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : RecyclerView.LayoutManager> :
-    AbsMainActivityFragment(R.layout.fragment_main_recycler), IScrollHelper {
-
+    AbsMainActivityFragment(R.layout.fragment_main_recycler),
+    IScrollHelper {
     private var _binding: FragmentMainRecyclerBinding? = null
     private val binding get() = _binding!!
 
@@ -71,7 +71,10 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
 
     protected val sharedPreferences: SharedPreferences by inject()
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         applyWindowInsetsFromView(view)
 
@@ -91,7 +94,7 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
             binding.recyclerView.onVerticalScroll(
                 viewLifecycleOwner,
                 onScrollDown = { binding.shuffleButton.hide() },
-                onScrollUp = { binding.shuffleButton.show() }
+                onScrollUp = { binding.shuffleButton.show() },
             )
             binding.shuffleButton.apply {
                 setOnClickListener {
@@ -128,10 +131,11 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         _binding?.shuffleButton?.doOnLayout {
             viewLifecycleOwner.lifecycleScope.launch {
                 delay(1000)
-                val balloon = createSsilencceBalloon("shuffle_button_tip") {
-                    setDismissWhenClicked(true)
-                    setText(getString(R.string.shuffle_button_tip))
-                }
+                val balloon =
+                    createSsilencceBalloon("shuffle_button_tip") {
+                        setDismissWhenClicked(true)
+                        setText(getString(R.string.shuffle_button_tip))
+                    }
                 _binding?.shuffleButton?.let {
                     if (it.isVisible && balloon?.isShowing == false) {
                         balloon.showAlignTop(it, yOff = (-8).dp(resources))
@@ -169,18 +173,18 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         }
     }
 
-    protected open fun createFastScroller(recyclerView: RecyclerView): FastScroller {
-        return recyclerView.createFastScroller()
-    }
+    protected open fun createFastScroller(recyclerView: RecyclerView): FastScroller = recyclerView.createFastScroller()
 
     private fun initAdapter() {
         adapter = createAdapter()
-        adapter?.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-            override fun onChanged() {
-                super.onChanged()
-                checkIsEmpty()
-            }
-        })
+        adapter?.registerAdapterDataObserver(
+            object : RecyclerView.AdapterDataObserver() {
+                override fun onChanged() {
+                    super.onChanged()
+                    checkIsEmpty()
+                }
+            },
+        )
     }
 
     protected open val emptyMessageRes: Int
@@ -226,7 +230,10 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
     override fun onPrepareMenu(menu: Menu) {
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.menu_library, menu)
     }
 

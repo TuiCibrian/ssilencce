@@ -113,9 +113,10 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 /**
  * @author Christians M. A. (mardous)
  */
-abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
-    MediaController.Listener, SharedPreferences.OnSharedPreferenceChangeListener {
-
+abstract class AbsSlidingMusicPanelActivity :
+    AbsBaseActivity(),
+    MediaController.Listener,
+    SharedPreferences.OnSharedPreferenceChangeListener {
     protected lateinit var binding: SlidingMusicPanelLayoutBinding
 
     protected val mediaControllerOwner by lazy { MediaControllerOwner(this, this) }
@@ -142,7 +143,9 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
 
     var panelState: Int
         get() = bottomSheetBehavior.state
-        set(value) { bottomSheetBehavior.state = value }
+        set(value) {
+            bottomSheetBehavior.state = value
+        }
     private var panelStateBefore: Int? = null
     private var panelStateCurrent: Int? = null
     val isBottomNavVisible: Boolean
@@ -157,21 +160,22 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
      */
     private var isHiddenByDestination = false
 
-    private val onBackPressedCallback = object : OnBackPressedCallback(true) {
-        override fun handleOnBackPressed() {
-            if (handleBackPress()) {
-                return
-            }
-            val navHostFragment = whichFragment<NavHostFragment>(R.id.fragment_container)
-            val currentFragment = navHostFragment.currentFragment()
-            if (currentFragment is IBackConsumer && currentFragment.handleBackPress()) {
-                return
-            }
-            if (!navHostFragment.navController.navigateUp()) {
-                finish()
+    private val onBackPressedCallback =
+        object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (handleBackPress()) {
+                    return
+                }
+                val navHostFragment = whichFragment<NavHostFragment>(R.id.fragment_container)
+                val currentFragment = navHostFragment.currentFragment()
+                if (currentFragment is IBackConsumer && currentFragment.handleBackPress()) {
+                    return
+                }
+                if (!navHostFragment.navController.navigateUp()) {
+                    finish()
+                }
             }
         }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -280,24 +284,32 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
     }
 
     private fun setupSlidingUpPanel() {
-        binding.sheetView.viewTreeObserver.addOnGlobalLayoutListener(object :
-            ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                binding.sheetView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                if (nowPlayingScreen == NowPlayingScreen.Peek) {
-                    slidingPanel.updateLayoutParams<ViewGroup.LayoutParams> {
-                        height = ViewGroup.LayoutParams.WRAP_CONTENT
+        binding.sheetView.viewTreeObserver.addOnGlobalLayoutListener(
+            object :
+                ViewTreeObserver.OnGlobalLayoutListener {
+                override fun onGlobalLayout() {
+                    binding.sheetView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                    if (nowPlayingScreen == NowPlayingScreen.Peek) {
+                        slidingPanel.updateLayoutParams<ViewGroup.LayoutParams> {
+                            height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        }
+                    }
+                    when (panelState) {
+                        STATE_EXPANDED -> {
+                            onPanelExpanded()
+                        }
+
+                        STATE_COLLAPSED -> {
+                            onPanelCollapsed()
+                        }
+
+                        else -> {
+                            // playerFragment!!.onHide()
+                        }
                     }
                 }
-                when (panelState) {
-                    STATE_EXPANDED -> onPanelExpanded()
-                    STATE_COLLAPSED -> onPanelCollapsed()
-                    else -> {
-                        // playerFragment!!.onHide()
-                    }
-                }
-            }
-        })
+            },
+        )
     }
 
     /**
@@ -334,34 +346,36 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
         hideBottomSheet(
             hide = hide,
             animate = animate,
-            isBottomNavVisible = visible && navigationView is BottomNavigationView
+            isBottomNavVisible = visible && navigationView is BottomNavigationView,
         )
     }
 
     private fun hideBottomSheet(
         hide: Boolean,
         animate: Boolean = false,
-        isBottomNavVisible: Boolean = navigationView.isVisible && navigationView is BottomNavigationView
+        isBottomNavVisible: Boolean = navigationView.isVisible && navigationView is BottomNavigationView,
     ) {
         val miniPlayerHeight = dip(R.dimen.mini_player_height)
         val bottomNavHeight = dip(R.dimen.bottom_nav_height)
 
         val bottomInsets = windowInsets.getBottomInsets(this)
-        val heightOfBar =  bottomInsets + miniPlayerHeight
+        val heightOfBar = bottomInsets + miniPlayerHeight
         val heightOfBarWithTabs = heightOfBar + bottomNavHeight
         if (hide) {
             bottomSheetBehavior.peekHeight = (-bottomInsets).coerceAtLeast(0)
             panelState = STATE_COLLAPSED
             libraryViewModel.setLibraryMargins(
-                fabBottomMargin = LibraryMargin(
-                    margin = if (isBottomNavVisible) bottomNavHeight else 0,
-                    additionalSpace = dip(R.dimen.fab_margin_top_left_right),
-                    bottomInsets = windowInsets.getBottomInsets(this)
-                ),
-                bottomSheetMargin = LibraryMargin(
-                    margin = 0,
-                    bottomInsets = windowInsets.getBottomInsets(this)
-                )
+                fabBottomMargin =
+                    LibraryMargin(
+                        margin = if (isBottomNavVisible) bottomNavHeight else 0,
+                        additionalSpace = dip(R.dimen.fab_margin_top_left_right),
+                        bottomInsets = windowInsets.getBottomInsets(this),
+                    ),
+                bottomSheetMargin =
+                    LibraryMargin(
+                        margin = 0,
+                        bottomInsets = windowInsets.getBottomInsets(this),
+                    ),
             )
         } else {
             if (playerViewModel.queue.isNotEmpty()) {
@@ -374,15 +388,17 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                         bottomSheetBehavior.peekHeight = heightOfBarWithTabs
                     }
                     libraryViewModel.setLibraryMargins(
-                        fabBottomMargin = LibraryMargin(
-                            margin = miniPlayerHeight + bottomNavHeight,
-                            additionalSpace = dip(R.dimen.fab_margin_top_left_right),
-                            bottomInsets = windowInsets.getBottomInsets(this)
-                        ),
-                        bottomSheetMargin = LibraryMargin(
-                            margin = miniPlayerHeight,
-                            bottomInsets = windowInsets.getBottomInsets(this)
-                        )
+                        fabBottomMargin =
+                            LibraryMargin(
+                                margin = miniPlayerHeight + bottomNavHeight,
+                                additionalSpace = dip(R.dimen.fab_margin_top_left_right),
+                                bottomInsets = windowInsets.getBottomInsets(this),
+                            ),
+                        bottomSheetMargin =
+                            LibraryMargin(
+                                margin = miniPlayerHeight,
+                                bottomInsets = windowInsets.getBottomInsets(this),
+                            ),
                     )
                 } else {
                     if (animate) {
@@ -394,15 +410,17 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                         slidingPanel.bringToFront()
                     }
                     libraryViewModel.setLibraryMargins(
-                        fabBottomMargin = LibraryMargin(
-                            margin = miniPlayerHeight,
-                            additionalSpace = dip(R.dimen.fab_margin_top_left_right),
-                            bottomInsets = windowInsets.getBottomInsets(this)
-                        ),
-                        bottomSheetMargin = LibraryMargin(
-                            margin = miniPlayerHeight,
-                            bottomInsets = windowInsets.getBottomInsets(this)
-                        )
+                        fabBottomMargin =
+                            LibraryMargin(
+                                margin = miniPlayerHeight,
+                                additionalSpace = dip(R.dimen.fab_margin_top_left_right),
+                                bottomInsets = windowInsets.getBottomInsets(this),
+                            ),
+                        bottomSheetMargin =
+                            LibraryMargin(
+                                margin = miniPlayerHeight,
+                                bottomInsets = windowInsets.getBottomInsets(this),
+                            ),
                     )
                 }
             }
@@ -440,7 +458,8 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
         for (tab in currentTabs) {
             if (tab.visible) {
                 val menu = tab.category
-                navigationView.menu.add(0, menu.id, 0, menu.titleRes)
+                navigationView.menu
+                    .add(0, menu.id, 0, menu.titleRes)
                     .setIcon(menu.iconRes)
             }
         }
@@ -455,23 +474,32 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
 
     @SuppressLint("ClickableViewAccessibility")
     private fun setupNavigationViewGestures() {
-        if (!Preferences.holdTabToSearch)
+        if (!Preferences.holdTabToSearch) {
             return
+        }
 
         val selectedCategories = Preferences.libraryCategories.filter { it.visible }
         for (info in selectedCategories) {
-            val filterMode = SearchQuery.FilterMode.entries.firstOrNull {
-                it.name == info.category.name
-            }
-
-            val gestureDetector = GestureDetector(this, object : SimpleOnGestureListener() {
-                override fun onLongPress(e: MotionEvent) {
-                    findNavController(R.id.fragment_container)
-                        .navigate(R.id.nav_search, Bundle().apply {
-                            putSerializable(SearchFragment.MODE, filterMode)
-                        })
+            val filterMode =
+                SearchQuery.FilterMode.entries.firstOrNull {
+                    it.name == info.category.name
                 }
-            })
+
+            val gestureDetector =
+                GestureDetector(
+                    this,
+                    object : SimpleOnGestureListener() {
+                        override fun onLongPress(e: MotionEvent) {
+                            findNavController(R.id.fragment_container)
+                                .navigate(
+                                    R.id.nav_search,
+                                    Bundle().apply {
+                                        putSerializable(SearchFragment.MODE, filterMode)
+                                    },
+                                )
+                        }
+                    },
+                )
             navigationView.setItemOnTouchListener(info.category.id) { _: View, event: MotionEvent ->
                 gestureDetector.onTouchEvent(event)
             }
@@ -504,14 +532,17 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                 NowPlayingScreen.Plain,
                 NowPlayingScreen.Peek,
                 NowPlayingScreen.M3,
-                NowPlayingScreen.Expressive -> {
+                NowPlayingScreen.Expressive,
+                -> {
                     setLightStatusBar(isColorLight)
                     setLightNavigationBar(isColorLight)
                 }
+
                 NowPlayingScreen.FullCover -> {
                     setLightNavigationBar(isColorLight)
                     setLightStatusBar(false)
                 }
+
                 NowPlayingScreen.Gradient -> {
                     val navigationbarColor = paletteColor.darkenColor
                     setLightNavigationBar(navigationbarColor.isColorLight)
@@ -529,9 +560,15 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
         return false
     }
 
-    override fun onSharedPreferenceChanged(preferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        preferences: SharedPreferences,
+        key: String?,
+    ) {
         when (key) {
-            TAB_TITLES_MODE -> navigationView.labelVisibilityMode = Preferences.bottomTitlesMode
+            TAB_TITLES_MODE -> {
+                navigationView.labelVisibilityMode = Preferences.bottomTitlesMode
+            }
+
             HOLD_TAB_TO_SEARCH -> {
                 if (preferences.getBoolean(key, true)) {
                     setupNavigationViewGestures()
@@ -539,27 +576,41 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                     clearNavigationViewGestures()
                 }
             }
-            LIBRARY_CATEGORIES -> updateTabs()
+
+            LIBRARY_CATEGORIES -> {
+                updateTabs()
+            }
+
             NOW_PLAYING_SCREEN -> {
                 chooseFragmentForTheme()
                 slidingPanel.updateLayoutParams<ViewGroup.LayoutParams> {
-                    height = if (nowPlayingScreen != NowPlayingScreen.Peek) {
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    } else {
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    }
+                    height =
+                        if (nowPlayingScreen != NowPlayingScreen.Peek) {
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        } else {
+                            ViewGroup.LayoutParams.WRAP_CONTENT
+                        }
                 }
                 miniPlayerFragment?.setupButtonStyle()
             }
 
-            ADAPTIVE_CONTROLS -> miniPlayerFragment?.setupButtonStyle()
-            ADD_EXTRA_CONTROLS -> miniPlayerFragment?.setupExtraControls()
-            SQUIGGLY_SEEK_BAR -> miniPlayerFragment?.setUpProgressStyle()
+            ADAPTIVE_CONTROLS -> {
+                miniPlayerFragment?.setupButtonStyle()
+            }
+
+            ADD_EXTRA_CONTROLS -> {
+                miniPlayerFragment?.setupExtraControls()
+            }
+
+            SQUIGGLY_SEEK_BAR -> {
+                miniPlayerFragment?.setUpProgressStyle()
+            }
 
             CAROUSEL_EFFECT,
             NOW_PLAYING_SMALL_IMAGE,
             PLAYER_BLUR_RADIUS,
-            CIRCLE_PLAY_BUTTON -> {
+            CIRCLE_PLAY_BUTTON,
+            -> {
                 chooseFragmentForTheme()
             }
 
@@ -568,15 +619,18 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                 chooseFragmentForTheme()
             }
 
-            SWIPE_DOWN_TO_DISMISS -> bottomSheetBehavior.isHideable =
-                Preferences.swipeDownToDismiss
+            SWIPE_DOWN_TO_DISMISS -> {
+                bottomSheetBehavior.isHideable =
+                    Preferences.swipeDownToDismiss
+            }
 
             ENABLE_ROTATION_LOCK -> {
-                requestedOrientation = if (preferences.getBoolean(key, false)) {
-                    ActivityInfo.SCREEN_ORIENTATION_LOCKED
-                } else {
-                    ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                }
+                requestedOrientation =
+                    if (preferences.getBoolean(key, false)) {
+                        ActivityInfo.SCREEN_ORIENTATION_LOCKED
+                    } else {
+                        ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
             }
 
             USE_FOLDER_ART -> {
@@ -588,10 +642,9 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
                                 startActivity(
                                     Intent()
                                         .setAction(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                                        .setData(Uri.fromParts("package", packageName, null))
+                                        .setData(Uri.fromParts("package", packageName, null)),
                                 )
-                            }
-                            .show()
+                            }.show()
                     }
                 }
             }
@@ -601,15 +654,16 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
     private fun chooseFragmentForTheme() {
         nowPlayingScreen = Preferences.nowPlayingScreen
 
-        val fragment: AbsPlayerFragment = when (nowPlayingScreen) {
-            NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
-            NowPlayingScreen.Gradient -> GradientPlayerFragment()
-            NowPlayingScreen.Peek -> PeekPlayerFragment()
-            NowPlayingScreen.Plain -> PlainPlayerFragment()
-            NowPlayingScreen.M3 -> M3PlayerFragment()
-            NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
-            else -> DefaultPlayerFragment()
-        }
+        val fragment: AbsPlayerFragment =
+            when (nowPlayingScreen) {
+                NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
+                NowPlayingScreen.Gradient -> GradientPlayerFragment()
+                NowPlayingScreen.Peek -> PeekPlayerFragment()
+                NowPlayingScreen.Plain -> PlainPlayerFragment()
+                NowPlayingScreen.M3 -> M3PlayerFragment()
+                NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
+                else -> DefaultPlayerFragment()
+            }
 
         supportFragmentManager.commit {
             replace(R.id.player_container, fragment)
@@ -620,24 +674,31 @@ abstract class AbsSlidingMusicPanelActivity : AbsBaseActivity(),
         miniPlayerFragment?.view?.setOnClickListener { expandPanel() }
     }
 
-    private val bottomSheetCallback = object : BottomSheetCallback() {
-        @SuppressLint("SwitchIntDef")
-        override fun onStateChanged(bottomSheet: View, newState: Int) {
-            if (panelStateCurrent != null) {
-                panelStateBefore = panelStateCurrent
+    private val bottomSheetCallback =
+        object : BottomSheetCallback() {
+            @SuppressLint("SwitchIntDef")
+            override fun onStateChanged(
+                bottomSheet: View,
+                newState: Int,
+            ) {
+                if (panelStateCurrent != null) {
+                    panelStateBefore = panelStateCurrent
+                }
+                panelStateCurrent = newState
+                when (newState) {
+                    STATE_EXPANDED -> onPanelExpanded()
+                    STATE_COLLAPSED -> onPanelCollapsed()
+                    STATE_HIDDEN -> playerViewModel.clearQueue(QueueClearingBehavior.RemoveAllSongs)
+                }
             }
-            panelStateCurrent = newState
-            when (newState) {
-                STATE_EXPANDED -> onPanelExpanded()
-                STATE_COLLAPSED -> onPanelCollapsed()
-                STATE_HIDDEN -> playerViewModel.clearQueue(QueueClearingBehavior.RemoveAllSongs)
-            }
-        }
 
-        override fun onSlide(bottomSheet: View, slideOffset: Float) {
-            setMiniPlayerAlphaProgress(slideOffset)
+            override fun onSlide(
+                bottomSheet: View,
+                slideOffset: Float,
+            ) {
+                setMiniPlayerAlphaProgress(slideOffset)
+            }
         }
-    }
 
     companion object {
         private const val BOTTOM_SHEET_HIDDEN = "is_bottom_sheet_hidden"

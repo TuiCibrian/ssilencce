@@ -17,4 +17,7 @@
 
 package com.ssilencce.core.model
 
-class Cutoff(val description: String, val interval: Long)
+class Cutoff(
+    val description: String,
+    val interval: Long,
+)

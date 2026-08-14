@@ -55,27 +55,35 @@ val Int.darkenColor: Int
  * Ensures that the color has enough contrast against a given background.
  */
 @ColorInt
-fun Int.ensureContrastAgainst(@ColorInt background: Int, minContrastRatio: Double = 2.0): Int {
-    return if (ColorUtils.calculateContrast(this, background) < minContrastRatio) {
-        if (ColorUtils.calculateLuminance(background) > 0.5)
+fun Int.ensureContrastAgainst(
+    @ColorInt background: Int,
+    minContrastRatio: Double = 2.0,
+): Int =
+    if (ColorUtils.calculateContrast(this, background) < minContrastRatio) {
+        if (ColorUtils.calculateLuminance(background) > 0.5) {
             ColorUtils.blendARGB(this, 0xFF000000.toInt(), 0.3f)
-        else
+        } else {
             ColorUtils.blendARGB(this, 0xFFFFFFFF.toInt(), 0.3f)
+        }
     } else {
         this
     }
-}
 
 /**
  * Desaturates the color if it's too dark compared to the reference background.
  */
 @ColorInt
-fun Int.desaturateIfTooDarkComparedTo(@ColorInt background: Int): Int {
+fun Int.desaturateIfTooDarkComparedTo(
+    @ColorInt background: Int,
+): Int {
     val luminanceDiff = ColorUtils.calculateLuminance(background) - ColorUtils.calculateLuminance(this)
     return if (luminanceDiff > 0.3) ColorUtils.blendARGB(this, background, 0.3f) else this
 }
 
-fun Int.adjustSaturationIfTooHigh(surfaceColor: Int, isNightMode: Boolean): Int {
+fun Int.adjustSaturationIfTooHigh(
+    surfaceColor: Int,
+    isNightMode: Boolean,
+): Int {
     if (isNightMode) return this
 
     val hsl = FloatArray(3)
@@ -114,7 +122,9 @@ fun Int.toForegroundColorSpan() = ForegroundColorSpan(this)
 fun Int.toColorStateList(): ColorStateList = ColorStateList.valueOf(this)
 
 @ColorInt
-fun Context.getColorCompat(@ColorRes res: Int) = ContextCompat.getColor(this, res)
+fun Context.getColorCompat(
+    @ColorRes res: Int,
+) = ContextCompat.getColor(this, res)
 
 @ColorInt
 fun Fragment.surfaceColor() = requireContext().surfaceColor()
@@ -149,7 +159,9 @@ fun Fragment.textColorSecondary() = requireContext().textColorSecondary()
 @ColorInt
 fun Context.textColorSecondary() = resolveColor(android.R.attr.textColorSecondary)
 
-fun SeekBar.applyColor(@ColorInt color: Int) {
+fun SeekBar.applyColor(
+    @ColorInt color: Int,
+) {
     color.toColorStateList().let {
         thumbTintList = it
         progressTintList = it
@@ -157,7 +169,9 @@ fun SeekBar.applyColor(@ColorInt color: Int) {
     }
 }
 
-fun Slider.applyColor(@ColorInt color: Int) {
+fun Slider.applyColor(
+    @ColorInt color: Int,
+) {
     color.toColorStateList().run {
         thumbTintList = this
         trackActiveTintList = this
@@ -165,7 +179,10 @@ fun Slider.applyColor(@ColorInt color: Int) {
     }
 }
 
-fun MaterialButton.applyColor(color: Int, isIconButton: Boolean = false) {
+fun MaterialButton.applyColor(
+    color: Int,
+    isIconButton: Boolean = false,
+) {
     if (isIconButton) {
         val iconTintList = color.toColorStateList()
         val strokeTintList = color.withAlpha(0.4f).toColorStateList()
@@ -229,11 +246,16 @@ fun Toolbar.colorizeToolbar(toolbarIconsColor: Int) {
         PorterDuffColorFilter(toolbarIconsColor, PorterDuff.Mode.SRC_IN)
 }
 
-fun getPrimaryTextColor(context: Context, isDark: Boolean = !context.isNightMode, isDisabled: Boolean = false): Int {
-    val resolveColor = if (isDark) {
-        if (isDisabled) R.color.primary_text_disabled_light else R.color.primary_text_light
-    } else {
-        if (isDisabled) R.color.primary_text_disabled_dark else R.color.primary_text_dark
-    }
+fun getPrimaryTextColor(
+    context: Context,
+    isDark: Boolean = !context.isNightMode,
+    isDisabled: Boolean = false,
+): Int {
+    val resolveColor =
+        if (isDark) {
+            if (isDisabled) R.color.primary_text_disabled_light else R.color.primary_text_light
+        } else {
+            if (isDisabled) R.color.primary_text_disabled_dark else R.color.primary_text_dark
+        }
     return context.getColorCompat(resolveColor)
 }

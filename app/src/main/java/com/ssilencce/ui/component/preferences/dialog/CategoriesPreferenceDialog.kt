@@ -33,7 +33,6 @@ import com.ssilencce.util.LIBRARY_CATEGORIES
 import com.ssilencce.util.Preferences
 
 class CategoriesPreferenceDialog : DialogFragment() {
-
     private lateinit var adapter: CategoryInfoAdapter
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
@@ -41,9 +40,12 @@ class CategoriesPreferenceDialog : DialogFragment() {
 
         var categoryInfos = Preferences.libraryCategories
         if (savedInstanceState != null && savedInstanceState.containsKey(LIBRARY_CATEGORIES)) {
-            categoryInfos = BundleCompat.getParcelableArrayList(
-                savedInstanceState, LIBRARY_CATEGORIES, CategoryInfo::class.java
-            )!!
+            categoryInfos =
+                BundleCompat.getParcelableArrayList(
+                    savedInstanceState,
+                    LIBRARY_CATEGORIES,
+                    CategoryInfo::class.java,
+                )!!
         }
 
         adapter = CategoryInfoAdapter(categoryInfos.toMutableList())
@@ -57,12 +59,13 @@ class CategoriesPreferenceDialog : DialogFragment() {
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
                 updateCategories(adapter.items)
-            }
-            .setNeutralButton(R.string.reset_action, null)
+            }.setNeutralButton(R.string.reset_action, null)
             .create { dialog ->
                 dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
-                    adapter.items = Preferences.getDefaultLibraryCategoryInfos()
-                        .toMutableList()
+                    adapter.items =
+                        Preferences
+                            .getDefaultLibraryCategoryInfos()
+                            .toMutableList()
                 }
             }
     }

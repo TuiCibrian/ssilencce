@@ -36,14 +36,17 @@ import com.ssilencce.ui.adapters.GenreAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
 import com.ssilencce.ui.screen.library.ReloadType
 
-class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, GridLayoutManager>(),
+class GenresListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, GridLayoutManager>(),
     IGenreCallback {
-
     override val titleRes: Int = R.string.genres_label
     override val isShuffleVisible: Boolean = false
     override val emptyMessageRes: Int = R.string.no_genres_label
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getGenres().observe(viewLifecycleOwner) { genres ->
             adapter?.dataSet = genres
@@ -55,9 +58,7 @@ class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, G
         libraryViewModel.forceReload(ReloadType.Genres)
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(requireActivity(), gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(requireActivity(), gridSize)
 
     override fun createAdapter(): GenreAdapter {
         val itemLayoutRes = itemLayoutRes
@@ -70,7 +71,10 @@ class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, G
         findNavController().navigate(R.id.nav_genre_detail, genreDetailArgs(genre))
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         GenreSortMode.AllGenres.createMenu(menu)
     }
@@ -88,19 +92,16 @@ class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, G
         libraryViewModel.forceReload(ReloadType.Genres)
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.entries.firstOrNull {
+    override fun getSavedViewType(): GridViewType =
+        GridViewType.entries.firstOrNull {
             it.name == sharedPreferences.getString(VIEW_TYPE, null)
         } ?: GridViewType.Normal
-    }
 
     override fun saveViewType(viewType: GridViewType) {
         sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit {
@@ -109,7 +110,10 @@ class GenresListFragment : AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, G
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }

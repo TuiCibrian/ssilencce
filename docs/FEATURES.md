@@ -13,6 +13,7 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 - **Queue behavior** — Configurable tap-on-song action (play single song / play whole list / play next / queue at end) and queue-clearing behavior (remove all vs. keep current).
 - **Controls** — Rewind with back button, configurable seek interval (5–60 s), mini-player swipe-to-skip, extra controls, adaptive/circle/animated buttons.
 - **Audio processing** (`renderer` + `processor`) — Per-channel balance, ReplayGain (album/track mode, preamp, peak limiting on 16/24-bit PCM) injected into `DefaultAudioSink`; ALAC hardware-decoder workaround for broken high-bitrate M4A.
+- **Software decoding fallback** — Jellyfin FFmpeg decoder (`media3-ffmpeg-decoder`) auto-loaded by the Media3 extension renderer for codecs MediaCodec cannot handle (e.g. ALAC, and rare codecs inside containers Media3 demuxes); Media3 1.10.1 provides no demuxers for ASF/WMA, APE, DSF/DFF or AIFF, so those containers are not playable.
 - **Audio device integration** (`AudioOutputObserver`) — Resume on headphone/Bluetooth connect, pause on disconnect, pause at zero volume, system media output switcher (incl. MIUI/Samsung OEM intents), Xiaomi Mi Play detection, bit-perfect state.
 - **Audio focus** — Optional ignore-audio-focus mode.
 - **Advanced** — MP3 index seeking, stop when closed from recents, play option always visible / whole list, play all songs when searching.

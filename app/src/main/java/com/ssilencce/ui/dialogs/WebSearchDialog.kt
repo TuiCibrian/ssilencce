@@ -33,7 +33,6 @@ import com.ssilencce.extensions.toChooser
 import com.ssilencce.extensions.withArgs
 
 class WebSearchDialog : DialogFragment() {
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val song = BundleCompat.getParcelable(requireArguments(), EXTRA_SONG, Song::class.java)!!
 
@@ -45,15 +44,15 @@ class WebSearchDialog : DialogFragment() {
             .setNegativeButton(android.R.string.cancel, null)
             .setItems(titles) { _: DialogInterface, position: Int ->
                 startActivity(
-                    song.searchQuery(engines[position]).openWeb().toChooser(getString(R.string.web_search))
+                    song.searchQuery(engines[position]).openWeb().toChooser(getString(R.string.web_search)),
                 )
-            }
-            .create()
+            }.create()
     }
 
     companion object {
-        fun create(song: Song) = WebSearchDialog().withArgs {
-            putParcelable(EXTRA_SONG, song)
-        }
+        fun create(song: Song) =
+            WebSearchDialog().withArgs {
+                putParcelable(EXTRA_SONG, song)
+            }
     }
 }

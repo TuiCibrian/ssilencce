@@ -39,27 +39,28 @@ fun MaterialSwitch(
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(MaterialTheme.shapes.extraLarge)
-            .background(MaterialTheme.colorScheme.primaryContainer)
-            .toggleable(
-                value = isChecked,
-                enabled = enabled,
-                onValueChange = { onClick() },
-                interactionSource = interactionSource,
-                indication = LocalIndication.current,
-            )
-            .padding(horizontal = 16.dp, vertical = 20.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .clip(MaterialTheme.shapes.extraLarge)
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .toggleable(
+                    value = isChecked,
+                    enabled = enabled,
+                    onValueChange = { onClick() },
+                    interactionSource = interactionSource,
+                    indication = LocalIndication.current,
+                ).padding(horizontal = 16.dp, vertical = 20.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         icon?.let {
             Icon(
                 painter = icon,
                 contentDescription = null,
-                modifier = Modifier
-                    .padding(start = 8.dp, end = 16.dp)
-                    .size(24.dp),
+                modifier =
+                    Modifier
+                        .padding(start = 8.dp, end = 16.dp)
+                        .size(24.dp),
                 tint = MaterialTheme.colorScheme.onPrimaryContainer,
             )
         }
@@ -67,7 +68,7 @@ fun MaterialSwitch(
             modifier =
                 Modifier
                     .weight(1f)
-                    .padding(start = if (icon == null) 12.dp else 0.dp, end = 12.dp)
+                    .padding(start = if (icon == null) 12.dp else 0.dp, end = 12.dp),
         ) {
             Text(
                 text = title,
@@ -94,18 +95,18 @@ fun MaterialSwitch(
                     Icon(
                         painter = painterResource(R.drawable.ic_check_24dp),
                         contentDescription = null,
-                        modifier = Modifier.size(SwitchDefaults.IconSize)
+                        modifier = Modifier.size(SwitchDefaults.IconSize),
                     )
                 } else {
                     if (!enabled) {
                         Icon(
                             painter = painterResource(R.drawable.ic_close_24dp),
                             contentDescription = null,
-                            modifier = Modifier.size(SwitchDefaults.IconSize)
+                            modifier = Modifier.size(SwitchDefaults.IconSize),
                         )
                     }
                 }
-            }
+            },
         )
     }
 }

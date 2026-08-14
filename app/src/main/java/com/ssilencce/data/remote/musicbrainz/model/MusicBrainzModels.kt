@@ -22,7 +22,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MusicBrainzSearchResponse(
-    val recordings: List<MusicBrainzRecording> = emptyList()
+    val recordings: List<MusicBrainzRecording> = emptyList(),
 )
 
 @Serializable
@@ -36,7 +36,7 @@ data class MusicBrainzRecording(
     @SerialName("first-release-date")
     val firstReleaseDate: String? = null,
     val genres: List<MusicBrainzGenre> = emptyList(),
-    val relations: List<MusicBrainzRelation> = emptyList()
+    val relations: List<MusicBrainzRelation> = emptyList(),
 )
 
 @Serializable
@@ -46,32 +46,32 @@ data class MusicBrainzRelation(
     @SerialName("target-type")
     val targetType: String? = null,
     val artist: MusicBrainzArtist? = null,
-    val work: MusicBrainzWork? = null
+    val work: MusicBrainzWork? = null,
 )
 
 @Serializable
 data class MusicBrainzWork(
     val id: String,
     val title: String,
-    val relations: List<MusicBrainzRelation> = emptyList()
+    val relations: List<MusicBrainzRelation> = emptyList(),
 )
 
 @Serializable
 data class MusicBrainzGenre(
     val name: String,
-    val count: Int? = null
+    val count: Int? = null,
 )
 
 @Serializable
 data class MusicBrainzArtistCredit(
     val name: String,
-    val artist: MusicBrainzArtist
+    val artist: MusicBrainzArtist,
 )
 
 @Serializable
 data class MusicBrainzArtist(
     val id: String,
-    val name: String
+    val name: String,
 )
 
 @Serializable
@@ -91,12 +91,12 @@ data class MusicBrainzMedia(
     @SerialName("track-count")
     val trackCount: Int? = null,
     val position: Int? = null,
-    val tracks: List<MusicBrainzTrack> = emptyList()
+    val tracks: List<MusicBrainzTrack> = emptyList(),
 )
 
 @Serializable
 data class MusicBrainzTrack(
     val id: String? = null,
     val number: String? = null,
-    val title: String? = null
+    val title: String? = null,
 )

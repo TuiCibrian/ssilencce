@@ -31,13 +31,18 @@ fun String.displayArtistName(): String {
 }
 
 internal fun String?.isVariousArtists(): Boolean {
-    if (isNullOrBlank())
+    if (isNullOrBlank()) {
         return false
-    if (this == Artist.VARIOUS_ARTISTS_DISPLAY_NAME)
+    }
+    if (this == Artist.VARIOUS_ARTISTS_DISPLAY_NAME) {
         return true
+    }
     return false
 }
 
 internal fun String?.isArtistNameUnknown(): Boolean =
-    if (isNullOrBlank()) false
-    else trim().let { it.equals("unknown", true) || it.equals("<unknown>", true) }
+    if (isNullOrBlank()) {
+        false
+    } else {
+        trim().let { it.equals("unknown", true) || it.equals("<unknown>", true) }
+    }

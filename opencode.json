@@ -21,6 +21,15 @@
       "environment": {
         "INKSCAPE_BIN": "C:\\Program Files\\Inkscape\\bin\\inkscape.exe"
       }
+    },
+    "android-emulator": {
+      "type": "remote",
+      "url": "http://localhost:8080/mcp",
+      "enabled": true,
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {env:ANDROID_MCP_TOKEN}"
+      }
     }
   }
 }

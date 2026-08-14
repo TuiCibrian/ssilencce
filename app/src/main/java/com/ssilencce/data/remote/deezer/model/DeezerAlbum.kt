@@ -25,29 +25,35 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DeezerAlbum(
     @SerialName("data")
-    val data: List<AlbumData>
+    val data: List<AlbumData>,
 ) {
     val imageUrl: String?
         get() = data.firstOrNull()?.let { it.largeImage ?: it.mediumImage ?: it.smallImage ?: it.image }
 
-    fun getBestImage(requestedName: String, requestedImageSize: String): String? {
+    fun getBestImage(
+        requestedName: String,
+        requestedImageSize: String,
+    ): String? {
         val normRequested = requestedName.normalize()
-        val best = data.map { album ->
-            val normArtist = album.title.normalize()
-            val score = DeezerArtist.JW_SIMILARITY.apply(normArtist, normRequested)
-            album to score
-        }.maxByOrNull { it.second }
+        val best =
+            data
+                .map { album ->
+                    val normArtist = album.title.normalize()
+                    val score = DeezerArtist.JW_SIMILARITY.apply(normArtist, normRequested)
+                    album to score
+                }.maxByOrNull { it.second }
 
         if (best == null || best.second < 0.90) {
             return null
         }
 
         val bestMatch = best.first
-        val tentativeImage = when (requestedImageSize) {
-            ImageSize.LARGE -> bestMatch.largeImage
-            ImageSize.SMALL -> bestMatch.smallImage
-            else -> bestMatch.mediumImage
-        } ?: bestMatch.image
+        val tentativeImage =
+            when (requestedImageSize) {
+                ImageSize.LARGE -> bestMatch.largeImage
+                ImageSize.SMALL -> bestMatch.smallImage
+                else -> bestMatch.mediumImage
+            } ?: bestMatch.image
         return tentativeImage?.takeIf { it.isNotBlank() && !it.contains("/images/cover//") }
     }
 
@@ -62,6 +68,6 @@ data class DeezerAlbum(
         @SerialName("cover_medium")
         val mediumImage: String?,
         @SerialName("cover_big")
-        val largeImage: String?
+        val largeImage: String?,
     )
 }

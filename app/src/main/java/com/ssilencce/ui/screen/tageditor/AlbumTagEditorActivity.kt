@@ -38,7 +38,6 @@ import org.koin.core.parameter.parametersOf
  * @author Christians M. A. (mardous)
  */
 class AlbumTagEditorActivity : AbsTagEditorActivity() {
-
     override val viewModel by viewModel<TagEditorViewModel> {
         parametersOf(getEditTarget())
     }
@@ -68,19 +67,25 @@ class AlbumTagEditorActivity : AbsTagEditorActivity() {
         viewModel.loadContent()
     }
 
-    override fun onWrapFieldViews(inflater: LayoutInflater, parent: ViewGroup) {
-        albumBinding = TagEditorAlbumFieldBinding.inflate(inflater, parent, true).apply {
-            genreTextInputLayout.setEndIconOnClickListener {
-                selectDefaultGenre()
+    override fun onWrapFieldViews(
+        inflater: LayoutInflater,
+        parent: ViewGroup,
+    ) {
+        albumBinding =
+            TagEditorAlbumFieldBinding.inflate(inflater, parent, true).apply {
+                genreTextInputLayout.setEndIconOnClickListener {
+                    selectDefaultGenre()
+                }
             }
-        }
     }
 
     override fun onDefaultGenreSelection(genre: String) {
         val genreContent = albumBinding.genre.text?.toString()
         if (!genreContent.isNullOrBlank()) {
             albumBinding.genre.setText(String.format("%s;%s", genreContent, genre))
-        } else albumBinding.genre.setText(genre)
+        } else {
+            albumBinding.genre.setText(genre)
+        }
     }
 
     override fun downloadOnlineImage() {
@@ -113,15 +118,16 @@ class AlbumTagEditorActivity : AbsTagEditorActivity() {
     }
 
     override val propertyMap: Map<String, String?>
-        get() = hashMapOf(
-            MetadataReader.ALBUM to albumBinding.album.text?.toString(),
-            MetadataReader.ALBUM_ARTIST to albumBinding.albumArtist.text?.toString(),
-            MetadataReader.PRODUCER to albumBinding.conductor.text?.toString(),
-            MetadataReader.COPYRIGHT to albumBinding.publisher.text?.toString(),
-            MetadataReader.GENRE to albumBinding.genre.text?.toString(),
-            MetadataReader.YEAR to albumBinding.year.text?.toString(),
-            MetadataReader.TRACK_TOTAL to albumBinding.trackTotal.text?.toString(),
-            MetadataReader.DISC_NUMBER to albumBinding.discNumber.text?.toString(),
-            MetadataReader.DISC_TOTAL to albumBinding.discTotal.text?.toString()
-        )
+        get() =
+            hashMapOf(
+                MetadataReader.ALBUM to albumBinding.album.text?.toString(),
+                MetadataReader.ALBUM_ARTIST to albumBinding.albumArtist.text?.toString(),
+                MetadataReader.PRODUCER to albumBinding.conductor.text?.toString(),
+                MetadataReader.COPYRIGHT to albumBinding.publisher.text?.toString(),
+                MetadataReader.GENRE to albumBinding.genre.text?.toString(),
+                MetadataReader.YEAR to albumBinding.year.text?.toString(),
+                MetadataReader.TRACK_TOTAL to albumBinding.trackTotal.text?.toString(),
+                MetadataReader.DISC_NUMBER to albumBinding.discNumber.text?.toString(),
+                MetadataReader.DISC_TOTAL to albumBinding.discTotal.text?.toString(),
+            )
 }

@@ -32,7 +32,6 @@ private const val TWO_PI = (Math.PI * 2f).toFloat()
 internal const val DISABLED_ALPHA = 77
 
 class SquigglyProgress : Drawable() {
-
     private val wavePaint = Paint()
     private val linePaint = Paint()
     private val path = Path()
@@ -41,13 +40,13 @@ class SquigglyProgress : Drawable() {
     private var phaseOffset = 0f
     private var lastFrameTime = -1L
 
-    /* distance over which amplitude drops to zero, measured in wavelengths */
+    // distance over which amplitude drops to zero, measured in wavelengths
     private val transitionPeriods = 1.5f
 
-    /* wave endpoint as percentage of bar when play position is zero */
+    // wave endpoint as percentage of bar when play position is zero
     private val minWaveEndpoint = 0f
 
-    /* wave endpoint as percentage of bar when play position matches wave endpoint */
+    // wave endpoint as percentage of bar when play position matches wave endpoint
     private val matchedWaveEndpoint = 0f
 
     // Horizontal length of the sine wave
@@ -117,7 +116,7 @@ class SquigglyProgress : Drawable() {
                             override fun onAnimationEnd(animation: Animator) {
                                 heightAnimator = null
                             }
-                        }
+                        },
                     )
                     start()
                 }
@@ -141,13 +140,17 @@ class SquigglyProgress : Drawable() {
         val totalProgressPx = bounds.width().toFloat() * progress
         val waveProgressPx =
             totalWidth *
-                    (if (!transitionEnabled || progress > matchedWaveEndpoint) progress
-                    else
+                (
+                    if (!transitionEnabled || progress > matchedWaveEndpoint) {
+                        progress
+                    } else {
                         lerp(
                             minWaveEndpoint,
                             matchedWaveEndpoint,
-                            lerpInv(0f, matchedWaveEndpoint, progress)
-                        ))
+                            lerpInv(0f, matchedWaveEndpoint, progress),
+                        )
+                    }
+                )
 
         // Build Wiggly Path
         val waveStart = -phaseOffset - waveLength / 2f
@@ -212,9 +215,7 @@ class SquigglyProgress : Drawable() {
     }
 
     @Deprecated("Deprecated in Java")
-    override fun getOpacity(): Int {
-        return PixelFormat.TRANSLUCENT
-    }
+    override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
 
     override fun setColorFilter(colorFilter: ColorFilter?) {
         wavePaint.colorFilter = colorFilter
@@ -225,17 +226,13 @@ class SquigglyProgress : Drawable() {
         updateColors(wavePaint.color, alpha)
     }
 
-    override fun getAlpha(): Int {
-        return wavePaint.alpha
-    }
+    override fun getAlpha(): Int = wavePaint.alpha
 
     override fun setTint(tintColor: Int) {
         updateColors(tintColor, alpha)
     }
 
-    override fun onLevelChange(level: Int): Boolean {
-        return animate
-    }
+    override fun onLevelChange(level: Int): Boolean = animate
 
     override fun setTintList(tint: ColorStateList?) {
         if (tint == null) {
@@ -244,18 +241,32 @@ class SquigglyProgress : Drawable() {
         updateColors(tint.defaultColor, alpha)
     }
 
-    private fun updateColors(tintColor: Int, alpha: Int) {
+    private fun updateColors(
+        tintColor: Int,
+        alpha: Int,
+    ) {
         wavePaint.color = tintColor.withAlpha(alpha / 255f)
         linePaint.color = tintColor.withAlpha((DISABLED_ALPHA * (alpha / 255f)) / 255f)
     }
 
-    fun constrain(amount: Float, low: Float, high: Float): Float {
-        return if (amount < low) low else if (amount > high) high else amount
-    }
+    fun constrain(
+        amount: Float,
+        low: Float,
+        high: Float,
+    ): Float =
+        if (amount < low) {
+            low
+        } else if (amount > high) {
+            high
+        } else {
+            amount
+        }
 
-    private fun lerp(start: Float, stop: Float, amount: Float): Float {
-        return start + (stop - start) * amount
-    }
+    private fun lerp(
+        start: Float,
+        stop: Float,
+        amount: Float,
+    ): Float = start + (stop - start) * amount
 
     /**
      * Returns the interpolation scalar (s) that satisfies the equation: `value = `[ ][.lerp]`(a, b, s)`
@@ -263,17 +274,19 @@ class SquigglyProgress : Drawable() {
      *
      * If `a == b`, then this function will return 0.
      */
-    fun lerpInv(a: Float, b: Float, value: Float): Float {
-        return if (a != b) (value - a) / (b - a) else 0.0f
-    }
+    fun lerpInv(
+        a: Float,
+        b: Float,
+        value: Float,
+    ): Float = if (a != b) (value - a) / (b - a) else 0.0f
 
     /** Returns the single argument constrained between [0.0, 1.0].  */
-    fun saturate(value: Float): Float {
-        return constrain(value, 0.0f, 1.0f)
-    }
+    fun saturate(value: Float): Float = constrain(value, 0.0f, 1.0f)
 
     /** Returns the saturated (constrained between [0, 1]) result of [.lerpInv].  */
-    fun lerpInvSat(a: Float, b: Float, value: Float): Float {
-        return saturate(lerpInv(a, b, value))
-    }
+    fun lerpInvSat(
+        a: Float,
+        b: Float,
+        value: Float,
+    ): Float = saturate(lerpInv(a, b, value))
 }

@@ -14,8 +14,9 @@ import com.ssilencce.extensions.resources.toJPG
 import com.ssilencce.util.FileUtil
 import java.io.File
 
-class CustomPlaylistImageManager(private val context: Context) {
-
+class CustomPlaylistImageManager(
+    private val context: Context,
+) {
     suspend fun createPlaylistImage(selectedUri: String?): Uri? {
         if (selectedUri == null) return null
 
@@ -24,20 +25,25 @@ class CustomPlaylistImageManager(private val context: Context) {
         if (!imageFile.createNewFile()) return null
 
         try {
-            val result = SingletonImageLoader.get(context)
-                .execute(
-                    ImageRequest.Builder(context)
-                        .data(selectedUri)
-                        .memoryCachePolicy(CachePolicy.DISABLED)
-                        .size(1080)
-                        .build()
-                )
+            val result =
+                SingletonImageLoader
+                    .get(context)
+                    .execute(
+                        ImageRequest
+                            .Builder(context)
+                            .data(selectedUri)
+                            .memoryCachePolicy(CachePolicy.DISABLED)
+                            .size(1080)
+                            .build(),
+                    )
             if (result is SuccessResult) {
-                val success = imageFile.outputStream()
-                    .buffered()
-                    .use {
-                        result.image.toBitmap().toJPG(100, it)
-                    }
+                val success =
+                    imageFile
+                        .outputStream()
+                        .buffered()
+                        .use {
+                            result.image.toBitmap().toJPG(100, it)
+                        }
                 if (success) {
                     return imageFile.toUri()
                 } else {

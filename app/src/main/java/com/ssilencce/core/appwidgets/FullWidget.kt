@@ -50,17 +50,19 @@ import com.ssilencce.ui.component.compose.color.isDark
 import com.ssilencce.ui.screen.MainActivity
 
 class FullWidget : GlanceAppWidget() {
-
     override val sizeMode = SizeMode.Exact
     override val stateDefinition = PlaybackStateDefinition
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         provideContent {
             val playbackState = currentState<PlaybackState>()
             val currentSize = LocalSize.current
 
             GlanceTheme(
-                colors = playbackState.widgetTheme.getColors()
+                colors = playbackState.widgetTheme.getColors(),
             ) {
                 val primaryContainer = GlanceTheme.colors.primaryContainer
                 FullWidgetContent(
@@ -68,18 +70,19 @@ class FullWidget : GlanceAppWidget() {
                     size = currentSize,
                     playbackState = playbackState,
                     scrimColor = primaryContainer,
-                    onScrimColor = if (primaryContainer.getColor(context).isDark()) {
-                        androidx.glance.color.ColorProvider(
-                            day = androidx.compose.ui.graphics.Color.White,
-                            night = androidx.compose.ui.graphics.Color.White
-                        )
-                    } else {
-                        androidx.glance.color.ColorProvider(
-                            day = androidx.compose.ui.graphics.Color.Black,
-                            night = androidx.compose.ui.graphics.Color.Black
-                        )
-                    },
-                    showAllActions = currentSize.width >= 220.dp
+                    onScrimColor =
+                        if (primaryContainer.getColor(context).isDark()) {
+                            androidx.glance.color.ColorProvider(
+                                day = androidx.compose.ui.graphics.Color.White,
+                                night = androidx.compose.ui.graphics.Color.White,
+                            )
+                        } else {
+                            androidx.glance.color.ColorProvider(
+                                day = androidx.compose.ui.graphics.Color.Black,
+                                night = androidx.compose.ui.graphics.Color.Black,
+                            )
+                        },
+                    showAllActions = currentSize.width >= 220.dp,
                 )
             }
         }
@@ -92,70 +95,75 @@ class FullWidget : GlanceAppWidget() {
         playbackState: PlaybackState,
         scrimColor: ColorProvider,
         onScrimColor: ColorProvider,
-        showAllActions: Boolean
+        showAllActions: Boolean,
     ) {
         Box(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .cornerRadius(playbackState.imageCornerRadius?.dp?.times(2) ?: 16.dp)
-                .clickable(actionStartActivity<MainActivity>()),
-            contentAlignment = Alignment.BottomCenter
+            modifier =
+                GlanceModifier
+                    .fillMaxSize()
+                    .cornerRadius(playbackState.imageCornerRadius?.dp?.times(2) ?: 16.dp)
+                    .clickable(actionStartActivity<MainActivity>()),
+            contentAlignment = Alignment.BottomCenter,
         ) {
             AlbumArtGlance(
                 playbackState = playbackState,
-                modifier = GlanceModifier.fillMaxSize()
+                modifier = GlanceModifier.fillMaxSize(),
             )
 
             Column(
                 verticalAlignment = Alignment.Bottom,
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .background(
-                        imageProvider = ImageProvider(
-                            createGradientScrim(
-                                context = context,
-                                color = scrimColor,
-                                size = size
-                            )
-                        )
-                    )
-                    .padding(horizontal = 16.dp)
-                    .padding(top = 32.dp, bottom = 16.dp)
+                modifier =
+                    GlanceModifier
+                        .fillMaxWidth()
+                        .background(
+                            imageProvider =
+                                ImageProvider(
+                                    createGradientScrim(
+                                        context = context,
+                                        color = scrimColor,
+                                        size = size,
+                                    ),
+                                ),
+                        ).padding(horizontal = 16.dp)
+                        .padding(top = 32.dp, bottom = 16.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = GlanceModifier.fillMaxWidth()
+                    modifier = GlanceModifier.fillMaxWidth(),
                 ) {
                     Column(
-                        modifier = GlanceModifier.defaultWeight()
+                        modifier = GlanceModifier.defaultWeight(),
                     ) {
                         Text(
                             text = playbackState.currentTitle.orEmpty(),
-                            style = TextStyle(
-                                color = onScrimColor,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp
-                            ),
-                            maxLines = 1
+                            style =
+                                TextStyle(
+                                    color = onScrimColor,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 18.sp,
+                                ),
+                            maxLines = 1,
                         )
 
                         Text(
                             text = playbackState.currentArtist.orEmpty(),
-                            style = TextStyle(
-                                color = onScrimColor,
-                                fontSize = 16.sp
-                            ),
-                            maxLines = 1
+                            style =
+                                TextStyle(
+                                    color = onScrimColor,
+                                    fontSize = 16.sp,
+                                ),
+                            maxLines = 1,
                         )
 
                         if (!playbackState.additionalInfo.isNullOrEmpty()) {
                             Text(
                                 text = playbackState.additionalInfo,
-                                style = TextStyle(
-                                    color = onScrimColor,
-                                    fontSize = 14.sp
-                                ),
-                                maxLines = 2
+                                style =
+                                    TextStyle(
+                                        color = onScrimColor,
+                                        fontSize = 14.sp,
+                                    ),
+                                maxLines = 2,
                             )
                         }
                     }
@@ -164,16 +172,18 @@ class FullWidget : GlanceAppWidget() {
                         Spacer(GlanceModifier.width(8.dp))
 
                         ControlIconGlance(
-                            resId = if (playbackState.isFavorite) {
-                                R.drawable.ic_favorite_24dp
-                            } else {
-                                R.drawable.ic_favorite_outline_24dp
-                            },
+                            resId =
+                                if (playbackState.isFavorite) {
+                                    R.drawable.ic_favorite_24dp
+                                } else {
+                                    R.drawable.ic_favorite_outline_24dp
+                                },
                             tint = onScrimColor,
                             contentDescription = "Toggle favorite",
-                            modifier = GlanceModifier
-                                .size(28.dp)
-                                .clickable(toggleFavoriteAction(context))
+                            modifier =
+                                GlanceModifier
+                                    .size(28.dp)
+                                    .clickable(toggleFavoriteAction(context)),
                         )
                     }
                 }
@@ -190,29 +200,32 @@ class FullWidget : GlanceAppWidget() {
         context: Context,
         playbackState: PlaybackState,
         controlsColor: ColorProvider,
-        showAllActions: Boolean
+        showAllActions: Boolean,
     ) {
         Row(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = GlanceModifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp)
+            modifier =
+                GlanceModifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
         ) {
             if (playbackState.isForeground) {
                 if (showAllActions) {
                     // Shuffle
                     ControlIconGlance(
-                        resId = if (playbackState.isShuffleMode) {
-                            R.drawable.ic_shuffle_on_24dp
-                        } else {
-                            R.drawable.ic_shuffle_24dp
-                        },
+                        resId =
+                            if (playbackState.isShuffleMode) {
+                                R.drawable.ic_shuffle_on_24dp
+                            } else {
+                                R.drawable.ic_shuffle_24dp
+                            },
                         tint = controlsColor,
                         contentDescription = "Toggle shuffle mode",
-                        modifier = GlanceModifier
-                            .size(24.dp)
-                            .clickable(toggleShuffleAction(context))
+                        modifier =
+                            GlanceModifier
+                                .size(24.dp)
+                                .clickable(toggleShuffleAction(context)),
                     )
 
                     Spacer(GlanceModifier.defaultWeight())
@@ -223,9 +236,10 @@ class FullWidget : GlanceAppWidget() {
                     resId = R.drawable.ic_previous_24dp,
                     tint = controlsColor,
                     contentDescription = "Previous",
-                    modifier = GlanceModifier
-                        .size(32.dp)
-                        .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                    modifier =
+                        GlanceModifier
+                            .size(32.dp)
+                            .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)),
                 )
             }
 
@@ -233,15 +247,17 @@ class FullWidget : GlanceAppWidget() {
 
             // Play/pause
             ShapeableControlIconGlance(
-                resId = if (playbackState.isPlaying) {
-                    R.drawable.ic_pause_24dp
-                } else {
-                    R.drawable.ic_play_24dp
-                },
+                resId =
+                    if (playbackState.isPlaying) {
+                        R.drawable.ic_pause_24dp
+                    } else {
+                        R.drawable.ic_play_24dp
+                    },
                 size = 56.dp,
                 contentDescription = "Play/Pause",
-                onClick = GlanceModifier
-                    .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                onClick =
+                    GlanceModifier
+                        .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)),
             )
 
             Spacer(GlanceModifier.defaultWeight())
@@ -252,9 +268,10 @@ class FullWidget : GlanceAppWidget() {
                     resId = R.drawable.ic_next_24dp,
                     tint = controlsColor,
                     contentDescription = "Next",
-                    modifier = GlanceModifier
-                        .size(32.dp)
-                        .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_NEXT))
+                    modifier =
+                        GlanceModifier
+                            .size(32.dp)
+                            .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_NEXT)),
                 )
 
                 if (showAllActions) {
@@ -262,23 +279,29 @@ class FullWidget : GlanceAppWidget() {
 
                     // Repeat
                     ControlIconGlance(
-                        resId = when (playbackState.repeatMode) {
-                            Player.REPEAT_MODE_ALL -> R.drawable.ic_repeat_on_24dp
-                            Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_on_24dp
-                            else -> R.drawable.ic_repeat_24dp
-                        },
+                        resId =
+                            when (playbackState.repeatMode) {
+                                Player.REPEAT_MODE_ALL -> R.drawable.ic_repeat_on_24dp
+                                Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_on_24dp
+                                else -> R.drawable.ic_repeat_24dp
+                            },
                         tint = controlsColor,
                         contentDescription = "Cycle repeat mode",
-                        modifier = GlanceModifier
-                            .size(24.dp)
-                            .clickable(cycleRepeatAction(context))
+                        modifier =
+                            GlanceModifier
+                                .size(24.dp)
+                                .clickable(cycleRepeatAction(context)),
                     )
                 }
             }
         }
     }
 
-    fun createGradientScrim(context: Context, color: ColorProvider, size: DpSize): Bitmap {
+    fun createGradientScrim(
+        context: Context,
+        color: ColorProvider,
+        size: DpSize,
+    ): Bitmap {
         val width = size.width.toPx(context)
         val height = (size.height / 2).toPx(context)
 
@@ -286,12 +309,16 @@ class FullWidget : GlanceAppWidget() {
         val canvas = Canvas(bitmap)
         val paint = Paint()
 
-        val gradient = LinearGradient(
-            0f, height.toFloat(), 0f, 0f,
-            color.getColor(context).toArgb(),
-            Color.TRANSPARENT,
-            Shader.TileMode.CLAMP
-        )
+        val gradient =
+            LinearGradient(
+                0f,
+                height.toFloat(),
+                0f,
+                0f,
+                color.getColor(context).toArgb(),
+                Color.TRANSPARENT,
+                Shader.TileMode.CLAMP,
+            )
 
         paint.shader = gradient
         canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)

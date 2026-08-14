@@ -47,19 +47,28 @@ import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.util.Preferences
 import java.io.File
 
-class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, GridLayoutManager>(),
-    IFileCallback, IBackConsumer {
-
+class FoldersListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<FileAdapter, GridLayoutManager>(),
+    IFileCallback,
+    IBackConsumer {
     override val titleRes: Int = R.string.folders_label
     override val isShuffleVisible: Boolean = false
 
     override val defaultGridSize: Int
-        get() = if (isLandscape) resources.getInteger(R.integer.default_list_columns_land)
-        else resources.getInteger(R.integer.default_list_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.default_list_columns_land)
+            } else {
+                resources.getInteger(R.integer.default_list_columns)
+            }
 
     override val maxGridSize: Int
-        get() = if (isLandscape) resources.getInteger(R.integer.default_grid_columns_land)
-        else resources.getInteger(R.integer.default_grid_columns)
+        get() =
+            if (isLandscape) {
+                resources.getInteger(R.integer.default_grid_columns_land)
+            } else {
+                resources.getInteger(R.integer.default_grid_columns)
+            }
 
     override val maxGridSizeForList: Int
         get() = gridSize
@@ -76,7 +85,10 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
     private val isFlatView: Boolean
         get() = fileSystem?.isFlatView == true
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getFileSystem().observe(viewLifecycleOwner) { fileSystem ->
             showFolders(fileSystem)
@@ -84,12 +96,15 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
     }
 
     override fun handleBackPress(): Boolean {
-        val handledBackPress = fileSystem?.let {
-            if (it.canGoUp) {
-                libraryViewModel.navigateToPath(it.parentPath)
-                true
-            } else false
-        }
+        val handledBackPress =
+            fileSystem?.let {
+                if (it.canGoUp) {
+                    libraryViewModel.navigateToPath(it.parentPath)
+                    true
+                } else {
+                    false
+                }
+            }
         return handledBackPress == true
     }
 
@@ -98,9 +113,7 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
         libraryViewModel.forceReload(ReloadType.Folders)
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(requireActivity(), gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(requireActivity(), gridSize)
 
     override fun createAdapter(): FileAdapter {
         notifyLayoutResChanged(itemLayoutRes)
@@ -112,22 +125,23 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
             sortMode = sortMode,
             songClickBehavior = Preferences.songClickAction,
             playOptionAlwaysVisible = Preferences.playOptionAlwaysVisible,
-            callback = this
+            callback = this,
         )
     }
 
     override fun fileClick(file: FileSystemItem) {
         when (file) {
             is Song -> {
-                libraryViewModel.listSongsFromFiles(
-                    song = file,
-                    files = fileSystem?.getSortedChildren(FileSortMode.AllFiles)
-                ).observe(viewLifecycleOwner) { (songs, position) ->
-                    playerViewModel.openSongs(position, songs, Preferences.songClickAction)
-                    if (adapter?.songClickBehavior?.isAbleToPlay == false) {
-                        showToast(R.string.added_title_to_playing_queue)
+                libraryViewModel
+                    .listSongsFromFiles(
+                        song = file,
+                        files = fileSystem?.getSortedChildren(FileSortMode.AllFiles),
+                    ).observe(viewLifecycleOwner) { (songs, position) ->
+                        playerViewModel.openSongs(position, songs, Preferences.songClickAction)
+                        if (adapter?.songClickBehavior?.isAbleToPlay == false) {
+                            showToast(R.string.added_title_to_playing_queue)
+                        }
                     }
-                }
             }
 
             else -> {
@@ -140,7 +154,10 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
         }
     }
 
-    override fun fileMenuItemClick(file: FileSystemItem, menuItem: MenuItem): Boolean {
+    override fun fileMenuItemClick(
+        file: FileSystemItem,
+        menuItem: MenuItem,
+    ): Boolean {
         val recursiveActions = Preferences.recursiveFolderActions
         return when (file) {
             is Folder -> {
@@ -156,7 +173,8 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
                     }
 
                     R.id.action_scan -> {
-                        libraryViewModel.scanPaths(requireContext(), arrayOf(file.filePath))
+                        libraryViewModel
+                            .scanPaths(requireContext(), arrayOf(file.filePath))
                             .observe(viewLifecycleOwner) {
                                 showToast(R.string.scan_finished)
                             }
@@ -171,13 +189,14 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
                             file.songs.onSongsMenu(this, menuItem)
                         } else {
                             val isRecursive = recursiveActions.isPresent(menuItem.itemId)
-                            libraryViewModel.songs(
-                                file.musicFiles,
-                                includeFolders = isRecursive,
-                                deepListing = isRecursive
-                            ).observe(viewLifecycleOwner) {
-                                it.onSongsMenu(this, menuItem)
-                            }
+                            libraryViewModel
+                                .songs(
+                                    file.musicFiles,
+                                    includeFolders = isRecursive,
+                                    deepListing = isRecursive,
+                                ).observe(viewLifecycleOwner) {
+                                    it.onSongsMenu(this, menuItem)
+                                }
                         }
                     }
                 }
@@ -187,45 +206,57 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
             is Song -> {
                 when (menuItem.itemId) {
                     R.id.action_play -> {
-                        libraryViewModel.listSongsFromFiles(
-                            song = file,
-                            files = fileSystem?.getSortedChildren(FileSortMode.AllFiles)
-                        ).observe(viewLifecycleOwner) { (songs, position) ->
-                            playerViewModel.openSongs(
-                                position = position,
-                                songs = songs,
-                                behavior = Preferences.playOptionClickBehavior
-                            )
-                        }
+                        libraryViewModel
+                            .listSongsFromFiles(
+                                song = file,
+                                files = fileSystem?.getSortedChildren(FileSortMode.AllFiles),
+                            ).observe(viewLifecycleOwner) { (songs, position) ->
+                                playerViewModel.openSongs(
+                                    position = position,
+                                    songs = songs,
+                                    behavior = Preferences.playOptionClickBehavior,
+                                )
+                            }
                         true
                     }
 
-                    else -> file.onSongMenu(this, menuItem)
+                    else -> {
+                        file.onSongMenu(this, menuItem)
+                    }
                 }
             }
 
-            else -> false
+            else -> {
+                false
+            }
         }
     }
 
-    override fun filesMenuItemClick(selection: List<FileSystemItem>, menuItem: MenuItem): Boolean {
+    override fun filesMenuItemClick(
+        selection: List<FileSystemItem>,
+        menuItem: MenuItem,
+    ): Boolean {
         if (isFlatView) {
             libraryViewModel.songs(selection).observe(viewLifecycleOwner) {
                 it.onSongsMenu(this, menuItem)
             }
         } else {
-            libraryViewModel.songs(
-                selection,
-                includeFolders = true,
-                deepListing = Preferences.recursiveFolderActions.isPresent(menuItem.itemId)
-            ).observe(viewLifecycleOwner) { songs ->
-                songs.onSongsMenu(this, menuItem)
-            }
+            libraryViewModel
+                .songs(
+                    selection,
+                    includeFolders = true,
+                    deepListing = Preferences.recursiveFolderActions.isPresent(menuItem.itemId),
+                ).observe(viewLifecycleOwner) { songs ->
+                    songs.onSongsMenu(this, menuItem)
+                }
         }
         return true
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         inflater.inflate(R.menu.menu_folders, menu)
         menu.removeItem(R.id.action_view_type)
@@ -250,6 +281,7 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
                 libraryViewModel.forceReload(ReloadType.Folders)
                 return true
             }
+
             R.id.action_set_as_start_directory -> {
                 fileSystem?.let { currentFileSystem ->
                     val currentPath = currentFileSystem.path
@@ -261,11 +293,15 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
                 }
                 return true
             }
+
             R.id.action_go_to_start_directory -> {
                 libraryViewModel.navigateToPath(Preferences.startDirectory.getCanonicalPathSafe())
                 return true
             }
-            else -> return super.onMenuItemSelected(item)
+
+            else -> {
+                return super.onMenuItemSelected(item)
+            }
         }
     }
 
@@ -288,9 +324,7 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
 
     override fun saveViewType(viewType: GridViewType) {}
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(FOLDERS_GRID_SIZE_KEY, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(FOLDERS_GRID_SIZE_KEY, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit {
@@ -299,7 +333,10 @@ class FoldersListFragment : AbsRecyclerViewCustomGridSizeFragment<FileAdapter, G
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }

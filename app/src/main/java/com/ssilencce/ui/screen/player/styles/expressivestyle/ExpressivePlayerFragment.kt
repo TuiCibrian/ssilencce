@@ -33,9 +33,10 @@ import com.ssilencce.ui.component.base.AbsPlayerFragment
 import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
 import com.ssilencce.util.Preferences
 
-class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_player),
-    View.OnClickListener, View.OnLongClickListener {
-
+class ExpressivePlayerFragment :
+    AbsPlayerFragment(R.layout.fragment_expressive_player),
+    View.OnClickListener,
+    View.OnLongClickListener {
     private var _binding: FragmentExpressivePlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -56,7 +57,10 @@ class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_
     private var popupMenu: PopupMenu? = null
     private var isFavorite = false
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentExpressivePlayerBinding.bind(view)
         setupToolbar()
@@ -64,17 +68,19 @@ class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.repeatModeFlow.collect { repeatMode ->
                 binding.repeatButton.apply {
-                    val iconResource = when (repeatMode) {
-                        Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
-                        else -> R.drawable.ic_repeat_24dp
-                    }
+                    val iconResource =
+                        when (repeatMode) {
+                            Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
+                            else -> R.drawable.ic_repeat_24dp
+                        }
                     setIconResource(iconResource)
                     applyColor(
-                        color = if (repeatMode != Player.REPEAT_MODE_OFF) {
-                            playerViewModel.colorScheme.primaryColor
-                        } else {
-                            playerViewModel.colorScheme.secondaryContainerColor
-                        }
+                        color =
+                            if (repeatMode != Player.REPEAT_MODE_OFF) {
+                                playerViewModel.colorScheme.primaryColor
+                            } else {
+                                playerViewModel.colorScheme.secondaryContainerColor
+                            },
                     )
                 }
             }
@@ -83,11 +89,12 @@ class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_
             playerViewModel.shuffleModeFlow.collect { shuffleModeEnabled ->
                 binding.shuffleButton.apply {
                     applyColor(
-                        color = if (shuffleModeEnabled) {
-                            playerViewModel.colorScheme.primaryColor
-                        } else {
-                            playerViewModel.colorScheme.secondaryContainerColor
-                        }
+                        color =
+                            if (shuffleModeEnabled) {
+                                playerViewModel.colorScheme.primaryColor
+                            } else {
+                                playerViewModel.colorScheme.secondaryContainerColor
+                            },
                     )
                 }
             }
@@ -173,27 +180,33 @@ class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_
         val oldPrimaryTextColor = binding.title.currentTextColor
         val oldSecondaryTextColor = binding.text.currentTextColor
 
-        val oldTonalColor = binding.favoriteButton.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldTonalColor =
+            binding.favoriteButton.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
 
-        val oldIconColor = binding.openQueueButton.backgroundTintList?.defaultColor
-            ?: Color.TRANSPARENT
+        val oldIconColor =
+            binding.openQueueButton.backgroundTintList?.defaultColor
+                ?: Color.TRANSPARENT
 
-        val oldRepeatColor = binding.repeatButton.backgroundTintList?.defaultColor
-            ?: oldPrimaryTextColor
-        val newRepeatColor = if (playerViewModel.repeatMode != Player.REPEAT_MODE_OFF) {
-            scheme.primaryColor
-        } else {
-            scheme.secondaryContainerColor
-        }
+        val oldRepeatColor =
+            binding.repeatButton.backgroundTintList?.defaultColor
+                ?: oldPrimaryTextColor
+        val newRepeatColor =
+            if (playerViewModel.repeatMode != Player.REPEAT_MODE_OFF) {
+                scheme.primaryColor
+            } else {
+                scheme.secondaryContainerColor
+            }
 
-        val oldShuffleColor = binding.shuffleButton.backgroundTintList?.defaultColor
-            ?: oldPrimaryTextColor
-        val newShuffleColor = if (playerViewModel.shuffleModeEnabled) {
-            scheme.primaryColor
-        } else {
-            scheme.secondaryContainerColor
-        }
+        val oldShuffleColor =
+            binding.shuffleButton.backgroundTintList?.defaultColor
+                ?: oldPrimaryTextColor
+        val newShuffleColor =
+            if (playerViewModel.shuffleModeEnabled) {
+                scheme.primaryColor
+            } else {
+                scheme.secondaryContainerColor
+            }
         return listOfNotNull(
             binding.root.surfaceTintTarget(scheme.surfaceColor),
             binding.playerToolbar?.tintTarget(oldIconColor, scheme.onSurfaceColor),
@@ -206,20 +219,26 @@ class ExpressivePlayerFragment : AbsPlayerFragment(R.layout.fragment_expressive_
             binding.shuffleButton.tintTarget(oldShuffleColor, newShuffleColor),
             binding.openQueueButton.tintTarget(oldTonalColor, scheme.secondaryContainerColor),
             binding.showLyricsButton?.tintTarget(oldTonalColor, scheme.secondaryContainerColor),
-            binding.soundSettingsButton?.tintTarget(oldTonalColor, scheme.secondaryContainerColor)
+            binding.soundSettingsButton?.tintTarget(oldTonalColor, scheme.secondaryContainerColor),
         ).toMutableList().also {
             it.addAll(playerControlsFragment.getTintTargets(scheme))
         }
     }
 
-    override fun onIsFavoriteChanged(isFavorite: Boolean, withAnimation: Boolean) {
+    override fun onIsFavoriteChanged(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         if (this.isFavorite != isFavorite) {
             this.isFavorite = isFavorite
             binding.favoriteButton.setIsFavorite(isFavorite, withAnimation)
         }
     }
 
-    override fun onLyricsVisibilityChange(animatorSet: AnimatorSet, lyricsVisible: Boolean) {
+    override fun onLyricsVisibilityChange(
+        animatorSet: AnimatorSet,
+        lyricsVisible: Boolean,
+    ) {
         _binding?.showLyricsButton?.let {
             if (lyricsVisible) {
                 it.setIconResource(R.drawable.ic_lyrics_24dp)

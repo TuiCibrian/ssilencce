@@ -24,5 +24,10 @@ import com.ssilencce.data.model.network.NetworkFeature
 interface LyricsApi {
     val name: String
     val networkFeature: NetworkFeature.Lyrics
-    suspend fun downloadLyrics(song: Song, title: String, artist: String): RawLyrics.Remote?
+
+    suspend fun downloadLyrics(
+        song: Song,
+        title: String,
+        artist: String,
+    ): RawLyrics.Remote?
 }

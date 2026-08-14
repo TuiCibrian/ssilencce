@@ -22,7 +22,6 @@ import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.replaygain.ReplayGain
 
 object ReplayGainTagExtractor {
-
     private val cache = LruCache<Uri, ReplayGain>(128)
 
     private const val TAG_TRACK_GAIN = "REPLAYGAIN_TRACK_GAIN"
@@ -43,16 +42,18 @@ object ReplayGainTagExtractor {
             val metadataReader = MetadataReader(song.uri)
             val rawTags = metadataReader.all()
 
-            val gainTags = parseStandardTags(rawTags)
-                .plus(parseItunesTags(rawTags))
-                .plus(parseOpusR128(rawTags))
+            val gainTags =
+                parseStandardTags(rawTags)
+                    .plus(parseItunesTags(rawTags))
+                    .plus(parseOpusR128(rawTags))
 
-            gainValues = ReplayGain(
-                albumGain = gainTags[TAG_ALBUM_GAIN] ?: 0f,
-                trackGain = gainTags[TAG_TRACK_GAIN] ?: 0f,
-                albumPeak = gainTags[TAG_ALBUM_PEAK] ?: 1f,
-                trackPeak = gainTags[TAG_TRACK_PEAK] ?: 1f
-            )
+            gainValues =
+                ReplayGain(
+                    albumGain = gainTags[TAG_ALBUM_GAIN] ?: 0f,
+                    trackGain = gainTags[TAG_TRACK_GAIN] ?: 0f,
+                    albumPeak = gainTags[TAG_ALBUM_PEAK] ?: 1f,
+                    trackPeak = gainTags[TAG_TRACK_PEAK] ?: 1f,
+                )
 
             cache.put(song.uri, gainValues)
         }
@@ -78,7 +79,11 @@ object ReplayGainTagExtractor {
 
     private fun parseItunesTags(tags: Map<String, Array<String>>): Map<String, Float> {
         val result = mutableMapOf<String, Float>()
-        fun read(key: String, default: Float = 0f) {
+
+        fun read(
+            key: String,
+            default: Float = 0f,
+        ) {
             tags["$ITUNES_PREFIX$key"]?.firstOrNull()?.let {
                 result[key] = parse(it, default)
             }
@@ -93,9 +98,7 @@ object ReplayGainTagExtractor {
     private fun parseOpusR128(tags: Map<String, Array<String>>): Map<String, Float> {
         val result = mutableMapOf<String, Float>()
 
-        fun convertR128ToDb(value: String?): Float? {
-            return value?.toIntOrNull()?.let { raw -> (raw / 256f) + 5f }
-        }
+        fun convertR128ToDb(value: String?): Float? = value?.toIntOrNull()?.let { raw -> (raw / 256f) + 5f }
 
         convertR128ToDb(tags[OPUS_TRACK_GAIN]?.firstOrNull())
             ?.let { result[TAG_TRACK_GAIN] = it }
@@ -106,10 +109,12 @@ object ReplayGainTagExtractor {
         return result
     }
 
-    private fun parse(raw: String, default: Float = 0f): Float {
-        return raw
+    private fun parse(
+        raw: String,
+        default: Float = 0f,
+    ): Float =
+        raw
             .replace("dB", "", ignoreCase = true)
             .replace("[^\\d+-.]".toRegex(), "")
             .toFloatOrNull() ?: default
-    }
 }

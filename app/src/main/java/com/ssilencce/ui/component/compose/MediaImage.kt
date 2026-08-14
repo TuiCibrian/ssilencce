@@ -26,30 +26,34 @@ fun MediaImage(
     model: Any?,
     placeholderIcon: Int = R.drawable.ic_music_note_24dp,
     contentDescription: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val sizeResolver = rememberConstraintsSizeResolver()
-    val painter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(LocalPlatformContext.current)
-            .data(model)
-            .size(sizeResolver)
-            .build(),
-        contentScale = ContentScale.Crop
-    )
+    val painter =
+        rememberAsyncImagePainter(
+            model =
+                ImageRequest
+                    .Builder(LocalPlatformContext.current)
+                    .data(model)
+                    .size(sizeResolver)
+                    .build(),
+            contentScale = ContentScale.Crop,
+        )
     val state by painter.state.collectAsState()
     when {
         state is State.Error || state is State.Loading -> {
             MediaPlaceholder(
                 iconRes = placeholderIcon,
-                modifier = modifier
+                modifier = modifier,
             )
         }
+
         else -> {
             Image(
                 painter = painter,
                 contentDescription = contentDescription,
                 contentScale = ContentScale.Crop,
-                modifier = modifier.then(sizeResolver)
+                modifier = modifier.then(sizeResolver),
             )
         }
     }
@@ -59,19 +63,21 @@ fun MediaImage(
 fun MediaPlaceholder(
     @DrawableRes iconRes: Int,
     iconScale: Float = 0.5f,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Box(
         contentAlignment = Alignment.Center,
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+        modifier =
+            modifier
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .fillMaxSize(iconScale)
+            modifier =
+                Modifier
+                    .fillMaxSize(iconScale),
         )
     }
 }

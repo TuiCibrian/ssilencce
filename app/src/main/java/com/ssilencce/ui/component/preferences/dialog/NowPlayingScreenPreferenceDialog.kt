@@ -41,16 +41,16 @@ import com.ssilencce.extensions.dp
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.util.Preferences
 
-class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChangeListener,
+class NowPlayingScreenPreferenceDialog :
+    DialogFragment(),
+    ViewPager.OnPageChangeListener,
     AdapterView.OnItemSelectedListener {
-
     private var _binding: PreferenceDialogNowPlayingScreenBinding? = null
     private val binding get() = requireNotNull(_binding)
 
     private var viewPagerAdapter: NowPlayingScreenAdapter? = null
     private var colorSchemeAdapter: ColorSchemeAdapter? = null
     private var transitionAdapter: TransitionAdapter? = null
-
 
     private var viewPagerPosition = 0
 
@@ -70,31 +70,40 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
 
         transitionAdapter = TransitionAdapter(requireContext(), mutableListOf())
         binding.transition.setAdapter(transitionAdapter)
-        binding.transition.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
-                val selectedTransition = transitionAdapter?.transitions?.getOrNull(position)
-                if (currentItem != null && selectedTransition != null) {
-                    Preferences.setNowPlayingTransition(currentItem, selectedTransition)
+        binding.transition.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
+                    val selectedTransition = transitionAdapter?.transitions?.getOrNull(position)
+                    if (currentItem != null && selectedTransition != null) {
+                        Preferences.setNowPlayingTransition(currentItem, selectedTransition)
+                    }
                 }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
         updateTransition()
-
 
         return MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.now_playing_screen_title)
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
                 Preferences.nowPlayingScreen = NowPlayingScreen.entries[viewPagerPosition]
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .create()
     }
 
-    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
+    override fun onPageScrolled(
+        position: Int,
+        positionOffset: Float,
+        positionOffsetPixels: Int,
+    ) {}
+
     override fun onPageSelected(position: Int) {
         viewPagerPosition = position
         updateColorScheme()
@@ -107,7 +116,7 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
         parent: AdapterView<*>?,
         view: View?,
         position: Int,
-        id: Long
+        id: Long,
     ) {
         val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
         if (currentItem != null) {
@@ -142,9 +151,13 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
         }
     }
 
-    private class NowPlayingScreenAdapter(private val context: Context) : PagerAdapter() {
-
-        override fun instantiateItem(collection: ViewGroup, position: Int): Any {
+    private class NowPlayingScreenAdapter(
+        private val context: Context,
+    ) : PagerAdapter() {
+        override fun instantiateItem(
+            collection: ViewGroup,
+            position: Int,
+        ): Any {
             val nowPlayingScreen = NowPlayingScreen.entries[position]
             val inflater = LayoutInflater.from(collection.context)
 
@@ -155,29 +168,35 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
             return binding.root
         }
 
-        override fun destroyItem(collection: ViewGroup, position: Int, view: Any) {
+        override fun destroyItem(
+            collection: ViewGroup,
+            position: Int,
+            view: Any,
+        ) {
             collection.removeView(view as View)
         }
 
-        override fun getCount(): Int {
-            return NowPlayingScreen.entries.size
-        }
+        override fun getCount(): Int = NowPlayingScreen.entries.size
 
-        override fun isViewFromObject(view: View, `object`: Any): Boolean {
-            return view === `object`
-        }
+        override fun isViewFromObject(
+            view: View,
+            `object`: Any,
+        ): Boolean = view === `object`
 
-        override fun getPageTitle(position: Int): CharSequence {
-            return context.getString(NowPlayingScreen.entries[position].titleRes)
-        }
+        override fun getPageTitle(position: Int): CharSequence = context.getString(NowPlayingScreen.entries[position].titleRes)
     }
 
-    class ColorSchemeAdapter(context: Context, val schemes: List<PlayerColorSchemeMode>) :
-        ArrayAdapter<PlayerColorSchemeMode>(context, android.R.layout.simple_list_item_1, schemes) {
-
+    class ColorSchemeAdapter(
+        context: Context,
+        val schemes: List<PlayerColorSchemeMode>,
+    ) : ArrayAdapter<PlayerColorSchemeMode>(context, android.R.layout.simple_list_item_1, schemes) {
         private val inflater = LayoutInflater.from(context)
 
-        override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+        override fun getDropDownView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View {
             val view = convertView ?: inflater.inflate(R.layout.item_dialog_list, parent, false)
             val titleView = view.findViewById<TextView>(R.id.title)
             val descriptionView = view.findViewById<TextView>(R.id.text)
@@ -192,7 +211,11 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
             return view
         }
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View {
             val view = super.getView(position, convertView, parent) as TextView
             val item = getItem(position)
             view.text = item?.titleRes?.let { view.context.getString(it) } ?: ""
@@ -206,10 +229,15 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
         }
     }
 
-    class TransitionAdapter(context: Context, val transitions: List<PlayerTransition>) :
-        ArrayAdapter<PlayerTransition>(context, android.R.layout.simple_list_item_1, transitions) {
-
-        override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+    class TransitionAdapter(
+        context: Context,
+        val transitions: List<PlayerTransition>,
+    ) : ArrayAdapter<PlayerTransition>(context, android.R.layout.simple_list_item_1, transitions) {
+        override fun getDropDownView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View {
             val dropDownView = super.getDropDownView(position, convertView, parent)
             val item = getItem(position)
             if (item != null) {
@@ -218,7 +246,11 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
             return dropDownView
         }
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View {
             val view = super.getView(position, convertView, parent)
             val item = getItem(position)
             if (item != null) {
@@ -233,5 +265,4 @@ class NowPlayingScreenPreferenceDialog : DialogFragment(), ViewPager.OnPageChang
             notifyDataSetChanged()
         }
     }
-
 }

@@ -36,7 +36,7 @@ enum class NowPlayingScreen(
     val supportsCoverLyrics: Boolean,
     val supportsCarouselEffect: Boolean,
     val supportsCustomCornerRadius: Boolean,
-    val supportsSmallImage: Boolean
+    val supportsSmallImage: Boolean,
 ) {
     Default(
         R.string.normal_style,
@@ -46,7 +46,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
         supportsCustomCornerRadius = true,
-        supportsSmallImage = true
+        supportsSmallImage = true,
     ),
     FullCover(
         R.string.full_cover_style,
@@ -56,7 +56,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = false,
         supportsCarouselEffect = false,
         supportsCustomCornerRadius = false,
-        supportsSmallImage = false
+        supportsSmallImage = false,
     ),
     Gradient(
         R.string.gradient_style,
@@ -66,7 +66,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = true,
         supportsCarouselEffect = false,
         supportsCustomCornerRadius = false,
-        supportsSmallImage = false
+        supportsSmallImage = false,
     ),
     Plain(
         R.string.plain_style,
@@ -76,7 +76,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
         supportsCustomCornerRadius = true,
-        supportsSmallImage = true
+        supportsSmallImage = true,
     ),
     M3(
         R.string.m3_style,
@@ -86,7 +86,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
         supportsCustomCornerRadius = true,
-        supportsSmallImage = true
+        supportsSmallImage = true,
     ),
     Expressive(
         R.string.expressive_style,
@@ -96,7 +96,7 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
         supportsCustomCornerRadius = true,
-        supportsSmallImage = false
+        supportsSmallImage = false,
     ),
     Peek(
         R.string.peek_style,
@@ -106,84 +106,117 @@ enum class NowPlayingScreen(
         supportsCoverLyrics = false,
         supportsCarouselEffect = false,
         supportsCustomCornerRadius = false,
-        supportsSmallImage = false
-    );
+        supportsSmallImage = false,
+    ),
+    ;
 
     val defaultColorScheme: PlayerColorSchemeMode
-        get() = when (this) {
-            Default, Plain, Peek -> PlayerColorSchemeMode.AppTheme
-            M3 -> PlayerColorSchemeMode.MaterialYou
-            Expressive -> PlayerColorSchemeMode.Blur
-            FullCover, Gradient -> PlayerColorSchemeMode.VibrantColor
-        }
+        get() =
+            when (this) {
+                Default, Plain, Peek -> PlayerColorSchemeMode.AppTheme
+                M3 -> PlayerColorSchemeMode.MaterialYou
+                Expressive -> PlayerColorSchemeMode.Blur
+                FullCover, Gradient -> PlayerColorSchemeMode.VibrantColor
+            }
 
     val supportedColorSchemes: PlayerColorSchemeList
-        get() = when (this) {
-            Default,
-            Plain -> listOf(
-                PlayerColorSchemeMode.AppTheme,
-                PlayerColorSchemeMode.SimpleColor,
-                PlayerColorSchemeMode.MaterialYou,
-                PlayerColorSchemeMode.VibrantColor,
-                PlayerColorSchemeMode.Blur
-            )
-            FullCover,
-            Gradient -> listOf(
-                PlayerColorSchemeMode.VibrantColor
-            )
-            Peek -> listOf(
-                PlayerColorSchemeMode.AppTheme,
-                PlayerColorSchemeMode.MaterialYou,
-                PlayerColorSchemeMode.VibrantColor
-            )
-            M3 -> listOf(
-                PlayerColorSchemeMode.AppTheme,
-                PlayerColorSchemeMode.MaterialYou,
-                PlayerColorSchemeMode.Blur
-            )
-            Expressive -> listOf(
-                PlayerColorSchemeMode.AppTheme,
-                PlayerColorSchemeMode.MaterialYou,
-                PlayerColorSchemeMode.Blur
-            )
-        }
+        get() =
+            when (this) {
+                Default,
+                Plain,
+                -> {
+                    listOf(
+                        PlayerColorSchemeMode.AppTheme,
+                        PlayerColorSchemeMode.SimpleColor,
+                        PlayerColorSchemeMode.MaterialYou,
+                        PlayerColorSchemeMode.VibrantColor,
+                        PlayerColorSchemeMode.Blur,
+                    )
+                }
+
+                FullCover,
+                Gradient,
+                -> {
+                    listOf(
+                        PlayerColorSchemeMode.VibrantColor,
+                    )
+                }
+
+                Peek -> {
+                    listOf(
+                        PlayerColorSchemeMode.AppTheme,
+                        PlayerColorSchemeMode.MaterialYou,
+                        PlayerColorSchemeMode.VibrantColor,
+                    )
+                }
+
+                M3 -> {
+                    listOf(
+                        PlayerColorSchemeMode.AppTheme,
+                        PlayerColorSchemeMode.MaterialYou,
+                        PlayerColorSchemeMode.Blur,
+                    )
+                }
+
+                Expressive -> {
+                    listOf(
+                        PlayerColorSchemeMode.AppTheme,
+                        PlayerColorSchemeMode.MaterialYou,
+                        PlayerColorSchemeMode.Blur,
+                    )
+                }
+            }
 
     val defaultTransition: PlayerTransition
-        get() = when (this) {
-            FullCover,
-            Gradient -> PlayerTransition.Parallax
-            else -> PlayerTransition.Simple
-        }
+        get() =
+            when (this) {
+                FullCover,
+                Gradient,
+                -> PlayerTransition.Parallax
+
+                else -> PlayerTransition.Simple
+            }
 
     val supportedTransitions: List<PlayerTransition>
-        get() = when (this) {
-            Default,
-            Plain,
-            M3,
-            Expressive -> listOf(
-                PlayerTransition.Simple,
-                PlayerTransition.Cascading,
-                PlayerTransition.Depth,
-                PlayerTransition.ZoomOut,
-                PlayerTransition.Stack,
-                PlayerTransition.HorizontalFlip,
-                PlayerTransition.VerticalFlip,
-                PlayerTransition.Hinge
-            )
-            FullCover,
-            Gradient -> listOf(
-                PlayerTransition.Simple,
-                PlayerTransition.Cascading,
-                PlayerTransition.Depth,
-                PlayerTransition.ZoomOut,
-                PlayerTransition.Stack,
-                PlayerTransition.HorizontalFlip,
-                PlayerTransition.VerticalFlip,
-                PlayerTransition.Hinge,
-                PlayerTransition.Parallax
-            )
-            Peek -> listOf(
-                PlayerTransition.Simple
-            )
-        }
+        get() =
+            when (this) {
+                Default,
+                Plain,
+                M3,
+                Expressive,
+                -> {
+                    listOf(
+                        PlayerTransition.Simple,
+                        PlayerTransition.Cascading,
+                        PlayerTransition.Depth,
+                        PlayerTransition.ZoomOut,
+                        PlayerTransition.Stack,
+                        PlayerTransition.HorizontalFlip,
+                        PlayerTransition.VerticalFlip,
+                        PlayerTransition.Hinge,
+                    )
+                }
+
+                FullCover,
+                Gradient,
+                -> {
+                    listOf(
+                        PlayerTransition.Simple,
+                        PlayerTransition.Cascading,
+                        PlayerTransition.Depth,
+                        PlayerTransition.ZoomOut,
+                        PlayerTransition.Stack,
+                        PlayerTransition.HorizontalFlip,
+                        PlayerTransition.VerticalFlip,
+                        PlayerTransition.Hinge,
+                        PlayerTransition.Parallax,
+                    )
+                }
+
+                Peek -> {
+                    listOf(
+                        PlayerTransition.Simple,
+                    )
+                }
+            }
 }

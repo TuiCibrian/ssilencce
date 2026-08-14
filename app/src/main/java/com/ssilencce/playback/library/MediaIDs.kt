@@ -15,9 +15,15 @@ object MediaIDs {
 
     private const val SEPARATOR = ":"
 
-    fun getPathId(parentId: String, mediaId: Long) = getPathId(parentId, mediaId.toString())
+    fun getPathId(
+        parentId: String,
+        mediaId: Long,
+    ) = getPathId(parentId, mediaId.toString())
 
-    fun getPathId(parentId: String, mediaId: String) = parentId + SEPARATOR + mediaId
+    fun getPathId(
+        parentId: String,
+        mediaId: String,
+    ) = parentId + SEPARATOR + mediaId
 
     fun splitPath(pathId: String) = pathId.split(SEPARATOR)
 

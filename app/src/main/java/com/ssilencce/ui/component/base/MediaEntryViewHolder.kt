@@ -27,9 +27,11 @@ import com.google.android.material.button.MaterialButton
 import com.ssilencce.R
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 
-open class MediaEntryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
-    View.OnClickListener, OnLongClickListener {
-
+open class MediaEntryViewHolder(
+    itemView: View,
+) : RecyclerView.ViewHolder(itemView),
+    View.OnClickListener,
+    OnLongClickListener {
     val imageContainer: View? = itemView.findViewById(R.id.image_container)
     val image: ImageView? = itemView.findViewById(R.id.image)
     val menu: MaterialButton? = itemView.findViewById(R.id.menu)
@@ -46,13 +48,9 @@ open class MediaEntryViewHolder(itemView: View) : RecyclerView.ViewHolder(itemVi
         itemView.setOnClickListener(this)
     }
 
-    protected inline fun <reified T : ViewModel> getViewModel(): T? {
-        return (itemView.context as? FragmentActivity)?.getViewModel<T>()
-    }
+    protected inline fun <reified T : ViewModel> getViewModel(): T? = (itemView.context as? FragmentActivity)?.getViewModel<T>()
 
-    override fun onLongClick(view: View): Boolean {
-        return false
-    }
+    override fun onLongClick(view: View): Boolean = false
 
     override fun onClick(view: View) {}
 }

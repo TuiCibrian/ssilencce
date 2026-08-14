@@ -46,7 +46,6 @@ import com.ssilencce.util.Preferences
  * @author Christians M. A. (mardous)
  */
 class PlainPlayerFragment : AbsPlayerFragment(R.layout.fragment_plain_player) {
-
     private var _binding: FragmentPlainPlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -64,7 +63,10 @@ class PlainPlayerFragment : AbsPlayerFragment(R.layout.fragment_plain_player) {
     override val blurView: ImageView
         get() = binding.blur
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPlainPlayerBinding.bind(view)
         setupToolbar()
@@ -87,8 +89,9 @@ class PlainPlayerFragment : AbsPlayerFragment(R.layout.fragment_plain_player) {
     }
 
     private fun setupToolbar() {
-        if (playerToolbar.navigationIcon == null)
+        if (playerToolbar.navigationIcon == null) {
             return
+        }
 
         playerToolbar.setNavigationOnClickListener {
             getOnBackPressedDispatcher().onBackPressed()
@@ -102,7 +105,7 @@ class PlainPlayerFragment : AbsPlayerFragment(R.layout.fragment_plain_player) {
             binding.root.surfaceTintTarget(scheme.surfaceColor),
             binding.toolbar.tintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
             binding.title.tintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
-            binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         ).also {
             it.addAll(playerControlsFragment.getTintTargets(scheme))
         }

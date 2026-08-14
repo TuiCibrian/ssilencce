@@ -36,7 +36,6 @@ import com.ssilencce.util.Preferences
 import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
 
 class ExtraInfoPreferenceDialog : DialogFragment() {
-
     private lateinit var adapter: ExtraInfoAdapter
 
     @Suppress("DEPRECATION")
@@ -45,9 +44,10 @@ class ExtraInfoPreferenceDialog : DialogFragment() {
 
         val title = requireNotNull(arguments.getString(TITLE))
         val preferenceKey = requireNotNull(arguments.getString(PREFERENCE_KEY))
-        val defaultContent = requireNotNull(
-                BundleCompat.getParcelableArrayList(arguments, DEFAULT_CONTENT, MetadataField::class.java)
-        )
+        val defaultContent =
+            requireNotNull(
+                BundleCompat.getParcelableArrayList(arguments, DEFAULT_CONTENT, MetadataField::class.java),
+            )
 
         var currentContent = Preferences.getExtraInfoContent(preferenceKey, defaultContent)
         if (savedInstanceState != null && savedInstanceState.containsKey(SAVED_KEY)) {
@@ -67,8 +67,7 @@ class ExtraInfoPreferenceDialog : DialogFragment() {
             .setView(binding.root)
             .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
                 Preferences.setExtraInfoContent(preferenceKey, adapter.items)
-            }
-            .setNeutralButton(R.string.reset_action, null)
+            }.setNeutralButton(R.string.reset_action, null)
             .create { dialog ->
                 dialog.getButton(DialogInterface.BUTTON_NEUTRAL).setOnClickListener {
                     adapter.items = defaultContent.toMutableList()
@@ -87,22 +86,24 @@ class ExtraInfoPreferenceDialog : DialogFragment() {
         private const val DEFAULT_CONTENT = "Preference.default"
         private const val SAVED_KEY = "SavedKey.list"
 
-        fun nowPlaying(context: Context) = create(
-            title = context.getString(R.string.select_extra_info_title),
-            preferenceKey = NOW_PLAYING_EXTRA_INFO,
-            defaultContent = Preferences.getDefaultNowPlayingInfo()
-        )
+        fun nowPlaying(context: Context) =
+            create(
+                title = context.getString(R.string.select_extra_info_title),
+                preferenceKey = NOW_PLAYING_EXTRA_INFO,
+                defaultContent = Preferences.getDefaultNowPlayingInfo(),
+            )
 
-        fun appWidgets(context: Context) = create(
-            title = context.getString(R.string.widget_third_line_title),
-            preferenceKey = WIDGET_THIRD_LINE_CONTENT,
-            defaultContent = Preferences.getDefaultWidgetInfo()
-        )
+        fun appWidgets(context: Context) =
+            create(
+                title = context.getString(R.string.widget_third_line_title),
+                preferenceKey = WIDGET_THIRD_LINE_CONTENT,
+                defaultContent = Preferences.getDefaultWidgetInfo(),
+            )
 
         private fun create(
             title: String,
             preferenceKey: String,
-            defaultContent: List<MetadataField>
+            defaultContent: List<MetadataField>,
         ) = ExtraInfoPreferenceDialog().withArgs {
             putString(TITLE, title)
             putString(PREFERENCE_KEY, preferenceKey)

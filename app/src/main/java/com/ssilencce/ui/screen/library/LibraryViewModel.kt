@@ -74,9 +74,8 @@ import kotlin.coroutines.resume
 class LibraryViewModel(
     private val repository: Repository,
     private val inclExclDao: InclExclDao,
-    private val customPlaylistImageManager: CustomPlaylistImageManager
+    private val customPlaylistImageManager: CustomPlaylistImageManager,
 ) : ViewModel() {
-
     init {
         viewModelScope.launch(IO) {
             initializeBlacklist()
@@ -97,69 +96,93 @@ class LibraryViewModel(
     private val songHistory = MutableLiveData<List<Song>>()
 
     fun getSuggestions(): LiveData<SuggestedResult> = suggestions
+
     fun getSongs(): LiveData<List<Song>> = songs
+
     fun getAlbums(): LiveData<List<Album>> = albums
+
     fun getArtists(): LiveData<List<Artist>> = artists
+
     fun getPlaylists(): LiveData<List<PlaylistWithSongs>> = playlists
+
     fun getGenres(): LiveData<List<Genre>> = genres
+
     fun getYears(): LiveData<List<ReleaseYear>> = years
+
     fun getFileSystem(): LiveData<FileSystemQuery> = fileSystem
+
     fun getFabMargin(): LiveData<LibraryMargin> = fabMargin
+
     fun getMiniPlayerMargin(): LiveData<LibraryMargin> = miniPlayerMargin
 
-    private fun createValueAnimator(oldValue: Int, newValue: Int, setter: (Int) -> Unit): Animator {
-        return ValueAnimator.ofInt(oldValue, newValue).apply {
+    private fun createValueAnimator(
+        oldValue: Int,
+        newValue: Int,
+        setter: (Int) -> Unit,
+    ): Animator =
+        ValueAnimator.ofInt(oldValue, newValue).apply {
             addUpdateListener { setter(it.animatedValue as Int) }
             doOnEnd { setter(newValue) }
             start()
         }
-    }
 
-    fun setLibraryMargins(fabBottomMargin: LibraryMargin, bottomSheetMargin: LibraryMargin) {
-        val fabAnimator = createValueAnimator(
-            oldValue = fabMargin.value!!.margin,
-            newValue = fabBottomMargin.margin
-        ) {
-            fabMargin.postValue(fabBottomMargin.copy(margin = it))
-        }
-        val miniPlayerAnimator = createValueAnimator(
-            oldValue = miniPlayerMargin.value!!.margin,
-            newValue = bottomSheetMargin.margin
-        ) {
-            miniPlayerMargin.postValue(bottomSheetMargin.copy(margin = it))
-        }
+    fun setLibraryMargins(
+        fabBottomMargin: LibraryMargin,
+        bottomSheetMargin: LibraryMargin,
+    ) {
+        val fabAnimator =
+            createValueAnimator(
+                oldValue = fabMargin.value!!.margin,
+                newValue = fabBottomMargin.margin,
+            ) {
+                fabMargin.postValue(fabBottomMargin.copy(margin = it))
+            }
+        val miniPlayerAnimator =
+            createValueAnimator(
+                oldValue = miniPlayerMargin.value!!.margin,
+                newValue = bottomSheetMargin.margin,
+            ) {
+                miniPlayerMargin.postValue(bottomSheetMargin.copy(margin = it))
+            }
         val animatorSet = AnimatorSet()
         animatorSet.playTogether(fabAnimator, miniPlayerAnimator)
         animatorSet.start()
     }
 
     suspend fun albumById(id: Long) = repository.albumById(id)
+
     fun artistById(id: Long) = repository.artistById(id)
+
     suspend fun devicePlaylistById(id: Long) = repository.devicePlaylist(id)
-    fun genreBySong(song: Song): LiveData<Genre> = liveData(IO) {
-        emit(repository.genreBySong(song))
-    }
 
-    fun allSongs() = liveData(IO) {
-        emit(repository.allSongs())
-    }
-
-    fun forceReload(reloadType: ReloadType) = viewModelScope.launch(IO) {
-        when (reloadType) {
-            ReloadType.Songs -> fetchSongs()
-            ReloadType.Albums -> fetchAlbums()
-            ReloadType.Artists -> fetchArtists()
-            ReloadType.Playlists -> fetchPlaylists()
-            ReloadType.Genres -> fetchGenres()
-            ReloadType.Folders -> fetchFolders()
-            ReloadType.Years -> fetchYears()
-            ReloadType.Suggestions -> fetchSuggestions()
+    fun genreBySong(song: Song): LiveData<Genre> =
+        liveData(IO) {
+            emit(repository.genreBySong(song))
         }
-    }
+
+    fun allSongs() =
+        liveData(IO) {
+            emit(repository.allSongs())
+        }
+
+    fun forceReload(reloadType: ReloadType) =
+        viewModelScope.launch(IO) {
+            when (reloadType) {
+                ReloadType.Songs -> fetchSongs()
+                ReloadType.Albums -> fetchAlbums()
+                ReloadType.Artists -> fetchArtists()
+                ReloadType.Playlists -> fetchPlaylists()
+                ReloadType.Genres -> fetchGenres()
+                ReloadType.Folders -> fetchFolders()
+                ReloadType.Years -> fetchYears()
+                ReloadType.Suggestions -> fetchSuggestions()
+            }
+        }
 
     private suspend fun fetchSuggestions() {
-        val currentValue = suggestions.value?.copy(state = SuggestedResult.State.Loading)
-            ?: SuggestedResult(SuggestedResult.State.Loading)
+        val currentValue =
+            suggestions.value?.copy(state = SuggestedResult.State.Loading)
+                ?: SuggestedResult(SuggestedResult.State.Loading)
         suggestions.postValue(currentValue)
 
         val data = repository.homeSuggestions()
@@ -201,61 +224,69 @@ class LibraryViewModel(
     private suspend fun filesToSongs(
         files: List<FileSystemItem>,
         includeFolders: Boolean,
-        deepListing: Boolean
-    ): List<Song> {
-        return buildList {
+        deepListing: Boolean,
+    ): List<Song> =
+        buildList {
             if (includeFolders) {
-                val songs = files.filterIsInstance<Folder>().flatMap {
-                    if (deepListing) {
-                        repository.songsByFolder(it.filePath, true)
-                    } else {
-                        it.songs
+                val songs =
+                    files.filterIsInstance<Folder>().flatMap {
+                        if (deepListing) {
+                            repository.songsByFolder(it.filePath, true)
+                        } else {
+                            it.songs
+                        }
                     }
-                }
                 addAll(songs)
             }
             addAll(files.filterIsInstance<Song>())
         }
-    }
 
     fun navigateToPath(
         navigateToPath: String? = null,
-        hierarchyView: Boolean = Preferences.hierarchyFolderView
+        hierarchyView: Boolean = Preferences.hierarchyFolderView,
     ) = viewModelScope.launch(IO) {
         if (hierarchyView) {
-            val path = if (navigateToPath.isNullOrEmpty()) {
-                fileSystem.value?.path ?: Preferences.startDirectory.getCanonicalPathSafe()
-            } else {
-                navigateToPath
-            }
+            val path =
+                if (navigateToPath.isNullOrEmpty()) {
+                    fileSystem.value?.path ?: Preferences.startDirectory.getCanonicalPathSafe()
+                } else {
+                    navigateToPath
+                }
             fileSystem.postValue(repository.filesInPath(path))
         } else {
             fileSystem.postValue(repository.allFolders())
         }
     }
 
-    fun scanPaths(context: Context, paths: Array<String>): LiveData<Int> = liveData(IO) {
-        val scanResult = runCatching {
-            suspendCancellableCoroutine { continuation ->
-                var progress = 0
-                val total = paths.size
+    fun scanPaths(
+        context: Context,
+        paths: Array<String>,
+    ): LiveData<Int> =
+        liveData(IO) {
+            val scanResult =
+                runCatching {
+                    suspendCancellableCoroutine { continuation ->
+                        var progress = 0
+                        val total = paths.size
 
-                MediaScannerConnection.scanFile(context, paths, null) { _, _ ->
-                    progress++
-                    if (progress == total && continuation.isActive) {
-                        continuation.resume(total)
+                        MediaScannerConnection.scanFile(context, paths, null) { _, _ ->
+                            progress++
+                            if (progress == total && continuation.isActive) {
+                                continuation.resume(total)
+                            }
+                        }
                     }
                 }
-            }
+            emit(scanResult.getOrElse { 0 })
         }
-        emit(scanResult.getOrElse { 0 })
-    }
 
     fun scanAllPaths(context: Context): LiveData<Int> {
         // We attempt to retrieve all storage roots using our StorageManager-based utility.
         // If that fails for some reason, we fall back to Environment.getExternalStorageDirectory()
         // to scan at least the device's primary storage root.
-        val storageRoots = StorageUtil.refreshStorageVolumes()
+        val storageRoots =
+            StorageUtil
+                .refreshStorageVolumes()
                 .map { it.filePath }
                 .plus(Environment.getExternalStorageDirectory().path)
                 .distinct()
@@ -264,57 +295,65 @@ class LibraryViewModel(
         return scanPaths(context, storageRoots)
     }
 
-    fun blacklistPath(file: File) = viewModelScope.launch(IO) {
-        inclExclDao.insertPath(InclExclEntity(file.getCanonicalPathSafe(), InclExclDao.BLACKLIST))
-        forceReload(ReloadType.Folders)
-    }
+    fun blacklistPath(file: File) =
+        viewModelScope.launch(IO) {
+            inclExclDao.insertPath(InclExclEntity(file.getCanonicalPathSafe(), InclExclDao.BLACKLIST))
+            forceReload(ReloadType.Folders)
+        }
 
     fun listSongsFromFiles(
         song: Song,
-        files: List<FileSystemItem>?
+        files: List<FileSystemItem>?,
     ) = liveData(IO) {
         if (!files.isNullOrEmpty()) {
             val currentFolder = fileSystem.value
-            val songs = if (currentFolder != null) {
-                filesToSongs(files, includeFolders = false, deepListing = false)
-            } else {
-                emptyList()
-            }
+            val songs =
+                if (currentFolder != null) {
+                    filesToSongs(files, includeFolders = false, deepListing = false)
+                } else {
+                    emptyList()
+                }
             val startPos = songs.indexOfSong(song.id).coerceAtLeast(0)
             emit(songs to startPos)
         }
     }
 
-    fun songs(providers: List<Any>): LiveData<List<Song>> = liveData(IO) {
-        val songs = providers.filterIsInstance<SongProvider>()
-            .flatMap { it.songs }
-        emit(songs)
-    }
+    fun songs(providers: List<Any>): LiveData<List<Song>> =
+        liveData(IO) {
+            val songs =
+                providers
+                    .filterIsInstance<SongProvider>()
+                    .flatMap { it.songs }
+            emit(songs)
+        }
 
     fun songs(
         files: List<FileSystemItem>,
         includeFolders: Boolean,
-        deepListing: Boolean
-    ): LiveData<List<Song>> = liveData(IO) {
-        val songs = filesToSongs(files, includeFolders, deepListing)
-        emit(songs)
-    }
-
-    fun artists(type: ContentType): LiveData<List<Artist>> = liveData(IO) {
-        when (type) {
-            ContentType.TopArtists -> emit(repository.topArtists())
-            ContentType.RecentArtists -> emit(repository.recentArtists())
-            else -> emit(arrayListOf())
+        deepListing: Boolean,
+    ): LiveData<List<Song>> =
+        liveData(IO) {
+            val songs = filesToSongs(files, includeFolders, deepListing)
+            emit(songs)
         }
-    }
 
-    fun albums(type: ContentType): LiveData<List<Album>> = liveData(IO) {
-        when (type) {
-            ContentType.TopAlbums -> emit(repository.topAlbums())
-            ContentType.RecentAlbums -> emit(repository.recentAlbums())
-            else -> emit(arrayListOf())
+    fun artists(type: ContentType): LiveData<List<Artist>> =
+        liveData(IO) {
+            when (type) {
+                ContentType.TopArtists -> emit(repository.topArtists())
+                ContentType.RecentArtists -> emit(repository.recentArtists())
+                else -> emit(arrayListOf())
+            }
         }
-    }
+
+    fun albums(type: ContentType): LiveData<List<Album>> =
+        liveData(IO) {
+            when (type) {
+                ContentType.TopAlbums -> emit(repository.topAlbums())
+                ContentType.RecentAlbums -> emit(repository.recentAlbums())
+                else -> emit(arrayListOf())
+            }
+        }
 
     fun clearHistory() {
         viewModelScope.launch(IO) {
@@ -323,10 +362,10 @@ class LibraryViewModel(
         songHistory.value = emptyList()
     }
 
-
-    fun lastAddedSongs(): LiveData<List<Song>> = liveData(IO) {
-        emit(repository.recentSongs())
-    }
+    fun lastAddedSongs(): LiveData<List<Song>> =
+        liveData(IO) {
+            emit(repository.recentSongs())
+        }
 
     fun favoriteSongsFlow() = repository.favoriteSongsFlow()
 
@@ -334,32 +373,36 @@ class LibraryViewModel(
 
     fun historySongsFlow() = repository.historySongsFlow()
 
-    fun notRecentlyPlayedSongs(): LiveData<List<Song>> = liveData(IO) {
-        emit(repository.notRecentlyPlayedSongs())
-    }
+    fun notRecentlyPlayedSongs(): LiveData<List<Song>> =
+        liveData(IO) {
+            emit(repository.notRecentlyPlayedSongs())
+        }
 
     private val _addToPlaylistUiState = MutableStateFlow<AddToPlaylistUiState?>(null)
     val addToPlaylistUiState = _addToPlaylistUiState.asStateFlow()
 
-    fun prepareToAddToPlaylist(searchQuery: String? = null) = viewModelScope.launch(IO) {
-        _addToPlaylistUiState.update { it ?: AddToPlaylistUiState.Loading }
+    fun prepareToAddToPlaylist(searchQuery: String? = null) =
+        viewModelScope.launch(IO) {
+            _addToPlaylistUiState.update { it ?: AddToPlaylistUiState.Loading }
 
-        val playlists = if (searchQuery.isNullOrBlank()) {
-            repository.playlistsWithSongs()
-        } else {
-            repository.searchPlaylists(searchQuery)
-        }
+            val playlists =
+                if (searchQuery.isNullOrBlank()) {
+                    repository.playlistsWithSongs()
+                } else {
+                    repository.searchPlaylists(searchQuery)
+                }
 
-        _addToPlaylistUiState.value = if (playlists.isEmpty()) {
-            AddToPlaylistUiState.Empty(searchQuery)
-        } else {
-            AddToPlaylistUiState.Ready(playlists)
+            _addToPlaylistUiState.value =
+                if (playlists.isEmpty()) {
+                    AddToPlaylistUiState.Empty(searchQuery)
+                } else {
+                    AddToPlaylistUiState.Ready(playlists)
+                }
         }
-    }
 
     fun addToPlaylists(
         playlistsIds: List<Long>,
-        songs: List<Song>
+        songs: List<Song>,
     ) = viewModelScope.launch(IO) {
         val state = addToPlaylistUiState.value ?: return@launch
         if (state is AddToPlaylistUiState.Ready && state.playlists.isNotEmpty()) {
@@ -368,16 +411,19 @@ class LibraryViewModel(
             var success = true
             val playlists = state.playlists.filter { playlistsIds.contains(it.playlistEntity.playListId) }
             for (playlist in playlists) {
-                val checkedSongs = songs.filterNot {
-                    repository.checkSongExistInPlaylist(playlist.playlistEntity, it)
-                }
-                val result = runCatching {
-                    insertSongs(
-                        songs = checkedSongs.map {
-                            it.toSongEntity(playListId = playlist.playlistEntity.playListId)
-                        }
-                    )
-                }
+                val checkedSongs =
+                    songs.filterNot {
+                        repository.checkSongExistInPlaylist(playlist.playlistEntity, it)
+                    }
+                val result =
+                    runCatching {
+                        insertSongs(
+                            songs =
+                                checkedSongs.map {
+                                    it.toSongEntity(playListId = playlist.playlistEntity.playListId)
+                                },
+                        )
+                    }
                 success = success && result.isSuccess
             }
 
@@ -394,7 +440,7 @@ class LibraryViewModel(
         playlist: PlaylistEntity,
         newName: String,
         newImageUri: String?,
-        newDescription: String?
+        newDescription: String?,
     ) = viewModelScope.launch(IO) {
         var imageUri = playlist.customCoverUri
         if (newImageUri != imageUri) {
@@ -407,117 +453,129 @@ class LibraryViewModel(
             playlist.copy(
                 playlistName = newName,
                 customCoverUri = imageUri,
-                description = newDescription
-            )
+                description = newDescription,
+            ),
         )
     }
 
-    fun deleteSongsInPlaylist(songs: List<SongEntity>) = viewModelScope.launch(IO) {
-        repository.deleteSongsInPlaylist(songs)
-        forceReload(ReloadType.Playlists)
-    }
-
-    fun deletePlaylists(playlists: List<PlaylistEntity>) = viewModelScope.launch(IO) {
-        for (playlist in playlists) {
-            playlist.customCoverUri?.let {
-                customPlaylistImageManager.deleteImage(it.toUri())
-            }
+    fun deleteSongsInPlaylist(songs: List<SongEntity>) =
+        viewModelScope.launch(IO) {
+            repository.deleteSongsInPlaylist(songs)
+            forceReload(ReloadType.Playlists)
         }
-        repository.deletePlaylists(playlists)
-        forceReload(ReloadType.Playlists)
-    }
+
+    fun deletePlaylists(playlists: List<PlaylistEntity>) =
+        viewModelScope.launch(IO) {
+            for (playlist in playlists) {
+                playlist.customCoverUri?.let {
+                    customPlaylistImageManager.deleteImage(it.toUri())
+                }
+            }
+            repository.deletePlaylists(playlists)
+            forceReload(ReloadType.Playlists)
+        }
 
     fun createCustomPlaylist(
         playlistName: String,
         customCoverUri: String? = null,
         description: String? = null,
-        songs: List<Song> = emptyList()
-    ): LiveData<AddToPlaylistResult> = liveData(IO) {
-        emit(AddToPlaylistResult(playlistName, isWorking = true))
+        songs: List<Song> = emptyList(),
+    ): LiveData<AddToPlaylistResult> =
+        liveData(IO) {
+            emit(AddToPlaylistResult(playlistName, isWorking = true))
 
-        val playlists = checkPlaylistExists(playlistName)
-        if (playlists.isEmpty()) {
-            val playlistImageUri = customPlaylistImageManager.createPlaylistImage(customCoverUri)
-            val playlistEntity = PlaylistEntity(
-                playlistName = playlistName,
-                customCoverUri = playlistImageUri?.toString(),
-                description = description
-            )
-            val playlistId: Long = createPlaylist(playlistEntity)
-            if (songs.isNotEmpty()) {
-                insertSongs(songs.map { it.toSongEntity(playlistId) })
-            }
-            val playlistCreated = (playlistId != -1L)
-            val isFavoritePlaylist = repository.checkFavoritePlaylist()?.playListId == playlistId
-            emit(
-                AddToPlaylistResult(
-                    playlistName,
-                    playlistCreated = playlistCreated,
-                    isFavoritePlaylist = isFavoritePlaylist,
-                    insertedSongs = songs.size
+            val playlists = checkPlaylistExists(playlistName)
+            if (playlists.isEmpty()) {
+                val playlistImageUri = customPlaylistImageManager.createPlaylistImage(customCoverUri)
+                val playlistEntity =
+                    PlaylistEntity(
+                        playlistName = playlistName,
+                        customCoverUri = playlistImageUri?.toString(),
+                        description = description,
+                    )
+                val playlistId: Long = createPlaylist(playlistEntity)
+                if (songs.isNotEmpty()) {
+                    insertSongs(songs.map { it.toSongEntity(playlistId) })
+                }
+                val playlistCreated = (playlistId != -1L)
+                val isFavoritePlaylist = repository.checkFavoritePlaylist()?.playListId == playlistId
+                emit(
+                    AddToPlaylistResult(
+                        playlistName,
+                        playlistCreated = playlistCreated,
+                        isFavoritePlaylist = isFavoritePlaylist,
+                        insertedSongs = songs.size,
+                    ),
                 )
-            )
-        } else {
-            // Playlist already exists
-            emit(AddToPlaylistResult(playlistName, playlistCreated = false))
+            } else {
+                // Playlist already exists
+                emit(AddToPlaylistResult(playlistName, playlistCreated = false))
+            }
+            forceReload(ReloadType.Playlists)
         }
-        forceReload(ReloadType.Playlists)
-    }
 
-    fun favoritePlaylist(): LiveData<PlaylistEntity> = liveData(IO) {
-        emit(repository.favoritePlaylist())
-    }
+    fun favoritePlaylist(): LiveData<PlaylistEntity> =
+        liveData(IO) {
+            emit(repository.favoritePlaylist())
+        }
 
-    fun isSongFavorite(song: Song): LiveData<Boolean> = liveData(IO) {
-        emit(repository.isSongFavorite(song.id))
-    }
+    fun isSongFavorite(song: Song): LiveData<Boolean> =
+        liveData(IO) {
+            emit(repository.isSongFavorite(song.id))
+        }
 
     suspend fun insertSongs(songs: List<SongEntity>) = repository.insertSongsInPlaylist(songs)
 
-    private suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity> =
-        repository.checkPlaylistExists(playlistName)
+    private suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity> = repository.checkPlaylistExists(playlistName)
 
-    private suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long =
-        repository.createPlaylist(playlistEntity)
+    private suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long = repository.createPlaylist(playlistEntity)
 
     private suspend fun deleteMissingContent() {
         repository.deleteMissingContent()
     }
 
-    fun getDevicePlaylists(): LiveData<List<ImportablePlaylistResult>> = liveData(IO) {
-        val devicePlaylists = repository.devicePlaylists()
-        val importablePlaylists = devicePlaylists.map {
-            ImportablePlaylistResult(it.name, it.getSongs())
-        }.filter {
-            it.songs.isNotEmpty()
+    fun getDevicePlaylists(): LiveData<List<ImportablePlaylistResult>> =
+        liveData(IO) {
+            val devicePlaylists = repository.devicePlaylists()
+            val importablePlaylists =
+                devicePlaylists
+                    .map {
+                        ImportablePlaylistResult(it.name, it.getSongs())
+                    }.filter {
+                        it.songs.isNotEmpty()
+                    }
+            emit(importablePlaylists)
         }
-        emit(importablePlaylists)
-    }
 
-    fun importPlaylist(context: Context, playlist: ImportablePlaylistResult): LiveData<ImportResult> = liveData(IO) {
-        var count = 1
-        var playlistName = playlist.playlistName
-        while (repository.checkPlaylistExists(playlistName).isNotEmpty() && count <= 100) {
-            playlistName = "${playlist.playlistName} $count"
-            count++
-        }
-        if (repository.checkPlaylistExists(playlistName).isEmpty()) {
-            val id = repository.createPlaylist(PlaylistEntity(playlistName = playlistName))
-            if (id != -1L) {
-                repository.insertSongsInPlaylist(playlist.songs.toSongsEntity(id))
-                emit(ImportResult.success(context, playlist))
-                forceReload(ReloadType.Playlists)
+    fun importPlaylist(
+        context: Context,
+        playlist: ImportablePlaylistResult,
+    ): LiveData<ImportResult> =
+        liveData(IO) {
+            var count = 1
+            var playlistName = playlist.playlistName
+            while (repository.checkPlaylistExists(playlistName).isNotEmpty() && count <= 100) {
+                playlistName = "${playlist.playlistName} $count"
+                count++
+            }
+            if (repository.checkPlaylistExists(playlistName).isEmpty()) {
+                val id = repository.createPlaylist(PlaylistEntity(playlistName = playlistName))
+                if (id != -1L) {
+                    repository.insertSongsInPlaylist(playlist.songs.toSongsEntity(id))
+                    emit(ImportResult.success(context, playlist))
+                    forceReload(ReloadType.Playlists)
+                } else {
+                    emit(ImportResult.error(context, playlist))
+                }
             } else {
                 emit(ImportResult.error(context, playlist))
             }
-        } else {
-            emit(ImportResult.error(context, playlist))
         }
-    }
 
-    fun deleteSongs(songs: List<Song>) = viewModelScope.launch(IO) {
-        repository.deleteSongs(songs)
-    }
+    fun deleteSongs(songs: List<Song>) =
+        viewModelScope.launch(IO) {
+            repository.deleteSongs(songs)
+        }
 
     private suspend fun initializeBlacklist() {
         if (!Preferences.initializedBlacklist) {
@@ -528,64 +586,77 @@ class LibraryViewModel(
 
     fun getLoginState(service: ScrobblingService) = repository.getLoginState(service)
 
-    fun logInToService(service: ScrobblingService, params: LoginParams) = viewModelScope.launch(IO) {
+    fun logInToService(
+        service: ScrobblingService,
+        params: LoginParams,
+    ) = viewModelScope.launch(IO) {
         repository.loginToService(service, params)
     }
 
-    fun logoutFromService(service: ScrobblingService) = viewModelScope.launch(IO) {
-        repository.logoutFromService(service)
-    }
+    fun logoutFromService(service: ScrobblingService) =
+        viewModelScope.launch(IO) {
+            repository.logoutFromService(service)
+        }
 
     @Suppress("DEPRECATION")
-    fun handleIntent(intent: Intent): LiveData<HandleIntentResult> = liveData(IO) {
-        val result = HandleIntentResult(handled = true)
-        val uri = intent.data
-        if (uri == null || uri.scheme == "glance-action") {
-            emit(result.copy(handled = false))
-        } else try {
-            if (uri.toString().isNotEmpty()) {
-                val songs = repository.songsByUri(uri)
-                emit(result.copy(songs = songs, failed = songs.isEmpty()))
+    fun handleIntent(intent: Intent): LiveData<HandleIntentResult> =
+        liveData(IO) {
+            val result = HandleIntentResult(handled = true)
+            val uri = intent.data
+            if (uri == null || uri.scheme == "glance-action") {
+                emit(result.copy(handled = false))
             } else {
-                when (intent.type) {
-                    MediaStore.Audio.Playlists.CONTENT_TYPE -> {
-                        val id = parseIdFromIntent(intent, "playlistId", "playlist")
-                        if (id >= 0) {
-                            val position = intent.getIntExtra("position", 0)
-                            val playlist = devicePlaylistById(id)
-                            if (playlist != Playlist.EmptyPlaylist) {
-                                emit(result.copy(songs = playlist.getSongs(), position = position))
-                            } else {
-                                emit(result)
+                try {
+                    if (uri.toString().isNotEmpty()) {
+                        val songs = repository.songsByUri(uri)
+                        emit(result.copy(songs = songs, failed = songs.isEmpty()))
+                    } else {
+                        when (intent.type) {
+                            MediaStore.Audio.Playlists.CONTENT_TYPE -> {
+                                val id = parseIdFromIntent(intent, "playlistId", "playlist")
+                                if (id >= 0) {
+                                    val position = intent.getIntExtra("position", 0)
+                                    val playlist = devicePlaylistById(id)
+                                    if (playlist != Playlist.EmptyPlaylist) {
+                                        emit(result.copy(songs = playlist.getSongs(), position = position))
+                                    } else {
+                                        emit(result)
+                                    }
+                                }
+                            }
+
+                            MediaStore.Audio.Albums.CONTENT_TYPE -> {
+                                val id = parseIdFromIntent(intent, "albumId", "album")
+                                if (id >= 0) {
+                                    val position = intent.getIntExtra("position", 0)
+                                    emit(result.copy(songs = albumById(id).songs, position = position))
+                                }
+                            }
+
+                            MediaStore.Audio.Artists.CONTENT_TYPE -> {
+                                val id = parseIdFromIntent(intent, "artistId", "artist")
+                                if (id >= 0) {
+                                    val position = intent.getIntExtra("position", 0)
+                                    emit(result.copy(songs = artistById(id).songs, position = position))
+                                }
+                            }
+
+                            else -> {
+                                emit(result.copy(handled = false))
                             }
                         }
                     }
-
-                    MediaStore.Audio.Albums.CONTENT_TYPE -> {
-                        val id = parseIdFromIntent(intent, "albumId", "album")
-                        if (id >= 0) {
-                            val position = intent.getIntExtra("position", 0)
-                            emit(result.copy(songs = albumById(id).songs, position = position))
-                        }
-                    }
-
-                    MediaStore.Audio.Artists.CONTENT_TYPE -> {
-                        val id = parseIdFromIntent(intent, "artistId", "artist")
-                        if (id >= 0) {
-                            val position = intent.getIntExtra("position", 0)
-                            emit(result.copy(songs = artistById(id).songs, position = position))
-                        }
-                    }
-
-                    else -> emit(result.copy(handled = false))
+                } catch (e: Exception) {
+                    Log.e("LibraryViewModel", "handleIntent() failed; intent=$intent", e)
                 }
             }
-        } catch (e: Exception) {
-            Log.e("LibraryViewModel", "handleIntent() failed; intent=$intent", e)
         }
-    }
 
-    private fun parseIdFromIntent(intent: Intent, longKey: String, stringKey: String): Long {
+    private fun parseIdFromIntent(
+        intent: Intent,
+        longKey: String,
+        stringKey: String,
+    ): Long {
         var id = intent.getLongExtra(longKey, -1)
         if (id < 0) {
             id = intent.getStringExtra(stringKey)?.toLongOrNull() ?: -1
@@ -602,5 +673,5 @@ enum class ReloadType {
     Genres,
     Folders,
     Years,
-    Suggestions
+    Suggestions,
 }

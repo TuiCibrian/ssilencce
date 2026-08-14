@@ -52,8 +52,9 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
 /**
  * @author Christians M. A. (mardous)
  */
-class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
-
+class DeleteSongsDialog :
+    DialogFragment(),
+    SAFDialog.SAFResultListener {
     private val libraryViewModel: LibraryViewModel by activityViewModel()
 
     private lateinit var songs: MutableList<Song>
@@ -68,18 +69,19 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
     }
 
     @RequiresApi(Build.VERSION_CODES.R)
-    private fun createDeleteRequest(uris: List<Uri>): PendingIntent {
-        return if (Preferences.trashMusicFiles) {
+    private fun createDeleteRequest(uris: List<Uri>): PendingIntent =
+        if (Preferences.trashMusicFiles) {
             MediaStore.createTrashRequest(requireActivity().contentResolver, uris, true)
         } else {
             MediaStore.createDeleteRequest(requireActivity().contentResolver, uris)
         }
-    }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        songs = BundleCompat.getParcelableArrayList(requireArguments(), EXTRA_SONGS, Song::class.java)!!
-            .distinct()
-            .toMutableList()
+        songs =
+            BundleCompat
+                .getParcelableArrayList(requireArguments(), EXTRA_SONGS, Song::class.java)!!
+                .distinct()
+                .toMutableList()
 
         if (hasR()) {
             val deleteResultLauncher =
@@ -95,7 +97,7 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
             try {
                 val pendingIntent = createDeleteRequest(songs.map { it.uri })
                 deleteResultLauncher.launch(
-                    IntentSenderRequest.Builder(pendingIntent.intentSender).build()
+                    IntentSenderRequest.Builder(pendingIntent.intentSender).build(),
                 )
                 return MaterialAlertDialogBuilder(requireContext())
                     .setView(R.layout.dialog_deleting_songs)
@@ -116,11 +118,11 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
                 message = getString(R.string.delete_x_songs, songs.size)
             }
             return MaterialAlertDialogBuilder(requireContext())
-                .setTitle(titleRes).also {
+                .setTitle(titleRes)
+                .also {
                     binding = DialogDeleteSongsBinding.inflate(layoutInflater.cloneInContext(it.context))
                     binding!!.message.text = message
-                }
-                .setView(binding!!.root)
+                }.setView(binding!!.root)
                 .setPositiveButton(R.string.delete_action, null)
                 .setNegativeButton(android.R.string.cancel, null)
                 .setCancelable(false)
@@ -146,8 +148,9 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
     }
 
     private fun onDeleteSongs(songs: List<Song>?) {
-        if (songs.isNullOrEmpty())
+        if (songs.isNullOrEmpty()) {
             return
+        }
 
         lifecycleScope.launch {
             requireAlertDialog().getButton(DialogInterface.BUTTON_POSITIVE)?.isEnabled = false
@@ -162,7 +165,8 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
             withContext(IO) {
                 try {
                     MusicUtil.deleteTracks(
-                        requireContext(), songs,
+                        requireContext(),
+                        songs,
                         onProgress = { song: Song, progress: Int, max: Int ->
                             requestContext { context ->
                                 binding?.let { nonNullBinding ->
@@ -171,7 +175,7 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
                                             R.string.song_x_of_x,
                                             progress,
                                             max,
-                                            song.title
+                                            song.title,
                                         )
                                     nonNullBinding.progress.isIndeterminate = false
                                     nonNullBinding.progress.progress = progress
@@ -182,12 +186,16 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
                         onCompleted = { deleted ->
                             requestContext {
                                 it.showToast(
-                                    if (deleted == 1) it.getString(R.string.deleted_one_song)
-                                    else it.getString(R.string.deleted_x_songs, deleted)
+                                    if (deleted == 1) {
+                                        it.getString(R.string.deleted_one_song)
+                                    } else {
+                                        it.getString(R.string.deleted_x_songs, deleted)
+                                    },
                                 )
                                 dismissAllowingStateLoss()
                             }
-                        })
+                        },
+                    )
                 } catch (t: Throwable) {
                     Log.e("DeleteSongsDialog", "${songs.size} song deletion failed", t)
                 }
@@ -196,14 +204,11 @@ class DeleteSongsDialog : DialogFragment(), SAFDialog.SAFResultListener {
     }
 
     companion object {
-        fun create(song: Song): DeleteSongsDialog {
-            return create(listOf(song))
-        }
+        fun create(song: Song): DeleteSongsDialog = create(listOf(song))
 
-        fun create(songs: List<Song>): DeleteSongsDialog {
-            return DeleteSongsDialog().withArgs {
+        fun create(songs: List<Song>): DeleteSongsDialog =
+            DeleteSongsDialog().withArgs {
                 putParcelableArrayList(EXTRA_SONGS, ArrayList(songs))
             }
-        }
     }
 }

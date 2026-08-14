@@ -38,13 +38,13 @@ import kotlin.math.pow
 
 private val FILE_NAME_DATE_FORMAT = SimpleDateFormat("yyyy-MM-dd_HHmmss", Locale.ROOT)
 
-fun getFormattedFileName(prefix: String, extension: String, timeMillis: Long = System.currentTimeMillis()): String {
-    return "%s_%s.%s".format(Locale.ROOT, prefix, timeMillis.asFormattedFileTime(), extension)
-}
+fun getFormattedFileName(
+    prefix: String,
+    extension: String,
+    timeMillis: Long = System.currentTimeMillis(),
+): String = "%s_%s.%s".format(Locale.ROOT, prefix, timeMillis.asFormattedFileTime(), extension)
 
-fun Long.asFormattedFileTime(): String {
-    return FILE_NAME_DATE_FORMAT.format(Date(this))
-}
+fun Long.asFormattedFileTime(): String = FILE_NAME_DATE_FORMAT.format(Date(this))
 
 fun Long.asReadableFileSize(): String {
     if (this <= 0) {
@@ -55,7 +55,7 @@ fun Long.asReadableFileSize(): String {
     return String.format(
         "%s %s",
         DecimalFormat("#,##0.#").format(this / 1024.0.pow(digitGroups.toDouble())),
-        units[digitGroups]
+        units[digitGroups],
     )
 }
 
@@ -76,19 +76,19 @@ fun File.getCanonicalPathSafe(): String = runCatching { canonicalPath }.getOrDef
 
 fun File.getHumanReadableSize() = length().asReadableFileSize()
 
-fun File.getContentUri(context: Context): Uri =
-    FileProvider.getUriForFile(context, context.fileProviderAuthority, this)
+fun File.getContentUri(context: Context): Uri = FileProvider.getUriForFile(context, context.fileProviderAuthority, this)
 
 fun File.toAudioFile(): AudioFile? = runCatching { AudioFileIO.read(this) }.getOrNull()
 
 val AudioHeader.formatFixed: String
-    get() = this.format.let {
-        when (it) {
-            "Opus Vorbis 1.0" -> "Opus"
-            "Apple Lossless" -> "ALAC"
-            else -> it
+    get() =
+        this.format.let {
+            when (it) {
+                "Opus Vorbis 1.0" -> "Opus"
+                "Apple Lossless" -> "ALAC"
+                else -> it
+            }
         }
-    }
 
 /**
  * Reads this stream completely as a String.

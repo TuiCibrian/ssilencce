@@ -12,6 +12,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -25,20 +27,21 @@ fun SmallHeader(
     trailingContent: @Composable (() -> Unit)? = null,
     imageModel: Any? = null,
     imagePlaceholderIconRes: Int = R.drawable.ic_music_note_24dp,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         imageModel?.let {
             MediaImage(
                 model = imageModel,
                 placeholderIcon = imagePlaceholderIconRes,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(16.dp))
-                    .size(72.dp)
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .size(72.dp),
             )
         }
         Column(modifier = Modifier.weight(1f)) {
@@ -48,7 +51,8 @@ fun SmallHeader(
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.semantics { heading() },
             )
             if (!subtitle.isNullOrEmpty()) {
                 Text(
@@ -56,7 +60,7 @@ fun SmallHeader(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }

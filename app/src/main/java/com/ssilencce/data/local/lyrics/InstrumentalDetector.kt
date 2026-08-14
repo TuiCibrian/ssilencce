@@ -3,12 +3,9 @@ package com.ssilencce.data.local.lyrics
 class InstrumentalDetector(
     private val identifiers: Set<String>,
     private val markByTitle: Boolean,
-    private val maxLength: Int
+    private val maxLength: Int,
 ) {
+    fun byTitle(title: String): Boolean = markByTitle && identifiers.any { title.contains(it, ignoreCase = true) }
 
-    fun byTitle(title: String): Boolean =
-        markByTitle && identifiers.any { title.contains(it, ignoreCase = true) }
-
-    fun byLyrics(text: String?): Boolean =
-        !text.isNullOrBlank() && text.length <= maxLength && identifiers.contains(text.trim())
+    fun byLyrics(text: String?): Boolean = !text.isNullOrBlank() && text.length <= maxLength && identifiers.contains(text.trim())
 }

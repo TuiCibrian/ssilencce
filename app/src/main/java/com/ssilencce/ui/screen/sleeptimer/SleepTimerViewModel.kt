@@ -23,36 +23,38 @@ private val Context.sleepTimerDataStore by preferencesDataStore("sleep_timer")
 
 class SleepTimerViewModel(
     application: Application,
-    private val sleepTimer: SleepTimer
+    private val sleepTimer: SleepTimer,
 ) : AndroidViewModel(application) {
+    private val _uiState: Flow<SleepTimerUiState> =
+        combine(
+            sleepTimer.isRunning,
+            sleepTimer.waitingFor,
+            application.sleepTimerDataStore.data,
+        ) { isRunning, waitingFor, prefs ->
+            SleepTimerUiState(
+                isRunning = isRunning,
+                waitingFor = waitingFor,
+                isFinishMusic = prefs[Keys.IS_FINISH_MUSIC] ?: false,
+                isFadeOut = prefs[Keys.IS_FADE_OUT] ?: false,
+                fadeOutDuration = prefs[Keys.FADE_OUT_DURATION] ?: 5f,
+                timerValue = prefs[Keys.TIMER_VALUE] ?: 5f,
+            )
+        }
 
-    private val _uiState: Flow<SleepTimerUiState> = combine(
-        sleepTimer.isRunning,
-        sleepTimer.waitingFor,
-        application.sleepTimerDataStore.data
-    ) { isRunning, waitingFor, prefs ->
-        SleepTimerUiState(
-            isRunning = isRunning,
-            waitingFor = waitingFor,
-            isFinishMusic = prefs[Keys.IS_FINISH_MUSIC] ?: false,
-            isFadeOut = prefs[Keys.IS_FADE_OUT] ?: false,
-            fadeOutDuration = prefs[Keys.FADE_OUT_DURATION] ?: 5f,
-            timerValue = prefs[Keys.TIMER_VALUE] ?: 5f
+    val uiState =
+        _uiState.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue =
+                SleepTimerUiState(
+                    isRunning = false,
+                    waitingFor = null,
+                    isFinishMusic = false,
+                    isFadeOut = false,
+                    fadeOutDuration = 5f,
+                    timerValue = 5f,
+                ),
         )
-    }
-
-    val uiState = _uiState.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = SleepTimerUiState(
-            isRunning = false,
-            waitingFor = null,
-            isFinishMusic = false,
-            isFadeOut = false,
-            fadeOutDuration = 5f,
-            timerValue = 5f
-        )
-    )
 
     private val _sleepTimerEvent = Channel<SleepTimerEvent>(Channel.BUFFERED)
     val sleepTimerEvent = _sleepTimerEvent.receiveAsFlow()
@@ -70,7 +72,7 @@ class SleepTimerViewModel(
         value: Float = uiState.value.timerValue,
         isFinishMusic: Boolean = uiState.value.isFinishMusic,
         isFadeOut: Boolean = uiState.value.isFadeOut,
-        fadeOutDuration: Float = uiState.value.fadeOutDuration
+        fadeOutDuration: Float = uiState.value.fadeOutDuration,
     ) = viewModelScope.launch(Dispatchers.IO) {
         getApplication<App>().sleepTimerDataStore.edit {
             it[Keys.TIMER_VALUE] = value
@@ -80,27 +82,29 @@ class SleepTimerViewModel(
         }
     }
 
-    fun startTimer() = viewModelScope.launch(Dispatchers.IO) {
-        if (sleepTimer.canScheduleExactAlarm()) {
-            sleepTimer.set(
-                millisInFuture = uiState.value.timerValue.toLong() * 60 * 1000,
-                allowPendingQuit = uiState.value.isFinishMusic,
-                fadeOut = uiState.value.isFadeOut,
-                fadeDuration = uiState.value.fadeOutDuration.toLong() * 1000
-            )
-            _sleepTimerEvent.send(
-                SleepTimerEvent.Set(uiState.value.timerValue.toLong())
-            )
-        } else {
-            sleepTimer.launchExactAlarmPermissionRequest()
+    fun startTimer() =
+        viewModelScope.launch(Dispatchers.IO) {
+            if (sleepTimer.canScheduleExactAlarm()) {
+                sleepTimer.set(
+                    millisInFuture = uiState.value.timerValue.toLong() * 60 * 1000,
+                    allowPendingQuit = uiState.value.isFinishMusic,
+                    fadeOut = uiState.value.isFadeOut,
+                    fadeDuration = uiState.value.fadeOutDuration.toLong() * 1000,
+                )
+                _sleepTimerEvent.send(
+                    SleepTimerEvent.Set(uiState.value.timerValue.toLong()),
+                )
+            } else {
+                sleepTimer.launchExactAlarmPermissionRequest()
+            }
         }
-    }
 
-    fun cancelTimer() = viewModelScope.launch(Dispatchers.IO) {
-        if (sleepTimer.cancel()) {
-            _sleepTimerEvent.send(SleepTimerEvent.Canceled)
+    fun cancelTimer() =
+        viewModelScope.launch(Dispatchers.IO) {
+            if (sleepTimer.cancel()) {
+                _sleepTimerEvent.send(SleepTimerEvent.Canceled)
+            }
         }
-    }
 
     private interface Keys {
         companion object {

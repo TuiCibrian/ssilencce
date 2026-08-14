@@ -42,15 +42,18 @@ import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.util.Preferences
 
-class AlbumListFragment : AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, GridLayoutManager>(),
+class AlbumListFragment :
+    AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, GridLayoutManager>(),
     IAlbumCallback {
-
     override val titleRes: Int = R.string.albums_label
     override val isShuffleVisible: Boolean = true
     override val emptyMessageRes: Int
         get() = R.string.no_albums_label
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getAlbums().observe(viewLifecycleOwner) { albums ->
             adapter?.dataSet = albums
@@ -60,15 +63,16 @@ class AlbumListFragment : AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, Gr
     override fun onShuffleClicked() {
         super.onShuffleClicked()
         adapter?.dataSet?.let {
-            playerViewModel.openShuffle(
-                providers = it,
-                mode = Preferences.albumShuffleMode,
-                sortMode = SongSortMode.Dynamic(SortKey.Track)
-            ).observe(viewLifecycleOwner) { success ->
-                if (success) {
-                    showToast(R.string.albums_shuffle)
+            playerViewModel
+                .openShuffle(
+                    providers = it,
+                    mode = Preferences.albumShuffleMode,
+                    sortMode = SongSortMode.Dynamic(SortKey.Track),
+                ).observe(viewLifecycleOwner) { success ->
+                    if (success) {
+                        showToast(R.string.albums_shuffle)
+                    }
                 }
-            }
         }
     }
 
@@ -82,9 +86,7 @@ class AlbumListFragment : AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, Gr
         adapter?.actionMode?.finish()
     }
 
-    override fun createLayoutManager(): GridLayoutManager {
-        return GridLayoutManager(activity, gridSize)
-    }
+    override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(activity, gridSize)
 
     override fun createAdapter(): AlbumAdapter {
         val itemLayoutRes = itemLayoutRes
@@ -95,55 +97,62 @@ class AlbumListFragment : AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, Gr
             dataSet = dataSet,
             itemLayoutRes = itemLayoutRes,
             sortMode = AlbumSortMode.AllAlbums,
-            callback = this
+            callback = this,
         )
     }
 
-    override fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>?) {
+    override fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun albumMenuItemClick(
         album: Album,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return album.onAlbumMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean = album.onAlbumMenu(this, menuItem)
 
-    override fun albumsMenuItemClick(albums: List<Album>, menuItem: MenuItem) {
+    override fun albumsMenuItemClick(
+        albums: List<Album>,
+        menuItem: MenuItem,
+    ) {
         albums.onAlbumsMenu(this, menuItem)
     }
 
-    override fun getSavedViewType(): GridViewType {
-        return GridViewType.entries.firstOrNull {
+    override fun getSavedViewType(): GridViewType =
+        GridViewType.entries.firstOrNull {
             it.name == sharedPreferences.getString(VIEW_TYPE, null)
         } ?: GridViewType.Normal
-    }
 
     override fun saveViewType(viewType: GridViewType) {
         sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int {
-        return sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
-    }
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
         sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
     }
 
-    override fun onGridSizeChanged(isLand: Boolean, gridColumns: Int) {
+    override fun onGridSizeChanged(
+        isLand: Boolean,
+        gridColumns: Int,
+    ) {
         layoutManager?.spanCount = gridColumns
         adapter?.notifyDataSetChanged()
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         super.onCreateMenu(menu, inflater)
         AlbumSortMode.AllAlbums.createMenu(menu)
     }

@@ -30,16 +30,18 @@ import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
 import com.ssilencce.ui.screen.MainActivity
 
 class CardWidget : GlanceAppWidget() {
-
     override val sizeMode = SizeMode.Exact
     override val stateDefinition = PlaybackStateDefinition
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         provideContent {
             val playbackState = currentState<PlaybackState>()
 
             GlanceTheme(
-                colors = playbackState.widgetTheme.getColors()
+                colors = playbackState.widgetTheme.getColors(),
             ) {
                 CardWidgetContent(context, playbackState)
             }
@@ -47,67 +49,79 @@ class CardWidget : GlanceAppWidget() {
     }
 
     @Composable
-    private fun CardWidgetContent(context: Context, playbackState: PlaybackState) {
+    private fun CardWidgetContent(
+        context: Context,
+        playbackState: PlaybackState,
+    ) {
         Box(
-            modifier = GlanceModifier
-                .fillMaxSize()
-                .clickable(actionStartActivity<MainActivity>()),
-            contentAlignment = Alignment.BottomCenter
+            modifier =
+                GlanceModifier
+                    .fillMaxSize()
+                    .clickable(actionStartActivity<MainActivity>()),
+            contentAlignment = Alignment.BottomCenter,
         ) {
             Box(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .padding(top = 8.dp, bottom = 32.dp, start = 8.dp, end = 8.dp),
-                contentAlignment = Alignment.Center
+                modifier =
+                    GlanceModifier
+                        .fillMaxSize()
+                        .padding(top = 8.dp, bottom = 32.dp, start = 8.dp, end = 8.dp),
+                contentAlignment = Alignment.Center,
             ) {
                 AlbumArtGlance(
                     playbackState = playbackState,
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .cornerRadius(playbackState.imageCornerRadius?.dp?.times(2) ?: 8.dp)
+                    modifier =
+                        GlanceModifier
+                            .fillMaxSize()
+                            .cornerRadius(playbackState.imageCornerRadius?.dp?.times(2) ?: 8.dp),
                 )
             }
 
             Box(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(16.dp)
-                    .cornerRadius(16.dp)
-                    .background(GlanceTheme.colors.surface),
-                contentAlignment = Alignment.Center
+                modifier =
+                    GlanceModifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(16.dp)
+                        .cornerRadius(16.dp)
+                        .background(GlanceTheme.colors.surface),
+                contentAlignment = Alignment.Center,
             ) {
                 Row(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                    modifier =
+                        GlanceModifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     // Prev
                     ControlIconGlance(
                         resId = R.drawable.ic_previous_24dp,
                         tint = GlanceTheme.colors.onSurface,
                         contentDescription = "Previous",
-                        modifier = GlanceModifier
-                            .size(24.dp)
-                            .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS))
+                        modifier =
+                            GlanceModifier
+                                .size(24.dp)
+                                .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)),
                     )
 
                     Spacer(GlanceModifier.defaultWeight())
 
                     // Play/Pause circular
                     CircularControlIconGlance(
-                        resId = if (playbackState.isPlaying)
-                            R.drawable.ic_pause_24dp
-                        else
-                            R.drawable.ic_play_24dp,
+                        resId =
+                            if (playbackState.isPlaying) {
+                                R.drawable.ic_pause_24dp
+                            } else {
+                                R.drawable.ic_play_24dp
+                            },
                         size = 48.dp,
                         iconTint = GlanceTheme.colors.onPrimary,
                         backgroundTint = GlanceTheme.colors.primary,
                         contentDescription = "Play/Pause",
-                        onClick = GlanceModifier
-                            .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE))
+                        onClick =
+                            GlanceModifier
+                                .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)),
                     )
 
                     Spacer(GlanceModifier.defaultWeight())
@@ -117,9 +131,10 @@ class CardWidget : GlanceAppWidget() {
                         resId = R.drawable.ic_next_24dp,
                         tint = GlanceTheme.colors.onSurface,
                         contentDescription = "Next",
-                        modifier = GlanceModifier
-                            .size(24.dp)
-                            .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_NEXT))
+                        modifier =
+                            GlanceModifier
+                                .size(24.dp)
+                                .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_NEXT)),
                     )
                 }
             }

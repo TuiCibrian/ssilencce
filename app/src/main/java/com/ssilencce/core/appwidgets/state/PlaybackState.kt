@@ -16,9 +16,8 @@ class PlaybackState(
     val additionalInfo: String? = "",
     val artworkData: ByteArray? = null,
     val widgetTheme: WidgetTheme? = null,
-    val imageCornerRadius: Float? = null
+    val imageCornerRadius: Float? = null,
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -40,7 +39,9 @@ class PlaybackState(
         if (artworkData != null) {
             if (other.artworkData == null) return false
             if (!artworkData.contentEquals(other.artworkData)) return false
-        } else if (other.artworkData != null) return false
+        } else if (other.artworkData != null) {
+            return false
+        }
 
         return true
     }
@@ -61,9 +62,7 @@ class PlaybackState(
         return result
     }
 
-    override fun toString(): String {
-        return "PlaybackState(title=$currentTitle, artist=$currentArtist, isPlaying=$isPlaying, hasArtwork=${artworkData != null})"
-    }
+    override fun toString(): String = "PlaybackState(title=$currentTitle, artist=$currentArtist, isPlaying=$isPlaying, hasArtwork=${artworkData != null})"
 
     companion object {
         val empty = PlaybackState()
@@ -82,7 +81,6 @@ data class WidgetTheme(
     val lightOnPrimaryContainerColor: Int,
     val lightTertiaryContainerColor: Int,
     val lightOnTertiaryContainerColor: Int,
-
     // Dark theme colors
     val darkSurfaceColor: Int,
     val darkOnSurfaceColor: Int,

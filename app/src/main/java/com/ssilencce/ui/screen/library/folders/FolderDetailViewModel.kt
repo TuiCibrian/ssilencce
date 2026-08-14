@@ -12,17 +12,20 @@ import kotlinx.coroutines.launch
 /**
  * @author Christians M. A. (mardous)
  */
-class FolderDetailViewModel(private val repository: Repository, private val folderPath: String) :
-    ViewModel() {
-
+class FolderDetailViewModel(
+    private val repository: Repository,
+    private val folderPath: String,
+) : ViewModel() {
     private val _folder = MutableLiveData<Folder>()
+
     fun getFolder(): LiveData<Folder> = _folder
 
     init {
         loadDetail()
     }
 
-    fun loadDetail() = viewModelScope.launch(Dispatchers.IO) {
-        _folder.postValue(repository.folderByPath(folderPath))
-    }
+    fun loadDetail() =
+        viewModelScope.launch(Dispatchers.IO) {
+            _folder.postValue(repository.folderByPath(folderPath))
+        }
 }

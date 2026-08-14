@@ -16,6 +16,7 @@
  */
 
 @file:SuppressLint("LocalContextGetResourceValueCall")
+
 package com.ssilencce.ui.screen.lyrics
 
 import android.annotation.SuppressLint
@@ -117,38 +118,44 @@ import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinActivityViewModel
 import kotlin.time.Duration.Companion.milliseconds
 
-private val SnapshotMapSaver = Saver<SnapshotStateMap<LyricsSource, String>, Bundle>(
-    save = { map ->
-        Bundle().also { bundle ->
-            map.forEach { (key, value) -> bundle.putString(key.name, value) }
-        }
-    },
-    restore = { bundle ->
-        mutableStateMapOf<LyricsSource, String>().also { map ->
-            for (key in bundle.keySet()) {
-                val source = LyricsSource.entries.firstOrNull { it.name == key }
-                if (source != null) {
-                    map[source] = bundle.getString(key).orEmpty()
+private val SnapshotMapSaver =
+    Saver<SnapshotStateMap<LyricsSource, String>, Bundle>(
+        save = { map ->
+            Bundle().also { bundle ->
+                map.forEach { (key, value) -> bundle.putString(key.name, value) }
+            }
+        },
+        restore = { bundle ->
+            mutableStateMapOf<LyricsSource, String>().also { map ->
+                for (key in bundle.keySet()) {
+                    val source = LyricsSource.entries.firstOrNull { it.name == key }
+                    if (source != null) {
+                        map[source] = bundle.getString(key).orEmpty()
+                    }
                 }
             }
-        }
-    }
-)
+        },
+    )
 
 private fun TextFieldState.setContent(content: String?) {
     edit { replace(0, length, content.orEmpty()) }
 }
 
 enum class LyricsEditorResult {
-    NoChanges, Failed, Success
+    NoChanges,
+    Failed,
+    Success,
 }
 
 @Immutable
-sealed class LyricsEditorUiState(open val isLoading: Boolean) {
+sealed class LyricsEditorUiState(
+    open val isLoading: Boolean,
+) {
     data object Disposed : LyricsEditorUiState(false)
+
     data class Visible(
         override val isLoading: Boolean,
-        val lyrics: Map<LyricsSource, RawLyrics?> = emptyMap()
+        val lyrics: Map<LyricsSource, RawLyrics?> = emptyMap(),
     ) : LyricsEditorUiState(isLoading) {
         fun getLyricsContent(source: LyricsSource) = lyrics[source]?.lyrics.orEmpty()
     }
@@ -169,13 +176,14 @@ fun LyricsEditorScreen(
     val textFieldState = rememberTextFieldState()
     val focusRequester = remember { FocusRequester() }
 
-    val permissionRequestLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartIntentSenderForResult()
-    ) { result ->
-        if (result.resultCode != Activity.RESULT_OK) {
-            onBackClick()
+    val permissionRequestLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.StartIntentSenderForResult(),
+        ) { result ->
+            if (result.resultCode != Activity.RESULT_OK) {
+                onBackClick()
+            }
         }
-    }
 
     LaunchedEffect(Unit) {
         delay(500.milliseconds) // Wait until the editor is fully visible
@@ -191,14 +199,15 @@ fun LyricsEditorScreen(
     fun requestWritePermissions(uris: Collection<Uri>) {
         if (uris.isNotEmpty() && hasR()) {
             val contentResolver = context.contentResolver
-            val missingPerms = uris.filterNot { uri ->
-                context.checkUriPermission(
-                    uri,
-                    Process.myPid(),
-                    Process.myUid(),
-                    Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-                ) == PackageManager.PERMISSION_GRANTED
-            }
+            val missingPerms =
+                uris.filterNot { uri ->
+                    context.checkUriPermission(
+                        uri,
+                        Process.myPid(),
+                        Process.myUid(),
+                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                    ) == PackageManager.PERMISSION_GRANTED
+                }
             if (missingPerms.isNotEmpty()) {
                 val pendingIntent = MediaStore.createWriteRequest(contentResolver, missingPerms)
                 permissionRequestLauncher.launch(IntentSenderRequest.Builder(pendingIntent).build())
@@ -213,11 +222,12 @@ fun LyricsEditorScreen(
     var downloadedLyricsForSelector by rememberSaveable { mutableStateOf<RawLyrics.Remote?>(null) }
 
     ObserveAsEvent(viewModel.saveEvent) { saveResult ->
-        val toastMessage = when (saveResult) {
-            LyricsEditorResult.NoChanges -> context.getString(R.string.there_are_no_changes_to_save)
-            LyricsEditorResult.Failed -> context.getString(R.string.could_not_save_some_changes)
-            LyricsEditorResult.Success -> context.getString(R.string.changes_saved_successfully)
-        }
+        val toastMessage =
+            when (saveResult) {
+                LyricsEditorResult.NoChanges -> context.getString(R.string.there_are_no_changes_to_save)
+                LyricsEditorResult.Failed -> context.getString(R.string.could_not_save_some_changes)
+                LyricsEditorResult.Success -> context.getString(R.string.changes_saved_successfully)
+            }
         context.showToast(toastMessage)
     }
 
@@ -254,7 +264,7 @@ fun LyricsEditorScreen(
                 textFieldState.setContent(
                     editedContent.getOrPut(selectedSource) {
                         it.getLyricsContent(selectedSource)
-                    }
+                    },
                 )
             }
         }
@@ -276,12 +286,13 @@ fun LyricsEditorScreen(
                     LyricsMode.Plain -> {
                         textFieldState.setContent(downloadedLyricsForSelector?.plain?.lyrics)
                     }
+
                     LyricsMode.Synced -> {
                         textFieldState.setContent(downloadedLyricsForSelector?.synced?.lyrics)
                     }
                 }
                 downloadedLyricsForSelector = null
-            }
+            },
         )
     }
 
@@ -294,7 +305,7 @@ fun LyricsEditorScreen(
                     onClick = {
                         context.openUrl(viewModel.getSearchUrl(song))
                         showManualSearchDialog = false
-                    }
+                    },
                 ) {
                     Text(stringResource(R.string.yes))
                 }
@@ -303,7 +314,7 @@ fun LyricsEditorScreen(
                 TextButton(onClick = { showManualSearchDialog = false }) {
                     Text(stringResource(R.string.close_action))
                 }
-            }
+            },
         )
     }
 
@@ -315,7 +326,7 @@ fun LyricsEditorScreen(
                 Button(onClick = { showNoConnectionDialog = false }) {
                     Text(stringResource(R.string.close_action))
                 }
-            }
+            },
         )
     }
 
@@ -327,7 +338,7 @@ fun LyricsEditorScreen(
                 viewModel.downloadLyrics(song, title, artist)
                 showLyricsDownloadDialog = false
             },
-            onDismissRequest = { showLyricsDownloadDialog = false }
+            onDismissRequest = { showLyricsDownloadDialog = false },
         )
     }
 
@@ -344,7 +355,7 @@ fun LyricsEditorScreen(
                 }
                 showLyricsSearchDialog = false
             },
-            onDismissRequest = { showLyricsSearchDialog = false }
+            onDismissRequest = { showLyricsSearchDialog = false },
         )
     }
 
@@ -356,7 +367,7 @@ fun LyricsEditorScreen(
         if (NetworkFeature.isOnline(ignoreWifiSetting = true)) {
             showLyricsDownloadDialog = true
         } else {
-            showNoConnectionDialog =  true
+            showNoConnectionDialog = true
         }
     }
 
@@ -400,7 +411,7 @@ fun LyricsEditorScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_back_24dp),
-                            contentDescription = stringResource(R.string.back_action)
+                            contentDescription = stringResource(R.string.back_action),
                         )
                     }
                 },
@@ -408,45 +419,46 @@ fun LyricsEditorScreen(
                     if (isLandscape) {
                         TopAppBarMenu(
                             showItemIcons = true,
-                            items = listOf(
-                                MenuItem.Button.Action(
-                                    text = stringResource(R.string.action_save),
-                                    icon = painterResource(R.drawable.ic_save_24dp),
-                                    enabled = !uiState.isLoading && !isFileSource,
-                                    onClick = { saveContent() }
+                            items =
+                                listOf(
+                                    MenuItem.Button.Action(
+                                        text = stringResource(R.string.action_save),
+                                        icon = painterResource(R.drawable.ic_save_24dp),
+                                        enabled = !uiState.isLoading && !isFileSource,
+                                        onClick = { saveContent() },
+                                    ),
+                                    MenuItem.Button.Action(
+                                        text = stringResource(R.string.download_lyrics),
+                                        icon = painterResource(R.drawable.ic_download_24dp),
+                                        enabled = !uiState.isLoading && !isFileSource,
+                                        visible = isLyricsDownloadEnabled,
+                                        onClick = { downloadLyrics() },
+                                    ),
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(R.string.search_lyrics),
+                                        icon = painterResource(R.drawable.ic_search_24dp),
+                                        onClick = { showLyricsSearchDialog = true },
+                                    ),
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(android.R.string.paste),
+                                        icon = painterResource(R.drawable.ic_content_paste_24dp),
+                                        onClick = { pasteFromClipboard() },
+                                    ),
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(R.string.select_all_title),
+                                        icon = painterResource(R.drawable.ic_select_all_24dp),
+                                        onClick = { selectAllText() },
+                                    ),
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(R.string.undo_changes),
+                                        icon = painterResource(R.drawable.ic_restart_alt_24dp),
+                                        dangerous = true,
+                                        onClick = { undoChanges() },
+                                    ),
                                 ),
-                                MenuItem.Button.Action(
-                                    text = stringResource(R.string.download_lyrics),
-                                    icon = painterResource(R.drawable.ic_download_24dp),
-                                    enabled = !uiState.isLoading && !isFileSource,
-                                    visible = isLyricsDownloadEnabled,
-                                    onClick = { downloadLyrics() }
-                                ),
-                                MenuItem.Button.DropDown(
-                                    text = stringResource(R.string.search_lyrics),
-                                    icon = painterResource(R.drawable.ic_search_24dp),
-                                    onClick = { showLyricsSearchDialog = true }
-                                ),
-                                MenuItem.Button.DropDown(
-                                    text = stringResource(android.R.string.paste),
-                                    icon = painterResource(R.drawable.ic_content_paste_24dp),
-                                    onClick = { pasteFromClipboard() }
-                                ),
-                                MenuItem.Button.DropDown(
-                                    text = stringResource(R.string.select_all_title),
-                                    icon = painterResource(R.drawable.ic_select_all_24dp),
-                                    onClick = { selectAllText() }
-                                ),
-                                MenuItem.Button.DropDown(
-                                    text = stringResource(R.string.undo_changes),
-                                    icon = painterResource(R.drawable.ic_restart_alt_24dp),
-                                    dangerous = true,
-                                    onClick = { undoChanges() }
-                                )
-                            )
                         )
                     }
-                }
+                },
             )
         },
         bottomBar = {
@@ -459,40 +471,42 @@ fun LyricsEditorScreen(
                     onSelectAllClick = { selectAllText() },
                     onPasteClick = { pasteFromClipboard() },
                     onUndoChangesClick = { undoChanges() },
-                    onSaveClick = { saveContent() }
+                    onSaveClick = { saveContent() },
                 )
             }
-        }
+        },
     ) { paddingValues ->
         if (isLandscape) {
             Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
                 ) {
                     LyricsEditorHeader(
                         song = song,
-                        isLoading = uiState.isLoading
+                        isLoading = uiState.isLoading,
                     )
 
                     LyricsSourceSelector(
                         enabled = !uiState.isLoading,
                         selectedSource = selectedSource,
                         onSourceSelected = { selectedSource = it },
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
 
                     LyricsFileNotice(
                         isFileSource = isFileSource,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
@@ -502,32 +516,35 @@ fun LyricsEditorScreen(
                     placeholder = {
                         Text(stringResource(R.string.write_lyrics_here))
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .focusRequester(focusRequester)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .focusRequester(focusRequester),
                 )
             }
         } else {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(top = 8.dp, bottom = 16.dp)
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(top = 8.dp, bottom = 16.dp),
             ) {
                 LyricsEditorHeader(
                     song = song,
                     isLoading = uiState.isLoading,
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
+                    modifier =
+                        Modifier
+                            .padding(horizontal = 16.dp),
                 )
 
                 LyricsSourceSelector(
                     enabled = !uiState.isLoading,
                     selectedSource = selectedSource,
                     onSourceSelected = { selectedSource = it },
-                    modifier = Modifier.padding(horizontal = 16.dp)
+                    modifier = Modifier.padding(horizontal = 16.dp),
                 )
 
                 OutlinedTextField(
@@ -536,18 +553,20 @@ fun LyricsEditorScreen(
                     placeholder = {
                         Text(stringResource(R.string.write_lyrics_here))
                     },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .focusRequester(focusRequester)
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .focusRequester(focusRequester),
                 )
 
                 LyricsFileNotice(
                     isFileSource = isFileSource,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
                 )
             }
         }
@@ -557,7 +576,7 @@ fun LyricsEditorScreen(
 @Composable
 fun LyricsSelectorDialog(
     onDismissRequest: () -> Unit,
-    onModeSelected: (LyricsMode) -> Unit
+    onModeSelected: (LyricsMode) -> Unit,
 ) {
     var selectedMode by remember { mutableStateOf(LyricsMode.Plain) }
 
@@ -573,7 +592,7 @@ fun LyricsSelectorDialog(
                     },
                     isSelected = selectedMode == LyricsMode.Plain,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 DialogListItemWithRadio(
@@ -583,7 +602,7 @@ fun LyricsSelectorDialog(
                     },
                     isSelected = selectedMode == LyricsMode.Synced,
                     contentPadding = PaddingValues(horizontal = 8.dp, vertical = 12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
@@ -591,7 +610,7 @@ fun LyricsSelectorDialog(
             Button(
                 onClick = {
                     onModeSelected(selectedMode)
-                }
+                },
             ) {
                 Text(stringResource(android.R.string.ok))
             }
@@ -600,7 +619,7 @@ fun LyricsSelectorDialog(
             TextButton(onClick = onDismissRequest) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -610,7 +629,7 @@ private fun LyricsSearchDialog(
     song: Song,
     title: String,
     onSearchClick: (title: String, artist: String) -> Unit,
-    onDismissRequest: () -> Unit
+    onDismissRequest: () -> Unit,
 ) {
     var searchTitle by remember { mutableStateOf(song.title) }
     var searchArtist by remember { mutableStateOf(song.artistName) }
@@ -621,7 +640,7 @@ private fun LyricsSearchDialog(
         text = {
             Column(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 OutlinedTextField(
                     value = searchTitle,
@@ -629,7 +648,7 @@ private fun LyricsSearchDialog(
                     label = { Text(stringResource(R.string.title)) },
                     placeholder = { Text(song.title) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
                 OutlinedTextField(
@@ -637,11 +656,12 @@ private fun LyricsSearchDialog(
                     onValueChange = { searchArtist = it },
                     label = { Text(stringResource(R.string.artist)) },
                     placeholder = { Text(song.artistName) },
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Words
-                    ),
+                    keyboardOptions =
+                        KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Words,
+                        ),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
@@ -650,9 +670,9 @@ private fun LyricsSearchDialog(
                 onClick = {
                     onSearchClick(
                         searchTitle.ifEmpty { song.title },
-                        searchArtist.ifEmpty { song.artistName }
+                        searchArtist.ifEmpty { song.artistName },
                     )
-                }
+                },
             ) {
                 Text(stringResource(R.string.continue_action))
             }
@@ -661,7 +681,7 @@ private fun LyricsSearchDialog(
             TextButton(onClick = onDismissRequest) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
     )
 }
 
@@ -671,7 +691,7 @@ fun LyricsSourceSelector(
     selectedSource: LyricsSource,
     onSourceSelected: (LyricsSource) -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
 ) {
     ButtonGroup(
         onSelected = onSourceSelected,
@@ -679,14 +699,18 @@ fun LyricsSourceSelector(
         buttonStateResolver = { source -> source == selectedSource },
         buttonTextResolver = { source -> stringResource(source.titleRes) },
         buttonIconResolver = { source, isChecked ->
-            if (isChecked) when (source) {
-                LyricsSource.Embedded -> painterResource(R.drawable.ic_audio_file_24dp)
-                LyricsSource.Downloaded -> painterResource(R.drawable.ic_download_24dp)
-                LyricsSource.File -> painterResource(R.drawable.ic_file_open_24dp)
-            } else null
+            if (isChecked) {
+                when (source) {
+                    LyricsSource.Embedded -> painterResource(R.drawable.ic_audio_file_24dp)
+                    LyricsSource.Downloaded -> painterResource(R.drawable.ic_download_24dp)
+                    LyricsSource.File -> painterResource(R.drawable.ic_file_open_24dp)
+                }
+            } else {
+                null
+            }
         },
         enabled = enabled,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
@@ -695,25 +719,27 @@ fun LyricsSourceSelector(
 private fun LyricsEditorHeader(
     song: Song,
     isLoading: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val configuration = LocalConfiguration.current
     if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE &&
-        configuration.smallestScreenWidthDp >= 600) {
+        configuration.smallestScreenWidthDp >= 600
+    ) {
         Column(
             modifier = modifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             MediaImage(
                 model = song,
-                modifier = Modifier
-                    .size(148.dp)
-                    .clip(MaterialTheme.shapes.medium),
+                modifier =
+                    Modifier
+                        .size(148.dp)
+                        .clip(MaterialTheme.shapes.medium),
             )
 
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
                     text = song.title,
@@ -721,7 +747,7 @@ private fun LyricsEditorHeader(
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = song.displayArtistName(),
@@ -729,7 +755,7 @@ private fun LyricsEditorHeader(
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -741,13 +767,14 @@ private fun LyricsEditorHeader(
         Row(
             modifier = modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             MediaImage(
                 model = song,
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(MaterialTheme.shapes.small),
+                modifier =
+                    Modifier
+                        .size(72.dp)
+                        .clip(MaterialTheme.shapes.small),
             )
 
             Column(modifier = Modifier.weight(1f)) {
@@ -756,14 +783,14 @@ private fun LyricsEditorHeader(
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = song.displayArtistName(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
 
@@ -784,64 +811,66 @@ private fun LyricsEditorBottomBar(
     onPasteClick: () -> Unit,
     onSaveClick: () -> Unit,
     onUndoChangesClick: () -> Unit,
-    onSelectAllClick: () -> Unit
+    onSelectAllClick: () -> Unit,
 ) {
     FlexibleBottomAppBar {
         IconButton(
             onClick = onSearchClick,
-            enabled = enabled
+            enabled = enabled,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_search_24dp),
-                contentDescription = stringResource(R.string.search_lyrics)
+                contentDescription = stringResource(R.string.search_lyrics),
             )
         }
         IconButton(
             onClick = onDownloadClick,
-            enabled = enabled && downloadEnabled
+            enabled = enabled && downloadEnabled,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_download_24dp),
-                contentDescription = stringResource(R.string.download_lyrics)
+                contentDescription = stringResource(R.string.download_lyrics),
             )
         }
         FilledIconButton(
             onClick = onSaveClick,
-            shapes = IconButtonDefaults.shapes(
-                shape = IconButtonDefaults.smallSquareShape,
-                pressedShape = IconButtonDefaults.smallPressedShape
-            ),
-            enabled = enabled
+            shapes =
+                IconButtonDefaults.shapes(
+                    shape = IconButtonDefaults.smallSquareShape,
+                    pressedShape = IconButtonDefaults.smallPressedShape,
+                ),
+            enabled = enabled,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_save_24dp),
-                contentDescription = stringResource(R.string.action_save)
+                contentDescription = stringResource(R.string.action_save),
             )
         }
         IconButton(
             onClick = onPasteClick,
-            enabled = enabled
+            enabled = enabled,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_content_paste_24dp),
-                contentDescription = stringResource(android.R.string.paste)
+                contentDescription = stringResource(android.R.string.paste),
             )
         }
         OverflowMenu(
             enabled = enabled,
-            items = listOf(
-                MenuItem.Button.DropDown(
-                    text = stringResource(R.string.select_all_title),
-                    icon = painterResource(R.drawable.ic_select_all_24dp),
-                    onClick = { onSelectAllClick() }
+            items =
+                listOf(
+                    MenuItem.Button.DropDown(
+                        text = stringResource(R.string.select_all_title),
+                        icon = painterResource(R.drawable.ic_select_all_24dp),
+                        onClick = { onSelectAllClick() },
+                    ),
+                    MenuItem.Button.DropDown(
+                        text = stringResource(R.string.undo_changes),
+                        icon = painterResource(R.drawable.ic_restart_alt_24dp),
+                        dangerous = true,
+                        onClick = { onUndoChangesClick() },
+                    ),
                 ),
-                MenuItem.Button.DropDown(
-                    text = stringResource(R.string.undo_changes),
-                    icon = painterResource(R.drawable.ic_restart_alt_24dp),
-                    dangerous = true,
-                    onClick = { onUndoChangesClick() }
-                )
-            )
         )
     }
 }
@@ -849,17 +878,17 @@ private fun LyricsEditorBottomBar(
 @Composable
 fun ColumnScope.LyricsFileNotice(
     isFileSource: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(
         visible = isFileSource,
-        modifier = modifier
+        modifier = modifier,
     ) {
         Text(
             text = stringResource(R.string.cannot_edit_lyrics_file),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.labelSmall,
-            modifier = Modifier.align(Alignment.CenterHorizontally)
+            modifier = Modifier.align(Alignment.CenterHorizontally),
         )
     }
 }

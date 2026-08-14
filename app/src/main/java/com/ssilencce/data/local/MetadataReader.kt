@@ -15,10 +15,35 @@ import org.jaudiotagger.tag.reference.GenreTypes
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
 
-fun Picture.toBitmap(): Bitmap? = BitmapFactory.decodeByteArray(data, 0, data.size)
+private const val MAX_DECODED_COVER_SIZE = 2048
 
-class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
+fun Picture.toBitmap(): Bitmap? = decodeBitmapWithinBounds(data, MAX_DECODED_COVER_SIZE)
 
+private fun decodeBitmapWithinBounds(
+    data: ByteArray,
+    maxDimension: Int,
+): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(data, 0, data.size, bounds)
+    if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+        return null
+    }
+
+    var sampleSize = 1
+    while (bounds.outWidth / (sampleSize * 2) >= maxDimension ||
+        bounds.outHeight / (sampleSize * 2) >= maxDimension
+    ) {
+        sampleSize *= 2
+    }
+
+    val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+    return BitmapFactory.decodeByteArray(data, 0, data.size, options)
+}
+
+class MetadataReader(
+    uri: Uri,
+    readPictures: Boolean = false,
+) : KoinComponent {
     private var metadata: Metadata? = null
     private var audioProperties: AudioProperties? = null
 
@@ -40,15 +65,17 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
     }
 
     fun bitrate(): String? {
-        if (audioProperties == null || audioProperties!!.bitrate <= 0)
+        if (audioProperties == null || audioProperties!!.bitrate <= 0) {
             return null
+        }
 
         return "${audioProperties!!.bitrate} kbps"
     }
 
     fun sampleRate(): String? {
-        if (audioProperties == null || audioProperties!!.sampleRate <= 0)
+        if (audioProperties == null || audioProperties!!.sampleRate <= 0) {
             return null
+        }
 
         return if (audioProperties!!.sampleRate >= 1000) {
             "%.1f kHz".format(audioProperties!!.sampleRate / 1000.0)
@@ -67,7 +94,9 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
         val mode = channelMode()
         return if (mode != null) {
             get<Context>().getString(mode.labelRes)
-        } else null
+        } else {
+            null
+        }
     }
 
     /**
@@ -83,7 +112,10 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
      * This takes an array of delimiters as a parameter, which can be used to
      * force multiple values to be read.
      */
-    fun all(key: String, delimiters: Array<String> = DEFAULT_DELIMITERS): Array<String>? {
+    fun all(
+        key: String,
+        delimiters: Array<String> = DEFAULT_DELIMITERS,
+    ): Array<String>? {
         val values = tags?.get(key.uppercase())
         if (values?.size == 1 && delimiters.isNotEmpty()) {
             val single = values.single()
@@ -96,8 +128,11 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
         return values
     }
 
-    fun get(key: String, index: Int, delimiters: Array<String> = DEFAULT_DELIMITERS) =
-        all(key, delimiters = delimiters)?.getOrNull(index)
+    fun get(
+        key: String,
+        index: Int,
+        delimiters: Array<String> = DEFAULT_DELIMITERS,
+    ) = all(key, delimiters = delimiters)?.getOrNull(index)
 
     fun first(key: String) = get(key, 0)
 
@@ -107,7 +142,10 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
 
     fun allPictures() = pictures
 
-    fun merge(key: String, separator: String = "; "): String? {
+    fun merge(
+        key: String,
+        separator: String = "; ",
+    ): String? {
         val values = all(key)
         if (values.isNullOrEmpty()) {
             return null
@@ -120,6 +158,7 @@ class MetadataReader(uri: Uri, readPictures: Boolean = false) : KoinComponent {
     }
 
     fun genre() = first(GENRE)?.normalizeGenre()
+
     fun genres() = all(GENRE)?.map { it.normalizeGenre() }
 
     private fun String.normalizeGenre(): String {

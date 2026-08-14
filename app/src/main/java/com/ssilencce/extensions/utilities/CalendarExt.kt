@@ -40,9 +40,10 @@ val calendarSingleton: Calendar by lazy {
  */
 fun Calendar.getElapsedToday(): Long {
     // Time elapsed so far today
-    return (get(Calendar.HOUR_OF_DAY) * 60 + get(Calendar.MINUTE)) * MS_PER_MINUTE + get(Calendar.SECOND) * 1000 + get(
-        Calendar.MILLISECOND
-    )
+    return (get(Calendar.HOUR_OF_DAY) * 60 + get(Calendar.MINUTE)) * MS_PER_MINUTE + get(Calendar.SECOND) * 1000 +
+        get(
+            Calendar.MILLISECOND,
+        )
 }
 
 /**
@@ -129,21 +130,25 @@ fun Calendar.getElapsedYear(): Long {
  * @param month The month (1 - 12).
  * @return The days in that month/year.
  */
-private fun getDaysInMonth(year: Int, month: Int): Int {
+private fun getDaysInMonth(
+    year: Int,
+    month: Int,
+): Int {
     val monthCal = GregorianCalendar(year, month, 1)
     return monthCal.getActualMaximum(Calendar.DAY_OF_MONTH)
 }
 
 fun Calendar.getCutoffTimeMillis(cutoff: String): Long {
-    val interval: Long = when (cutoff) {
-        PlaylistCutoff.TODAY -> getElapsedToday()
-        PlaylistCutoff.YESTERDAY -> getElapsedDays(1)
-        PlaylistCutoff.THIS_WEEK -> getElapsedWeek()
-        PlaylistCutoff.PAST_THREE_MONTHS -> getElapsedMonths(3)
-        PlaylistCutoff.THIS_YEAR -> getElapsedYear()
-        PlaylistCutoff.THIS_MONTH -> getElapsedMonth()
-        else -> getElapsedMonth()
-    }
+    val interval: Long =
+        when (cutoff) {
+            PlaylistCutoff.TODAY -> getElapsedToday()
+            PlaylistCutoff.YESTERDAY -> getElapsedDays(1)
+            PlaylistCutoff.THIS_WEEK -> getElapsedWeek()
+            PlaylistCutoff.PAST_THREE_MONTHS -> getElapsedMonths(3)
+            PlaylistCutoff.THIS_YEAR -> getElapsedYear()
+            PlaylistCutoff.THIS_MONTH -> getElapsedMonth()
+            else -> getElapsedMonth()
+        }
     return System.currentTimeMillis() - interval
 }
 

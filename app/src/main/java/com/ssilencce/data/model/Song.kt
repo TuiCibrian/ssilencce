@@ -50,21 +50,22 @@ open class Song(
     open val artistName: String,
     open val albumArtistName: String?,
     open val genreName: String?,
-    open val volumeName: String? = null
-) : Parcelable, FileSystemItem {
-
+    open val volumeName: String? = null,
+) : Parcelable,
+    FileSystemItem {
     val uri: Uri
-        get() = if (hasQ()) {
-            volumeName.let { volume ->
-                if (volume != null && volume != MediaStore.VOLUME_EXTERNAL) {
-                    ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(volume), id)
-                } else {
-                    ContentUris.withAppendedId(getAudioContentUri(), id)
+        get() =
+            if (hasQ()) {
+                volumeName.let { volume ->
+                    if (volume != null && volume != MediaStore.VOLUME_EXTERNAL) {
+                        ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(volume), id)
+                    } else {
+                        ContentUris.withAppendedId(getAudioContentUri(), id)
+                    }
                 }
+            } else {
+                ContentUris.withAppendedId(getAudioContentUri(), id)
             }
-        } else {
-            ContentUris.withAppendedId(getAudioContentUri(), id)
-        }
 
     @IgnoredOnParcel
     val dateModified by lazy { Date(rawDateModified * 1000) }
@@ -97,18 +98,20 @@ open class Song(
         song.artistName,
         song.albumArtistName,
         song.genreName,
-        song.volumeName
+        song.volumeName,
     )
 
     fun toMediaItem(itemId: String = id.toString()): MediaItem =
         if (this == emptySong) {
             MediaItem.EMPTY
         } else {
-            MediaItem.Builder()
+            MediaItem
+                .Builder()
                 .setUri(uri)
                 .setMediaId(itemId)
                 .setMediaMetadata(
-                    MediaMetadata.Builder()
+                    MediaMetadata
+                        .Builder()
                         .setIsPlayable(true)
                         .setIsBrowsable(false)
                         .setArtworkUri(CoverProvider.getImageUri(CoverProvider.SONG_COVER_PATH, id))
@@ -121,9 +124,8 @@ open class Song(
                         .setTrackNumber(trackNumber)
                         .setReleaseYear(year)
                         .setDurationMs(duration.coerceAtLeast(0))
-                        .build()
-                )
-                .build()
+                        .build(),
+                ).build()
         }
 
     override fun equals(other: Any?): Boolean {
@@ -148,8 +150,8 @@ open class Song(
         return volumeName == song.volumeName
     }
 
-    override fun hashCode(): Int {
-        return Objects.hash(
+    override fun hashCode(): Int =
+        Objects.hash(
             id,
             data,
             title,
@@ -165,30 +167,28 @@ open class Song(
             artistName,
             albumArtistName,
             genreName,
-            volumeName
+            volumeName,
         )
-    }
 
-    override fun toString(): String {
-        return "Song{" +
-                "id=" + id +
-                ", data='" + data + '\'' +
-                ", title='" + title + '\'' +
-                ", asReadableTrackNumber=" + trackNumber +
-                ", year=" + year +
-                ", size=" + size +
-                ", duration=" + duration +
-                ", dateAdded=" + dateAdded +
-                ", rawDateModified=" + rawDateModified +
-                ", albumId=" + albumId +
-                ", albumName='" + albumName + '\'' +
-                ", artistId=" + artistId +
-                ", artistName='" + artistName + '\'' +
-                ", albumArtistName='" + albumArtistName + '\'' +
-                ", genreName='" + genreName + '\'' +
-                ", volumeName='" + volumeName + '\'' +
-                '}'
-    }
+    override fun toString(): String =
+        "Song{" +
+            "id=" + id +
+            ", data='" + data + '\'' +
+            ", title='" + title + '\'' +
+            ", asReadableTrackNumber=" + trackNumber +
+            ", year=" + year +
+            ", size=" + size +
+            ", duration=" + duration +
+            ", dateAdded=" + dateAdded +
+            ", rawDateModified=" + rawDateModified +
+            ", albumId=" + albumId +
+            ", albumName='" + albumName + '\'' +
+            ", artistId=" + artistId +
+            ", artistName='" + artistName + '\'' +
+            ", albumArtistName='" + albumArtistName + '\'' +
+            ", genreName='" + genreName + '\'' +
+            ", volumeName='" + volumeName + '\'' +
+            '}'
 
     companion object {
         val emptySong = Song(-1, "", "", -1, -1, -1, -1, -1, -1, -1, "", -1, "", "", "", null)

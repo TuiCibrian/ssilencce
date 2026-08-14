@@ -36,7 +36,10 @@ interface PlaylistDao {
     suspend fun updatePlaylist(playlist: PlaylistEntity)
 
     @Query("UPDATE PlaylistEntity SET playlist_name = :name WHERE playlist_id = :playlistId")
-    suspend fun renamePlaylist(playlistId: Long, name: String)
+    suspend fun renamePlaylist(
+        playlistId: Long,
+        name: String,
+    )
 
     @Transaction
     @Query("SELECT * FROM PlaylistEntity")
@@ -56,16 +59,25 @@ interface PlaylistDao {
 
     @Transaction
     @Query("SELECT * FROM SongEntity WHERE playlist_creator_id = :playlistId AND title LIKE :songName")
-    fun searchSongs(playlistId: Long, songName: String): List<SongEntity>
+    fun searchSongs(
+        playlistId: Long,
+        songName: String,
+    ): List<SongEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSongsToPlaylist(songEntities: List<SongEntity>)
 
     @Query("SELECT * FROM SongEntity WHERE playlist_creator_id = :playlistId AND id = :songId LIMIT 1")
-    suspend fun findSongInPlaylist(playlistId: Long, songId: Long): SongEntity?
+    suspend fun findSongInPlaylist(
+        playlistId: Long,
+        songId: Long,
+    ): SongEntity?
 
     @Query("SELECT * FROM SongEntity WHERE playlist_creator_id = :playlistId AND id IN(:songIds)")
-    suspend fun findSongsInPlaylist(playlistId: Long, songIds: List<Long>): List<SongEntity>
+    suspend fun findSongsInPlaylist(
+        playlistId: Long,
+        songIds: List<Long>,
+    ): List<SongEntity>
 
     @Query("SELECT * FROM SongEntity WHERE playlist_creator_id = :playlistId ORDER BY song_key asc")
     fun songsFromPlaylistObservable(playlistId: Long): LiveData<List<SongEntity>>
@@ -83,7 +95,10 @@ interface PlaylistDao {
     suspend fun deletePlaylists(playlistIds: List<Long>)
 
     @Query("DELETE FROM SongEntity WHERE playlist_creator_id = :playlistId AND id IN(:songIds)")
-    suspend fun deleteSongsFromPlaylist(playlistId: Long, songIds: List<Long>)
+    suspend fun deleteSongsFromPlaylist(
+        playlistId: Long,
+        songIds: List<Long>,
+    )
 
     @Delete
     suspend fun deleteSongsFromPlaylists(songs: List<SongEntity>)
@@ -95,10 +110,12 @@ interface PlaylistDao {
     suspend fun deleteSongsFromAllPlaylists(songIds: List<Long>)
 
     @RewriteQueriesToDropUnusedColumns
-    @Query("""
+    @Query(
+        """
     SELECT * FROM SongEntity,
     (SELECT playlist_id FROM PlaylistEntity WHERE playlist_name = :playlistName LIMIT 1) AS playlist
-    WHERE playlist_creator_id = playlist.playlist_id""")
+    WHERE playlist_creator_id = playlist.playlist_id""",
+    )
     fun favoritesSongsFlow(playlistName: String): Flow<List<SongEntity>>
 
     @Query("SELECT * FROM SongEntity WHERE playlist_creator_id = :playlistId")
@@ -108,5 +125,8 @@ interface PlaylistDao {
     fun checkPlaylistExists(playlistId: Long): LiveData<Boolean>
 
     @Query("SELECT EXISTS(SELECT * FROM SongEntity WHERE id = :songId AND playlist_creator_id = :playlistId)")
-    fun checkSongExistInPlaylist(playlistId: Long, songId: Long): Boolean
+    fun checkSongExistInPlaylist(
+        playlistId: Long,
+        songId: Long,
+    ): Boolean
 }

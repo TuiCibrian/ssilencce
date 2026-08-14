@@ -48,8 +48,10 @@ import java.io.File
 /**
  * @author Christians M. A. (mardous)
  */
-class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAdapter.Callback<String> {
-
+class BlacklistWhitelistDialog :
+    DialogFragment(),
+    FolderCallback,
+    SimpleItemAdapter.Callback<String> {
     private val listType: Int by extraNotNull(EXTRA_TYPE)
 
     private var _binding: DialogProgressRecyclerViewBinding? = null
@@ -70,11 +72,12 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
         adapter = SimpleItemAdapter(R.layout.item_folder, callback = this)
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = adapter
-        val titleRes = if (isBlacklist) {
-            R.string.blacklist_title
-        } else {
-            R.string.whitelist_title
-        }
+        val titleRes =
+            if (isBlacklist) {
+                R.string.blacklist_title
+            } else {
+                R.string.whitelist_title
+            }
         return MaterialAlertDialogBuilder(requireContext())
             .setTitle(titleRes)
             .setView(binding.root)
@@ -88,7 +91,11 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
             }
     }
 
-    override fun bindData(itemView: View, position: Int, item: String): Boolean {
+    override fun bindData(
+        itemView: View,
+        position: Int,
+        item: String,
+    ): Boolean {
         if (position == 0) {
             val textView = itemView.findViewById<TextView>(android.R.id.text1)
             textView.text = item
@@ -98,13 +105,22 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
         return false
     }
 
-    override fun itemClick(itemView: View, position: Int, item: String) {
+    override fun itemClick(
+        itemView: View,
+        position: Int,
+        item: String,
+    ) {
         if (position == 0) {
-            FolderChooserDialog().also { it.setCallback(this) }
+            FolderChooserDialog()
+                .also { it.setCallback(this) }
                 .show(childFragmentManager, "FOLDER_CHOOSER")
         } else {
-            val messageRes = if (isBlacklist) R.string.remove_from_blacklist
-            else R.string.remove_from_whitelist
+            val messageRes =
+                if (isBlacklist) {
+                    R.string.remove_from_blacklist
+                } else {
+                    R.string.remove_from_whitelist
+                }
             MaterialAlertDialogBuilder(requireContext())
                 .setMessage(messageRes)
                 .setPositiveButton(R.string.remove_action) { _: DialogInterface, _: Int ->
@@ -112,13 +128,15 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
                         inclExclDao.deletePath(InclExclEntity(item, listType))
                         refreshData()
                     }
-                }
-                .setNegativeButton(android.R.string.cancel, null)
+                }.setNegativeButton(android.R.string.cancel, null)
                 .show()
         }
     }
 
-    override fun onFolderSelection(dialog: FolderChooserDialog, folder: File) {
+    override fun onFolderSelection(
+        dialog: FolderChooserDialog,
+        folder: File,
+    ) {
         lifecycleScope.launch(IO) {
             inclExclDao.insertPath(InclExclEntity(folder.getCanonicalPathSafe(), listType))
             refreshData()
@@ -136,8 +154,7 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
                     inclExclDao.clearPaths(listType)
                     refreshData()
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
@@ -146,9 +163,10 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
             paths = inclExclDao.getPaths(listType).map { it.path }
             withContext(Main) {
                 _binding?.progressIndicator?.isVisible = false
-                adapter?.items = arrayListOf(getString(R.string.add_directory)).also {
-                    it.addAll(paths)
-                }
+                adapter?.items =
+                    arrayListOf(getString(R.string.add_directory)).also {
+                        it.addAll(paths)
+                    }
             }
         }
     }
@@ -162,10 +180,9 @@ class BlacklistWhitelistDialog : DialogFragment(), FolderCallback, SimpleItemAda
     companion object {
         private const val EXTRA_TYPE = "type"
 
-        fun newInstance(listType: Int): BlacklistWhitelistDialog {
-            return BlacklistWhitelistDialog().withArgs {
+        fun newInstance(listType: Int): BlacklistWhitelistDialog =
+            BlacklistWhitelistDialog().withArgs {
                 putInt(EXTRA_TYPE, listType)
             }
-        }
     }
 }

@@ -25,7 +25,6 @@ import com.ssilencce.ui.component.compose.DialogListItemWithRadio
 import com.ssilencce.ui.theme.SsilencceTheme
 
 class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
-
     private val listPreference: ListPreference
         get() = getPreference() as ListPreference
 
@@ -60,10 +59,10 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
         outState.putCharSequenceArray(SAVE_STATE_ENTRY_VALUES, entryValues)
     }
 
-    override fun onCreateDialogView(context: Context): View {
-        return ComposeView(context).apply {
+    override fun onCreateDialogView(context: Context): View =
+        ComposeView(context).apply {
             setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
                 SsilencceTheme {
@@ -76,12 +75,11 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
                                 onClick(dialog, DialogInterface.BUTTON_POSITIVE)
                                 dialog.dismiss()
                             }
-                        }
+                        },
                     )
                 }
             }
         }
-    }
 
     override fun onBindDialogView(view: View) {}
 
@@ -106,18 +104,19 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
     private fun DialogView(
         titles: List<String>,
         selectedIndex: Int,
-        onSelection: (Int) -> Unit
+        onSelection: (Int) -> Unit,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.wrapContentHeight()
+            modifier = Modifier.wrapContentHeight(),
         ) {
             LazyColumn(
                 state = rememberLazyListState(selectedIndex.coerceAtLeast(0)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(vertical = 24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(vertical = 24.dp),
             ) {
                 itemsIndexed(titles) { index, action ->
                     DialogListItemWithRadio(
@@ -125,7 +124,7 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
                         isSelected = selectedIndex == index,
                         onClick = {
                             onSelection(index)
-                        }
+                        },
                     )
                 }
             }
@@ -137,10 +136,9 @@ class SingleSelectionDialog : PreferenceDialogFragmentCompat() {
         private const val SAVE_STATE_ENTRIES = "ListPreferenceDialogFragment.entries"
         private const val SAVE_STATE_ENTRY_VALUES = "ListPreferenceDialogFragment.entryValues"
 
-        fun newInstance(key: String?): SingleSelectionDialog {
-            return SingleSelectionDialog().withArgs {
+        fun newInstance(key: String?): SingleSelectionDialog =
+            SingleSelectionDialog().withArgs {
                 putString(ARG_KEY, key)
             }
-        }
     }
 }

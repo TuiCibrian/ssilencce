@@ -23,9 +23,9 @@ import com.ssilencce.data.model.replaygain.ReplayGainMode
 @Immutable
 data class BalanceState(
     val center: Float,
-    val range: ClosedFloatingPointRange<Float>
+    val range: ClosedFloatingPointRange<Float>,
 ) {
-    val left  = (1f - center).coerceIn(0f, 1f)
+    val left = (1f - center).coerceIn(0f, 1f)
     val right = (1f + center).coerceIn(0f, 1f)
 
     companion object {
@@ -39,7 +39,7 @@ data class TempoState(
     val speedRange: ClosedFloatingPointRange<Float>,
     val pitch: Float,
     val pitchRange: ClosedFloatingPointRange<Float>,
-    val isFixedPitch: Boolean
+    val isFixedPitch: Boolean,
 ) {
     val actualPitch: Float
         get() = if (isFixedPitch) speed else pitch
@@ -53,12 +53,15 @@ data class TempoState(
 data class VolumeState(
     val currentVolume: Float,
     val volumeRange: ClosedFloatingPointRange<Float>,
-    val isFixed: Boolean = false
+    val isFixed: Boolean = false,
 ) {
     val volumePercent: Float
-        get() = if (volumeRange.endInclusive > volumeRange.start) {
-            ((currentVolume - volumeRange.start) / (volumeRange.endInclusive - volumeRange.start)) * 100f
-        } else 0f
+        get() =
+            if (volumeRange.endInclusive > volumeRange.start) {
+                ((currentVolume - volumeRange.start) / (volumeRange.endInclusive - volumeRange.start)) * 100f
+            } else {
+                0f
+            }
 
     companion object {
         val Unspecified = VolumeState(0f, 0f..1f)
@@ -69,7 +72,7 @@ data class VolumeState(
 data class ReplayGainState(
     val mode: ReplayGainMode,
     val preamp: Float,
-    val preampWithoutGain: Float
+    val preampWithoutGain: Float,
 ) {
     val availableModes = ReplayGainMode.entries.toTypedArray()
 

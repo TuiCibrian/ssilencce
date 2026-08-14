@@ -67,12 +67,13 @@ import java.lang.ref.WeakReference
 /**
  * @author Christians M. A. (mardous)
  */
-abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes),
+abstract class AbsPlayerControlsFragment(
+    @LayoutRes layoutRes: Int,
+) : Fragment(layoutRes),
     View.OnClickListener,
     View.OnLongClickListener,
     SharedPreferences.OnSharedPreferenceChangeListener,
     SkipButtonTouchHandler.Callback {
-
     val playerViewModel: PlayerViewModel by activityViewModel()
 
     protected var playerFragment: AbsPlayerFragment? = null
@@ -118,7 +119,10 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         isControlAnimationEnabled = Preferences.animateControls
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         view.layoutDirection = View.LAYOUT_DIRECTION_LTR
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
@@ -129,9 +133,9 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             combine(playerViewModel.currentSongFlow, playerViewModel.nextSongFlow)
-            { currentSong, nextSong -> Pair(currentSong, nextSong) }.collect { (current, next) ->
-                onSongInfoChanged(current, next)
-            }
+                { currentSong, nextSong -> Pair(currentSong, nextSong) }.collect { (current, next) ->
+                    onSongInfoChanged(current, next)
+                }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.extraInfoFlow.collect { extraInfo ->
@@ -157,7 +161,7 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             combine(
                 playerViewModel.progressFlow,
-                playerViewModel.durationFlow
+                playerViewModel.durationFlow,
             ) { progress, duration -> ProgressState(progress, duration) }
                 .filter { progress -> progress.mayUpdateUI }
                 .collectLatest { progress ->
@@ -173,10 +177,11 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         super.onStart()
         playerAnimator = onCreatePlayerAnimator()
         if (Preferences.circularPlayButton) {
-            playPauseFab?.shapeAppearanceModel = requireContext().getShapeAppearanceModel(
-                com.google.android.material.R.style.ShapeAppearance_Material3_Corner_Large,
-                R.style.CircularShapeAppearance
-            )
+            playPauseFab?.shapeAppearanceModel =
+                requireContext().getShapeAppearanceModel(
+                    com.google.android.material.R.style.ShapeAppearance_Material3_Corner_Large,
+                    R.style.CircularShapeAppearance,
+                )
         }
         songTotalTime?.setOnClickListener(this)
         songInfoView?.setOnLongClickListener(this)
@@ -228,56 +233,68 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         }
     }
 
-    protected fun getSkipButtonTouchHandler(direction: Int): SkipButtonTouchHandler {
-        return SkipButtonTouchHandler(direction, this)
-    }
+    protected fun getSkipButtonTouchHandler(direction: Int): SkipButtonTouchHandler = SkipButtonTouchHandler(direction, this)
 
     private fun setUpProgressSlider() {
         musicSlider?.setUseSquiggly(Preferences.squigglySeekBar)
-        musicSlider?.setListener(object : MusicSlider.Listener {
-            override fun onProgressChanged(slider: MusicSlider, progress: Int, fromUser: Boolean) {
-                if (fromUser) {
-                    onUpdateSlider(progress.toLong(), playerViewModel.duration)
+        musicSlider?.setListener(
+            object : MusicSlider.Listener {
+                override fun onProgressChanged(
+                    slider: MusicSlider,
+                    progress: Int,
+                    fromUser: Boolean,
+                ) {
+                    if (fromUser) {
+                        onUpdateSlider(progress.toLong(), playerViewModel.duration)
+                    }
                 }
-            }
 
-            override fun onStartTrackingTouch(slider: MusicSlider) {}
+                override fun onStartTrackingTouch(slider: MusicSlider) {}
 
-            override fun onStopTrackingTouch(slider: MusicSlider) {
-                playerViewModel.seekTo(slider.value.toLong())
-            }
-        })
+                override fun onStopTrackingTouch(slider: MusicSlider) {
+                    playerViewModel.seekTo(slider.value.toLong())
+                }
+            },
+        )
     }
 
-    private fun onUpdateSlider(progress: Long, total: Long) {
+    private fun onUpdateSlider(
+        progress: Long,
+        total: Long,
+    ) {
         musicSlider?.valueTo = total.toInt()
         musicSlider?.value = progress.toInt()
         songCurrentProgress?.text = progress.asReadableDuration()
-        songTotalTime?.text = if (Preferences.preferRemainingTime) {
-            (total - progress).coerceAtLeast(0L).asReadableDuration()
-        } else {
-            total.asReadableDuration()
-        }
+        songTotalTime?.text =
+            if (Preferences.preferRemainingTime) {
+                (total - progress).coerceAtLeast(0L).asReadableDuration()
+            } else {
+                total.asReadableDuration()
+            }
     }
 
     protected open fun onCreatePlayerAnimator(): PlayerAnimator? = null
 
-    protected abstract fun onSongInfoChanged(currentSong: Song, nextSong: Song)
+    protected abstract fun onSongInfoChanged(
+        currentSong: Song,
+        nextSong: Song,
+    )
 
     protected abstract fun onExtraInfoChanged(extraInfo: String?)
 
     protected abstract fun onUpdatePlayPause(isPlaying: Boolean)
 
     open fun onUpdateRepeatMode(repeatMode: Int) {
-        val iconResource = when (repeatMode) {
-            Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
-            else -> R.drawable.ic_repeat_24dp
-        }
+        val iconResource =
+            when (repeatMode) {
+                Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
+                else -> R.drawable.ic_repeat_24dp
+            }
         repeatButton?.let {
             it.setIconResource(iconResource)
             it.applyColor(
                 getPlaybackControlsColor(repeatMode != Player.REPEAT_MODE_OFF),
-                isIconButton = true
+                isIconButton = true,
             )
         }
     }
@@ -285,11 +302,14 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
     open fun onUpdateShuffleMode(shuffleModeEnabled: Boolean) {
         shuffleButton?.applyColor(
             getPlaybackControlsColor(shuffleModeEnabled),
-            isIconButton = true
+            isIconButton = true,
         )
     }
 
-    fun setMarquee(vararg textView: TextView?, marquee: Boolean) {
+    fun setMarquee(
+        vararg textView: TextView?,
+        marquee: Boolean,
+    ) {
         if (isShown) {
             playerFragment?.setMarquee(textView = textView, marquee = marquee)
         }
@@ -315,22 +335,21 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
 
     abstract fun getTintTargets(scheme: PlayerColorScheme): List<PlayerTintTarget>
 
-    protected fun setViewAction(view: View, action: NowPlayingAction) =
-        playerFragment?.setViewAction(view, action)
+    protected fun setViewAction(
+        view: View,
+        action: NowPlayingAction,
+    ) = playerFragment?.setViewAction(view, action)
 
-    protected fun getSongArtist(song: Song) =
-        playerFragment?.getSongArtist(song)
+    protected fun getSongArtist(song: Song) = playerFragment?.getSongArtist(song)
 
-    protected fun getNextSongInfo(nextSong: Song) =
-        playerFragment?.getNextSongInfo(nextSong)
+    protected fun getNextSongInfo(nextSong: Song) = playerFragment?.getNextSongInfo(nextSong)
 
-    protected fun isExtraInfoEnabled() =
-        playerFragment?.isExtraInfoEnabled() ?: false
+    protected fun isExtraInfoEnabled() = playerFragment?.isExtraInfoEnabled() ?: false
 
     protected fun getPlaybackControlsColor(
         isEnabled: Boolean,
         controlColor: Int = lastPlaybackControlsColor,
-        disabledControlColor: Int = lastDisabledPlaybackControlsColor
+        disabledControlColor: Int = lastDisabledPlaybackControlsColor,
     ) = if (isEnabled) controlColor else disabledControlColor
 
     @CallSuper
@@ -338,24 +357,37 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
         playerAnimator?.isEnabled = isEnabled
     }
 
-    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: SharedPreferences,
+        key: String?,
+    ) {
         when (key) {
             ANIMATE_PLAYER_CONTROL -> {
                 isControlAnimationEnabled = sharedPreferences.getBoolean(key, true)
                 onControlAnimationStateChanged(isControlAnimationEnabled)
             }
+
             SQUIGGLY_SEEK_BAR -> {
                 musicSlider?.setUseSquiggly(sharedPreferences.getBoolean(key, false))
                 musicSlider?.animateSquigglyProgress = playerViewModel.isPlaying
             }
+
             ENABLE_SCROLLING_TEXT -> {
                 val marquee = sharedPreferences.getBoolean(key, false)
                 setMarquee(songTitleView, songArtistView, songInfoView, marquee = marquee)
             }
+
             DISPLAY_ALBUM_TITLE,
-            PREFER_ALBUM_ARTIST_NAME -> onSongInfoChanged(playerViewModel.currentSong, playerViewModel.nextSong)
+            PREFER_ALBUM_ARTIST_NAME,
+            -> {
+                onSongInfoChanged(playerViewModel.currentSong, playerViewModel.nextSong)
+            }
+
             DISPLAY_EXTRA_INFO,
-            NOW_PLAYING_EXTRA_INFO -> playerViewModel.generateExtraInfo()
+            NOW_PLAYING_EXTRA_INFO,
+            -> {
+                playerViewModel.generateExtraInfo()
+            }
         }
     }
 
@@ -367,11 +399,11 @@ abstract class AbsPlayerControlsFragment(@LayoutRes layoutRes: Int) : Fragment(l
 
 class SkipButtonTouchHandler(
     private val direction: Int,
-    private val callback: Callback
+    private val callback: Callback,
 ) : OnTouchListener {
-
     interface Callback {
         fun onSkipButtonHold(direction: Int)
+
         fun onSkipButtonTap(direction: Int)
     }
 
@@ -380,21 +412,25 @@ class SkipButtonTouchHandler(
     private var touchedViewRef: WeakReference<View>? = null
     private var touchSlop: Int = -1
 
-    private val repeatRunnable = object : Runnable {
-        override fun run() {
-            val view = touchedViewRef?.get()
-            if (view != null && view.isEnabled) {
-                isHolding = true
-                callback.onSkipButtonHold(direction)
-                handler.postDelayed(this, SKIP_TRIGGER_NORMAL_INTERVAL_MILLIS)
-            } else {
-                cancel()
+    private val repeatRunnable =
+        object : Runnable {
+            override fun run() {
+                val view = touchedViewRef?.get()
+                if (view != null && view.isEnabled) {
+                    isHolding = true
+                    callback.onSkipButtonHold(direction)
+                    handler.postDelayed(this, SKIP_TRIGGER_NORMAL_INTERVAL_MILLIS)
+                } else {
+                    cancel()
+                }
             }
         }
-    }
 
     @SuppressLint("ClickableViewAccessibility")
-    override fun onTouch(view: View, event: MotionEvent): Boolean {
+    override fun onTouch(
+        view: View,
+        event: MotionEvent,
+    ): Boolean {
         if (touchSlop < 0) {
             touchSlop = ViewConfiguration.get(view.context).scaledTouchSlop
         }
@@ -434,10 +470,13 @@ class SkipButtonTouchHandler(
         return false
     }
 
-    private fun isPointInsideView(x: Float, y: Float, view: View): Boolean {
-        return x >= -touchSlop && x <= view.width + touchSlop &&
-                y >= -touchSlop && y <= view.height + touchSlop
-    }
+    private fun isPointInsideView(
+        x: Float,
+        y: Float,
+        view: View,
+    ): Boolean =
+        x >= -touchSlop && x <= view.width + touchSlop &&
+            y >= -touchSlop && y <= view.height + touchSlop
 
     private fun cancel() {
         handler.removeCallbacks(repeatRunnable)

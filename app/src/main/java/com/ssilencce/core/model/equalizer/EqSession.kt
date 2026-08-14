@@ -3,9 +3,10 @@ package com.ssilencce.core.model.equalizer
 data class EqSession(
     val type: SessionType,
     val id: Int,
-    val active: Boolean
+    val active: Boolean,
 ) {
     enum class SessionType {
-        Internal, External
+        Internal,
+        External,
     }
 }

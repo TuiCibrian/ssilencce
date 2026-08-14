@@ -27,6 +27,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ssilencce.R
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.model.Folder
@@ -39,7 +40,6 @@ import com.ssilencce.extensions.media.songsDurationStr
 import com.ssilencce.extensions.navigation.searchArgs
 import com.ssilencce.extensions.setSupportActionBar
 import com.ssilencce.extensions.utilities.buildInfoString
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
@@ -48,8 +48,9 @@ import com.ssilencce.ui.component.menu.onSongsMenu
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
-class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_list), ISongCallback {
-
+class FolderDetailFragment :
+    AbsMainActivityFragment(R.layout.fragment_detail_list),
+    ISongCallback {
     private val arguments by navArgs<FolderDetailFragmentArgs>()
     private val detailViewModel: FolderDetailViewModel by viewModel {
         parametersOf(arguments.extraFolderPath)
@@ -63,7 +64,10 @@ class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_li
     private val folder: Folder
         get() = detailViewModel.getFolder().value ?: Folder.empty
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDetailListBinding.bind(view)
         materialSharedAxis(view)
@@ -94,13 +98,14 @@ class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_li
     }
 
     private fun setupRecyclerView() {
-        songAdapter = SongAdapter(
-            activity = requireActivity(),
-            dataSet = ArrayList(),
-            itemLayoutRes = R.layout.item_list,
-            sortMode = SongSortMode.FolderSongs,
-            callback = this
-        )
+        songAdapter =
+            SongAdapter(
+                activity = requireActivity(),
+                dataSet = ArrayList(),
+                itemLayoutRes = R.layout.item_list,
+                sortMode = SongSortMode.FolderSongs,
+                callback = this,
+            )
         binding.recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = songAdapter
@@ -121,20 +126,26 @@ class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_li
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 
-    override fun onCreateMenu(menu: Menu, inflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        inflater: MenuInflater,
+    ) {
         inflater.inflate(R.menu.menu_folder_detail, menu)
         SongSortMode.FolderSongs.createMenu(menu)
     }
 
-    override fun onMenuItemSelected(item: MenuItem): Boolean {
-        return when {
+    override fun onMenuItemSelected(item: MenuItem): Boolean =
+        when {
             SongSortMode.FolderSongs.sortItemSelected(item) -> {
                 detailViewModel.loadDetail()
                 true
@@ -143,7 +154,7 @@ class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_li
             item.itemId == R.id.action_search -> {
                 findNavController().navigate(
                     R.id.nav_search,
-                    searchArgs(folder.searchFilter(requireContext()))
+                    searchArgs(folder.searchFilter(requireContext())),
                 )
                 true
             }
@@ -153,9 +164,10 @@ class FolderDetailFragment : AbsMainActivityFragment(R.layout.fragment_detail_li
                 true
             }
 
-            else -> songAdapter.dataSet.onSongsMenu(this, item)
+            else -> {
+                songAdapter.dataSet.onSongsMenu(this, item)
+            }
         }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

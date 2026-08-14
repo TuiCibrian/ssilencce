@@ -25,19 +25,19 @@ import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 open class ProfileOpResult(
     val success: Boolean,
     @StringRes val messageRes: Int = 0,
-    val canDismiss: Boolean = true
+    val canDismiss: Boolean = true,
 )
 
 class ProfileDeletionResult(
     success: Boolean,
     val profileName: String,
-    val autoEqProfile: Boolean
+    val autoEqProfile: Boolean,
 ) : ProfileOpResult(success, messageRes = 0)
 
 class ProfileExportRequest(
     success: Boolean,
     @StringRes messageRes: Int = 0,
-    val profileExportData: Pair<String, String>? = null
+    val profileExportData: Pair<String, String>? = null,
 ) : ProfileOpResult(success, messageRes = messageRes)
 
 class ProfileExportResult(
@@ -45,23 +45,23 @@ class ProfileExportResult(
     @StringRes messageRes: Int = 0,
     val isShareRequest: Boolean = false,
     val data: Uri? = null,
-    val mimeType: String? = null
+    val mimeType: String? = null,
 ) : ProfileOpResult(success, messageRes = messageRes)
 
 class ProfileImportRequest(
     success: Boolean,
     @StringRes messageRes: Int = 0,
-    val profiles: List<EqProfile> = emptyList()
+    val profiles: List<EqProfile> = emptyList(),
 ) : ProfileOpResult(success, messageRes = messageRes)
 
 class ProfileImportResult(
     success: Boolean,
     @StringRes messageRes: Int = 0,
-    val imported: Int = 0
+    val imported: Int = 0,
 ) : ProfileOpResult(success, messageRes = messageRes)
 
 class AutoEqImportRequest(
     success: Boolean,
     @StringRes messageRes: Int = 0,
-    val profile: AutoEqProfile? = null
+    val profile: AutoEqProfile? = null,
 ) : ProfileOpResult(success, messageRes = messageRes)

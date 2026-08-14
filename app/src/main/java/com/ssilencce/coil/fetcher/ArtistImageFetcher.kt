@@ -29,9 +29,8 @@ class ArtistImageFetcher(
     private val customImageManager: CustomArtistImageManager,
     private val repository: Repository,
     private val image: ArtistImage,
-    private val imageSize: String
+    private val imageSize: String,
 ) : Fetcher {
-
     companion object {
         // Maximum 4 queries per artist
         private const val MAX_RESULT_PER_PAGE = 5
@@ -48,7 +47,7 @@ class ArtistImageFetcher(
                 return SourceFetchResult(
                     source = ImageSource(imageFile.toOkioPath(), options.fileSystem),
                     mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(imageFile.extension),
-                    dataSource = DataSource.DISK
+                    dataSource = DataSource.DISK,
                 )
             }
         }
@@ -77,38 +76,39 @@ class ArtistImageFetcher(
         }
 
         check(image.id > 0 || image.id == Artist.VARIOUS_ARTISTS_ID) { "invalid artist ID (${image.id})" }
-        val stream = checkNotNull(contentResolver.openInputStream(image.coverUri)) {
-            "couldn't open stream from ${image.coverUri}"
-        }
+        val stream =
+            checkNotNull(contentResolver.openInputStream(image.coverUri)) {
+                "couldn't open stream from ${image.coverUri}"
+            }
         return SourceFetchResult(
-            source = ImageSource(
-                source = stream.source().buffer(),
-                fileSystem = options.fileSystem,
-                metadata = null
-            ),
+            source =
+                ImageSource(
+                    source = stream.source().buffer(),
+                    fileSystem = options.fileSystem,
+                    metadata = null,
+                ),
             mimeType = contentResolver.getType(image.coverUri),
-            dataSource = DataSource.DISK
+            dataSource = DataSource.DISK,
         )
     }
 
     class Factory(
         private val preferences: SharedPreferences,
         private val customImageManager: CustomArtistImageManager,
-        private val repository: Repository
+        private val repository: Repository,
     ) : Fetcher.Factory<ArtistImage> {
         override fun create(
             data: ArtistImage,
             options: Options,
-            imageLoader: ImageLoader
-        ): Fetcher {
-            return ArtistImageFetcher(
+            imageLoader: ImageLoader,
+        ): Fetcher =
+            ArtistImageFetcher(
                 loader = imageLoader,
                 options = options,
                 customImageManager = customImageManager,
                 repository = repository,
                 image = data,
-                imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM)
+                imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM),
             )
-        }
     }
 }

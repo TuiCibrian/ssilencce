@@ -44,8 +44,9 @@ import com.ssilencce.util.oem.SystemMediaControlResolver
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
-
+class AudioOutputObserver(
+    private val context: Context,
+) : BroadcastReceiver() {
     private val _audioDevice = MutableStateFlow(AudioDevice.UnknownDevice)
     val audioDevice = _audioDevice.asStateFlow()
 
@@ -64,7 +65,7 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
 
     private var bitPerfectDevice: AudioDeviceInfo? = null
     private var isObserving = false
-    
+
     private var userEnabledBitPerfect = false
     private var activeSampleRate: Int = -1
     private var activeChannelCount: Int = -1
@@ -72,10 +73,13 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
     init {
         requestVolume()
         requestAudioDevice()
-        //scanForBitPerfectDevices()
+        // scanForBitPerfectDevices()
     }
 
-    override fun onReceive(context: Context, intent: Intent?) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent?,
+    ) {
         val action = intent?.action ?: return
         when (action) {
             /*
@@ -101,6 +105,7 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
                  */
                 requestVolume()
             }
+
             VOLUME_CHANGED_ACTION -> {
                 requestVolume()
             }
@@ -108,28 +113,33 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
     }
 
     fun startObserver() {
-        if (!isObserving) try {
-            val filter = IntentFilter().apply {
-                addAction(VOLUME_CHANGED_ACTION)
-                addAction(Intent.ACTION_HEADSET_PLUG)
-                //addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
-                //addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        if (!isObserving) {
+            try {
+                val filter =
+                    IntentFilter().apply {
+                        addAction(VOLUME_CHANGED_ACTION)
+                        addAction(Intent.ACTION_HEADSET_PLUG)
+                        // addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+                        // addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+                    }
+                ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_EXPORTED)
+                audioManager?.registerAudioDeviceCallback(audioDeviceCallback, null)
+                this.isObserving = true
+            } catch (e: Throwable) {
+                Log.e(TAG, "Unable to start audio output observer", e)
             }
-            ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_EXPORTED)
-            audioManager?.registerAudioDeviceCallback(audioDeviceCallback, null)
-            this.isObserving = true
-        } catch (e: Throwable) {
-            Log.e(TAG, "Unable to start audio output observer", e)
         }
     }
 
     fun stopObserver() {
-        if (isObserving) try {
-            context.unregisterReceiver(this)
-            audioManager?.unregisterAudioDeviceCallback(audioDeviceCallback)
-            this.isObserving = false
-        } catch (e: Throwable) {
-            Log.e(TAG, "Unable to stop audio output observer", e)
+        if (isObserving) {
+            try {
+                context.unregisterReceiver(this)
+                audioManager?.unregisterAudioDeviceCallback(audioDeviceCallback)
+                this.isObserving = false
+            } catch (e: Throwable) {
+                Log.e(TAG, "Unable to stop audio output observer", e)
+            }
         }
     }
 
@@ -148,7 +158,10 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
         }
     }
 
-    fun updatePlaybackFormat(sampleRate: Int, channelCount: Int) {
+    fun updatePlaybackFormat(
+        sampleRate: Int,
+        channelCount: Int,
+    ) {
         if (activeSampleRate != sampleRate || activeChannelCount != channelCount) {
             activeSampleRate = sampleRate
             activeChannelCount = channelCount
@@ -183,9 +196,10 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
 
         try {
             val devices = audioManager?.getDevices(AudioManager.GET_DEVICES_OUTPUTS) ?: emptyArray()
-            val bitPerfectCapable = devices.filter { device ->
-                isDeviceUsbAudio(device) && hasBitPerfectSupport(device)
-            }
+            val bitPerfectCapable =
+                devices.filter { device ->
+                    isDeviceUsbAudio(device) && hasBitPerfectSupport(device)
+                }
             _availableBitPerfectDevices.value = bitPerfectCapable
         } catch (e: Exception) {
             Log.e(TAG, "Error scanning for bit-perfect devices", e)
@@ -202,14 +216,15 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
             return
         }
 
-        audioManager?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        audioManager
+            ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             ?.firstOrNull { device ->
                 isDeviceUsbAudio(device) && hasBitPerfectSupport(device)
             }?.let { device ->
                 configureBitPerfect(device)
             } ?: run {
-                disableBitPerfect()
-            }
+            disableBitPerfect()
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
@@ -222,8 +237,9 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
                 return false
             }
 
-            val bitPerfectAttributes = supportedAttributes
-                .filter { it.mixerBehavior == AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT }
+            val bitPerfectAttributes =
+                supportedAttributes
+                    .filter { it.mixerBehavior == AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT }
 
             if (bitPerfectAttributes.isEmpty()) {
                 Log.w(TAG, "No bit-perfect mixer attributes found for device: ${device.productName}")
@@ -233,19 +249,21 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
 
             var bitPerfectAttribute: AudioMixerAttributes? = null
             if (activeSampleRate > 0 && activeChannelCount > 0) {
-                bitPerfectAttribute = bitPerfectAttributes.firstOrNull { attr ->
-                    attr.format.sampleRate == activeSampleRate &&
+                bitPerfectAttribute =
+                    bitPerfectAttributes.firstOrNull { attr ->
+                        attr.format.sampleRate == activeSampleRate &&
                             attr.format.channelCount == activeChannelCount
-                }
+                    }
                 if (bitPerfectAttribute == null) {
                     Log.i(TAG, "No exact bit-perfect match for ${activeSampleRate}Hz, ${activeChannelCount}ch; falling back to maximum supported attributes")
                 }
             }
 
             if (bitPerfectAttribute == null) {
-                bitPerfectAttribute = bitPerfectAttributes.maxByOrNull { attr ->
-                    attr.format.sampleRate * attr.format.channelCount
-                }
+                bitPerfectAttribute =
+                    bitPerfectAttributes.maxByOrNull { attr ->
+                        attr.format.sampleRate * attr.format.channelCount
+                    }
             }
 
             if (bitPerfectAttribute == null) {
@@ -254,21 +272,24 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
                 return false
             }
 
-            val attributes = android.media.AudioAttributes.Builder()
-                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
+            val attributes =
+                android.media.AudioAttributes
+                    .Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
 
             val success = audioManager?.setPreferredMixerAttributes(attributes, device, bitPerfectAttribute)
             if (success == true) {
                 bitPerfectDevice = device
-                _bitPerfectState.value = BitPerfectState.Active(
-                    deviceName = device.productName?.toString() ?: "Unknown",
-                    sampleRate = bitPerfectAttribute.format.sampleRate,
-                    channelCount = bitPerfectAttribute.format.channelCount,
-                    encoding = bitPerfectAttribute.format.encoding,
-                    isVolumeFixed = audioManager?.isVolumeFixed == true
-                )
+                _bitPerfectState.value =
+                    BitPerfectState.Active(
+                        deviceName = device.productName?.toString() ?: "Unknown",
+                        sampleRate = bitPerfectAttribute.format.sampleRate,
+                        channelCount = bitPerfectAttribute.format.channelCount,
+                        encoding = bitPerfectAttribute.format.encoding,
+                        isVolumeFixed = audioManager?.isVolumeFixed == true,
+                    )
                 requestVolume()
                 Log.i(TAG, "Bit-perfect configured: ${device.productName}, ${bitPerfectAttribute.format.sampleRate}Hz, ${bitPerfectAttribute.format.channelCount}ch")
                 return true
@@ -290,10 +311,12 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
         }
 
         try {
-            val audioAttributes = android.media.AudioAttributes.Builder()
-                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
+            val audioAttributes =
+                android.media.AudioAttributes
+                    .Builder()
+                    .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                    .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                    .build()
 
             bitPerfectDevice?.let { device ->
                 audioManager?.clearPreferredMixerAttributes(audioAttributes, device)
@@ -307,40 +330,39 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
         }
     }
 
-    private fun isDeviceUsbAudio(device: AudioDeviceInfo): Boolean {
-        return device.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
-                device.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
-                device.type == AudioDeviceInfo.TYPE_USB_ACCESSORY
-    }
+    private fun isDeviceUsbAudio(device: AudioDeviceInfo): Boolean =
+        device.type == AudioDeviceInfo.TYPE_USB_DEVICE ||
+            device.type == AudioDeviceInfo.TYPE_USB_HEADSET ||
+            device.type == AudioDeviceInfo.TYPE_USB_ACCESSORY
 
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
-    private fun hasBitPerfectSupport(device: AudioDeviceInfo): Boolean {
-        return try {
+    private fun hasBitPerfectSupport(device: AudioDeviceInfo): Boolean =
+        try {
             val attributes = audioManager?.getSupportedMixerAttributes(device)
             attributes?.any { it.mixerBehavior == AudioMixerAttributes.MIXER_BEHAVIOR_BIT_PERFECT } == true
         } catch (e: Exception) {
             false
         }
-    }
 
     private fun getCurrentAudioDevice(): AudioDevice {
         var audioDevice: AudioDevice? = null
         val route = mediaRouter.selectedRoute
         val isConnected = route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTED
         if (isConnected && route.isEnabled && route.supportsControlCategory(MediaControlIntent.CATEGORY_LIVE_AUDIO)) {
-            audioDevice = AudioDevice(
-                type = route.getMediaRouteType(),
-                productName = route.name
-            )
+            audioDevice =
+                AudioDevice(
+                    type = route.getMediaRouteType(),
+                    productName = route.name,
+                )
         }
-        return audioDevice ?: audioManager?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
+        return audioDevice ?: audioManager
+            ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             ?.minByOrNull { info ->
                 AudioDeviceType.entries.indexOf(info.getDeviceType())
-            }
-            ?.let { chosen ->
+            }?.let { chosen ->
                 AudioDevice(
                     type = chosen.getDeviceType(),
-                    productName = chosen.productName.toString()
+                    productName = chosen.productName.toString(),
                 )
             } ?: AudioDevice.UnknownDevice
     }
@@ -349,37 +371,40 @@ class AudioOutputObserver(private val context: Context) : BroadcastReceiver() {
         audioManager?.let {
             val maxVolume = getStreamMaxVolume(it, AudioManager.STREAM_MUSIC).toFloat()
             val minVolume = getStreamMinVolume(it, AudioManager.STREAM_MUSIC).toFloat()
-            _systemVolumeState.value = VolumeState(
-                currentVolume = it.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat(),
-                volumeRange = minVolume..maxVolume,
-                isFixed = it.isVolumeFixed
-            )
+            _systemVolumeState.value =
+                VolumeState(
+                    currentVolume = it.getStreamVolume(AudioManager.STREAM_MUSIC).toFloat(),
+                    volumeRange = minVolume..maxVolume,
+                    isFixed = it.isVolumeFixed,
+                )
         }
     }
 
     private fun requestAudioDevice() {
         _audioDevice.value = getCurrentAudioDevice()
-        _systemVolumeState.value = systemVolumeState.value.copy(
-            isFixed = audioManager?.isVolumeFixed == true
-        )
+        _systemVolumeState.value =
+            systemVolumeState.value.copy(
+                isFixed = audioManager?.isVolumeFixed == true,
+            )
     }
 
-    private val audioDeviceCallback: AudioDeviceCallback = object : AudioDeviceCallback() {
-        override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
-            //scanForBitPerfectDevices()
-            requestAudioDevice()
-            requestVolume()
-            //if (userEnabledBitPerfect) {
-            //    checkAndConfigureBitPerfect()
-            //}
-        }
+    private val audioDeviceCallback: AudioDeviceCallback =
+        object : AudioDeviceCallback() {
+            override fun onAudioDevicesAdded(addedDevices: Array<out AudioDeviceInfo>?) {
+                // scanForBitPerfectDevices()
+                requestAudioDevice()
+                requestVolume()
+                // if (userEnabledBitPerfect) {
+                //    checkAndConfigureBitPerfect()
+                // }
+            }
 
-        override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
-            //scanForBitPerfectDevices()
-            requestAudioDevice()
-            requestVolume()
+            override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>?) {
+                // scanForBitPerfectDevices()
+                requestAudioDevice()
+                requestVolume()
+            }
         }
-    }
 
     companion object {
         private const val TAG = "AudioOutputObserver"

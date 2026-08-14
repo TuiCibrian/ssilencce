@@ -37,11 +37,13 @@ import java.io.File
 class MetadataField(
     @SerialName("info")
     val content: Content,
-    var isEnabled: Boolean
+    var isEnabled: Boolean,
 ) : Parcelable {
-
     @Serializable
-    enum class Content(val displayNameRes: Int, val key: String?) {
+    enum class Content(
+        val displayNameRes: Int,
+        val key: String?,
+    ) {
         Album(R.string.album, MetadataReader.ALBUM),
         AlbumArtist(R.string.album_artist, MetadataReader.ALBUM_ARTIST),
         Genre(R.string.genre, MetadataReader.GENRE),
@@ -53,33 +55,56 @@ class MetadataField(
         Arranger(R.string.arranger, MetadataReader.ARRANGER),
         Format(R.string.label_file_format, null),
         Bitrate(R.string.label_bit_rate, null),
-        SampleRate(R.string.label_sampling_rate, null);
+        SampleRate(R.string.label_sampling_rate, null),
     }
 
     companion object {
-        fun getMetadataValue(song: Song, fields: List<MetadataField>): String? {
-            if (song == Song.emptySong || fields.isEmpty())
+        fun getMetadataValue(
+            song: Song,
+            fields: List<MetadataField>,
+        ): String? {
+            if (song == Song.emptySong || fields.isEmpty()) {
                 return null
+            }
 
             val metadataReader = MetadataReader(song.uri)
             if (metadataReader.hasMetadata) {
-                return fields.filter { it.isEnabled }
+                return fields
+                    .filter { it.isEnabled }
                     .mapNotNull {
                         when (it.content.key) {
-                            null -> when (it.content) {
-                                Bitrate -> metadataReader.bitrate()
-                                SampleRate -> metadataReader.sampleRate()
-                                Format -> File(song.data).toAudioFile()
-                                    ?.audioHeader
-                                    ?.formatFixed
+                            null -> {
+                                when (it.content) {
+                                    Bitrate -> {
+                                        metadataReader.bitrate()
+                                    }
 
-                                else -> null
+                                    SampleRate -> {
+                                        metadataReader.sampleRate()
+                                    }
+
+                                    Format -> {
+                                        File(song.data)
+                                            .toAudioFile()
+                                            ?.audioHeader
+                                            ?.formatFixed
+                                    }
+
+                                    else -> {
+                                        null
+                                    }
+                                }
                             }
-                            MetadataReader.GENRE -> metadataReader.genre()
-                            else -> metadataReader.first(it.content.key)
+
+                            MetadataReader.GENRE -> {
+                                metadataReader.genre()
+                            }
+
+                            else -> {
+                                metadataReader.first(it.content.key)
+                            }
                         }
-                    }
-                    .joinToString(separator = DEFAULT_INFO_DELIMITER)
+                    }.joinToString(separator = DEFAULT_INFO_DELIMITER)
             }
             return null
         }

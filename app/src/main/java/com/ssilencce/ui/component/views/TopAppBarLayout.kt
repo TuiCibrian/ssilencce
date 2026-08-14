@@ -30,68 +30,71 @@ import com.ssilencce.databinding.CollapsingAppbarLayoutBinding
 import com.ssilencce.databinding.SimpleAppbarLayoutBinding
 import com.ssilencce.util.Preferences
 
-class TopAppBarLayout @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = -1,
-) : AppBarLayout(context, attrs, defStyleAttr) {
-    private var simpleAppbarBinding: SimpleAppbarLayoutBinding? = null
-    private var collapsingAppbarBinding: CollapsingAppbarLayoutBinding? = null
+class TopAppBarLayout
+    @JvmOverloads
+    constructor(
+        context: Context,
+        attrs: AttributeSet? = null,
+        defStyleAttr: Int = -1,
+    ) : AppBarLayout(context, attrs, defStyleAttr) {
+        private var simpleAppbarBinding: SimpleAppbarLayoutBinding? = null
+        private var collapsingAppbarBinding: CollapsingAppbarLayoutBinding? = null
 
-    val mode: AppBarMode = Preferences.appBarMode
+        val mode: AppBarMode = Preferences.appBarMode
 
-    init {
-        if (mode == AppBarMode.COLLAPSING) {
-            collapsingAppbarBinding =
-                CollapsingAppbarLayoutBinding.inflate(LayoutInflater.from(context), this, true)
-            val isLandscape =
-                context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            if (isLandscape) {
-                fitsSystemWindows = false
-            }
-
-        } else {
-            simpleAppbarBinding =
-                SimpleAppbarLayoutBinding.inflate(LayoutInflater.from(context), this, true)
-            statusBarForeground = MaterialShapeDrawable.createWithElevationOverlay(context)
-        }
-    }
-
-    override fun onDetachedFromWindow() {
-        super.onDetachedFromWindow()
-        simpleAppbarBinding = null
-        collapsingAppbarBinding = null
-    }
-
-    fun pinWhenScrolled() {
-        simpleAppbarBinding?.root?.updateLayoutParams<LayoutParams> {
-            scrollFlags = SCROLL_FLAG_NO_SCROLL
-        }
-    }
-
-    val toolbar: MaterialToolbar
-        get() = if (mode == AppBarMode.COLLAPSING) {
-            collapsingAppbarBinding?.toolbar!!
-        } else {
-            simpleAppbarBinding?.toolbar!!
-        }
-
-    var title: CharSequence
-        get() = if (mode == AppBarMode.COLLAPSING) {
-            collapsingAppbarBinding?.collapsingToolbarLayout?.title.toString()
-        } else {
-            simpleAppbarBinding?.toolbar?.title.toString()
-        }
-        set(value) {
+        init {
             if (mode == AppBarMode.COLLAPSING) {
-                collapsingAppbarBinding?.collapsingToolbarLayout?.title = value
+                collapsingAppbarBinding =
+                    CollapsingAppbarLayoutBinding.inflate(LayoutInflater.from(context), this, true)
+                val isLandscape =
+                    context.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+                if (isLandscape) {
+                    fitsSystemWindows = false
+                }
             } else {
-                simpleAppbarBinding?.toolbar?.title = value
+                simpleAppbarBinding =
+                    SimpleAppbarLayoutBinding.inflate(LayoutInflater.from(context), this, true)
+                statusBarForeground = MaterialShapeDrawable.createWithElevationOverlay(context)
             }
         }
 
-    enum class AppBarMode {
-        COLLAPSING,
-        SIMPLE
+        override fun onDetachedFromWindow() {
+            super.onDetachedFromWindow()
+            simpleAppbarBinding = null
+            collapsingAppbarBinding = null
+        }
+
+        fun pinWhenScrolled() {
+            simpleAppbarBinding?.root?.updateLayoutParams<LayoutParams> {
+                scrollFlags = SCROLL_FLAG_NO_SCROLL
+            }
+        }
+
+        val toolbar: MaterialToolbar
+            get() =
+                if (mode == AppBarMode.COLLAPSING) {
+                    collapsingAppbarBinding?.toolbar!!
+                } else {
+                    simpleAppbarBinding?.toolbar!!
+                }
+
+        var title: CharSequence
+            get() =
+                if (mode == AppBarMode.COLLAPSING) {
+                    collapsingAppbarBinding?.collapsingToolbarLayout?.title.toString()
+                } else {
+                    simpleAppbarBinding?.toolbar?.title.toString()
+                }
+            set(value) {
+                if (mode == AppBarMode.COLLAPSING) {
+                    collapsingAppbarBinding?.collapsingToolbarLayout?.title = value
+                } else {
+                    simpleAppbarBinding?.toolbar?.title = value
+                }
+            }
+
+        enum class AppBarMode {
+            COLLAPSING,
+            SIMPLE,
+        }
     }
-}

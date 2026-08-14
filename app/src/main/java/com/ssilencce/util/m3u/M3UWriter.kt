@@ -37,20 +37,27 @@ import java.io.File
 import java.io.IOException
 
 object M3UWriter : KoinComponent {
-
-    suspend fun export(context: Context, playlist: PlaylistWithSongs) {
-        val success = withContext(Dispatchers.IO) {
-            runCatching { write(context, playlist) }
-        }
-        val message = if (success.getOrDefault(false)) {
-            context.getString(R.string.saved_playlist_x, playlist.playlistEntity.playlistName)
-        } else {
-            context.getString(R.string.failed_to_save_playlist)
-        }
+    suspend fun export(
+        context: Context,
+        playlist: PlaylistWithSongs,
+    ) {
+        val success =
+            withContext(Dispatchers.IO) {
+                runCatching { write(context, playlist) }
+            }
+        val message =
+            if (success.getOrDefault(false)) {
+                context.getString(R.string.saved_playlist_x, playlist.playlistEntity.playlistName)
+            } else {
+                context.getString(R.string.failed_to_save_playlist)
+            }
         context.showToast(message)
     }
 
-    suspend fun export(context: Context, playlists: List<PlaylistWithSongs>) {
+    suspend fun export(
+        context: Context,
+        playlists: List<PlaylistWithSongs>,
+    ) {
         var exported = 0
         var failed = 0
 
@@ -61,32 +68,38 @@ object M3UWriter : KoinComponent {
             }
         }
 
-        val message = if (failed == 0) {
-            context.getString(R.string.saved_x_playlists, exported)
-        } else {
-            context.getString(R.string.saved_x_playlists_failed_to_save_x, exported, failed)
-        }
+        val message =
+            if (failed == 0) {
+                context.getString(R.string.saved_x_playlists, exported)
+            } else {
+                context.getString(R.string.saved_x_playlists_failed_to_save_x, exported, failed)
+            }
         context.showToast(message)
     }
 
     @Suppress("DEPRECATION")
     @Throws(IOException::class)
-    fun write(context: Context?, playlist: PlaylistWithSongs): Boolean {
+    fun write(
+        context: Context?,
+        playlist: PlaylistWithSongs,
+    ): Boolean {
         if (context != null) {
             val exportedPlaylistName =
                 String.format("%s.%s", playlist.playlistEntity.playlistName, M3UConstants.EXTENSION)
-            val playlistsUri = when {
-                hasQ() -> MediaStore.Audio.Playlists.getContentUri(MediaStore.VOLUME_EXTERNAL)
-                else -> MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI
-            }
-            val scopedStorageResult = get<MediaStoreWriter>().toMediaStore(
-                playlistsUri,
-                MediaStoreWriter.Request.forPlaylist(exportedPlaylistName)
-            ) { stream ->
-                stream.bufferedWriter().use {
-                    writeImpl(it, playlist.songs)
+            val playlistsUri =
+                when {
+                    hasQ() -> MediaStore.Audio.Playlists.getContentUri(MediaStore.VOLUME_EXTERNAL)
+                    else -> MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI
                 }
-            }
+            val scopedStorageResult =
+                get<MediaStoreWriter>().toMediaStore(
+                    playlistsUri,
+                    MediaStoreWriter.Request.forPlaylist(exportedPlaylistName),
+                ) { stream ->
+                    stream.bufferedWriter().use {
+                        writeImpl(it, playlist.songs)
+                    }
+                }
             if (scopedStorageResult.resultCode == MediaStoreWriter.Result.Code.NO_SCOPED_STORAGE) {
                 val directory = FileUtil.playlistsDirectory()
                 if (directory != null) {
@@ -100,7 +113,10 @@ object M3UWriter : KoinComponent {
     }
 
     @Throws(IOException::class)
-    fun writeToDirectory(dir: File, playlist: PlaylistWithSongs): File {
+    fun writeToDirectory(
+        dir: File,
+        playlist: PlaylistWithSongs,
+    ): File {
         val exportFile = File(dir, String.format("%s.%s", playlist.playlistEntity.playlistName, M3UConstants.EXTENSION))
         if (exportFile.createNewFile()) {
             exportFile.bufferedWriter().use {
@@ -113,10 +129,15 @@ object M3UWriter : KoinComponent {
     }
 
     @Throws(IOException::class)
-    private fun writeImpl(bw: BufferedWriter, songs: List<SongEntity>): Boolean {
-        val songs: List<Song> = songs.sortedBy {
-            it.songPrimaryKey
-        }.toSongs()
+    private fun writeImpl(
+        bw: BufferedWriter,
+        songs: List<SongEntity>,
+    ): Boolean {
+        val songs: List<Song> =
+            songs
+                .sortedBy {
+                    it.songPrimaryKey
+                }.toSongs()
         if (songs.isNotEmpty()) {
             bw.write(M3UConstants.HEADER)
             for (song in songs) {

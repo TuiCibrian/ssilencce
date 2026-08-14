@@ -38,6 +38,5 @@ class FilterSelection(
     /**
      * What arguments this filter will pass to the repository.
      */
-    internal vararg val arguments: String
+    internal vararg val arguments: String,
 ) : Parcelable
-

@@ -37,12 +37,12 @@ fun getSystemContrast(): Double {
 fun dynamicColorSchemes(
     keyColor: Color,
     style: PaletteStyle,
-    contrastLevel: Double = 0.0
+    contrastLevel: Double = 0.0,
 ): ColorSchemes {
     val hct = Hct.fromInt(keyColor.toArgb())
     return ColorSchemes(
         lightColorScheme = dynamicColorScheme(hct, false, style, contrastLevel),
-        darkColorScheme = dynamicColorScheme(hct, true, style, contrastLevel)
+        darkColorScheme = dynamicColorScheme(hct, true, style, contrastLevel),
     )
 }
 
@@ -51,12 +51,12 @@ fun dynamicColorScheme(
     keyColor: Color,
     isDark: Boolean,
     style: PaletteStyle,
-    contrastLevel: Double = 0.0
+    contrastLevel: Double = 0.0,
 ) = dynamicColorScheme(
     sourceHct = Hct.fromInt(keyColor.toArgb()),
     isDark = isDark,
     style = style,
-    contrastLevel = contrastLevel
+    contrastLevel = contrastLevel,
 )
 
 @Stable
@@ -64,19 +64,20 @@ fun dynamicColorScheme(
     sourceHct: Hct,
     isDark: Boolean,
     style: PaletteStyle,
-    contrastLevel: Double = 0.0
+    contrastLevel: Double = 0.0,
 ): ColorScheme {
-    val scheme = when (style) {
-        PaletteStyle.TonalSpot -> SchemeTonalSpot(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Neutral -> SchemeNeutral(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Vibrant -> SchemeVibrant(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Expressive -> SchemeExpressive(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Rainbow -> SchemeRainbow(sourceHct, isDark, contrastLevel)
-        PaletteStyle.FruitSalad -> SchemeFruitSalad(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Monochrome -> SchemeMonochrome(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Fidelity -> SchemeFidelity(sourceHct, isDark, contrastLevel)
-        PaletteStyle.Content -> SchemeContent(sourceHct, isDark, contrastLevel)
-    }
+    val scheme =
+        when (style) {
+            PaletteStyle.TonalSpot -> SchemeTonalSpot(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Neutral -> SchemeNeutral(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Vibrant -> SchemeVibrant(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Expressive -> SchemeExpressive(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Rainbow -> SchemeRainbow(sourceHct, isDark, contrastLevel)
+            PaletteStyle.FruitSalad -> SchemeFruitSalad(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Monochrome -> SchemeMonochrome(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Fidelity -> SchemeFidelity(sourceHct, isDark, contrastLevel)
+            PaletteStyle.Content -> SchemeContent(sourceHct, isDark, contrastLevel)
+        }
 
     return ColorScheme(
         primary = scheme.primary.toColor(),
@@ -126,7 +127,7 @@ fun dynamicColorScheme(
         tertiaryFixed = scheme.tertiaryFixed.toColor(),
         tertiaryFixedDim = scheme.tertiaryFixedDim.toColor(),
         onTertiaryFixed = scheme.onTertiaryFixed.toColor(),
-        onTertiaryFixedVariant = scheme.onTertiaryFixedVariant.toColor()
+        onTertiaryFixedVariant = scheme.onTertiaryFixedVariant.toColor(),
     )
 }
 

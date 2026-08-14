@@ -37,17 +37,16 @@ import org.jaudiotagger.tag.reference.GenreTypes
 /**
  * @author Christians M. A. (mardous)
  */
-abstract class AbsTagEditorActivity : AbsBaseActivity(),
+abstract class AbsTagEditorActivity :
+    AbsBaseActivity(),
     View.OnClickListener {
-
     protected abstract val viewModel: TagEditorViewModel
 
     protected lateinit var binding: ActivityTagEditorBinding
     private lateinit var imagePickerLauncher: ActivityResultLauncher<PickVisualMediaRequest>
     private lateinit var writeRequestLauncher: ActivityResultLauncher<IntentSenderRequest>
 
-    protected fun getEditTarget() =
-        IntentCompat.getParcelableExtra(intent, EXTRA_TARGET, EditTarget::class.java) ?: EditTarget.Companion.Empty
+    protected fun getEditTarget() = IntentCompat.getParcelableExtra(intent, EXTRA_TARGET, EditTarget::class.java) ?: EditTarget.Companion.Empty
 
     protected abstract val placeholderDrawable: Drawable
 
@@ -100,7 +99,10 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
         return super.onOptionsItemSelected(item)
     }
 
-    protected abstract fun onWrapFieldViews(inflater: LayoutInflater, parent: ViewGroup)
+    protected abstract fun onWrapFieldViews(
+        inflater: LayoutInflater,
+        parent: ViewGroup,
+    )
 
     protected open fun onDefaultGenreSelection(genre: String) {}
 
@@ -115,13 +117,14 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
     }
 
     protected open fun selectImage() {
-        val items = arrayOf(
-            getString(com.ssilencce.R.string.download_image),
-            getString(com.ssilencce.R.string.pick_from_local_storage),
-            getString(com.ssilencce.R.string.web_search),
-            getString(com.ssilencce.R.string.restore_default),
-            getString(com.ssilencce.R.string.remove_cover)
-        )
+        val items =
+            arrayOf(
+                getString(com.ssilencce.R.string.download_image),
+                getString(com.ssilencce.R.string.pick_from_local_storage),
+                getString(com.ssilencce.R.string.web_search),
+                getString(com.ssilencce.R.string.restore_default),
+                getString(com.ssilencce.R.string.remove_cover),
+            )
         MaterialAlertDialogBuilder(this)
             .setTitle(com.ssilencce.R.string.update_image)
             .setItems(items) { _: DialogInterface, which: Int ->
@@ -132,8 +135,7 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
                     3 -> restoreImage()
                     4 -> deleteImage()
                 }
-            }
-            .show()
+            }.show()
     }
 
     protected open fun deleteImage() {
@@ -143,22 +145,24 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
 
     protected open fun loadImageFromUrl(url: String?) {
         SingletonImageLoader.get(this).enqueue(
-            ImageRequest.Builder(this)
+            ImageRequest
+                .Builder(this)
                 .data(url)
                 .crossfade(false)
                 .target(imageViewTarget)
-                .build()
+                .build(),
         )
     }
 
     protected open fun loadImageFromFile(selectedFileUri: Uri) {
         SingletonImageLoader.get(this).enqueue(
-            ImageRequest.Builder(this)
+            ImageRequest
+                .Builder(this)
                 .data(selectedFileUri)
                 .crossfade(false)
                 .memoryCachePolicy(CachePolicy.READ_ONLY)
                 .target(imageViewTarget)
-                .build()
+                .build(),
         )
     }
 
@@ -215,8 +219,12 @@ abstract class AbsTagEditorActivity : AbsBaseActivity(),
     protected abstract val propertyMap: Map<String, String?>
 
     private val defaultGenreSelector: Dialog by lazy {
-        val titles = GenreTypes.getInstanceOf()
-            .idToValueMap.values.sortedByName { it }.toTypedArray()
+        val titles =
+            GenreTypes
+                .getInstanceOf()
+                .idToValueMap.values
+                .sortedByName { it }
+                .toTypedArray()
 
         MaterialAlertDialogBuilder(this)
             .setItems(titles) { _: DialogInterface, i: Int -> onDefaultGenreSelection(titles[i]) }

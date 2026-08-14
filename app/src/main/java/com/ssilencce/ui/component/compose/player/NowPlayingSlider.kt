@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
 enum class TrackStyle { Straight, Wavy }
+
 enum class ThumbStyle { Straight, Ball }
 
 @Composable
@@ -65,55 +66,57 @@ fun NowPlayingSlider(
             }
         },
         enabled = enabled,
-        modifier = modifier
+        modifier = modifier,
     )
 }
 
 @Composable
 fun StraightThumb(isDragging: Boolean) {
     val animatedHeight by animateDpAsState(
-        targetValue = if (isDragging) 40.dp else 35.dp
+        targetValue = if (isDragging) 40.dp else 35.dp,
     )
 
     val animatedWidth by animateDpAsState(
-        targetValue = if (isDragging) 10.dp else 6.dp
+        targetValue = if (isDragging) 10.dp else 6.dp,
     )
 
     SliderDefaults.Thumb(
         interactionSource = rememberInteractionSource(),
-        thumbSize = DpSize(animatedWidth, animatedHeight)
+        thumbSize = DpSize(animatedWidth, animatedHeight),
     )
 }
 
 @Composable
 fun BallThumb(isDragging: Boolean) {
     val width by animateDpAsState(
-        targetValue = if (isDragging) 28.dp else 20.dp
+        targetValue = if (isDragging) 28.dp else 20.dp,
     )
     SliderDefaults.Thumb(
         interactionSource = rememberInteractionSource(),
-        thumbSize = DpSize(
-            width = width,
-            height = 20.dp
-        )
+        thumbSize =
+            DpSize(
+                width = width,
+                height = 20.dp,
+            ),
     )
 }
 
 @Composable
 fun WavyTrack(
     isPlaying: Boolean,
-    sliderState: SliderState
+    sliderState: SliderState,
 ) {
     val animatedHeight by animateDpAsState(
-        if (sliderState.isDragging) 7.dp else 4.dp
+        if (sliderState.isDragging) 7.dp else 4.dp,
     )
-    val trackStroke = Stroke(
-        width =
-            with(LocalDensity.current) {
-                animatedHeight.toPx()
-            },
-        cap = StrokeCap.Round,
-    )
+    val trackStroke =
+        Stroke(
+            width =
+                with(LocalDensity.current) {
+                    animatedHeight.toPx()
+                },
+            cap = StrokeCap.Round,
+        )
 
     LinearWavyProgressIndicator(
         modifier = Modifier.fillMaxWidth(),
@@ -121,11 +124,13 @@ fun WavyTrack(
             val rangeLength = sliderState.valueRange.endInclusive - sliderState.valueRange.start
             if (rangeLength > 0f) {
                 (sliderState.value - sliderState.valueRange.start) / rangeLength
-            } else 0f
+            } else {
+                0f
+            }
         },
         stopSize = 0.dp,
         trackStroke = trackStroke,
-        amplitude = { if (isPlaying && !sliderState.isDragging) 1f else 0f }
+        amplitude = { if (isPlaying && !sliderState.isDragging) 1f else 0f },
     )
 }
 
@@ -134,11 +139,9 @@ fun StraightTrack(sliderState: SliderState) {
     SliderDefaults.Track(
         sliderState = sliderState,
         drawStopIndicator = null,
-        modifier = Modifier.height(8.dp)
+        modifier = Modifier.height(8.dp),
     )
 }
 
 @Composable
-private fun rememberInteractionSource(): MutableInteractionSource {
-    return remember { MutableInteractionSource() }
-}
+private fun rememberInteractionSource(): MutableInteractionSource = remember { MutableInteractionSource() }

@@ -35,36 +35,43 @@ import com.ssilencce.extensions.utilities.takeOrDefault
 
 interface GenreRepository {
     suspend fun genres(query: String): List<Genre>
+
     suspend fun genres(): List<Genre>
+
     suspend fun genre(song: Song): Genre
+
     suspend fun songs(genreId: Long): List<Song>
-    suspend fun songs(genreId: Long, query: String): List<Song>
+
+    suspend fun songs(
+        genreId: Long,
+        query: String,
+    ): List<Song>
+
     fun song(genreId: Long): Song
 }
 
 @SuppressLint("InlinedApi")
 class RealGenreRepository(
     private val contentResolver: ContentResolver,
-    private val songRepository: RealSongRepository
+    private val songRepository: RealSongRepository,
 ) : GenreRepository {
-
-    override suspend fun genres(query: String): List<Genre> {
-        return getGenresFromCursor(
-            makeGenreCursor(selection = "${Genres.NAME} LIKE ?", selectionValues = arrayOf("%$query%"))
+    override suspend fun genres(query: String): List<Genre> =
+        getGenresFromCursor(
+            makeGenreCursor(selection = "${Genres.NAME} LIKE ?", selectionValues = arrayOf("%$query%")),
         )
-    }
 
-    override suspend fun genres(): List<Genre> {
-        return with(GenreSortMode.AllGenres) {
+    override suspend fun genres(): List<Genre> =
+        with(GenreSortMode.AllGenres) {
             getGenresFromCursor(makeGenreCursor()).sorted()
         }
-    }
 
     override suspend fun genre(song: Song): Genre {
-        val uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI.buildUpon()
-            .appendEncodedPath(song.id.toString())
-            .appendEncodedPath("genres")
-            .build()
+        val uri =
+            MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                .buildUpon()
+                .appendEncodedPath(song.id.toString())
+                .appendEncodedPath("genres")
+                .build()
 
         return makeGenreCursor(uri = uri).use {
             it.takeOrDefault(Genre.EmptyGenre) { getGenreFromCursor(this) }
@@ -76,40 +83,46 @@ class RealGenreRepository(
         // so we need to get songs without a genre a different way.
         return if (genreId == -1L) {
             getSongsWithNoGenre()
-        } else with(SongSortMode.GenreSongs) {
-            songRepository.songs(makeGenreSongCursor(genreId)).sorted()
+        } else {
+            with(SongSortMode.GenreSongs) {
+                songRepository.songs(makeGenreSongCursor(genreId)).sorted()
+            }
         }
     }
 
-    override suspend fun songs(genreId: Long, query: String): List<Song> {
+    override suspend fun songs(
+        genreId: Long,
+        query: String,
+    ): List<Song> {
         // The genres table only stores songs that have a genre specified,
         // so we need to get songs without a genre a different way.
         val pattern = RealSongRepository.generateSearchPattern(query)
         return if (genreId == -1L) {
             emptyList()
-        } else songRepository.songs(
-            makeGenreSongCursor(
-                genreId = genreId,
-                selection = "${RealSongRepository.BASE_SELECTION} AND (${pattern.first})",
-                selectionValues = pattern.second
+        } else {
+            songRepository.songs(
+                makeGenreSongCursor(
+                    genreId = genreId,
+                    selection = "${RealSongRepository.BASE_SELECTION} AND (${pattern.first})",
+                    selectionValues = pattern.second,
+                ),
             )
-        )
+        }
     }
 
-    override fun song(genreId: Long): Song {
-        return songRepository.song(makeGenreSongCursor(genreId))
-    }
+    override fun song(genreId: Long): Song = songRepository.song(makeGenreSongCursor(genreId))
 
     private fun getSongCount(genreId: Long): Int {
-        contentResolver.query(
-            Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, genreId),
-            null,
-            null,
-            null,
-            null
-        ).use {
-            return it?.count ?: 0
-        }
+        contentResolver
+            .query(
+                Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, genreId),
+                null,
+                null,
+                null,
+                null,
+            ).use {
+                return it?.count ?: 0
+            }
     }
 
     private fun getGenreFromCursor(cursor: Cursor): Genre {
@@ -126,17 +139,17 @@ class RealGenreRepository(
         }
     }
 
-    private fun getGenresFromCursor(cursor: Cursor?): List<Genre> {
-        return cursor.use {
-            it.mapIfValid { getGenreFromCursor(this) }
+    private fun getGenresFromCursor(cursor: Cursor?): List<Genre> =
+        cursor.use {
+            it
+                .mapIfValid { getGenreFromCursor(this) }
                 .filter { genre -> genre.id > -1 && genre.songCount > 0 }
         }
-    }
 
     private fun makeGenreCursor(
         uri: Uri = Genres.EXTERNAL_CONTENT_URI,
         selection: String? = null,
-        selectionValues: Array<String>? = null
+        selectionValues: Array<String>? = null,
     ): Cursor? {
         return try {
             contentResolver.query(
@@ -144,7 +157,7 @@ class RealGenreRepository(
                 arrayOf(Genres._ID, Genres.NAME),
                 selection,
                 selectionValues,
-                Genres.DEFAULT_SORT_ORDER
+                Genres.DEFAULT_SORT_ORDER,
             )
         } catch (e: SecurityException) {
             return null
@@ -154,7 +167,7 @@ class RealGenreRepository(
     private fun makeGenreSongCursor(
         genreId: Long,
         selection: String = RealSongRepository.BASE_SELECTION,
-        selectionValues: Array<String>? = null
+        selectionValues: Array<String>? = null,
     ): Cursor? {
         return try {
             contentResolver.query(
@@ -162,7 +175,7 @@ class RealGenreRepository(
                 RealSongRepository.getBaseProjection(),
                 selection,
                 selectionValues,
-                Genres.Members.DEFAULT_SORT_ORDER
+                Genres.Members.DEFAULT_SORT_ORDER,
             )
         } catch (e: SecurityException) {
             return null

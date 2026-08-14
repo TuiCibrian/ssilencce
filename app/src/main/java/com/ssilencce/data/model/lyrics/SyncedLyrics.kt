@@ -6,7 +6,7 @@ import androidx.compose.runtime.Immutable
 data class SyncedLyrics(
     val lines: List<Line>,
     val offset: Long = 0,
-    val provider: String? = null
+    val provider: String? = null,
 ) {
     val hasContent = lines.isNotEmpty()
 
@@ -25,7 +25,7 @@ data class SyncedLyrics(
         val content: TextContent,
         val transliteration: TextContent?,
         val translation: TextContent?,
-        val actor: LyricsActor?
+        val actor: LyricsActor?,
     ) {
         val id: Long = 31 * (31 * start + duration) + content.hashCode()
 
@@ -44,7 +44,7 @@ data class SyncedLyrics(
         val end: Long,
         val endIndex: Int,
         val duration: Long,
-        val actor: LyricsActor?
+        val actor: LyricsActor?,
     ) {
         val isBackground = actor?.isBackground == true
     }
@@ -54,7 +54,7 @@ data class SyncedLyrics(
         val content: String,
         val backgroundContent: String?,
         val rawContent: String?,
-        val syllables: List<Word>
+        val syllables: List<Word>,
     ) {
         val isEmpty = content.isBlank()
 

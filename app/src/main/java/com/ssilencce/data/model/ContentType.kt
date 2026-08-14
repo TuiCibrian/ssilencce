@@ -20,7 +20,9 @@ package com.ssilencce.data.model
 import androidx.annotation.StringRes
 import com.ssilencce.R
 
-enum class ContentType(@StringRes internal val titleRes: Int) {
+enum class ContentType(
+    @StringRes internal val titleRes: Int,
+) {
     TopArtists(R.string.top_artists),
     RecentArtists(R.string.recent_artists),
     TopAlbums(R.string.top_albums),
@@ -29,7 +31,8 @@ enum class ContentType(@StringRes internal val titleRes: Int) {
     History(R.string.history_label),
     RecentSongs(R.string.last_added_label),
     Favorites(R.string.favorites_label),
-    NotRecentlyPlayed(R.string.not_recently_played);
+    NotRecentlyPlayed(R.string.not_recently_played),
+    ;
 
     val isObservableContent: Boolean
         get() = this == Favorites || this == History || this == TopTracks

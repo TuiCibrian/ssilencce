@@ -16,18 +16,18 @@
  */
 package com.ssilencce.core.model.task
 
-open class Event<out T>(private val content: T) {
-
+open class Event<out T>(
+    private val content: T,
+) {
     private var hasBeenConsumed = false
 
-    fun getContentIfNotConsumed(): T? {
-        return if (hasBeenConsumed) {
+    fun getContentIfNotConsumed(): T? =
+        if (hasBeenConsumed) {
             null
         } else {
             hasBeenConsumed = true
             content
         }
-    }
 
     fun peekContent(): T = content
 }

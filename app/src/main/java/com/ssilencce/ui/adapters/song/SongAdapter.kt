@@ -60,24 +60,31 @@ open class SongAdapter(
     @LayoutRes protected val itemLayoutRes: Int = R.layout.item_list,
     protected val sortMode: SongSortMode? = null,
     protected val callback: ISongCallback? = null,
-) : AbsMultiSelectAdapter<SongAdapter.ViewHolder, Song>(activity, R.menu.menu_media_selection), PopupTextProvider {
-
+) : AbsMultiSelectAdapter<SongAdapter.ViewHolder, Song>(activity, R.menu.menu_media_selection),
+    PopupTextProvider {
     open var dataSet: List<Song> = dataSet
         set(value) {
             field = value
             notifyDataSetChanged()
         }
 
-    protected open fun createViewHolder(view: View, viewType: Int): ViewHolder {
-        return ViewHolder(view)
-    }
+    protected open fun createViewHolder(
+        view: View,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(view)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder {
         val view: View = LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false)
         return createViewHolder(view, viewType)
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         val song: Song = dataSet[position]
         val isChecked = isChecked(song)
         holder.isActivated = isChecked
@@ -94,48 +101,50 @@ open class SongAdapter(
         holder.loadPaletteImage(song, DEFAULT_SONG_IMAGE)
     }
 
-    private fun getSongTitle(song: Song): String {
-        return when (sortMode?.selectedKey) {
+    private fun getSongTitle(song: Song): String =
+        when (sortMode?.selectedKey) {
             SortKey.FileName -> song.fileName
             else -> song.title
         }
-    }
 
-    protected open fun getSongText(song: Song): String? {
-        return when (sortMode?.selectedKey) {
-            SortKey.Year -> if (song.year > 0) {
-                buildInfoString(song.displayArtistName(), song.year.toString())
-            } else {
-                song.displayArtistName()
+    protected open fun getSongText(song: Song): String? =
+        when (sortMode?.selectedKey) {
+            SortKey.Year -> {
+                if (song.year > 0) {
+                    buildInfoString(song.displayArtistName(), song.year.toString())
+                } else {
+                    song.displayArtistName()
+                }
             }
 
-            SortKey.Album -> buildInfoString(song.displayArtistName(), song.albumName)
+            SortKey.Album -> {
+                buildInfoString(song.displayArtistName(), song.albumName)
+            }
 
-            else -> song.songInfo()
+            else -> {
+                song.songInfo()
+            }
         }
-    }
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 
-    override fun getItemId(position: Int): Long {
-        return dataSet[position].id
-    }
+    override fun getItemId(position: Int): Long = dataSet[position].id
 
-    override fun getIdentifier(position: Int): Song? {
-        return dataSet[position]
-    }
+    override fun getIdentifier(position: Int): Song? = dataSet[position]
 
-    override fun getName(item: Song): String? {
-        return item.title
-    }
+    override fun getName(item: Song): String? = item.title
 
-    override fun onMultipleItemAction(menuItem: MenuItem, selection: List<Song>) {
+    override fun onMultipleItemAction(
+        menuItem: MenuItem,
+        selection: List<Song>,
+    ) {
         callback?.songsMenuItemClick(selection, menuItem)
     }
 
-    override fun getPopupText(view: View, position: Int): CharSequence {
+    override fun getPopupText(
+        view: View,
+        position: Int,
+    ): CharSequence {
         val song = dataSet.getOrNull(position) ?: return ""
         return when (sortMode?.selectedKey) {
             SortKey.Album -> song.albumName.asSectionName(sortMode)
@@ -147,7 +156,9 @@ open class SongAdapter(
         }
     }
 
-    open inner class ViewHolder(view: View) : MediaEntryViewHolder(view) {
+    open inner class ViewHolder(
+        view: View,
+    ) : MediaEntryViewHolder(view) {
         protected open val song: Song
             get() = dataSet[bindingAdapterPosition]
 
@@ -163,7 +174,8 @@ open class SongAdapter(
 
         @CallSuper
         protected open fun onPrepareSongMenu(menu: Menu) {
-            menu.findItem(R.id.action_play)
+            menu
+                .findItem(R.id.action_play)
                 ?.isVisible = !songClickBehavior.isAbleToPlay || Preferences.playOptionAlwaysVisible
         }
 
@@ -190,29 +202,26 @@ open class SongAdapter(
             }
         }
 
-        override fun onLongClick(view: View): Boolean {
-            return toggleChecked(bindingAdapterPosition)
-        }
+        override fun onLongClick(view: View): Boolean = toggleChecked(bindingAdapterPosition)
 
         init {
             play?.hide()
-            menu?.setOnClickListener(object : OnClickMenu() {
-                override val popupMenuRes: Int
-                    get() = songMenuRes
+            menu?.setOnClickListener(
+                object : OnClickMenu() {
+                    override val popupMenuRes: Int
+                        get() = songMenuRes
 
-                override fun onPreparePopup(menu: Menu) {
-                    onPrepareSongMenu(menu)
-                }
+                    override fun onPreparePopup(menu: Menu) {
+                        onPrepareSongMenu(menu)
+                    }
 
-                override fun onMenuItemClick(item: MenuItem): Boolean {
-                    return onSongMenuItemClick(item)
-                }
-            })
+                    override fun onMenuItemClick(item: MenuItem): Boolean = onSongMenuItemClick(item)
+                },
+            )
         }
     }
 
     init {
         setHasStableIds(true)
     }
-
 }

@@ -34,7 +34,6 @@ import java.io.File
 import java.lang.reflect.InvocationTargetException
 
 object StorageUtil : KoinComponent {
-
     private val _storageVolumes = mutableListOf<StorageDevice>()
 
     val storageVolumes: List<StorageDevice>
@@ -48,26 +47,30 @@ object StorageUtil : KoinComponent {
         _storageVolumes.clear()
         try {
             val context = get<Context>()
-            val storageManager = context.getSystemService<StorageManager>()
-                ?: return emptyList()
+            val storageManager =
+                context.getSystemService<StorageManager>()
+                    ?: return emptyList()
 
             for (sv in storageManager.storageVolumes) {
-                if (sv.state != Environment.MEDIA_MOUNTED)
-                    continue
-
-                val path = try {
-                    sv.getPathCompat()
-                } catch (e: Exception) {
-                    Log.e("StorageUtil", "refreshStorageVolumes(): cannot get storage path", e)
+                if (sv.state != Environment.MEDIA_MOUNTED) {
                     continue
                 }
+
+                val path =
+                    try {
+                        sv.getPathCompat()
+                    } catch (e: Exception) {
+                        Log.e("StorageUtil", "refreshStorageVolumes(): cannot get storage path", e)
+                        continue
+                    }
 
                 val description = sv.getDescription(context) ?: File(path).name
-                val icon = if (sv.isRemovable && !sv.isPrimary) {
-                    R.drawable.ic_sd_card_24dp
-                } else {
-                    R.drawable.ic_phone_android_24dp
-                }
+                val icon =
+                    if (sv.isRemovable && !sv.isPrimary) {
+                        R.drawable.ic_sd_card_24dp
+                    } else {
+                        R.drawable.ic_phone_android_24dp
+                    }
                 _storageVolumes.add(StorageDevice(path, description, icon))
             }
         } catch (t: Throwable) {
@@ -76,23 +79,21 @@ object StorageUtil : KoinComponent {
         return _storageVolumes
     }
 
-    fun getStorageDevice(directory: File): StorageDevice? {
-        return try {
+    fun getStorageDevice(directory: File): StorageDevice? =
+        try {
             val canonicalPath = directory.canonicalPath
             storageVolumes.firstOrNull { it.file.canonicalPath == canonicalPath }
         } catch (e: IOException) {
             Log.e("StorageUtil", "getStorageDevice(): cannot get storage device for $directory", e)
             null
         }
-    }
 
     @Throws(NoSuchMethodException::class, InvocationTargetException::class, IllegalAccessException::class)
     @SuppressLint("DiscouragedPrivateApi")
-    private fun StorageVolume.getPathCompat(): String {
-        return if (hasR()) {
+    private fun StorageVolume.getPathCompat(): String =
+        if (hasR()) {
             this.directory?.absolutePath ?: throw IllegalStateException("StorageVolume has no directory")
         } else {
             StorageVolume::class.java.getDeclaredMethod("getPath").invoke(this) as String
         }
-    }
 }

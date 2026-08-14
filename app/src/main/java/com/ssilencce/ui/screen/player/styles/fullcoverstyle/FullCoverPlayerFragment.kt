@@ -49,10 +49,10 @@ import com.ssilencce.util.Preferences
 /**
  * @author Christians M. A. (mardous)
  */
-class FullCoverPlayerFragment : AbsPlayerFragment(R.layout.fragment_full_cover_player),
+class FullCoverPlayerFragment :
+    AbsPlayerFragment(R.layout.fragment_full_cover_player),
     SharedPreferences.OnSharedPreferenceChangeListener,
     View.OnClickListener {
-
     private var _binding: FragmentFullCoverPlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -66,7 +66,10 @@ class FullCoverPlayerFragment : AbsPlayerFragment(R.layout.fragment_full_cover_p
     override val playerControlsFragment: AbsPlayerControlsFragment
         get() = controlsFragment
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentFullCoverPlayerBinding.bind(view)
         errorDrawable = view.context.getPlaceholderDrawable(DEFAULT_SONG_IMAGE)
@@ -152,7 +155,10 @@ class FullCoverPlayerFragment : AbsPlayerFragment(R.layout.fragment_full_cover_p
         return targets
     }
 
-    override fun onIsFavoriteChanged(isFavorite: Boolean, withAnimation: Boolean) {
+    override fun onIsFavoriteChanged(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         controlsFragment.setFavorite(isFavorite, withAnimation)
     }
 
@@ -162,7 +168,10 @@ class FullCoverPlayerFragment : AbsPlayerFragment(R.layout.fragment_full_cover_p
         _binding = null
     }
 
-    override fun onSharedPreferenceChanged(preferences: SharedPreferences, key: String?) {
+    override fun onSharedPreferenceChanged(
+        preferences: SharedPreferences,
+        key: String?,
+    ) {
         if (key == DISPLAY_NEXT_SONG) {
             setupNextSongVisibility()
         }

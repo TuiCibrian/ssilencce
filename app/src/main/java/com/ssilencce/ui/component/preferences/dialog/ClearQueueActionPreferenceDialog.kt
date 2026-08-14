@@ -32,14 +32,13 @@ import com.ssilencce.util.Preferences
  * @author Christians M. A. (mardous)
  */
 class ClearQueueActionPreferenceDialog : DialogFragment() {
-
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return MaterialAlertDialogBuilder(requireContext())
+    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
+        MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.on_clear_queue_title)
             .setView(
                 ComposeView(requireContext()).apply {
                     setViewCompositionStrategy(
-                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
                     )
                     setContent {
                         SsilencceTheme {
@@ -51,35 +50,36 @@ class ClearQueueActionPreferenceDialog : DialogFragment() {
                                 onActionClick = { action ->
                                     selectedAction = action
                                     Preferences.clearQueueAction = action
-                                }
+                                },
                             )
                         }
                     }
-                }
-            )
-            .setNegativeButton(R.string.close_action, null)
+                },
+            ).setNegativeButton(R.string.close_action, null)
             .create()
-    }
 
     @Composable
     private fun QueueDialogScreen(
         selected: QueueClearingBehavior,
-        onActionClick: (QueueClearingBehavior) -> Unit
+        onActionClick: (QueueClearingBehavior) -> Unit,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.wrapContentHeight()
+            modifier = Modifier.wrapContentHeight(),
         ) {
             val actions = remember { QueueClearingBehavior.entries.toTypedArray() }
-            val firstVisibleIndex = actions.indexOfFirst { it.ordinal == selected.ordinal }
-                .coerceAtLeast(0)
+            val firstVisibleIndex =
+                actions
+                    .indexOfFirst { it.ordinal == selected.ordinal }
+                    .coerceAtLeast(0)
 
             LazyColumn(
                 state = rememberLazyListState(firstVisibleIndex),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(top = 24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(top = 24.dp),
             ) {
                 items(actions) { action ->
                     DialogListItemWithRadio(

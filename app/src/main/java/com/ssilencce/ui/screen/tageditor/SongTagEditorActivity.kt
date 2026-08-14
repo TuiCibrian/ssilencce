@@ -43,7 +43,6 @@ import org.koin.core.parameter.parametersOf
  * @author Christians M. A. (mardous)
  */
 class SongTagEditorActivity : AbsTagEditorActivity() {
-
     override val viewModel by viewModel<TagEditorViewModel> {
         parametersOf(getEditTarget())
     }
@@ -82,12 +81,16 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
         viewModel.loadContent()
     }
 
-    override fun onWrapFieldViews(inflater: LayoutInflater, parent: ViewGroup) {
-        _songBinding = TagEditorSongFieldBinding.inflate(inflater, parent, true).apply {
-            genreTextInputLayout.setEndIconOnClickListener {
-                selectDefaultGenre()
+    override fun onWrapFieldViews(
+        inflater: LayoutInflater,
+        parent: ViewGroup,
+    ) {
+        _songBinding =
+            TagEditorSongFieldBinding.inflate(inflater, parent, true).apply {
+                genreTextInputLayout.setEndIconOnClickListener {
+                    selectDefaultGenre()
+                }
             }
-        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -119,12 +122,14 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
                     return@setPositiveButton
                 }
                 showToast(R.string.album_or_artist_empty)
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
-    private fun searchMusicBrainz(title: String, artist: String) {
+    private fun searchMusicBrainz(
+        title: String,
+        artist: String,
+    ) {
         showToast(R.string.searching)
         viewModel.fetchMusicBrainzTags(title, artist).observe(this) { response ->
             if (response == null || response.recordings.isEmpty()) {
@@ -136,11 +141,13 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
     }
 
     private fun showRecordingSelectionDialog(recordings: List<MusicBrainzRecording>) {
-        val titles = recordings.map { recording ->
-            val artist = recording.artistCredit.joinToString("; ") { it.name }
-            val release = recording.releases.firstOrNull()?.title ?: "Unknown Album"
-            "$artist - ${recording.title} ($release)"
-        }.toTypedArray()
+        val titles =
+            recordings
+                .map { recording ->
+                    val artist = recording.artistCredit.joinToString("; ") { it.name }
+                    val release = recording.releases.firstOrNull()?.title ?: "Unknown Album"
+                    "$artist - ${recording.title} ($release)"
+                }.toTypedArray()
 
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.musicbrainz_select_recording)
@@ -151,8 +158,7 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
                         applyMusicBrainzTags(tagResult)
                     }
                 }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
+            }.setNegativeButton(android.R.string.cancel, null)
             .show()
     }
 
@@ -178,7 +184,9 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
         val genreContent = songBinding.genre.text?.toString()
         if (!genreContent.isNullOrBlank()) {
             songBinding.genre.setText(String.format("%s;%s", genreContent, genre))
-        } else songBinding.genre.setText(genre)
+        } else {
+            songBinding.genre.setText(genre)
+        }
     }
 
     override fun downloadOnlineImage() {
@@ -214,25 +222,26 @@ class SongTagEditorActivity : AbsTagEditorActivity() {
     }
 
     override val propertyMap: Map<String, String?>
-        get() = hashMapOf(
-            MetadataReader.TITLE to songBinding.title.text?.toString(),
-            MetadataReader.ALBUM to songBinding.album.text?.toString(),
-            MetadataReader.ARTIST to songBinding.artist.text?.toString(),
-            MetadataReader.ALBUM_ARTIST to songBinding.albumArtist.text?.toString(),
-            MetadataReader.COMPOSER to songBinding.composer.text?.toString(),
-            MetadataReader.PRODUCER to songBinding.conductor.text?.toString(),
-            MetadataReader.COPYRIGHT to songBinding.publisher.text?.toString(),
-            MetadataReader.GENRE to songBinding.genre.text?.toString(),
-            MetadataReader.YEAR to songBinding.year.text?.toString(),
-            MetadataReader.TRACK_NUMBER to songBinding.trackNumber.text?.toString(),
-            MetadataReader.TRACK_TOTAL to songBinding.trackTotal.text?.toString(),
-            MetadataReader.DISC_NUMBER to songBinding.discNumber.text?.toString(),
-            MetadataReader.DISC_TOTAL to songBinding.discTotal.text?.toString(),
-            MetadataReader.LYRICS to songBinding.lyrics.text?.toString(),
-            MetadataReader.LYRICIST to songBinding.lyricist.text?.toString(),
-            MetadataReader.ARRANGER to songBinding.arranger.text?.toString(),
-            MetadataReader.COMMENT to songBinding.comment.text?.toString()
-        )
+        get() =
+            hashMapOf(
+                MetadataReader.TITLE to songBinding.title.text?.toString(),
+                MetadataReader.ALBUM to songBinding.album.text?.toString(),
+                MetadataReader.ARTIST to songBinding.artist.text?.toString(),
+                MetadataReader.ALBUM_ARTIST to songBinding.albumArtist.text?.toString(),
+                MetadataReader.COMPOSER to songBinding.composer.text?.toString(),
+                MetadataReader.PRODUCER to songBinding.conductor.text?.toString(),
+                MetadataReader.COPYRIGHT to songBinding.publisher.text?.toString(),
+                MetadataReader.GENRE to songBinding.genre.text?.toString(),
+                MetadataReader.YEAR to songBinding.year.text?.toString(),
+                MetadataReader.TRACK_NUMBER to songBinding.trackNumber.text?.toString(),
+                MetadataReader.TRACK_TOTAL to songBinding.trackTotal.text?.toString(),
+                MetadataReader.DISC_NUMBER to songBinding.discNumber.text?.toString(),
+                MetadataReader.DISC_TOTAL to songBinding.discTotal.text?.toString(),
+                MetadataReader.LYRICS to songBinding.lyrics.text?.toString(),
+                MetadataReader.LYRICIST to songBinding.lyricist.text?.toString(),
+                MetadataReader.ARRANGER to songBinding.arranger.text?.toString(),
+                MetadataReader.COMMENT to songBinding.comment.text?.toString(),
+            )
 
     override fun onDestroy() {
         super.onDestroy()

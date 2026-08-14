@@ -101,11 +101,12 @@ import org.koin.androidx.viewmodel.ext.android.activityViewModel
 /**
  * @author Christians M. A. (mardous)
  */
-abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes),
+abstract class AbsPlayerFragment(
+    @LayoutRes layoutRes: Int,
+) : Fragment(layoutRes),
     Toolbar.OnMenuItemClickListener,
     PlayerGesturesController.Listener,
     CoverPagerFragment.Callbacks {
-
     val playerViewModel: PlayerViewModel by activityViewModel()
     val libraryViewModel: LibraryViewModel by activityViewModel()
 
@@ -124,12 +125,16 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
     private var colorAnimatorSet: AnimatorSet? = null
 
     @CallSuper
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         onCreateChildFragments()
         onPrepareViewGestures(view)
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
-            playerViewModel.mediaEvent.filter { it == MediaEvent.FavoriteContentChanged }
+            playerViewModel.mediaEvent
+                .filter { it == MediaEvent.FavoriteContentChanged }
                 .collect {
                     updateIsFavorite(withAnim = true)
                 }
@@ -147,7 +152,7 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             combine(
                 playerViewModel.currentSongFlow,
-                playerViewModel.colorSchemeFlow
+                playerViewModel.colorSchemeFlow,
             ) { song, scheme -> Pair(song, scheme) }
                 .filter { (song, scheme) -> song.id != -1L && scheme != PlayerColorScheme.Unspecified }
                 .collect { (song, scheme) ->
@@ -163,15 +168,17 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
     }
 
     protected open fun onPrepareViewGestures(view: View) {
-        gesturesController = PlayerGesturesController(
-            context = view.context,
-            acceptedGestures = setOf(
-                GestureType.Fling(GestureType.Fling.DIRECTION_UP),
-                GestureType.Fling(GestureType.Fling.DIRECTION_LEFT),
-                GestureType.Fling(GestureType.Fling.DIRECTION_RIGHT)
-            ),
-            listener = this
-        )
+        gesturesController =
+            PlayerGesturesController(
+                context = view.context,
+                acceptedGestures =
+                    setOf(
+                        GestureType.Fling(GestureType.Fling.DIRECTION_UP),
+                        GestureType.Fling(GestureType.Fling.DIRECTION_LEFT),
+                        GestureType.Fling(GestureType.Fling.DIRECTION_RIGHT),
+                    ),
+                listener = this,
+            )
         view.setOnTouchListener(gesturesController)
     }
 
@@ -182,11 +189,12 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                     onMenuInflated(it)
                 }
             } else {
-                val popupMenu = newPopupMenu(view, R.menu.menu_now_playing) {
-                    onMenuInflated(it)
-                }.also { popupMenu ->
-                    popupMenu.setOnMenuItemClickListener { onMenuItemClick(it) }
-                }
+                val popupMenu =
+                    newPopupMenu(view, R.menu.menu_now_playing) {
+                        onMenuInflated(it)
+                    }.also { popupMenu ->
+                        popupMenu.setOnMenuItemClickListener { onMenuItemClick(it) }
+                    }
                 view.setOnClickListener {
                     popupMenu.show()
                 }
@@ -199,7 +207,10 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
     @CallSuper
     protected open fun onMenuInflated(menu: Menu) {}
 
-    protected fun Menu.setShowAsAction(itemId: Int, mode: Int = MenuItem.SHOW_AS_ACTION_IF_ROOM) {
+    protected fun Menu.setShowAsAction(
+        itemId: Int,
+        mode: Int = MenuItem.SHOW_AS_ACTION_IF_ROOM,
+    ) {
         findItem(itemId)?.setShowAsAction(mode)
     }
 
@@ -265,37 +276,49 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                     goToDestination(
                         activity = requireActivity(),
                         destinationId = R.id.nav_equalizer,
-                        args = EqualizerFragmentArgs.Builder()
-                            .setFromPlayer(true)
-                            .build()
-                            .toBundle()
+                        args =
+                            EqualizerFragmentArgs
+                                .Builder()
+                                .setFromPlayer(true)
+                                .build()
+                                .toBundle(),
                     )
                 }
                 true
             }
 
-            else -> currentSong.onSongMenu(this, menuItem)
+            else -> {
+                currentSong.onSongMenu(this, menuItem)
+            }
         }
     }
 
-    override fun gestureDetected(gestureType: GestureType): Boolean {
-        return when (gestureType) {
-            is GestureType.Tap -> onQuickActionEvent(Preferences.coverSingleTapAction)
-            is GestureType.LongPress -> onQuickActionEvent(Preferences.coverLongPressAction)
+    override fun gestureDetected(gestureType: GestureType): Boolean =
+        when (gestureType) {
+            is GestureType.Tap -> {
+                onQuickActionEvent(Preferences.coverSingleTapAction)
+            }
+
+            is GestureType.LongPress -> {
+                onQuickActionEvent(Preferences.coverLongPressAction)
+            }
+
             is GestureType.DoubleTap -> {
                 when (gestureType.type) {
                     GestureType.DoubleTap.TYPE_LEFT_EDGE -> {
-                        val action = Preferences.coverLeftDoubleTapAction
-                            .takeIf { it != NowPlayingAction.Nothing }
-                            ?: Preferences.coverDoubleTapAction
+                        val action =
+                            Preferences.coverLeftDoubleTapAction
+                                .takeIf { it != NowPlayingAction.Nothing }
+                                ?: Preferences.coverDoubleTapAction
 
                         onQuickActionEvent(action)
                     }
 
                     GestureType.DoubleTap.TYPE_RIGHT_EDGE -> {
-                        val action = Preferences.coverRightDoubleTapAction
-                            .takeIf { it != NowPlayingAction.Nothing }
-                            ?: Preferences.coverDoubleTapAction
+                        val action =
+                            Preferences.coverRightDoubleTapAction
+                                .takeIf { it != NowPlayingAction.Nothing }
+                                ?: Preferences.coverDoubleTapAction
 
                         onQuickActionEvent(action)
                     }
@@ -304,37 +327,47 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                         onQuickActionEvent(Preferences.coverDoubleTapAction)
                     }
 
-                    else -> false
+                    else -> {
+                        false
+                    }
                 }
             }
+
             is GestureType.Fling -> {
                 when (gestureType.direction) {
                     GestureType.Fling.DIRECTION_LEFT -> {
                         if (Preferences.isSwipeAnywhere) {
                             playerViewModel.seekToNext()
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     }
 
                     GestureType.Fling.DIRECTION_RIGHT -> {
                         if (Preferences.isSwipeAnywhere) {
                             playerViewModel.seekToPrevious()
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     }
 
                     GestureType.Fling.DIRECTION_UP -> {
                         if (Preferences.isSwipeUpQueue) {
                             findNavController().navigate(R.id.nav_queue)
                             true
-                        } else false
+                        } else {
+                            false
+                        }
                     }
 
-                    else -> false
+                    else -> {
+                        false
+                    }
                 }
             }
         }
-    }
 
     override fun onColorChanged(color: PaletteColor) {
         playerViewModel.generatePlayerScheme(requireContext(), colorSchemeMode, color)
@@ -344,35 +377,38 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
 
     private fun applyColorScheme(scheme: PlayerColorScheme): AnimatorSet? {
         cancelColorAnimator()
-        colorAnimatorSet = AnimatorSet()
-            .setDuration(scheme.mode.preferredAnimDuration)
-            .apply {
-                val tintTargets = getTintTargets(scheme).mapTo(mutableListOf()) {
-                    if (it.isSurface) {
-                        it.target.animateBackgroundColor(it.newColor)
-                    } else {
-                        it.target.animateTintColor(
-                            fromColor = it.oldColor,
-                            toColor = it.newColor,
-                            isForeground = it.isForeground,
-                            isIconButton = it.isIcon
-                        )
-                    }
-                }
-                blurView?.let {
-                    if (scheme.blurToken.isBlur) {
-                        tintTargets.add(
-                            it.animateTintColor(
-                                fromColor = it.foregroundTintList?.defaultColor
-                                    ?: Color.TRANSPARENT,
-                                toColor = scheme.surfaceColor,
-                                isForeground = true
+        colorAnimatorSet =
+            AnimatorSet()
+                .setDuration(scheme.mode.preferredAnimDuration)
+                .apply {
+                    val tintTargets =
+                        getTintTargets(scheme).mapTo(mutableListOf()) {
+                            if (it.isSurface) {
+                                it.target.animateBackgroundColor(it.newColor)
+                            } else {
+                                it.target.animateTintColor(
+                                    fromColor = it.oldColor,
+                                    toColor = it.newColor,
+                                    isForeground = it.isForeground,
+                                    isIconButton = it.isIcon,
+                                )
+                            }
+                        }
+                    blurView?.let {
+                        if (scheme.blurToken.isBlur) {
+                            tintTargets.add(
+                                it.animateTintColor(
+                                    fromColor =
+                                        it.foregroundTintList?.defaultColor
+                                            ?: Color.TRANSPARENT,
+                                    toColor = scheme.surfaceColor,
+                                    isForeground = true,
+                                ),
                             )
-                        )
+                        }
                     }
+                    playTogether(tintTargets)
                 }
-                playTogether(tintTargets)
-            }
         return colorAnimatorSet
     }
 
@@ -381,7 +417,10 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
         colorAnimatorSet = null
     }
 
-    private fun applyBlur(song: Song, scheme: PlayerColorScheme) {
+    private fun applyBlur(
+        song: Song,
+        scheme: PlayerColorScheme,
+    ) {
         blurView?.let {
             if (scheme.blurToken.isBlur) {
                 it.isVisible = true
@@ -391,10 +430,12 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                     scale(Scale.FILL)
                     memoryCacheKey("nowplaying:song:${song.id}")
                     crossfade(1000)
-                    transformations(BlurTransformation(
-                        context = it.context,
-                        radius = scheme.blurToken.blurRadius.coerceIn(0f, 25f)
-                    ))
+                    transformations(
+                        BlurTransformation(
+                            context = it.context,
+                            radius = scheme.blurToken.blurRadius.coerceIn(0f, 25f),
+                        ),
+                    )
                 }
             } else {
                 it.isGone = true
@@ -407,16 +448,21 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
         val lyricsItem = findItem(R.id.action_show_lyrics)
         if (lyricsItem != null) {
             if (lyricsVisible) {
-                lyricsItem.setIcon(getTintedDrawable(R.drawable.ic_lyrics_24dp))
+                lyricsItem
+                    .setIcon(getTintedDrawable(R.drawable.ic_lyrics_24dp))
                     .setTitle(R.string.action_hide_lyrics)
             } else {
-                lyricsItem.setIcon(getTintedDrawable(R.drawable.ic_lyrics_outline_24dp))
+                lyricsItem
+                    .setIcon(getTintedDrawable(R.drawable.ic_lyrics_outline_24dp))
                     .setTitle(R.string.action_show_lyrics)
             }
         }
     }
 
-    override fun onLyricsVisibilityChange(animatorSet: AnimatorSet, lyricsVisible: Boolean) {
+    override fun onLyricsVisibilityChange(
+        animatorSet: AnimatorSet,
+        lyricsVisible: Boolean,
+    ) {
         playerToolbar?.menu?.onLyricsVisibilityChang(lyricsVisible)
     }
 
@@ -479,15 +525,17 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                 goToDestination(
                     requireActivity(),
                     R.id.nav_lyrics_editor,
-                    LyricsEditorFragmentArgs.Builder(currentSong)
+                    LyricsEditorFragmentArgs
+                        .Builder(currentSong)
                         .build()
-                        .toBundle()
+                        .toBundle(),
                 )
                 true
             }
 
             NowPlayingAction.AddToPlaylist -> {
-                AddToPlaylistDialog.create(currentSong)
+                AddToPlaylistDialog
+                    .create(currentSong)
                     .show(childFragmentManager, "ADD_TO_PLAYLIST")
                 true
             }
@@ -525,7 +573,9 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
                 true
             }
 
-            NowPlayingAction.Nothing -> false
+            NowPlayingAction.Nothing -> {
+                false
+            }
         }
     }
 
@@ -543,16 +593,22 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
 
     protected fun getTintedDrawable(
         drawableRes: Int,
-        color: Int = playerViewModel.colorScheme.onSurfaceColor
+        color: Int = playerViewModel.colorScheme.onSurfaceColor,
     ) = AppCompatResources.getDrawable(requireContext(), drawableRes).also {
         it?.setTint(color)
     }
 
-    protected open fun onIsFavoriteChanged(isFavorite: Boolean, withAnimation: Boolean) {
+    protected open fun onIsFavoriteChanged(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         playerToolbar?.menu?.setIsFavorite(isFavorite, withAnimation)
     }
 
-    private fun updateIsFavorite(song: Song = playerViewModel.currentSong, withAnim: Boolean = false) {
+    private fun updateIsFavorite(
+        song: Song = playerViewModel.currentSong,
+        withAnim: Boolean = false,
+    ) {
         libraryViewModel.isSongFavorite(song).observe(viewLifecycleOwner) { isFavorite ->
             onIsFavoriteChanged(isFavorite, withAnim)
         }
@@ -562,12 +618,18 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
         playerViewModel.toggleFavorite()
     }
 
-    fun setMarquee(vararg textView: TextView?, marquee: Boolean) {
+    fun setMarquee(
+        vararg textView: TextView?,
+        marquee: Boolean,
+    ) {
         val scrollingTextEnabled = Preferences.enableScrollingText
         textView.forEach { it?.setMarquee(marquee && scrollingTextEnabled) }
     }
 
-    fun MaterialButton.setIsFavorite(isFavorite: Boolean, withAnimation: Boolean) {
+    fun MaterialButton.setIsFavorite(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
         /*
         val iconRes = if (withAnimation) {
             if (isFavorite) R.drawable.avd_favorite else R.drawable.avd_unfavorite
@@ -575,45 +637,56 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
             if (isFavorite) R.drawable.ic_favorite_24dp else R.drawable.ic_favorite_outline_24dp
         }
          */
+
         // There's a bug in the Material Components library that affects the
         // icon animation on a MaterialButton, so for now, we'll change the
         // icon in a simple way.
         val iconRes = if (isFavorite) R.drawable.ic_favorite_24dp else R.drawable.ic_favorite_outline_24dp
-        icon = ContextCompat.getDrawable(context, iconRes).also { drawable ->
-            if (drawable is AnimatedVectorDrawable) {
-                drawable.start()
+        icon =
+            ContextCompat.getDrawable(context, iconRes).also { drawable ->
+                if (drawable is AnimatedVectorDrawable) {
+                    drawable.start()
+                }
             }
-        }
     }
 
-    protected fun Menu.setIsFavorite(isFavorite: Boolean, withAnimation: Boolean) {
-        val iconRes = if (withAnimation) {
-            if (isFavorite) R.drawable.avd_favorite else R.drawable.avd_unfavorite
-        } else {
-            if (isFavorite) R.drawable.ic_favorite_24dp else R.drawable.ic_favorite_outline_24dp
-        }
+    protected fun Menu.setIsFavorite(
+        isFavorite: Boolean,
+        withAnimation: Boolean,
+    ) {
+        val iconRes =
+            if (withAnimation) {
+                if (isFavorite) R.drawable.avd_favorite else R.drawable.avd_unfavorite
+            } else {
+                if (isFavorite) R.drawable.ic_favorite_24dp else R.drawable.ic_favorite_outline_24dp
+            }
         val titleRes = if (isFavorite) R.string.action_remove_from_favorites else R.string.action_add_to_favorites
 
         findItem(R.id.action_favorite)?.apply {
             setTitle(titleRes)
-            icon = getTintedDrawable(iconRes).also {
-                if (it is AnimatedVectorDrawable) {
-                    it.start()
+            icon =
+                getTintedDrawable(iconRes).also {
+                    if (it is AnimatedVectorDrawable) {
+                        it.start()
+                    }
                 }
-            }
         }
     }
 
-    fun setViewAction(view: View, action: NowPlayingAction) {
+    fun setViewAction(
+        view: View,
+        action: NowPlayingAction,
+    ) {
         view.setOnClickListener { onQuickActionEvent(action) }
     }
 
     fun getSongArtist(song: Song): CharSequence {
-        val artistName = if (Preferences.preferAlbumArtistName) {
-            song.albumArtistName().displayArtistName()
-        } else {
-            song.displayArtistName()
-        }
+        val artistName =
+            if (Preferences.preferAlbumArtistName) {
+                song.albumArtistName().displayArtistName()
+            } else {
+                song.displayArtistName()
+            }
         if (Preferences.displayAlbumTitle) {
             return buildInfoString(artistName, song.albumName)
         }
@@ -621,13 +694,15 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
     }
 
     fun isExtraInfoEnabled(): Boolean =
-        Preferences.displayExtraInfo && Preferences.getExtraInfoContent(
-            NOW_PLAYING_EXTRA_INFO,
-            Preferences.getDefaultNowPlayingInfo()
-        ).any { it.isEnabled }
+        Preferences.displayExtraInfo &&
+            Preferences
+                .getExtraInfoContent(
+                    NOW_PLAYING_EXTRA_INFO,
+                    Preferences.getDefaultNowPlayingInfo(),
+                ).any { it.isEnabled }
 
-    fun getNextSongInfo(nextSong: Song): String {
-        return if (nextSong != Song.emptySong) {
+    fun getNextSongInfo(nextSong: Song): String =
+        if (nextSong != Song.emptySong) {
             if (!nextSong.isArtistNameUnknown()) {
                 getString(R.string.next_song_x_by_artist_x, nextSong.title, nextSong.displayArtistName())
             } else {
@@ -636,35 +711,43 @@ abstract class AbsPlayerFragment(@LayoutRes layoutRes: Int) : Fragment(layoutRes
         } else {
             getString(R.string.list_end)
         }
-    }
 }
 
-fun goToArtist(activity: Activity, song: Song) {
+fun goToArtist(
+    activity: Activity,
+    song: Song,
+) {
     goToDestination(
         activity,
         R.id.nav_artist_detail,
         artistDetailArgs(song),
         removeTransition = true,
-        singleTop = false
+        singleTop = false,
     )
 }
 
-fun goToAlbum(activity: Activity, song: Song) {
+fun goToAlbum(
+    activity: Activity,
+    song: Song,
+) {
     goToDestination(
         activity,
         R.id.nav_album_detail,
         albumDetailArgs(song.albumId),
         removeTransition = true,
-        singleTop = false
+        singleTop = false,
     )
 }
 
-fun goToGenre(activity: Activity, genre: Genre) {
+fun goToGenre(
+    activity: Activity,
+    genre: Genre,
+) {
     goToDestination(
         activity,
         R.id.nav_genre_detail,
         genreDetailArgs(genre),
-        singleTop = false
+        singleTop = false,
     )
 }
 
@@ -673,7 +756,7 @@ fun goToDestination(
     destinationId: Int,
     args: Bundle? = null,
     removeTransition: Boolean = false,
-    singleTop: Boolean = true
+    singleTop: Boolean = true,
 ) {
     if (activity !is MainActivity) return
     activity.apply {
@@ -683,17 +766,18 @@ fun goToDestination(
             currentFragment(R.id.fragment_container)?.exitTransition = null
         }
 
-        //Hide Bottom Bar First, else Bottom Sheet doesn't collapse fully
+        // Hide Bottom Bar First, else Bottom Sheet doesn't collapse fully
         setBottomNavVisibility(false)
         if (getBottomSheetBehavior().state == BottomSheetBehavior.STATE_EXPANDED) {
             collapsePanel()
         }
 
         Handler(Looper.getMainLooper()).postDelayed(250) {
-            val navOptions = when {
-                singleTop -> navOptions { launchSingleTop = true }
-                else -> null
-            }
+            val navOptions =
+                when {
+                    singleTop -> navOptions { launchSingleTop = true }
+                    else -> null
+                }
             findNavController(R.id.fragment_container)
                 .navigate(destinationId, args, navOptions)
         }

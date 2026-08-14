@@ -27,35 +27,36 @@ import com.ssilencce.R
 /**
  * @author Christians M. A. (mardous)
  */
-class SwitchWithButtonPreference @JvmOverloads constructor(
-    context: Context,
-    attrs: AttributeSet? = null,
-    defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceCompatStyle,
-    defStyleRes: Int = 0
-) : SwitchPreferenceCompat(context, attrs, defStyleAttr, defStyleRes) {
+class SwitchWithButtonPreference
+    @JvmOverloads
+    constructor(
+        context: Context,
+        attrs: AttributeSet? = null,
+        defStyleAttr: Int = androidx.preference.R.attr.switchPreferenceCompatStyle,
+        defStyleRes: Int = 0,
+    ) : SwitchPreferenceCompat(context, attrs, defStyleAttr, defStyleRes) {
+        interface OnButtonPressedListener {
+            fun onButtonPressed()
+        }
 
-    interface OnButtonPressedListener {
-        fun onButtonPressed()
-    }
+        private var button: Button? = null
+        private var listener: OnButtonPressedListener? = null
 
-    private var button: Button? = null
-    private var listener: OnButtonPressedListener? = null
+        override fun onBindViewHolder(holder: PreferenceViewHolder) {
+            super.onBindViewHolder(holder)
+            button = holder.findViewById(R.id.button) as? Button
+            button?.setOnClickListener {
+                listener?.onButtonPressed()
+            }
+        }
 
-    override fun onBindViewHolder(holder: PreferenceViewHolder) {
-        super.onBindViewHolder(holder)
-        button = holder.findViewById(R.id.button) as? Button
-        button?.setOnClickListener {
-            listener?.onButtonPressed()
+        override fun onDetached() {
+            super.onDetached()
+            button = null
+            listener = null
+        }
+
+        fun setButtonPressedListener(listener: OnButtonPressedListener) {
+            this.listener = listener
         }
     }
-
-    override fun onDetached() {
-        super.onDetached()
-        button = null
-        listener = null
-    }
-
-    fun setButtonPressedListener(listener: OnButtonPressedListener) {
-        this.listener = listener
-    }
-}

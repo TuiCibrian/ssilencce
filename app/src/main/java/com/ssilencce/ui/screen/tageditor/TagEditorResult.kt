@@ -34,12 +34,12 @@ data class TagEditorResult(
     val lyrics: String? = null,
     val lyricist: String? = null,
     val arranger: String? = null,
-    val comment: String? = null
+    val comment: String? = null,
 )
 
 class SaveTagsResult(
     val isLoading: Boolean,
     val isSuccess: Boolean,
     val scanned: Int = 0,
-    val failed: Int = 0
+    val failed: Int = 0,
 )

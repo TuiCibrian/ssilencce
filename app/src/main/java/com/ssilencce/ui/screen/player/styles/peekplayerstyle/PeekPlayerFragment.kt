@@ -42,7 +42,6 @@ import com.ssilencce.util.Preferences
  * @author Christians M. A. (mardous)
  */
 class PeekPlayerFragment : AbsPlayerFragment(R.layout.fragment_peek_player) {
-
     private var _binding: FragmentPeekPlayerBinding? = null
     private val binding get() = _binding!!
 
@@ -59,7 +58,10 @@ class PeekPlayerFragment : AbsPlayerFragment(R.layout.fragment_peek_player) {
 
     private var primaryControlColor: Int = 0
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPeekPlayerBinding.bind(view)
         setupToolbar()
@@ -119,17 +121,18 @@ class PeekPlayerFragment : AbsPlayerFragment(R.layout.fragment_peek_player) {
         primaryControlColor = scheme.onSurfaceColor
         val oldPrimaryTextColor = binding.title.currentTextColor
         val oldSecondaryTextColor = binding.text.currentTextColor
-        val newSurfaceColor = if (scheme.mode == PlayerColorSchemeMode.AppTheme) {
-            MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorSurfaceContainerLow)
-        } else {
-            scheme.surfaceColor
-        }
+        val newSurfaceColor =
+            if (scheme.mode == PlayerColorSchemeMode.AppTheme) {
+                MaterialColors.getColor(binding.root, com.google.android.material.R.attr.colorSurfaceContainerLow)
+            } else {
+                scheme.surfaceColor
+            }
         return mutableListOf(
             binding.root.surfaceTintTarget(newSurfaceColor),
             binding.playerToolbar.tintTarget(oldPrimaryControlColor, primaryControlColor),
             binding.title.tintTarget(oldPrimaryTextColor, scheme.onSurfaceColor),
             binding.text.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
-            binding.songInfo.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor)
+            binding.songInfo.tintTarget(oldSecondaryTextColor, scheme.onSurfaceVariantColor),
         ).also {
             it.addAll(playerControlsFragment.getTintTargets(scheme))
         }

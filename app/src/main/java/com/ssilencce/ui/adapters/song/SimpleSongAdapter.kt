@@ -34,14 +34,17 @@ class SimpleSongAdapter(
     songs: List<Song>,
     layoutRes: Int,
     sortMode: SongSortMode,
-    callback: ISongCallback
+    callback: ISongCallback,
 ) : SongAdapter(context, songs, layoutRes, sortMode, callback) {
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ViewHolder = ViewHolder(LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false))
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        return ViewHolder(LayoutInflater.from(parent.context).inflate(itemLayoutRes, parent, false))
-    }
-
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+    ) {
         super.onBindViewHolder(holder, position)
         val fixedTrackNumber = dataSet[position].trackNumber.asReadableTrackNumber()
 
@@ -49,23 +52,34 @@ class SimpleSongAdapter(
         holder.time?.text = dataSet[position].duration.asReadableDuration()
     }
 
-    override fun getSongText(song: Song): String {
-        return when (sortMode?.selectedKey) {
-            SortKey.Album -> buildInfoString(getTrackNumberString(song), song.albumName)
-            SortKey.Track -> buildInfoString(getTrackNumberString(song), song.displayArtistName())
-            SortKey.Year -> if (song.year > 0) {
-                buildInfoString(song.year.toString(), song.displayArtistName())
-            } else {
+    override fun getSongText(song: Song): String =
+        when (sortMode?.selectedKey) {
+            SortKey.Album -> {
+                buildInfoString(getTrackNumberString(song), song.albumName)
+            }
+
+            SortKey.Track -> {
+                buildInfoString(getTrackNumberString(song), song.displayArtistName())
+            }
+
+            SortKey.Year -> {
+                if (song.year > 0) {
+                    buildInfoString(song.year.toString(), song.displayArtistName())
+                } else {
+                    song.displayArtistName()
+                }
+            }
+
+            else -> {
                 song.displayArtistName()
             }
-            else -> song.displayArtistName()
         }
-    }
 
     private fun getTrackNumberString(song: Song) =
-        song.trackNumber.takeIf { it > 0 }?.asReadableTrackNumber()?.toString() ?: "-"
+        song.trackNumber
+            .takeIf { it > 0 }
+            ?.asReadableTrackNumber()
+            ?.toString() ?: "-"
 
-    override fun getItemCount(): Int {
-        return dataSet.size
-    }
+    override fun getItemCount(): Int = dataSet.size
 }

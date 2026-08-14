@@ -41,40 +41,56 @@ import io.ktor.http.encodeURLParameter
 import io.ktor.http.userAgent
 import kotlinx.serialization.json.Json
 
-class LastFmService(private val client: HttpClient) {
+class LastFmService(
+    private val client: HttpClient,
+) {
+    private val json =
+        Json {
+            isLenient = true
+            ignoreUnknownKeys = true
+        }
 
-    private val json = Json {
-        isLenient = true
-        ignoreUnknownKeys = true
-    }
-
-    suspend fun albumInfo(albumName: String, artistName: String, language: String?) =
-        client.lastfm("album.getInfo") {
+    suspend fun albumInfo(
+        albumName: String,
+        artistName: String,
+        language: String?,
+    ) = client
+        .lastfm("album.getInfo") {
             parameter("lang", language)
             url.encodedParameters.append("album", albumName.encodeURLParameter())
             url.encodedParameters.append("artist", artistName.encodeURLParameter())
         }.body<LastFmAlbum>()
 
-    suspend fun artistInfo(artistName: String, language: String?, cacheControl: String?) =
-        client.lastfm("artist.getInfo") {
+    suspend fun artistInfo(
+        artistName: String,
+        language: String?,
+        cacheControl: String?,
+    ) = client
+        .lastfm("artist.getInfo") {
             parameter("lang", language)
             header(HttpHeaders.CacheControl, cacheControl)
             url.encodedParameters.append("artist", artistName.encodeURLParameter())
         }.body<LastFmArtist>()
 
     suspend fun userInfo(username: String) =
-        client.lastfm("user.getInfo") {
-            parameter("user", username)
-        }.body<LastFmUserResponse>()
+        client
+            .lastfm("user.getInfo") {
+                parameter("user", username)
+            }.body<LastFmUserResponse>()
 
-    suspend fun createSession(username: String, password: String): Any {
-        val response = client.lastfmPost(
-            method = "auth.getMobileSession",
-            params = mapOf(
-                "username" to username,
-                "password" to password
+    suspend fun createSession(
+        username: String,
+        password: String,
+    ): Any {
+        val response =
+            client.lastfmPost(
+                method = "auth.getMobileSession",
+                params =
+                    mapOf(
+                        "username" to username,
+                        "password" to password,
+                    ),
             )
-        )
         if (response.contains("\"error\"")) {
             return json.decodeFromString<LastFmError>(response)
         }
@@ -86,15 +102,19 @@ class LastFmService(private val client: HttpClient) {
         track: String,
         album: String,
         timestamp: Long,
-        sk: String
+        sk: String,
     ): Any {
-        val response = client.lastfmPost("track.scrobble", mutableMapOf(
-            "artist" to artist,
-            "track" to track,
-            "album" to album,
-            "timestamp" to timestamp.toString(),
-            "sk" to sk
-        ))
+        val response =
+            client.lastfmPost(
+                "track.scrobble",
+                mutableMapOf(
+                    "artist" to artist,
+                    "track" to track,
+                    "album" to album,
+                    "timestamp" to timestamp.toString(),
+                    "sk" to sk,
+                ),
+            )
         if (response.contains("\"error\"")) {
             return json.decodeFromString<LastFmError>(response)
         }
@@ -104,47 +124,56 @@ class LastFmService(private val client: HttpClient) {
     suspend fun updateNowPlaying(
         artist: String,
         track: String,
-        sk: String
+        sk: String,
     ): Any {
-        val response = client.lastfmPost("track.updateNowPlaying", mutableMapOf(
-            "artist" to artist,
-            "track" to track,
-            "sk" to sk
-        ))
+        val response =
+            client.lastfmPost(
+                "track.updateNowPlaying",
+                mutableMapOf(
+                    "artist" to artist,
+                    "track" to track,
+                    "sk" to sk,
+                ),
+            )
         if (response.contains("\"error\"")) {
             return json.decodeFromString<LastFmError>(response)
         }
         return json.decodeFromString<NowPlayingResponse>(response)
     }
 
-    private suspend fun HttpClient.lastfm(method: String, block: HttpRequestBuilder.() -> Unit) =
-        get(LASTFM_API_URL) {
-            userAgent(USER_AGENT)
-            parameter("format", "json")
-            parameter("autocorrect", 1)
-            parameter("api_key", API_KEY)
-            parameter("method", method)
-            block()
-        }
+    private suspend fun HttpClient.lastfm(
+        method: String,
+        block: HttpRequestBuilder.() -> Unit,
+    ) = get(LASTFM_API_URL) {
+        userAgent(USER_AGENT)
+        parameter("format", "json")
+        parameter("autocorrect", 1)
+        parameter("api_key", API_KEY)
+        parameter("method", method)
+        block()
+    }
 
     private suspend fun HttpClient.lastfmPost(
         method: String,
-        params: Map<String, String>
+        params: Map<String, String>,
     ): String {
-        val allParams = params.toMutableMap().apply {
-            put("api_key", API_KEY)
-            put("method", method)
-        }
+        val allParams =
+            params.toMutableMap().apply {
+                put("api_key", API_KEY)
+                put("method", method)
+            }
         val apiSig = generateSignature(allParams)
         allParams["api_sig"] = apiSig
         allParams["format"] = "json"
 
-        val response = submitForm(
-            url = LASTFM_API_URL,
-            formParameters = Parameters.build {
-                allParams.forEach { (key, value) -> append(key, value) }
-            }
-        ) { userAgent(USER_AGENT) }
+        val response =
+            submitForm(
+                url = LASTFM_API_URL,
+                formParameters =
+                    Parameters.build {
+                        allParams.forEach { (key, value) -> append(key, value) }
+                    },
+            ) { userAgent(USER_AGENT) }
 
         return response.bodyAsText()
     }

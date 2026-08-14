@@ -40,8 +40,8 @@ private fun provideDefaultCache(context: Context): Cache? {
     return null
 }
 
-private fun cacheInterceptor(): Interceptor {
-    return Interceptor { chain ->
+private fun cacheInterceptor(): Interceptor =
+    Interceptor { chain ->
         val originalRequest = chain.request()
         val url = originalRequest.url.toString()
 
@@ -49,53 +49,61 @@ private fun cacheInterceptor(): Interceptor {
 
         // Only cache Deezer and Last.fm API responses
         if (url.contains("api.deezer.com") || url.contains("ws.audioscrobbler.com")) {
-            val cacheControl = CacheControl.Builder()
-                .maxAge(4, TimeUnit.DAYS)
-                .build()
+            val cacheControl =
+                CacheControl
+                    .Builder()
+                    .maxAge(4, TimeUnit.DAYS)
+                    .build()
 
-            response.newBuilder()
+            response
+                .newBuilder()
                 .header("Cache-Control", cacheControl.toString())
                 .build()
         } else {
             response
         }
     }
-}
 
-private fun offlineCacheInterceptor(): Interceptor {
-    return Interceptor { chain ->
+private fun offlineCacheInterceptor(): Interceptor =
+    Interceptor { chain ->
         var request = chain.request()
         val url = request.url.toString()
 
         if ((url.contains("api.deezer.com") || url.contains("ws.audioscrobbler.com")) &&
-            !com.ssilencce.data.model.network.NetworkFeature.isOnline(ignoreWifiSetting = true)
+            !com.ssilencce.data.model.network.NetworkFeature
+                .isOnline(ignoreWifiSetting = true)
         ) {
-            val cacheControl = CacheControl.Builder()
-                .onlyIfCached()
-                .maxStale(28, TimeUnit.DAYS)
-                .build()
-            request = request.newBuilder()
-                .cacheControl(cacheControl)
-                .build()
+            val cacheControl =
+                CacheControl
+                    .Builder()
+                    .onlyIfCached()
+                    .maxStale(28, TimeUnit.DAYS)
+                    .build()
+            request =
+                request
+                    .newBuilder()
+                    .cacheControl(cacheControl)
+                    .build()
         }
         chain.proceed(request)
     }
-}
 
-private fun headerInterceptor(context: Context): Interceptor {
-    return Interceptor {
+private fun headerInterceptor(context: Context): Interceptor =
+    Interceptor {
         val original = it.request()
-        val request = original.newBuilder()
-            .header("LastFmUser-Agent", context.packageName)
-            .addHeader("Content-Type", "application/json; charset=utf-8")
-            .method(original.method, original.body)
-            .build()
+        val request =
+            original
+                .newBuilder()
+                .header("LastFmUser-Agent", context.packageName)
+                .addHeader("Content-Type", "application/json; charset=utf-8")
+                .method(original.method, original.body)
+                .build()
         it.proceed(request)
     }
-}
 
-fun provideOkHttp(context: Context): OkHttpClient {
-    return OkHttpClient.Builder()
+fun provideOkHttp(context: Context): OkHttpClient =
+    OkHttpClient
+        .Builder()
         .addInterceptor(headerInterceptor(context))
         .addInterceptor(offlineCacheInterceptor())
         .addNetworkInterceptor(cacheInterceptor())
@@ -103,24 +111,25 @@ fun provideOkHttp(context: Context): OkHttpClient {
         .readTimeout(5, TimeUnit.SECONDS)
         .cache(provideDefaultCache(context))
         .build()
-}
 
-fun jsonHttpClient(okHttpClient: OkHttpClient) = HttpClient(OkHttp) {
-    engine {
-        preconfigured = okHttpClient
-    }
-    install(ContentNegotiation) {
-        val json = Json {
-            ignoreUnknownKeys = true
-            explicitNulls = false
-            encodeDefaults = true
+fun jsonHttpClient(okHttpClient: OkHttpClient) =
+    HttpClient(OkHttp) {
+        engine {
+            preconfigured = okHttpClient
         }
-        json(json)
-        json(json, ContentType.Text.Html)
-        json(json, ContentType.Text.Plain)
+        install(ContentNegotiation) {
+            val json =
+                Json {
+                    ignoreUnknownKeys = true
+                    explicitNulls = false
+                    encodeDefaults = true
+                }
+            json(json)
+            json(json, ContentType.Text.Html)
+            json(json, ContentType.Text.Plain)
+        }
+        install(ContentEncoding) {
+            gzip()
+            deflate()
+        }
     }
-    install(ContentEncoding) {
-        gzip()
-        deflate()
-    }
-}

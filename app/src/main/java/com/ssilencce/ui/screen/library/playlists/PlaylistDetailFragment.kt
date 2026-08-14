@@ -37,6 +37,7 @@ import com.h6ah4i.android.widget.advrecyclerview.draggable.RecyclerViewDragDropM
 import com.h6ah4i.android.widget.advrecyclerview.utils.WrapperAdapterUtils
 import com.ssilencce.R
 import com.ssilencce.coil.playlistImage
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.mapper.toSongEntity
@@ -56,7 +57,6 @@ import com.ssilencce.extensions.resources.removeHorizontalMarginIfRequired
 import com.ssilencce.extensions.resources.surfaceColor
 import com.ssilencce.extensions.setSupportActionBar
 import com.ssilencce.extensions.showToast
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.PlaylistSongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
@@ -71,9 +71,9 @@ import org.koin.core.parameter.parametersOf
 /**
  * @author Christians M. A. (mardous)
  */
-class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlist_detail),
+class PlaylistDetailFragment :
+    AbsMainActivityFragment(R.layout.fragment_playlist_detail),
     ISongCallback {
-
     private val arguments by navArgs<PlaylistDetailFragmentArgs>()
     private val detailViewModel by viewModel<PlaylistDetailViewModel> {
         parametersOf(arguments.playlistId)
@@ -90,15 +90,19 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sharedElementEnterTransition = MaterialContainerTransform(requireContext(), true).apply {
-            drawingViewId = R.id.fragment_container
-            scrimColor = Color.TRANSPARENT
-            setAllContainerColors(surfaceColor())
-            setPathMotion(MaterialArcMotion())
-        }
+        sharedElementEnterTransition =
+            MaterialContainerTransform(requireContext(), true).apply {
+                drawingViewId = R.id.fragment_container
+                scrimColor = Color.TRANSPARENT
+                setAllContainerColors(surfaceColor())
+                setPathMotion(MaterialArcMotion())
+            }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPlaylistDetailBinding.bind(view)
 
@@ -111,7 +115,7 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
         binding.header.image.removeHorizontalMarginIfRequired()
 
         setSupportActionBar(binding.toolbar)
-        //binding.collapsingAppBarLayout.setupStatusBarScrim(requireContext())
+        // binding.collapsingAppBarLayout.setupStatusBarScrim(requireContext())
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
             binding.recyclerView.updatePadding(bottom = it.getWithSpace())
@@ -161,22 +165,24 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
         binding.header.searchAction?.setOnClickListener {
             findNavController().navigate(
                 R.id.nav_search,
-                searchArgs(playlist.playlistEntity.searchFilter(requireContext()))
+                searchArgs(playlist.playlistEntity.searchFilter(requireContext())),
             )
         }
     }
 
     private fun setupRecyclerView() {
-        playlistSongAdapter = PlaylistSongAdapter(
-            activity = mainActivity,
-            dataSet = emptyList(),
-            itemLayoutRes = R.layout.item_list,
-            isLockDrag = Preferences.lockedPlaylists,
-            callback = this
-        )
-        recyclerViewDragDropManager = RecyclerViewDragDropManager().also { dragDropManager ->
-            wrappedAdapter = dragDropManager.createWrappedAdapter(playlistSongAdapter!!)
-        }
+        playlistSongAdapter =
+            PlaylistSongAdapter(
+                activity = mainActivity,
+                dataSet = emptyList(),
+                itemLayoutRes = R.layout.item_list,
+                isLockDrag = Preferences.lockedPlaylists,
+                callback = this,
+            )
+        recyclerViewDragDropManager =
+            RecyclerViewDragDropManager().also { dragDropManager ->
+                wrappedAdapter = dragDropManager.createWrappedAdapter(playlistSongAdapter!!)
+            }
         binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
         binding.recyclerView.adapter = wrappedAdapter
         binding.recyclerView.itemAnimator = RefactoredDefaultItemAnimator()
@@ -185,13 +191,17 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
         playlistSongAdapter!!.registerAdapterDataObserver(adapterDataObserver)
     }
 
-    private val adapterDataObserver = object : RecyclerView.AdapterDataObserver() {
-        override fun onChanged() {
-            checkIsEmpty()
+    private val adapterDataObserver =
+        object : RecyclerView.AdapterDataObserver() {
+            override fun onChanged() {
+                checkIsEmpty()
+            }
         }
-    }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {
         menuInflater.inflate(R.menu.menu_playlist_detail, menu)
     }
 
@@ -202,10 +212,12 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
             }
         }
         if (playlistSongAdapter?.isLockDrag == true) {
-            menu.findItem(R.id.action_lock)
+            menu
+                .findItem(R.id.action_lock)
                 ?.setIcon(R.drawable.ic_lock_24dp)
         } else {
-            menu.findItem(R.id.action_lock)
+            menu
+                .findItem(R.id.action_lock)
                 ?.setIcon(R.drawable.ic_lock_open_24dp)
         }
         if (!isLandscape()) {
@@ -213,8 +225,8 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
         }
     }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-        return when (menuItem.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+        when (menuItem.itemId) {
             android.R.id.home -> {
                 findNavController().navigateUp()
                 true
@@ -223,7 +235,7 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
             R.id.action_search -> {
                 findNavController().navigate(
                     R.id.nav_search,
-                    searchArgs(playlist.playlistEntity.searchFilter(requireContext()))
+                    searchArgs(playlist.playlistEntity.searchFilter(requireContext())),
                 )
                 true
             }
@@ -242,34 +254,43 @@ class PlaylistDetailFragment : AbsMainActivityFragment(R.layout.fragment_playlis
                 true
             }
 
-            else -> playlist.onPlaylistMenu(this, menuItem)
+            else -> {
+                playlist.onPlaylistMenu(this, menuItem)
+            }
         }
-    }
 
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return when (menuItem.itemId) {
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean =
+        when (menuItem.itemId) {
             R.id.action_remove_from_playlist -> {
-                RemoveFromPlaylistDialog.create(song.toSongEntity(playlist.playlistEntity.playListId))
+                RemoveFromPlaylistDialog
+                    .create(song.toSongEntity(playlist.playlistEntity.playListId))
                     .show(childFragmentManager, "REMOVE_FROM_PLAYLIST")
                 true
             }
 
-            else -> song.onSongMenu(this, menuItem)
+            else -> {
+                song.onSongMenu(this, menuItem)
+            }
         }
-    }
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         when (menuItem.itemId) {
             R.id.action_remove_from_playlist -> {
-                RemoveFromPlaylistDialog.create(songs.toSongsEntity(playlist.playlistEntity))
+                RemoveFromPlaylistDialog
+                    .create(songs.toSongsEntity(playlist.playlistEntity))
                     .show(childFragmentManager, "REMOVE_FROM_PLAYLIST")
             }
 
-            else -> songs.onSongsMenu(this, menuItem)
+            else -> {
+                songs.onSongsMenu(this, menuItem)
+            }
         }
     }
 

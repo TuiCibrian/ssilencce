@@ -30,6 +30,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
 import com.ssilencce.R
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.mapper.lastAddedSearchFilter
 import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.model.Album
@@ -46,7 +47,6 @@ import com.ssilencce.extensions.navigation.searchArgs
 import com.ssilencce.extensions.resources.createFastScroller
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.extensions.utilities.buildInfoString
-import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.ui.IAlbumCallback
 import com.ssilencce.ui.IArtistCallback
 import com.ssilencce.ui.ISongCallback
@@ -60,9 +60,11 @@ import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.util.Preferences
 
-class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list), ISongCallback, IArtistCallback,
+class DetailListFragment :
+    AbsMainActivityFragment(R.layout.fragment_detail_list),
+    ISongCallback,
+    IArtistCallback,
     IAlbumCallback {
-
     private val args by navArgs<DetailListFragmentArgs>()
 
     private var _binding: FragmentDetailListBinding? = null
@@ -72,7 +74,10 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
 
     private var songList: List<Song> = arrayListOf()
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         contentType = args.type
         _binding = FragmentDetailListBinding.bind(view)
@@ -108,25 +113,38 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
         }
     }
 
-    private fun songs(songs: List<Song>, emptyMessageRes: Int = 0) {
+    private fun songs(
+        songs: List<Song>,
+        emptyMessageRes: Int = 0,
+    ) {
         this.songList = songs
-        binding.subtitle.text = when (contentType) {
-            ContentType.RecentSongs -> buildInfoString(
-                Preferences.getLastAddedCutoff(requireContext()).description,
-                songs.playlistInfo(requireContext())
-            )
+        binding.subtitle.text =
+            when (contentType) {
+                ContentType.RecentSongs -> {
+                    buildInfoString(
+                        Preferences.getLastAddedCutoff(requireContext()).description,
+                        songs.playlistInfo(requireContext()),
+                    )
+                }
 
-            ContentType.History -> buildInfoString(
-                Preferences.getHistoryCutoff(requireContext()).description,
-                songs.playlistInfo(requireContext())
-            )
+                ContentType.History -> {
+                    buildInfoString(
+                        Preferences.getHistoryCutoff(requireContext()).description,
+                        songs.playlistInfo(requireContext()),
+                    )
+                }
 
-            ContentType.TopTracks,
-            ContentType.Favorites,
-            ContentType.NotRecentlyPlayed -> songs.playlistInfo(requireContext())
+                ContentType.TopTracks,
+                ContentType.Favorites,
+                ContentType.NotRecentlyPlayed,
+                -> {
+                    songs.playlistInfo(requireContext())
+                }
 
-            else -> null
-        }
+                else -> {
+                    null
+                }
+            }
         if (songs.isEmpty() && emptyMessageRes == 0) {
             findNavController().navigateUp()
         } else {
@@ -251,20 +269,15 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
         }
     }
 
-    private fun songAdapter(songs: List<Song> = listOf()): SongAdapter =
-        SongAdapter(requireActivity(), songs, R.layout.item_list, callback = this)
+    private fun songAdapter(songs: List<Song> = listOf()): SongAdapter = SongAdapter(requireActivity(), songs, R.layout.item_list, callback = this)
 
-    private fun artistAdapter(artists: List<Artist> = listOf()): ArtistAdapter =
-        ArtistAdapter(requireActivity(), artists, R.layout.item_grid_circle_single_row, callback = this)
+    private fun artistAdapter(artists: List<Artist> = listOf()): ArtistAdapter = ArtistAdapter(requireActivity(), artists, R.layout.item_grid_circle_single_row, callback = this)
 
-    private fun albumAdapter(albums: List<Album> = listOf()): AlbumAdapter =
-        AlbumAdapter(requireActivity(), albums, R.layout.item_grid, callback = this)
+    private fun albumAdapter(albums: List<Album> = listOf()): AlbumAdapter = AlbumAdapter(requireActivity(), albums, R.layout.item_grid, callback = this)
 
-    private fun linearLayoutManager(): LinearLayoutManager =
-        LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
+    private fun linearLayoutManager(): LinearLayoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
 
-    private fun gridLayoutManager(): GridLayoutManager =
-        GridLayoutManager(requireContext(), defaultGridColumns(), GridLayoutManager.VERTICAL, false)
+    private fun gridLayoutManager(): GridLayoutManager = GridLayoutManager(requireContext(), defaultGridColumns(), GridLayoutManager.VERTICAL, false)
 
     override fun onMediaContentChanged() {
         super.onMediaContentChanged()
@@ -278,7 +291,10 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
         _binding = null
     }
 
-    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+    override fun onCreateMenu(
+        menu: Menu,
+        menuInflater: MenuInflater,
+    ) {
         menuInflater.inflate(R.menu.menu_list_detail, menu)
         if (!contentType.isSearchableContent) {
             menu.removeItem(R.id.action_search)
@@ -286,8 +302,8 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
         menu.findItem(R.id.action_clear_history).isVisible = contentType.isHistoryContent
     }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
-        return when (menuItem.itemId) {
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+        when (menuItem.itemId) {
             android.R.id.home -> {
                 findNavController().navigateUp()
                 true
@@ -298,13 +314,13 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
                     libraryViewModel.favoritePlaylist().observe(viewLifecycleOwner) {
                         findNavController().navigate(
                             R.id.nav_search,
-                            searchArgs(it.searchFilter(requireContext()))
+                            searchArgs(it.searchFilter(requireContext())),
                         )
                     }
                 } else if (contentType.isRecentContent) {
                     findNavController().navigate(
                         R.id.nav_search,
-                        searchArgs(lastAddedSearchFilter(requireContext()))
+                        searchArgs(lastAddedSearchFilter(requireContext())),
                     )
                 }
                 true
@@ -320,53 +336,71 @@ class DetailListFragment : AbsMainActivityFragment(R.layout.fragment_detail_list
                 true
             }
 
-            else -> songList.onSongsMenu(this, menuItem)
+            else -> {
+                songList.onSongsMenu(this, menuItem)
+            }
         }
-    }
 
-    override fun albumClick(album: Album, sharedElements: Array<Pair<View, String>>?) {
+    override fun albumClick(
+        album: Album,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun albumMenuItemClick(
-        album: Album, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?
+        album: Album,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = false
 
-    override fun albumsMenuItemClick(albums: List<Album>, menuItem: MenuItem) {
+    override fun albumsMenuItemClick(
+        albums: List<Album>,
+        menuItem: MenuItem,
+    ) {
         albums.onAlbumsMenu(this, menuItem)
     }
 
-    override fun artistClick(artist: Artist, sharedElements: Array<Pair<View, String>>?) {
+    override fun artistClick(
+        artist: Artist,
+        sharedElements: Array<Pair<View, String>>?,
+    ) {
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
             null,
-            sharedElements.asFragmentExtras()
+            sharedElements.asFragmentExtras(),
         )
     }
 
     override fun artistMenuItemClick(
-        artist: Artist, menuItem: MenuItem, sharedElements: Array<Pair<View, String>>?
+        artist: Artist,
+        menuItem: MenuItem,
+        sharedElements: Array<Pair<View, String>>?,
     ): Boolean = false
 
-    override fun artistsMenuItemClick(artists: List<Artist>, menuItem: MenuItem) {
+    override fun artistsMenuItemClick(
+        artists: List<Artist>,
+        menuItem: MenuItem,
+    ) {
         artists.onArtistsMenu(this, menuItem)
     }
 
     override fun songMenuItemClick(
         song: Song,
         menuItem: MenuItem,
-        sharedElements: Array<Pair<View, String>>?
-    ): Boolean {
-        return song.onSongMenu(this, menuItem)
-    }
+        sharedElements: Array<Pair<View, String>>?,
+    ): Boolean = song.onSongMenu(this, menuItem)
 
-    override fun songsMenuItemClick(songs: List<Song>, menuItem: MenuItem) {
+    override fun songsMenuItemClick(
+        songs: List<Song>,
+        menuItem: MenuItem,
+    ) {
         songs.onSongsMenu(this, menuItem)
     }
 }

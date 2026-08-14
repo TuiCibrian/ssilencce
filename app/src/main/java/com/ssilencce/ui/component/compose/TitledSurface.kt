@@ -40,7 +40,7 @@ fun SwitchCard(
     style: TextStyle? = null,
     color: Color? = null,
     enabled: Boolean = true,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     TitledCard(
         onTitleClick = { onCheckedChange(!checked) },
@@ -51,13 +51,13 @@ fun SwitchCard(
         titleEndContent = {
             Switch(
                 checked = checked,
-                onCheckedChange = null
+                onCheckedChange = null,
             )
         },
         icon = icon,
         color = color,
         modifier = modifier,
-        content = content
+        content = content,
     )
 }
 
@@ -71,7 +71,7 @@ fun TitledCard(
     color: Color? = null,
     collapsible: Boolean = false,
     titleEndContent: @Composable RowScope.() -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(true) }
 
@@ -85,7 +85,7 @@ fun TitledCard(
         icon = icon,
         color = color,
         modifier = modifier,
-        content = content
+        content = content,
     )
 }
 
@@ -101,28 +101,30 @@ private fun TitledCard(
     style: TextStyle? = null,
     color: Color? = null,
     titleEndContent: @Composable RowScope.() -> Unit = {},
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     Card(
         shape = MaterialTheme.shapes.large,
-        colors = CardDefaults.cardColors(
-            containerColor = color ?: MaterialTheme.colorScheme.surfaceContainerHigh
-        ),
-        modifier = modifier
+        colors =
+            CardDefaults.cardColors(
+                containerColor = color ?: MaterialTheme.colorScheme.surfaceContainerHigh,
+            ),
+        modifier = modifier,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = collapsible, onClick = onTitleClick)
-                .padding(16.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = collapsible, onClick = onTitleClick)
+                    .padding(16.dp),
         ) {
             if (icon != null) {
                 Icon(
                     painter = icon,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(20.dp),
                 )
 
                 Spacer(Modifier.width(8.dp))
@@ -131,7 +133,7 @@ private fun TitledCard(
             Text(
                 text = title,
                 style = style ?: MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
             )
 
             Spacer(Modifier.width(16.dp))

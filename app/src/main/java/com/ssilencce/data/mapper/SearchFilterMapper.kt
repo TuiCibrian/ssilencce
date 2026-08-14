@@ -15,74 +15,75 @@ import com.ssilencce.extensions.media.displayName
 
 fun Album.searchFilter(context: Context) =
     SmartSearchFilter(
-        context.getString(R.string.search_album_x_label, name), null,
+        context.getString(R.string.search_album_x_label, name),
+        null,
         FilterSelection(
             SearchQuery.FilterMode.Songs,
             MediaStore.Audio.AudioColumns.TITLE,
             MediaStore.Audio.AudioColumns.ALBUM_ID + "=?",
-            id.toString()
-        )
+            id.toString(),
+        ),
     )
 
-fun Artist.searchFilter(context: Context): SmartSearchFilter {
-    return if (isAlbumArtist) {
+fun Artist.searchFilter(context: Context): SmartSearchFilter =
+    if (isAlbumArtist) {
         SmartSearchFilter(
-            context.getString(R.string.search_artist_x_label, displayName()), null,
+            context.getString(R.string.search_artist_x_label, displayName()),
+            null,
             FilterSelection(
                 SearchQuery.FilterMode.Songs,
                 MediaStore.Audio.AudioColumns.TITLE,
                 "${MediaStore.Audio.AudioColumns.ALBUM_ARTIST}=?",
-                name
+                name,
             ),
             FilterSelection(
                 SearchQuery.FilterMode.Albums,
                 MediaStore.Audio.AudioColumns.ALBUM,
                 "${MediaStore.Audio.AudioColumns.ALBUM_ARTIST}=?",
-                name
-            )
+                name,
+            ),
         )
     } else {
         SmartSearchFilter(
-            context.getString(R.string.search_artist_x_label, displayName()), null,
+            context.getString(R.string.search_artist_x_label, displayName()),
+            null,
             FilterSelection(
                 SearchQuery.FilterMode.Songs,
                 MediaStore.Audio.AudioColumns.TITLE,
                 "${MediaStore.Audio.AudioColumns.ARTIST_ID}=?",
-                id.toString()
+                id.toString(),
             ),
             FilterSelection(
                 SearchQuery.FilterMode.Albums,
                 MediaStore.Audio.AudioColumns.ALBUM,
                 "${MediaStore.Audio.AudioColumns.ARTIST_ID}=?",
-                id.toString()
-            )
+                id.toString(),
+            ),
         )
     }
-}
 
 fun Folder.searchFilter(context: Context): SearchFilter =
     BasicSearchFilter(
         context.getString(R.string.search_in_folder_x, fileName),
-        BasicSearchFilter.Argument(filePath, BasicSearchFilter.Argument.FOLDER)
+        BasicSearchFilter.Argument(filePath, BasicSearchFilter.Argument.FOLDER),
     )
 
 fun Genre.searchFilter(context: Context): SearchFilter =
     BasicSearchFilter(
         context.getString(R.string.search_from_x_label, name),
-        BasicSearchFilter.Argument(id, BasicSearchFilter.Argument.GENRE)
+        BasicSearchFilter.Argument(id, BasicSearchFilter.Argument.GENRE),
     )
 
 fun ReleaseYear.searchFilter(context: Context): SearchFilter =
     BasicSearchFilter(
         context.getString(R.string.search_year_x_label, name),
-        BasicSearchFilter.Argument(year, BasicSearchFilter.Argument.YEAR)
+        BasicSearchFilter.Argument(year, BasicSearchFilter.Argument.YEAR),
     )
 
 fun PlaylistEntity.searchFilter(context: Context): SearchFilter =
     BasicSearchFilter(
         context.getString(R.string.search_list_x_label, playlistName),
-        BasicSearchFilter.Argument(playListId, BasicSearchFilter.Argument.PLAYLIST)
+        BasicSearchFilter.Argument(playListId, BasicSearchFilter.Argument.PLAYLIST),
     )
 
-fun lastAddedSearchFilter(context: Context): SearchFilter =
-    LastAddedSearchFilter(context.getString(R.string.search_last_added))
+fun lastAddedSearchFilter(context: Context): SearchFilter = LastAddedSearchFilter(context.getString(R.string.search_last_added))

@@ -68,16 +68,16 @@ import com.google.android.material.progressindicator.BaseProgressIndicator
 import com.google.android.material.shape.MaterialShapeDrawable
 import com.google.android.material.shape.Shapeable
 import com.google.android.material.slider.Slider
-import com.ssilencce.R
-import com.ssilencce.extensions.dip
-import com.ssilencce.extensions.resolveColor
-import com.ssilencce.ui.component.views.MorphicIconButton
-import com.ssilencce.util.Preferences
 import com.skydoves.balloon.ArrowPositionRules
 import com.skydoves.balloon.Balloon
 import com.skydoves.balloon.BalloonAnimation
 import com.skydoves.balloon.BalloonSizeSpec
 import com.skydoves.balloon.createBalloon
+import com.ssilencce.R
+import com.ssilencce.extensions.dip
+import com.ssilencce.extensions.resolveColor
+import com.ssilencce.ui.component.views.MorphicIconButton
+import com.ssilencce.util.Preferences
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.core.MarkwonTheme
@@ -89,9 +89,10 @@ import com.google.android.material.R as M3R
 const val SSILENCCE_ANIM_TIME = 350L
 
 val View.backgroundColor: Int
-    get() = (background as? ColorDrawable)?.color
-        ?: (background as? MaterialShapeDrawable)?.fillColor?.defaultColor
-        ?: Color.TRANSPARENT
+    get() =
+        (background as? ColorDrawable)?.color
+            ?: (background as? MaterialShapeDrawable)?.fillColor?.defaultColor
+            ?: Color.TRANSPARENT
 
 fun View.showBounceAnimation() {
     clearAnimation()
@@ -101,24 +102,28 @@ fun View.showBounceAnimation() {
     pivotX = (width / 2).toFloat()
     pivotY = (height / 2).toFloat()
 
-    animate().setDuration(200)
+    animate()
+        .setDuration(200)
         .setInterpolator(DecelerateInterpolator())
         .scaleX(1.1f)
         .scaleY(1.1f)
         .withEndAction {
-            animate().setDuration(200)
+            animate()
+                .setDuration(200)
                 .setInterpolator(AccelerateInterpolator())
                 .scaleX(1f)
                 .scaleY(1f)
                 .alpha(1f)
                 .start()
-        }
-        .start()
+        }.start()
 }
 
 typealias AnimationCompleted = () -> Unit
 
-fun View.show(animate: Boolean = false, onCompleted: AnimationCompleted? = null) {
+fun View.show(
+    animate: Boolean = false,
+    onCompleted: AnimationCompleted? = null,
+) {
     if (!animate) {
         alpha = 1f
         isVisible = true
@@ -128,22 +133,24 @@ fun View.show(animate: Boolean = false, onCompleted: AnimationCompleted? = null)
             onCompleted?.invoke()
             return
         }
-        this.animate()
+        this
+            .animate()
             .alpha(1f)
             .setDuration(SSILENCCE_ANIM_TIME)
             .withStartAction {
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
                 isVisible = true
-            }
-            .withEndAction {
+            }.withEndAction {
                 setLayerType(View.LAYER_TYPE_NONE, null)
                 onCompleted?.invoke()
-            }
-            .start()
+            }.start()
     }
 }
 
-fun View.hide(animate: Boolean = false, onCompleted: AnimationCompleted? = null) {
+fun View.hide(
+    animate: Boolean = false,
+    onCompleted: AnimationCompleted? = null,
+) {
     if (!animate) {
         isVisible = false
         onCompleted?.invoke()
@@ -152,22 +159,24 @@ fun View.hide(animate: Boolean = false, onCompleted: AnimationCompleted? = null)
             onCompleted?.invoke()
             return
         }
-        this.animate()
+        this
+            .animate()
             .alpha(0f)
             .setDuration(SSILENCCE_ANIM_TIME)
             .withStartAction {
                 setLayerType(View.LAYER_TYPE_HARDWARE, null)
-            }
-            .withEndAction {
+            }.withEndAction {
                 setLayerType(View.LAYER_TYPE_NONE, null)
                 isVisible = false
                 onCompleted?.invoke()
-            }
-            .start()
+            }.start()
     }
 }
 
-fun View.reactionToKey(targetKeyCode: Int, action: (KeyEvent) -> Unit) {
+fun View.reactionToKey(
+    targetKeyCode: Int,
+    action: (KeyEvent) -> Unit,
+) {
     setOnKeyListener { view, keyCode, keyEvent ->
         if (keyEvent.hasNoModifiers()) {
             if (keyEvent.action == KeyEvent.ACTION_UP) {
@@ -213,7 +222,8 @@ fun View.focusAndShowKeyboard() {
                         viewTreeObserver.removeOnWindowFocusChangeListener(this)
                     }
                 }
-            })
+            },
+        )
     }
 }
 
@@ -221,7 +231,7 @@ fun View.addPaddingRelative(
     start: Int = 0,
     top: Int = 0,
     end: Int = 0,
-    bottom: Int = 0
+    bottom: Int = 0,
 ) {
     updatePaddingRelative(paddingStart + start, paddingTop + top, paddingEnd + end, paddingBottom + bottom)
 }
@@ -233,7 +243,10 @@ fun View.centerPivot() {
     }
 }
 
-fun View.hitTest(x: Int, y: Int): Boolean {
+fun View.hitTest(
+    x: Int,
+    y: Int,
+): Boolean {
     val tx = (translationX + 0.5f)
     val ty = (translationY + 0.5f)
     val left = left + tx
@@ -247,7 +260,7 @@ fun View.hitTest(x: Int, y: Int): Boolean {
 fun View.animateBackgroundColor(
     toColor: Int,
     duration: Long = 300,
-    onCompleted: AnimationCompleted? = null
+    onCompleted: AnimationCompleted? = null,
 ): Animator {
     val fromColor = backgroundColor
     return ObjectAnimator.ofArgb(this, "backgroundColor", fromColor, toColor).apply {
@@ -261,9 +274,9 @@ fun View.animateTintColor(
     toColor: Int,
     duration: Long = 300,
     isForeground: Boolean = false,
-    isIconButton: Boolean = false
-): Animator {
-    return ValueAnimator.ofArgb(fromColor, toColor).apply {
+    isIconButton: Boolean = false,
+): Animator =
+    ValueAnimator.ofArgb(fromColor, toColor).apply {
         this.duration = duration
         addUpdateListener { animation ->
             val animatedColor = animation.animatedValue as Int
@@ -271,30 +284,61 @@ fun View.animateTintColor(
 
             if (isForeground) {
                 foregroundTintList = colorStateList
-            } else when (this@animateTintColor) {
-                is Toolbar -> colorizeToolbar(animatedColor)
-                is Slider -> applyColor(animatedColor)
-                is SeekBar -> applyColor(animatedColor)
-                is FloatingActionButton -> applyColor(animatedColor)
-                is MaterialButton -> applyColor(animatedColor, isIconButton)
-                is ImageButton -> {
-                    val imageTintList = getPrimaryTextColor(context, animatedColor.isColorLight)
-                    ImageViewCompat.setImageTintList(this@animateTintColor, imageTintList.toColorStateList())
-                    backgroundTintList = colorStateList
+            } else {
+                when (this@animateTintColor) {
+                    is Toolbar -> {
+                        colorizeToolbar(animatedColor)
+                    }
+
+                    is Slider -> {
+                        applyColor(animatedColor)
+                    }
+
+                    is SeekBar -> {
+                        applyColor(animatedColor)
+                    }
+
+                    is FloatingActionButton -> {
+                        applyColor(animatedColor)
+                    }
+
+                    is MaterialButton -> {
+                        applyColor(animatedColor, isIconButton)
+                    }
+
+                    is ImageButton -> {
+                        val imageTintList = getPrimaryTextColor(context, animatedColor.isColorLight)
+                        ImageViewCompat.setImageTintList(this@animateTintColor, imageTintList.toColorStateList())
+                        backgroundTintList = colorStateList
+                    }
+
+                    is ImageView -> {
+                        ImageViewCompat.setImageTintList(this@animateTintColor, colorStateList)
+                    }
+
+                    is TextView -> {
+                        applyColor(animatedColor)
+                    }
+
+                    is MorphicIconButton -> {
+                        applyColor(animatedColor)
+                    }
+
+                    else -> {
+                        backgroundTintList = colorStateList
+                    }
                 }
-                is ImageView -> ImageViewCompat.setImageTintList(this@animateTintColor, colorStateList)
-                is TextView -> applyColor(animatedColor)
-                is MorphicIconButton -> applyColor(animatedColor)
-                else -> backgroundTintList = colorStateList
             }
         }
     }
-}
 
 fun ImageView.removeHorizontalMarginIfRequired() {
     if (Preferences.largerHeaderImage) {
         doOnLayout {
-            updateLayoutParams<ViewGroup.MarginLayoutParams> { marginStart = 0; marginEnd = 0; }
+            updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                marginStart = 0
+                marginEnd = 0
+            }
         }
     }
 }
@@ -314,23 +358,27 @@ fun TextView.setMarquee(marquee: Boolean) {
 }
 
 fun TextView.setMarkdownText(str: String) {
-    val markwon = Markwon.builder(context)
-        .usePlugin(HtmlPlugin.create()) // basic Html tags
-        .usePlugin(object : AbstractMarkwonPlugin() {
-            override fun configureTheme(builder: MarkwonTheme.Builder) {
-                val typedColor = TypedValue()
-                context.theme.resolveAttribute(com.google.android.material.R.attr.dividerColor, typedColor, true)
+    val markwon =
+        Markwon
+            .builder(context)
+            .usePlugin(HtmlPlugin.create()) // basic Html tags
+            .usePlugin(
+                object : AbstractMarkwonPlugin() {
+                    override fun configureTheme(builder: MarkwonTheme.Builder) {
+                        val typedColor = TypedValue()
+                        context.theme.resolveAttribute(com.google.android.material.R.attr.dividerColor, typedColor, true)
 
-                builder.headingBreakColor("#00ffffff".toColorInt())
-                    .thematicBreakColor(typedColor.data)
-                    .thematicBreakHeight(2)
-                    .bulletWidth(12)
-                    .headingTextSizeMultipliers(
-                        floatArrayOf(2f, 1.5f, 1f, .83f, .67f, .55f)
-                    )
-            }
-        })
-        .build()
+                        builder
+                            .headingBreakColor("#00ffffff".toColorInt())
+                            .thematicBreakColor(typedColor.data)
+                            .thematicBreakHeight(2)
+                            .bulletWidth(12)
+                            .headingTextSizeMultipliers(
+                                floatArrayOf(2f, 1.5f, 1f, .83f, .67f, .55f),
+                            )
+                    }
+                },
+            ).build()
 
     markwon.setMarkdown(this, str)
 }
@@ -342,21 +390,23 @@ fun ImageView.useAsIcon() {
 }
 
 fun <T> T.setCornerRadius(cornerRadiusDp: Float) where T : View, T : Shapeable {
-    val radiusPx = TypedValue.applyDimension(
-        TypedValue.COMPLEX_UNIT_DIP,
-        cornerRadiusDp,
-        this.resources.displayMetrics
-    )
-    this.shapeAppearanceModel = this.shapeAppearanceModel
-        .toBuilder()
-        .setAllCornerSizes(radiusPx)
-        .build()
+    val radiusPx =
+        TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP,
+            cornerRadiusDp,
+            this.resources.displayMetrics,
+        )
+    this.shapeAppearanceModel =
+        this.shapeAppearanceModel
+            .toBuilder()
+            .setAllCornerSizes(radiusPx)
+            .build()
 }
 
 fun Toolbar.inflateMenu(
     @MenuRes menuId: Int,
     itemClickListener: Toolbar.OnMenuItemClickListener,
-    menuConsumer: ((Menu) -> Unit)? = null
+    menuConsumer: ((Menu) -> Unit)? = null,
 ) {
     inflateMenu(menuId)
     setOnMenuItemClickListener(itemClickListener)
@@ -370,7 +420,7 @@ fun RecyclerView.useLinearLayout() {
 fun RecyclerView.safeUpdateWithRetry(
     maxRetries: Int = 5,
     delayMillis: Long = 16L, // ~1 frame on 60fps
-    block: RecyclerView.() -> Unit
+    block: RecyclerView.() -> Unit,
 ) {
     fun tryUpdate(attempt: Int) {
         if (!isAnimating && !isComputingLayout) {
@@ -393,23 +443,30 @@ fun RecyclerView.destroyOnDetach() {
 fun RecyclerView.onVerticalScroll(
     lifecycleOwner: LifecycleOwner,
     onScrollUp: () -> Unit = {},
-    onScrollDown: () -> Unit = {}
+    onScrollDown: () -> Unit = {},
 ) {
-    val scrollListener = object : RecyclerView.OnScrollListener() {
-        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-            if (dy > 0) {
-                onScrollDown()
-            } else if (dy < 0) {
-                onScrollUp()
+    val scrollListener =
+        object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(
+                recyclerView: RecyclerView,
+                dx: Int,
+                dy: Int,
+            ) {
+                if (dy > 0) {
+                    onScrollDown()
+                } else if (dy < 0) {
+                    onScrollUp()
+                }
             }
         }
-    }
     addOnScrollListener(scrollListener)
-    lifecycleOwner.lifecycle.addObserver(object : DefaultLifecycleObserver {
-        override fun onStop(owner: LifecycleOwner) {
-            removeOnScrollListener(scrollListener)
-        }
-    })
+    lifecycleOwner.lifecycle.addObserver(
+        object : DefaultLifecycleObserver {
+            override fun onStop(owner: LifecycleOwner) {
+                removeOnScrollListener(scrollListener)
+            }
+        },
+    )
 }
 
 fun ViewGroup.createFastScroller(disablePopup: Boolean = false): FastScroller {
@@ -448,7 +505,7 @@ fun NavigationBarView.show() {
     if (!isLaidOut) {
         measure(
             View.MeasureSpec.makeMeasureSpec(parent.width, View.MeasureSpec.EXACTLY),
-            View.MeasureSpec.makeMeasureSpec(parent.height, View.MeasureSpec.AT_MOST)
+            View.MeasureSpec.makeMeasureSpec(parent.height, View.MeasureSpec.AT_MOST),
         )
         layout(parent.left, parent.height - measuredHeight, parent.right, parent.height)
     }
@@ -510,11 +567,14 @@ fun NavigationBarView.hide() {
 
 fun BaseProgressIndicator<*>.setWavy(isWavy: Boolean) {
     val oldAmplitude = waveAmplitude
-    val newAmplitude = if (!isWavy) 0 else {
-        resources.getDimensionPixelSize(
-            M3R.dimen.m3_comp_progress_indicator_circular_active_indicator_wave_amplitude
-        )
-    }
+    val newAmplitude =
+        if (!isWavy) {
+            0
+        } else {
+            resources.getDimensionPixelSize(
+                M3R.dimen.m3_comp_progress_indicator_circular_active_indicator_wave_amplitude,
+            )
+        }
 
     val waveLength = if (isIndeterminate) wavelengthIndeterminate else wavelengthDeterminate
 
@@ -530,64 +590,73 @@ fun BaseProgressIndicator<*>.setWavy(isWavy: Boolean) {
         return
     }
 
-    val animator = ValueAnimator.ofInt(oldAmplitude, newAmplitude).apply {
-        duration = SSILENCCE_ANIM_TIME
-        interpolator = DecelerateInterpolator()
-        addUpdateListener {
-            waveAmplitude = it.animatedValue as Int
+    val animator =
+        ValueAnimator.ofInt(oldAmplitude, newAmplitude).apply {
+            duration = SSILENCCE_ANIM_TIME
+            interpolator = DecelerateInterpolator()
+            addUpdateListener {
+                waveAmplitude = it.animatedValue as Int
+            }
         }
-    }
 
     setTag(R.id.id_wave_amplitude_animator, animator)
     animator.start()
 }
 
 fun BaseProgressIndicator<*>.setAnimatedWave(isAnimatedWave: Boolean) {
-    waveSpeed = if (isAnimatedWave) {
-        resources.getDimensionPixelSize(R.dimen.m3e_progress_indicator_animation_speed)
-    } else 0
+    waveSpeed =
+        if (isAnimatedWave) {
+            resources.getDimensionPixelSize(R.dimen.m3e_progress_indicator_animation_speed)
+        } else {
+            0
+        }
 }
 
 fun BaseProgressIndicator<*>.installWavyAnimatorCleanup() {
-    addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
-        override fun onViewDetachedFromWindow(v: View) {
-            (getTag(R.id.id_wave_amplitude_animator) as? ValueAnimator)?.apply {
-                removeAllListeners()
-                removeAllUpdateListeners()
-                cancel()
+    addOnAttachStateChangeListener(
+        object : View.OnAttachStateChangeListener {
+            override fun onViewDetachedFromWindow(v: View) {
+                (getTag(R.id.id_wave_amplitude_animator) as? ValueAnimator)?.apply {
+                    removeAllListeners()
+                    removeAllUpdateListeners()
+                    cancel()
+                }
+                setTag(R.id.id_wave_amplitude_animator, null)
+                removeOnAttachStateChangeListener(this)
             }
-            setTag(R.id.id_wave_amplitude_animator, null)
-            removeOnAttachStateChangeListener(this)
-        }
 
-        override fun onViewAttachedToWindow(v: View) = Unit
-    })
+            override fun onViewAttachedToWindow(v: View) = Unit
+        },
+    )
 }
 
 typealias TrackingTouchListener = (Slider) -> Unit
 
 fun Slider.setTrackingTouchListener(
     onStart: TrackingTouchListener? = null,
-    onStop: TrackingTouchListener? = null
+    onStop: TrackingTouchListener? = null,
 ) {
-    if (onStart == null && onStop == null)
+    if (onStart == null && onStop == null) {
         return
+    }
 
-    addOnSliderTouchListener(object : Slider.OnSliderTouchListener {
-        override fun onStartTrackingTouch(slider: Slider) {
-            onStart?.invoke(slider)
-        }
+    addOnSliderTouchListener(
+        object : Slider.OnSliderTouchListener {
+            override fun onStartTrackingTouch(slider: Slider) {
+                onStart?.invoke(slider)
+            }
 
-        override fun onStopTrackingTouch(slider: Slider) {
-            onStop?.invoke(slider)
-        }
-    })
+            override fun onStopTrackingTouch(slider: Slider) {
+                onStop?.invoke(slider)
+            }
+        },
+    )
 }
 
 inline fun Context.createSsilencceBalloon(
     tooltipId: String,
     lifecycleOwner: LifecycleOwner,
-    crossinline block: Balloon.Builder.() -> Unit
+    crossinline block: Balloon.Builder.() -> Unit,
 ): Balloon {
     val bgColor = resolveColor(M3R.attr.colorTertiaryContainer)
     val textColor = resolveColor(M3R.attr.colorOnTertiaryContainer)
@@ -609,12 +678,11 @@ inline fun Context.createSsilencceBalloon(
     }
 }
 
-fun BottomSheetBehavior<*>.peekHeightAnimate(value: Int): Animator {
-    return ObjectAnimator.ofInt(this, "peekHeight", value).apply {
+fun BottomSheetBehavior<*>.peekHeightAnimate(value: Int): Animator =
+    ObjectAnimator.ofInt(this, "peekHeight", value).apply {
         duration = SSILENCCE_ANIM_TIME
         start()
     }
-}
 
 fun AppBarLayout.setupStatusBarForeground() {
     statusBarForeground = MaterialShapeDrawable.createWithElevationOverlay(context)

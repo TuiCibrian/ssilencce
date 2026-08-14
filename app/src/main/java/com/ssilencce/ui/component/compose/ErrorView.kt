@@ -31,27 +31,28 @@ fun ErrorView(
     color: Color = MaterialTheme.colorScheme.errorContainer,
     contentColor: Color = MaterialTheme.colorScheme.onErrorContainer,
     shape: Shape = RoundedCornerShape(12.dp),
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = modifier
-            .clip(shape)
-            .background(color)
-            .padding(horizontal = 16.dp, vertical = 24.dp),
+        modifier =
+            modifier
+                .clip(shape)
+                .background(color)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Icon(
             painter = painterResource(iconRes),
             contentDescription = null,
-            tint = contentColor
+            tint = contentColor,
         )
         Text(
             text = text,
             style = textStyle,
             color = contentColor,
             fontSize = textSize,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

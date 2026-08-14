@@ -24,5 +24,5 @@ data class AboutItemData(
     val title: String,
     val summary: String? = null,
     val markdown: String? = null,
-    val onClick: () -> Unit
+    val onClick: () -> Unit,
 )

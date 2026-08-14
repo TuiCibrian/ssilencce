@@ -25,23 +25,36 @@ import io.ktor.client.call.body
 import io.ktor.client.request.get
 import io.ktor.http.encodeURLParameter
 
-class DeezerService(private val client: HttpClient) {
-    suspend fun track(artistName: String, title: String) =
-        client.get("https://api.deezer.com/search?limit=1") {
+class DeezerService(
+    private val client: HttpClient,
+) {
+    suspend fun track(
+        artistName: String,
+        title: String,
+    ) = client
+        .get("https://api.deezer.com/search?limit=1") {
             url {
                 encodedParameters.append("q", "$artistName $title".encodeURLParameter())
             }
         }.body<DeezerTrack>()
 
-    suspend fun album(artistName: String, name: String, limit: Int = 1) =
-        client.get("https://api.deezer.com/search/album?limit=$limit") {
+    suspend fun album(
+        artistName: String,
+        name: String,
+        limit: Int = 1,
+    ) = client
+        .get("https://api.deezer.com/search/album?limit=$limit") {
             url {
                 encodedParameters.append("q", "$artistName $name".encodeURLParameter())
             }
         }.body<DeezerAlbum>()
 
-    suspend fun artist(artistName: String, limit: Int = 1, index: Int = 0) =
-        client.get("https://api.deezer.com/search/artist") {
+    suspend fun artist(
+        artistName: String,
+        limit: Int = 1,
+        index: Int = 0,
+    ) = client
+        .get("https://api.deezer.com/search/artist") {
             url {
                 parameters.append("limit", limit.toString())
                 parameters.append("index", index.toString())

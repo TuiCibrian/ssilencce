@@ -52,7 +52,6 @@ import org.koin.android.ext.android.get
  * @author Christians M. A. (mardous)
  */
 class ActionOnCoverPreferenceDialog : DialogFragment() {
-
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val prefKey = requireArguments().getString(EXTRA_KEY)
         checkNotNull(prefKey)
@@ -64,7 +63,7 @@ class ActionOnCoverPreferenceDialog : DialogFragment() {
             .setView(
                 ComposeView(requireContext()).apply {
                     setViewCompositionStrategy(
-                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed
+                        ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
                     )
                     setContent {
                         SsilencceTheme {
@@ -76,79 +75,90 @@ class ActionOnCoverPreferenceDialog : DialogFragment() {
                                         putString(prefKey, action.name)
                                     }
                                     dialog?.dismiss()
-                                }
+                                },
                             )
                         }
                     }
-                }
-            )
-            .create()
+                },
+            ).create()
     }
 
     @Composable
     private fun DialogScreen(
         actions: List<NowPlayingAction>,
         selected: NowPlayingAction,
-        onActionClick: (NowPlayingAction) -> Unit
+        onActionClick: (NowPlayingAction) -> Unit,
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            modifier = Modifier.wrapContentHeight()
+            modifier = Modifier.wrapContentHeight(),
         ) {
-            val firstVisibleIndex = actions.indexOfFirst { it.ordinal == selected.ordinal }
-                .coerceAtLeast(0)
+            val firstVisibleIndex =
+                actions
+                    .indexOfFirst { it.ordinal == selected.ordinal }
+                    .coerceAtLeast(0)
 
             LazyColumn(
                 state = rememberLazyListState(firstVisibleIndex),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .wrapContentHeight()
-                    .padding(vertical = 24.dp)
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .padding(vertical = 24.dp),
             ) {
                 items(actions) { action ->
                     DialogListItemWithRadio(
                         title = stringResource(action.titleRes),
                         isSelected = action == selected,
-                        onClick = { onActionClick(action) }
+                        onClick = { onActionClick(action) },
                     )
                 }
             }
         }
     }
 
-    private fun removeActionsForPrefKey(prefKey: String, actions: MutableList<NowPlayingAction>) {
-        val exclusivityMap = mapOf(
-            COVER_SINGLE_TAP_ACTION to listOf(
-                Preferences.coverDoubleTapAction,
-                Preferences.coverLongPressAction,
-                Preferences.coverLeftDoubleTapAction,
-                Preferences.coverRightDoubleTapAction
-            ),
-            COVER_LONG_PRESS_ACTION to listOf(
-                Preferences.coverDoubleTapAction,
-                Preferences.coverSingleTapAction,
-                Preferences.coverLeftDoubleTapAction,
-                Preferences.coverRightDoubleTapAction
-            ),
-            COVER_DOUBLE_TAP_ACTION to listOf(
-                Preferences.coverLongPressAction,
-                Preferences.coverSingleTapAction,
-                Preferences.coverLeftDoubleTapAction,
-                Preferences.coverRightDoubleTapAction
-            ),
-            COVER_LEFT_DOUBLE_TAP_ACTION to listOf(
-                Preferences.coverDoubleTapAction,
-                Preferences.coverLongPressAction,
-                Preferences.coverSingleTapAction,
-                Preferences.coverRightDoubleTapAction
-            ),
-            COVER_RIGHT_DOUBLE_TAP_ACTION to listOf(
-                Preferences.coverDoubleTapAction,
-                Preferences.coverLongPressAction,
-                Preferences.coverSingleTapAction,
-                Preferences.coverLeftDoubleTapAction
+    private fun removeActionsForPrefKey(
+        prefKey: String,
+        actions: MutableList<NowPlayingAction>,
+    ) {
+        val exclusivityMap =
+            mapOf(
+                COVER_SINGLE_TAP_ACTION to
+                    listOf(
+                        Preferences.coverDoubleTapAction,
+                        Preferences.coverLongPressAction,
+                        Preferences.coverLeftDoubleTapAction,
+                        Preferences.coverRightDoubleTapAction,
+                    ),
+                COVER_LONG_PRESS_ACTION to
+                    listOf(
+                        Preferences.coverDoubleTapAction,
+                        Preferences.coverSingleTapAction,
+                        Preferences.coverLeftDoubleTapAction,
+                        Preferences.coverRightDoubleTapAction,
+                    ),
+                COVER_DOUBLE_TAP_ACTION to
+                    listOf(
+                        Preferences.coverLongPressAction,
+                        Preferences.coverSingleTapAction,
+                        Preferences.coverLeftDoubleTapAction,
+                        Preferences.coverRightDoubleTapAction,
+                    ),
+                COVER_LEFT_DOUBLE_TAP_ACTION to
+                    listOf(
+                        Preferences.coverDoubleTapAction,
+                        Preferences.coverLongPressAction,
+                        Preferences.coverSingleTapAction,
+                        Preferences.coverRightDoubleTapAction,
+                    ),
+                COVER_RIGHT_DOUBLE_TAP_ACTION to
+                    listOf(
+                        Preferences.coverDoubleTapAction,
+                        Preferences.coverLongPressAction,
+                        Preferences.coverSingleTapAction,
+                        Preferences.coverLeftDoubleTapAction,
+                    ),
             )
-        )
 
         exclusivityMap[prefKey]?.forEach {
             if (it != NowPlayingAction.Nothing) {
@@ -157,23 +167,24 @@ class ActionOnCoverPreferenceDialog : DialogFragment() {
         }
     }
 
-    private fun getCurrentAction(prefKey: String) = when (prefKey) {
-        COVER_DOUBLE_TAP_ACTION -> Preferences.coverDoubleTapAction
-        COVER_LONG_PRESS_ACTION -> Preferences.coverLongPressAction
-        COVER_LEFT_DOUBLE_TAP_ACTION -> Preferences.coverLeftDoubleTapAction
-        COVER_RIGHT_DOUBLE_TAP_ACTION -> Preferences.coverRightDoubleTapAction
-        else -> Preferences.coverSingleTapAction
-    }
+    private fun getCurrentAction(prefKey: String) =
+        when (prefKey) {
+            COVER_DOUBLE_TAP_ACTION -> Preferences.coverDoubleTapAction
+            COVER_LONG_PRESS_ACTION -> Preferences.coverLongPressAction
+            COVER_LEFT_DOUBLE_TAP_ACTION -> Preferences.coverLeftDoubleTapAction
+            COVER_RIGHT_DOUBLE_TAP_ACTION -> Preferences.coverRightDoubleTapAction
+            else -> Preferences.coverSingleTapAction
+        }
 
     companion object {
         private const val EXTRA_KEY = "extra_key"
 
-        fun newInstance(preference: String): ActionOnCoverPreferenceDialog {
-            return ActionOnCoverPreferenceDialog().apply {
-                arguments = Bundle().apply {
-                    putString(EXTRA_KEY, preference)
-                }
+        fun newInstance(preference: String): ActionOnCoverPreferenceDialog =
+            ActionOnCoverPreferenceDialog().apply {
+                arguments =
+                    Bundle().apply {
+                        putString(EXTRA_KEY, preference)
+                    }
             }
-        }
     }
 }

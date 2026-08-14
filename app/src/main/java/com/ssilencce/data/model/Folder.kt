@@ -26,9 +26,9 @@ import java.io.File
  */
 class Folder(
     override val filePath: String,
-    val musicFiles: List<FileSystemItem>
-) : FileSystemItem, SongProvider {
-
+    val musicFiles: List<FileSystemItem>,
+) : FileSystemItem,
+    SongProvider {
     override val fileName: String
         get() = filePath.substringAfterLast("/")
 
@@ -53,13 +53,9 @@ class Folder(
         return filePath == other.filePath && musicFiles == other.musicFiles
     }
 
-    override fun hashCode(): Int {
-        return 31 * filePath.hashCode() + musicFiles.hashCode()
-    }
+    override fun hashCode(): Int = 31 * filePath.hashCode() + musicFiles.hashCode()
 
-    override fun toString(): String {
-        return "Folder(filePath='$filePath', musicFiles=$musicFiles)"
-    }
+    override fun toString(): String = "Folder(filePath='$filePath', musicFiles=$musicFiles)"
 
     companion object {
         val empty = Folder("", emptyList())

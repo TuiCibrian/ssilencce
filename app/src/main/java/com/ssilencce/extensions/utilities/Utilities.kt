@@ -31,7 +31,7 @@ private val arabicBlocks: Set<Character.UnicodeBlock> by lazy {
         Character.UnicodeBlock.ARABIC_SUPPLEMENT,
         Character.UnicodeBlock.ARABIC_EXTENDED_A,
         Character.UnicodeBlock.ARABIC_PRESENTATION_FORMS_A,
-        Character.UnicodeBlock.ARABIC_PRESENTATION_FORMS_B
+        Character.UnicodeBlock.ARABIC_PRESENTATION_FORMS_B,
     ).apply {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
             add(Character.UnicodeBlock.ARABIC_EXTENDED_B)
@@ -44,13 +44,15 @@ fun String?.isWhitespace() = this != null && this.length == 1 && this[0] == ' '
 fun String.collapseSpaces() = trim().replace(SPACES_REGEX, " ")
 
 fun String.normalize(): String =
-    Normalizer.normalize(this, Normalizer.Form.NFD)
+    Normalizer
+        .normalize(this, Normalizer.Form.NFD)
         .replace("\\p{M}".toRegex(), "")
         .trim()
         .replace(Regex("\\s+"), " ")
 
-fun CharSequence.sanitize(): String {
-    return toString().replace("/", "_")
+fun CharSequence.sanitize(): String =
+    toString()
+        .replace("/", "_")
         .replace(":", "_")
         .replace("*", "_")
         .replace("?", "_")
@@ -60,27 +62,27 @@ fun CharSequence.sanitize(): String {
         .replace("|", "_")
         .replace("\\", "_")
         .replace("&", "_")
-}
 
-fun String.capitalize(): String {
-    return this.split(" ")
+fun String.capitalize(): String =
+    this
+        .split(" ")
         .joinToString(" ") { word ->
             word.lowercase().replaceFirstChar { char ->
                 if (char.isLowerCase()) char.titlecase() else char.toString()
             }
         }
-}
 
 fun Char.isArabic(): Boolean {
     val unicodeBlock = Character.UnicodeBlock.of(this) ?: return false
     return unicodeBlock in arabicBlocks
 }
 
-fun String.isRtl(): Boolean {
-    return any { it.isArabic() }
-}
+fun String.isRtl(): Boolean = any { it.isArabic() }
 
-fun buildInfoString(vararg parts: Any?, delimiter: String = DEFAULT_INFO_DELIMITER): String {
+fun buildInfoString(
+    vararg parts: Any?,
+    delimiter: String = DEFAULT_INFO_DELIMITER,
+): String {
     val sb = StringBuilder()
     if (parts.isNotEmpty()) {
         for (part in parts) {
@@ -97,23 +99,24 @@ fun buildInfoString(vararg parts: Any?, delimiter: String = DEFAULT_INFO_DELIMIT
     return sb.toString()
 }
 
-inline fun <reified T : Enum<T>> String.toEnum() =
-    enumValues<T>().firstOrNull { it.name.equals(this, ignoreCase = true) }
+inline fun <reified T : Enum<T>> String.toEnum() = enumValues<T>().firstOrNull { it.name.equals(this, ignoreCase = true) }
 
-inline fun <reified T : Enum<T>> Int.toEnum() =
-    enumValues<T>().firstOrNull { it.ordinal == this }
+inline fun <reified T : Enum<T>> Int.toEnum() = enumValues<T>().firstOrNull { it.ordinal == this }
 
 inline fun <reified T> String?.deserialize(defaultValue: T): T {
-    val lenientJson = Json {
-        ignoreUnknownKeys = true
-        isLenient = true
-        coerceInputValues = true
-    }
-    return if (!isNullOrEmpty())
+    val lenientJson =
+        Json {
+            ignoreUnknownKeys = true
+            isLenient = true
+            coerceInputValues = true
+        }
+    return if (!isNullOrEmpty()) {
         runCatching<T> { lenientJson.decodeFromString(this) }
             .onFailure { Log.d("SsilencceUtilities", "Json.decodeFromString($this): error", it) }
             .getOrDefault(defaultValue)
-    else defaultValue
+    } else {
+        defaultValue
+    }
 }
 
 inline fun <reified T> T.serialize(): String = Json.encodeToString(this)

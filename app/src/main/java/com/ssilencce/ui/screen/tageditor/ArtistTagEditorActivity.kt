@@ -42,7 +42,6 @@ import org.koin.core.parameter.parametersOf
  * @author Christians M. A. (mardous)
  */
 class ArtistTagEditorActivity : AbsTagEditorActivity() {
-
     override val viewModel by viewModel<TagEditorViewModel> {
         parametersOf(getEditTarget())
     }
@@ -70,27 +69,34 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
         loadCurrentArtistImage()
     }
 
-    override fun onWrapFieldViews(inflater: LayoutInflater, parent: ViewGroup) {
-        artistBinding = TagEditorArtistFieldBinding.inflate(inflater, parent, true).apply {
-            genreTextInputLayout.setEndIconOnClickListener {
-                selectDefaultGenre()
+    override fun onWrapFieldViews(
+        inflater: LayoutInflater,
+        parent: ViewGroup,
+    ) {
+        artistBinding =
+            TagEditorArtistFieldBinding.inflate(inflater, parent, true).apply {
+                genreTextInputLayout.setEndIconOnClickListener {
+                    selectDefaultGenre()
+                }
             }
-        }
     }
 
     override fun onDefaultGenreSelection(genre: String) {
         val genreContent = artistBinding.genre.text?.toString()
         if (!genreContent.isNullOrBlank()) {
             artistBinding.genre.setText(String.format("%s;%s", genreContent, genre))
-        } else artistBinding.genre.setText(genre)
+        } else {
+            artistBinding.genre.setText(genre)
+        }
     }
 
     override fun selectImage() {
-        val items = arrayOf(
-            getString(R.string.set_artist_image),
-            getString(R.string.web_search),
-            getString(R.string.reset_artist_image)
-        )
+        val items =
+            arrayOf(
+                getString(R.string.set_artist_image),
+                getString(R.string.web_search),
+                getString(R.string.reset_artist_image),
+            )
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.update_image)
             .setItems(items) { _: DialogInterface, which: Int ->
@@ -99,8 +105,7 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
                     1 -> searchOnlineImage()
                     2 -> deleteImage()
                 }
-            }
-            .show()
+            }.show()
     }
 
     override fun downloadOnlineImage() {}
@@ -121,9 +126,11 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
 
     private fun loadCurrentArtistImage() {
         viewModel.requestArtist().observe(this) { artist ->
-            SingletonImageLoader.get(this)
+            SingletonImageLoader
+                .get(this)
                 .enqueue(
-                    ImageRequest.Builder(this)
+                    ImageRequest
+                        .Builder(this)
                         .data(artist)
                         .memoryCachePolicy(CachePolicy.DISABLED)
                         .listener(
@@ -132,9 +139,8 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
                             },
                             onSuccess = { _, result ->
                                 setImageBitmap(result.image.toBitmap())
-                            }
-                        )
-                        .build()
+                            },
+                        ).build(),
                 )
         }
     }
@@ -146,14 +152,15 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
     }
 
     override val propertyMap: Map<String, String?>
-        get() = buildMap {
-            val albumArtist = artistBinding.albumArtist.text?.toString()
-            val isSingleSong = viewModel.uris.size == 1
-            if (albumArtist.isNullOrEmpty() && !artistName.equals(albumArtistName, true) && isSingleSong) {
-                put(MetadataReader.ARTIST, albumArtist)
+        get() =
+            buildMap {
+                val albumArtist = artistBinding.albumArtist.text?.toString()
+                val isSingleSong = viewModel.uris.size == 1
+                if (albumArtist.isNullOrEmpty() && !artistName.equals(albumArtistName, true) && isSingleSong) {
+                    put(MetadataReader.ARTIST, albumArtist)
+                }
+                put(MetadataReader.ALBUM_ARTIST, albumArtist)
+                put(MetadataReader.GENRE, artistBinding.genre.text?.toString())
+                put(MetadataReader.DISC_TOTAL, artistBinding.discTotal.text?.toString())
             }
-            put(MetadataReader.ALBUM_ARTIST, albumArtist)
-            put(MetadataReader.GENRE, artistBinding.genre.text?.toString())
-            put(MetadataReader.DISC_TOTAL, artistBinding.discTotal.text?.toString())
-        }
 }
