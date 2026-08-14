@@ -29,7 +29,7 @@ described. Items in the appendix are not applicable to an open-source app.
 - **Resume policies** — "only resume if paused by disconnect", "prevent unwanted autoplay" (strict mode for buggy devices/cars).
 - **Audio focus level "ask"** — 4 focus levels including ask-before-taking focus and resume-after-call (ssilencce only has an on/off ignore-focus toggle).
 - **"FF/Rewind only for long audio (audiobook/podcast)"** option.
-- **Own native decoder** with extra formats (WMA, APE, DSF, DFF, AIFF), system-decoder switch and multi-threaded decode (ssilencce uses Media3/ExoPlayer only).
+- **Extra format playback (WMA, APE, DSF, DFF, AIFF)** — ssilencce bundles the FFmpeg software decoder (`media3-ffmpeg-decoder`, auto-loaded by Media3's extension renderer for unknown codecs), so the codecs exist, but these formats still do not play: Media3 1.10.1 ships no container extractors for ASF/WMA, APE, DSF/DFF or AIFF (the demuxer fails before the decoder is fed), Android's MediaScanner cannot determine their duration (NULL `duration` is then dropped by the minimum-duration filter) and does not index `.ape` files at all. Verified on emulator (API 36) 2026-08-14. Also missing vs Musicolet's own decoder: system-decoder switch, decoder info UI and multi-threaded decode.
 
 ## 2. Queues
 

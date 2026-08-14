@@ -31,3 +31,7 @@ support and a targeted workaround for ALAC.
 - The Jellyfin fork version must be tracked against official Media3 releases (version 1.9.0+1
   vs media3 1.10.1); upgrades require checking decoder compatibility.
 - ABI splits (ADR-005) are now meaningful: each ABI carries its own native decoder blobs.
+- The extension covers codecs only, not containers: Media3 still demuxes with its own
+  extractors, and media3 1.10.1 ships no extractors for ASF/WMA, APE, DSF/DFF or AIFF, so
+  those formats cannot reach the FFmpeg decoder yet; closing that gap would require custom
+  extractors (or another demuxing path) feeding the bundled decoder.
