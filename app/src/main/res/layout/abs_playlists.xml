@@ -2,58 +2,250 @@
 <androidx.constraintlayout.widget.ConstraintLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingVertical="8dp"
-    android:paddingHorizontal="16dp">
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:paddingTop="10dp"
+    android:paddingBottom="2dp">
 
-    <com.google.android.material.button.MaterialButton
+    <LinearLayout
         android:id="@+id/my_top_tracks"
-        style="@style/HomeActionButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="8dp"
-        android:text="@string/top_tracks_label"
-        app:icon="@drawable/ic_trending_up_24dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/aurora_home_quad_tile"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/last_added"/>
+        app:layout_constraintEnd_toStartOf="@+id/last_added">
 
-    <com.google.android.material.button.MaterialButton
+        <FrameLayout
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/aurora_icon_chip"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_trending_up_24dp"
+                app:tint="@color/aurora_nav_item_checked"/>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/top_tracks_label"
+                android:textAppearance="?textAppearanceBodyMedium"
+                android:textColor="?colorOnSurface"
+                android:textStyle="bold"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/top_tracks_subtitle"
+                android:textAppearance="?textAppearanceBodySmall"
+                android:textColor="?colorOnSurfaceVariant"/>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/last_added"
-        style="@style/HomeActionButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="@string/last_added_label"
-        app:icon="@drawable/ic_library_add_24dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/aurora_home_quad_tile"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
         app:layout_constraintTop_toTopOf="@+id/my_top_tracks"
         app:layout_constraintStart_toEndOf="@+id/my_top_tracks"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
 
-    <com.google.android.material.button.MaterialButton
+        <FrameLayout
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/aurora_icon_chip"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_library_add_24dp"
+                app:tint="@color/aurora_nav_item_checked"/>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/last_added_label"
+                android:textAppearance="?textAppearanceBodyMedium"
+                android:textColor="?colorOnSurface"
+                android:textStyle="bold"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/last_added_subtitle"
+                android:textAppearance="?textAppearanceBodySmall"
+                android:textColor="?colorOnSurfaceVariant"/>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/history"
-        style="@style/HomeActionButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/history_label"
-        app:icon="@drawable/ic_history_24dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginEnd="6dp"
+        android:background="@drawable/aurora_home_quad_tile"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
         app:layout_constraintTop_toBottomOf="@+id/my_top_tracks"
         app:layout_constraintStart_toStartOf="@+id/my_top_tracks"
-        app:layout_constraintEnd_toEndOf="@+id/my_top_tracks"/>
+        app:layout_constraintEnd_toEndOf="@+id/my_top_tracks">
 
-    <com.google.android.material.button.MaterialButton
+        <FrameLayout
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/aurora_icon_chip"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_history_24dp"
+                app:tint="@color/aurora_nav_item_checked"/>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/history_label"
+                android:textAppearance="?textAppearanceBodyMedium"
+                android:textColor="?colorOnSurface"
+                android:textStyle="bold"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/history_subtitle"
+                android:textAppearance="?textAppearanceBodySmall"
+                android:textColor="?colorOnSurfaceVariant"/>
+
+        </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
         android:id="@+id/actionShuffle"
-        style="@style/HomeActionButton"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="@string/shuffle_action"
-        app:icon="@drawable/ic_shuffle_24dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginStart="6dp"
+        android:background="@drawable/aurora_home_quad_tile"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:padding="12dp"
         app:layout_constraintTop_toBottomOf="@+id/last_added"
-        app:layout_constraintStart_toStartOf="@+id/last_added"
-        app:layout_constraintEnd_toEndOf="@+id/last_added"/>
+        app:layout_constraintStart_toEndOf="@+id/history"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <FrameLayout
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            android:background="@drawable/aurora_icon_chip"
+            android:importantForAccessibility="no">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:importantForAccessibility="no"
+                app:srcCompat="@drawable/ic_shuffle_24dp"
+                app:tint="@color/aurora_nav_item_checked"/>
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/shuffle_action"
+                android:textAppearance="?textAppearanceBodyMedium"
+                android:textColor="?colorOnSurface"
+                android:textStyle="bold"/>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="@string/shuffle_subtitle"
+                android:textAppearance="?textAppearanceBodySmall"
+                android:textColor="?colorOnSurfaceVariant"/>
+
+        </LinearLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

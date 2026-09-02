@@ -217,6 +217,10 @@
     <string name="last_added_label">Last added</string>
     <string name="top_tracks_label">Top Tracks</string>
     <string name="history_label">History</string>
+    <string name="top_tracks_subtitle">Most played songs</string>
+    <string name="last_added_subtitle">Recently added songs</string>
+    <string name="history_subtitle">Listen again</string>
+    <string name="shuffle_subtitle">Play everything shuffled</string>
     <string name="not_recently_played">Not Recently Played</string>
     <string name="play_info">Play info</string>
     <string name="track_play_counts">Track Play Counts</string>
@@ -678,6 +682,8 @@
     <string name="general_theme_title">General theme</string>
     <string name="pure_black_theme_title">Pure Black</string>
     <string name="material_you_title">Material You</string>
+    <string name="background_animation_title">Background animation</string>
+    <string name="background_animation_summary">Animate the aurora background. Turn off for reduced motion or to save battery.</string>
     <string name="use_custom_font_title">Use custom font</string>
     <string name="appbar_mode_title">Header style</string>
     <string name="library_categories_title">Library categories</string>

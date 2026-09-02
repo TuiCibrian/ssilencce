@@ -21,7 +21,8 @@
         <com.ssilencce.ui.component.views.WidthFitSquareLayout
             android:id="@+id/image_container"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:background="@drawable/aurora_cover_halo">
 
             <ImageView
                 android:id="@+id/image"
@@ -33,13 +34,11 @@
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/play"
-                style="?materialIconButtonFilledStyle"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                style="@style/AuroraGridPlayButton"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
                 android:layout_gravity="bottom|end"
-                android:layout_margin="4dp"
-                app:backgroundTint="@color/alpha_surface_container"
-                app:iconTint="?colorOnSurface"
+                android:layout_margin="6dp"
                 app:icon="@drawable/ic_play_24dp" />
 
         </com.ssilencce.ui.component.views.WidthFitSquareLayout>

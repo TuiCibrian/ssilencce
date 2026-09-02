@@ -12,6 +12,7 @@
         android:layout_width="156dp"
         android:layout_height="156dp"
         android:layout_margin="8dp"
+        android:background="@drawable/aurora_cover_halo"
         android:orientation="vertical"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

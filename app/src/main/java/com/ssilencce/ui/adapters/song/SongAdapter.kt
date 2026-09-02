@@ -38,6 +38,7 @@ import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.isActivated
 import com.ssilencce.extensions.loadPaletteImage
 import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.media.asReadableDuration
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.songInfo
 import com.ssilencce.extensions.resources.hide
@@ -91,6 +92,16 @@ open class SongAdapter(
         holder.menu?.isGone = isChecked
         holder.title?.text = getSongTitle(song)
         holder.text?.text = getSongText(song)
+        holder.idx?.let { indexView ->
+            indexView.isVisible = true
+            indexView.text = (position + 1).toString()
+        }
+        holder.time?.let { timeView ->
+            timeView.isVisible = true
+            timeView.text = song.duration.asReadableDuration()
+        }
+        val playerViewModel = activity.getViewModel<PlayerViewModel>()
+        holder.applyPlayingStyle(playerViewModel.isPlaying && playerViewModel.currentSong.id == song.id)
         // Check if imageContainer exists, so we can have a smooth transition without
         // CardView clipping, if it doesn't exist in current layout set transition name to image instead.
         if (holder.imageContainer != null) {

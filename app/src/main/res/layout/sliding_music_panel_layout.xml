@@ -7,12 +7,17 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/auroraBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"/>
+
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragment_container"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="?colorSurface"
         app:defaultNavHost="true"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
         tools:layout="@layout/fragment_home"/>
@@ -44,7 +49,7 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/navigationView"
-        style="?bottomNavigationStyle"
+        style="@style/Widget.Ssilencce.Aurora.NavigationBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
@@ -54,5 +59,14 @@
         app:itemHorizontalTranslationEnabled="false"
         app:menu="@menu/menu_bottom_navigation"
         tools:viewBindingType="com.google.android.material.navigation.NavigationBarView"/>
+
+    <com.ssilencce.ui.component.views.AuroraNavigationCaretView
+        android:id="@+id/navCaret"
+        android:layout_width="42dp"
+        android:layout_height="3dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:importantForAccessibility="no"
+        android:visibility="gone"
+        tools:ignore="InaccessibleViewModel,UnusedAttributeRtl,ViewWithOnlyOneLayoutOrVisibility"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

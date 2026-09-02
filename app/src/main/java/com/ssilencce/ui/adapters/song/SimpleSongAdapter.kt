@@ -28,6 +28,8 @@ import com.ssilencce.extensions.media.asReadableTrackNumber
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.ui.ISongCallback
+import com.ssilencce.ui.screen.player.PlayerViewModel
+import org.koin.androidx.viewmodel.ext.android.getViewModel
 
 class SimpleSongAdapter(
     context: FragmentActivity,
@@ -50,6 +52,9 @@ class SimpleSongAdapter(
 
         holder.imageText?.text = if (fixedTrackNumber > 0) fixedTrackNumber.toString() else "-"
         holder.time?.text = dataSet[position].duration.asReadableDuration()
+        val song = dataSet[position]
+        val playerViewModel = activity.getViewModel<PlayerViewModel>()
+        holder.applyPlayingStyle(playerViewModel.isPlaying && playerViewModel.currentSong.id == song.id)
     }
 
     override fun getSongText(song: Song): String =

@@ -8,26 +8,55 @@
     android:background="@drawable/rect_selector_strong"
     android:paddingTop="8dp"
     android:paddingBottom="8dp"
-    android:paddingStart="16dp"
+    android:paddingStart="8dp"
     android:paddingEnd="8dp"
     android:clickable="true"
     android:focusable="true"
     android:orientation="horizontal">
 
-    <com.google.android.material.imageview.ShapeableImageView
-        android:id="@+id/image"
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/idx"
+        android:layout_width="@dimen/list_song_idx_width"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:gravity="center"
+        android:maxLines="1"
+        android:textAppearance="?textAppearanceBodyMedium"
+        android:textColor="?colorOnSurfaceVariant"
+        android:textStyle="bold"
+        android:visibility="gone"
+        tools:text="12"
+        tools:visibility="visible"/>
+
+    <FrameLayout
+        android:id="@+id/image_container"
         android:layout_width="@dimen/list_item_image_size"
         android:layout_height="@dimen/list_item_image_size"
         android:layout_gravity="center_vertical"
-        android:scaleType="centerCrop"
-        app:shapeAppearanceOverlay="?shapeAppearanceCornerSmall"
-        tools:src="@tools:sample/avatars"/>
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="12dp">
+
+        <com.google.android.material.imageview.ShapeableImageView
+            android:id="@+id/image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            app:shapeAppearanceOverlay="?shapeAppearanceCornerSmall"
+            tools:src="@tools:sample/avatars"/>
+
+        <com.ssilencce.ui.component.views.EqMiniView
+            android:id="@+id/eq_mini"
+            android:layout_width="22dp"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:visibility="gone"/>
+    </FrameLayout>
 
     <LinearLayout
         android:id="@+id/title_container"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
         android:layout_marginEnd="8dp"
         android:layout_weight="1"
         android:layout_gravity="center_vertical"
@@ -55,6 +84,20 @@
 
     </LinearLayout>
 
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="4dp"
+        android:fontFeatureSettings="tnum"
+        android:maxLines="1"
+        android:textAppearance="?textAppearanceBodySmall"
+        android:textColor="?colorOnSurfaceVariant"
+        android:visibility="gone"
+        tools:text="3:14"
+        tools:visibility="visible"/>
+
     <androidx.appcompat.widget.AppCompatImageView
         android:id="@+id/drag_view"
         android:layout_width="wrap_content"
@@ -72,4 +115,3 @@
         android:layout_gravity="center_vertical"/>
 
 </LinearLayout>
-

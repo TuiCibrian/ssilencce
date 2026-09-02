@@ -83,7 +83,7 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 9. UI, Themes & System
 
-- **Themes** — Light/dark/system toggle, Material You (Monet dynamic color with palette styles and system contrast), pure black theme, custom font (Google Sans Flex).
+- **Themes** — Aurora Glass default theme (Compose + XML tokens: near-black/near-white Chroma-0 palettes, white accent, glass-fill/alpha surfaces with hairline dividers, painted aurora background with optional animated serpentine). Light/dark/system toggle, Material You (Monet dynamic color with palette styles and system contrast, opt-in — default off), pure black theme, custom font (Google Sans Flex).
 - **App language** — ~40 locale translations, per-app language override.
 - **Library UI** — Configurable visible categories (max 5, draggable), tab titles mode, remember last page, appbar mode (compact/simple/collapsing), rotation lock.
 - **Widgets** — 3 Glance widgets (responsive, card, full) with cover, title, artist, progress and controls; dynamic colors, widget layout style, third-line content, corner radius.

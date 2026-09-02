@@ -7,13 +7,19 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/auroraBackground"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:importantForAccessibility="no"/>
+
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <com.google.android.material.navigationrail.NavigationRailView
             android:id="@+id/navigationView"
-            style="?navigationRailStyle"
+            style="@style/Widget.Ssilencce.Aurora.NavigationRail"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             app:itemHorizontalTranslationEnabled="false"
@@ -25,7 +31,6 @@
             android:name="androidx.navigation.fragment.NavHostFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="?attr/colorSurface"
             app:defaultNavHost="true"
             tools:layout="@layout/fragment_home" />
     </LinearLayout>

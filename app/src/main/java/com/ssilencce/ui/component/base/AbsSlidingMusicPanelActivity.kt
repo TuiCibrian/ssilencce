@@ -72,6 +72,7 @@ import com.ssilencce.extensions.getBottomInsets
 import com.ssilencce.extensions.hasT
 import com.ssilencce.extensions.isLandscape
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.resources.SSILENCCE_ANIM_TIME
 import com.ssilencce.extensions.resources.darkenColor
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.extensions.resources.isColorLight
@@ -79,6 +80,7 @@ import com.ssilencce.extensions.resources.peekHeightAnimate
 import com.ssilencce.extensions.resources.show
 import com.ssilencce.extensions.whichFragment
 import com.ssilencce.ui.IBackConsumer
+import com.ssilencce.ui.component.compose.background.AuroraBackground
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.library.search.SearchFragment
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
@@ -186,6 +188,7 @@ abstract class AbsSlidingMusicPanelActivity :
 
         binding = SlidingMusicPanelLayoutBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        binding.auroraBackground.setContent { AuroraBackground() }
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.sheetView) { _, insets ->
             insets.also { windowInsets = it }
@@ -273,6 +276,56 @@ abstract class AbsSlidingMusicPanelActivity :
         if (navigationView is NavigationRailView) {
             navigationView.applyWindowInsets(left = true, top = true)
         }
+        setupNavCaret()
+    }
+
+    private fun setupNavCaret() {
+        val caret = binding.navCaret ?: return
+        if (navigationView !is BottomNavigationView) {
+            caret.isVisible = false
+            return
+        }
+        navigationView.setOnItemSelectedListener {
+            postCaretToSelectedItem()
+            true
+        }
+        val menuContainer = navigationView.getChildAt(0) as? ViewGroup
+        menuContainer?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+            if (caret.isVisible) {
+                postCaretToSelectedItem()
+            }
+        }
+        caret.isVisible = navigationView.isVisible
+        if (caret.isVisible) {
+            postCaretToSelectedItem()
+        }
+    }
+
+    private fun postCaretToSelectedItem() {
+        val caret = binding.navCaret ?: return
+        val menuContainer = navigationView.getChildAt(0) as? ViewGroup ?: return
+        val selectedId = navigationView.selectedItemId
+        val selectedIndex =
+            (0 until navigationView.menu.size).firstOrNull {
+                navigationView.menu.getItem(it).itemId == selectedId
+            } ?: return
+        navigationView.post {
+            val itemView = menuContainer.getChildAt(selectedIndex) ?: return@post
+            if (menuContainer.width <= 0 || itemView.width <= 0) {
+                return@post
+            }
+            caret.translationX = menuContainer.x + itemView.x + itemView.width / 2f - caret.width / 2f
+            caret.y = navigationView.y - caret.height
+        }
+    }
+
+    private fun syncNavCaretVisibility() {
+        val caret = binding.navCaret ?: return
+        val show = navigationView.isVisible && navigationView is BottomNavigationView
+        caret.isVisible = show
+        if (show) {
+            postCaretToSelectedItem()
+        }
     }
 
     private fun setupBottomSheet() {
@@ -333,14 +386,17 @@ abstract class AbsSlidingMusicPanelActivity :
                 if (visible) {
                     navigationView.bringToFront()
                     navigationView.show()
+                    navigationView.postDelayed({ syncNavCaretVisibility() }, SSILENCCE_ANIM_TIME + 50)
                 } else {
                     navigationView.hide()
+                    navigationView.postDelayed({ syncNavCaretVisibility() }, SSILENCCE_ANIM_TIME + 50)
                 }
             } else {
                 navigationView.isVisible = visible
                 if (visible && isBottomNavView && panelState != STATE_EXPANDED) {
                     navigationView.bringToFront()
                 }
+                syncNavCaretVisibility()
             }
         }
         hideBottomSheet(
@@ -470,6 +526,9 @@ abstract class AbsSlidingMusicPanelActivity :
         } else {
             isInOneTabMode = false
         }
+        if (navigationView.isVisible) {
+            postCaretToSelectedItem()
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -520,6 +579,8 @@ abstract class AbsSlidingMusicPanelActivity :
         if (!resources.isLandscape) {
             binding.navigationView.translationY = progress * 500
             binding.navigationView.alpha = alpha
+            binding.navCaret?.translationY = progress * 500
+            binding.navCaret?.alpha = alpha
         }
         binding.playerContainer.alpha = (progress - 0.2F) / 0.2F
     }

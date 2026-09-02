@@ -20,7 +20,8 @@
             android:id="@+id/image_container"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_margin="4dp">
+            android:layout_margin="4dp"
+            android:background="@drawable/aurora_cover_halo">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/image"
@@ -63,7 +64,7 @@
                 android:maxLines="1"
                 android:ellipsize="end"
                 android:textAlignment="gravity"
-                android:textColor="?android:attr/textColorSecondary"
+                android:textColor="?colorOnSurfaceVariant"
                 tools:text="@tools:sample/lorem"/>
 
         </LinearLayout>

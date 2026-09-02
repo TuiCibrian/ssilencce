@@ -14,7 +14,7 @@
     <SwitchPreferenceCompat
         app:iconSpaceReserved="true"
         app:title="@string/material_you_title"
-        app:defaultValue="@bool/md3_supported"
+        app:defaultValue="false"
         app:layout="@layout/list_item_view"
         app:widgetLayout="@layout/preference_switch"
         app:key="material_you"/>
@@ -26,6 +26,15 @@
         app:layout="@layout/list_item_view"
         app:widgetLayout="@layout/preference_switch"
         app:key="black_theme"/>
+
+    <SwitchPreferenceCompat
+        app:icon="@drawable/ic_blur_linear_24dp"
+        app:title="@string/background_animation_title"
+        app:summary="@string/background_animation_summary"
+        app:defaultValue="true"
+        app:layout="@layout/list_item_view"
+        app:widgetLayout="@layout/preference_switch"
+        app:key="background_animation"/>
 
     <SwitchPreferenceCompat
         app:icon="@drawable/ic_text_fields_24dp"

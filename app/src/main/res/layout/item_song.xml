@@ -26,11 +26,12 @@
             android:id="@+id/image_text"
             android:layout_width="40dp"
             android:layout_height="match_parent"
+            android:fontFeatureSettings="tnum"
             android:gravity="center"
             android:maxLines="1"
             android:minHeight="40dp"
             android:textAppearance="?textAppearanceSubtitle2"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="?colorOnSurfaceVariant"
             tools:text="22"/>
 
     </FrameLayout>
@@ -56,9 +57,10 @@
         android:id="@+id/time"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:fontFeatureSettings="tnum"
         android:padding="8dp"
         android:textAppearance="?textAppearanceBodyMedium"
-        android:textColor="?android:attr/textColorSecondary"
+        android:textColor="?colorOnSurfaceVariant"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toStartOf="@+id/menu"
         app:layout_constraintTop_toTopOf="parent"

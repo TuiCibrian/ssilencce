@@ -2959,6 +2959,17 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Uses menu_playlist_songs_selection and menu_item_playlist_song menus.
 
 
+- `ui/adapters/song/PlayingRowStyle.kt` — Aurora playing-row highlight applied to MediaEntryViewHolder song rows.
+  - **Purpose:** Accent the currently playing song row in Aurora Glass theme.
+  - **Responsibilities:** Acct text color for title/index/imageText, soft white shadow glow on playing title, toggles EqMiniView playing state.
+  - **Inputs:** playing: Boolean.
+  - **Outputs:** Row text/glow state.
+  - **Dependencies:** ContextCompat, MaterialColors, aurora_nav_item_checked color, EqMiniView.
+  - **Consumed by:** SongAdapter, SimpleSongAdapter (onBindViewHolder).
+  - **Related files:** `ui/adapters/song/SongAdapter.kt`, `ui/component/views/EqMiniView.kt`, `ui/component/base/MediaEntryViewHolder.kt`.
+  - **Notes:** Shadow cleared via paint.clearShadowLayer when not playing.
+
+
 - `ui/adapters/preference/ExtraInfoAdapter.kt` — Draggable adapter configuring extra metadata fields shown in the player.
   - **Purpose:** Let users enable/reorder MetadataField entries for player/widget extra info.
   - **Responsibilities:** Bind localized field names, toggle isEnabled on row click.
@@ -3093,13 +3104,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `ui/component/base/AbsSlidingMusicPanelActivity.kt` — Base activity with sliding mini-player bottom sheet, bottom nav/rail, player styles, gestures, search.
   - **Purpose:** Main app shell combining library navigation, mini-player sheet and player container.
-  - **Responsibilities:** BottomSheetBehavior state management, player style selection, bottom nav/rail tab updates, hold-tab search, back press routing, queue-driven sheet hiding, preference reactions.
+  - **Responsibilities:** BottomSheetBehavior state management, player style selection, bottom nav/rail tab updates, hold-tab search, back press routing, queue-driven sheet hiding, preference reactions, Aurora background ComposeView + nav caret positioning.
   - **Inputs:** MediaControllerOwner connection, PlayerViewModel queue/currentSong/colorScheme flows, Preferences.
-  - **Outputs:** Panel expand/collapse, library margins, tab menu rebuild, player fragment replacement.
-  - **Dependencies:** AbsBaseActivity, MediaControllerOwner, MiniPlayerFragment, all player style fragments, BottomSheetBehavior, NavigationBarView.
+  - **Outputs:** Panel expand/collapse, library margins, tab menu rebuild, player fragment replacement, auroraBackground draw, navCaret position/visibility.
+  - **Dependencies:** AbsBaseActivity, MediaControllerOwner, MiniPlayerFragment, all player style fragments, BottomSheetBehavior, NavigationBarView, AuroraBackground.
   - **Consumed by:** MainActivity.
-  - **Related files:** `ui/screen/MainActivity.kt`, `ui/screen/other/MiniPlayerFragment.kt`, `ui/component/base/AbsBaseActivity.kt`.
-  - **Notes:** STATE_HIDDEN clears the queue (RemoveAllSongs); peek height accounts for bottom insets.
+  - **Related files:** `ui/screen/MainActivity.kt`, `ui/screen/other/MiniPlayerFragment.kt`, `ui/component/base/AbsBaseActivity.kt`, `ui/component/views/AuroraNavigationCaretView.kt`.
+  - **Notes:** STATE_HIDDEN clears the queue (RemoveAllSongs); peek height accounts for bottom insets; caret only when BottomNavigationView (not rail).
 
 
 - `ui/component/base/AbsTagEditorActivity.kt` — Tag editor base activity: image selection (Photo Picker), SAF writing, Coil loading, tag saving.
@@ -3232,6 +3243,28 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Consumed by:** Equalizer screen sliders.
   - **Related files:** `ui/screen/equalizer/EqualizerScreen.kt`.
   - **Notes:** Skips animation when target equals current value.
+
+
+- `ui/component/views/AuroraNavigationCaretView.kt` — Small white caret drawn over the active item of the bottom navigation bar (Aurora Glass).
+  - **Purpose:** Underline-style active-item indicator for the Aurora nav bar.
+  - **Responsibilities:** Draw rounded-white caret with glow shadow; color from aurora_nav_item_checked; position driven by AbsSlidingMusicPanelActivity.
+  - **Inputs:** None (View inflated from sliding_music_panel_layout).
+  - **Outputs:** Active-item caret rendering.
+  - **Dependencies:** Paint, ContextCompat, aurora_nav_item_checked color, aurora_caret drawable.
+  - **Consumed by:** AbsSlidingMusicPanelActivity (setupNavCaret/postCaretToSelectedItem).
+  - **Related files:** `ui/component/base/AbsSlidingMusicPanelActivity.kt`, `res/drawable/aurora_caret.xml`.
+  - **Notes:** Portrait-only; hidden in landscape (layout-land has no caret).
+
+
+- `ui/component/views/EqMiniView.kt` — Animated equalizer indicator shown on the playing row in song lists.
+  - **Purpose:** Small 3-bar equalizer animation for the active song row.
+  - **Responsibilities:** Animate three bars with sine heights while playing; static bars when paused; invalidate loop only while attached and playing.
+  - **Inputs:** setPlaying(Boolean).
+  - **Outputs:** Rendered bars; playing state.
+  - **Dependencies:** ValueAnimator (or Choreographer), Paint.
+  - **Consumed by:** item_list.xml (eq_mini), SongAdapter/SimpleSongAdapter via PlayingRowStyle.
+  - **Related files:** `ui/adapters/song/PlayingRowStyle.kt`, `res/layout/item_list.xml`.
+  - **Notes:** Stops animating when detached from window or not playing (battery-friendly).
 
 
 - `ui/component/transform/ZoomOutPageTransformer.kt` — ViewPager PageTransformer with zoom-out effect.
@@ -3707,6 +3740,17 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Saturation clamped 0.15-0.45, lightness 0.18-0.28 for dark glow.
 
 
+- `ui/component/compose/background/AuroraBackground.kt` — Aurora Glass shell background: gradient base, white veil, scrim and optional animated white serpentine.
+  - **Purpose:** Painted glass look behind the library shell (no blur filters, battery-safe).
+  - **Responsibilities:** Vertical gradient base + radial white veil + bottom scrim on one Canvas; animate serpentine (two cubic segments phase-offset by PI) via withFrameNanos; respect background_animation preference and reduced-motion (ANIMATOR_DURATION_SCALE 0); lifecycle-gated (ON_START/ON_STOP).
+  - **Inputs:** modifier; Preferences.backgroundAnimation; system dark state.
+  - **Outputs:** Full-screen canvas draw.
+  - **Dependencies:** Compose Canvas, Brush gradients, Path, withFrameNanos, LifecycleEventObserver, SharedPreferences listener.
+  - **Consumed by:** AbsSlidingMusicPanelActivity (auroraBackground ComposeView at shell root).
+  - **Related files:** `ui/component/base/AbsSlidingMusicPanelActivity.kt`, `util/Preferences.kt` (background_animation), `res/drawable/*.xml` glass/aurora colors.
+  - **Notes:** Serpentine constants ported from the ssilencce-auroras.html reference (A=40, K=0.0105, SPEED=0.55); phase resets to 0 when animation disabled.
+
+
 - `ui/component/compose/preferences/PreferenceItem.kt` — Compose preference items (icon, title, summary, switch/value variants).
   - **Purpose:** Compose-based preference rows for settings screens.
   - **Responsibilities:** Horizontal/Vertical/Expandable variants; Switch, Slider, ProgressIndicator, plain icon variants; shared surface/content.
@@ -3945,7 +3989,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** androidx.compose.ui.graphics.Color.
   - **Consumed by:** Theme.kt, ColorComponent.kt (onSurfaceLight/Dark).
   - **Related files:** Theme.kt, Monet.kt.
-  - **Notes:** Primary hue ~indigo (0xFF4D5C92).
+  - **Notes:** Aurora Glass default palettes (Aurora Light/Dark: Chroma-0 near-black/near-white, white/black accent); primary hue ~indigo retained only for Material You.
 
 
 - `ui/theme/Type.kt` — Typography: Google Sans Flex font family and customTypography applied to all styles.

@@ -94,6 +94,8 @@ class MiniPlayerFragment :
                 .collectLatest {
                     binding.progressBar.max = it.total.toInt()
                     binding.progressBar.setProgressCompat(it.progress.toInt(), true)
+                    binding.seekProgress.max = it.total.toInt()
+                    binding.seekProgress.progress = it.progress.toInt()
                 }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
@@ -128,6 +130,8 @@ class MiniPlayerFragment :
         val isWavy = playerViewModel.isPlaying && Preferences.squigglySeekBar
         binding.progressBar.setAnimatedWave(isWavy)
         binding.progressBar.setWavy(isWavy)
+        binding.progressBar.isVisible = isWavy
+        binding.seekProgress.isVisible = !isWavy
     }
 
     fun setupButtonStyle() {

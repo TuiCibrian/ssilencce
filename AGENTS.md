@@ -95,12 +95,12 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 ### ui/ — Components, adapters & theme
 - `ui/adapters/` — Adapter per entity (song/album/artist/genre/playlist/year/file/search/home) with multi-select (CAB).
 - `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment, AbsPlayerFragment, AbsTagEditorActivity...).
-- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences.
-- `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress...).
+- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences, AuroraBackground (glass shell background).
+- `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress, AuroraNavigationCaretView, EqMiniView).
 - `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
 - `ui/component/preferences/` — Custom preferences + Compose preference dialogs.
 - `ui/dialogs/` — Playlist, delete-songs, SAF, folder-chooser, multi-check dialogs.
-- `ui/theme/` — SsilencceTheme, static M3 palettes, typography, Monet dynamic schemes.
+- `ui/theme/` — SsilencceTheme, static M3 palettes (Aurora Glass default in Color.kt/colors.xml), typography, Monet dynamic schemes.
 
 ### ui/screen/ — Screens
 - `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
