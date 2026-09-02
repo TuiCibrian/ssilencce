@@ -64,7 +64,8 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 7. Now Playing Screen
 
-- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — each with dedicated controls fragment.
+- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — each with dedicated controls fragment; Default has a Compose reimplementation behind a preference.
+- **Compose player (Default style)** — Jetpack Compose rewrite gated by `Appearance → Jetpack Compose player` (`Preferences.useComposePlayer` / `COMPOSE_PLAYER`, default on): `ComposePlayerFragment` hosts `DefaultNowPlayingScreen` when `useComposePlayer && Default`, otherwise legacy `DefaultPlayerFragment`; `PlayerTheme` tints from `PlayerColorScheme`, blurred cover via `BlurTransformation` (`Commit451` + `coil3.request.transformations`), `CoverPager` (`HorizontalPager` with `PlayerTransition` scale/alpha/rotation/translation maps, 100dp carousel padding), `CoverGestures` zone taps (30/70%), `MarqueeText` infinite scroll, `AuroraSlider` (4dp track, thumb glow) and `AuroraIconButton`/`AuroraPlayButton` (44dp/62dp, `AuroraTokens.surface2/border/glow`); `Crossfade` toggles `CoverPager` ↔ `CoverLyricsScreen`.
 - **Gestures** — Configurable single-tap, double-tap (left/right/center), long-press on cover; swipe on cover, swipe anywhere, swipe-up for queue, swipe-down to dismiss.
 - **Page transitions** — Carousel effect plus 10 PageTransformers (depth, 3D flips, hinge, cascading, parallax, vertical stack, zoom-out…).
 - **Color schemes** — 5 modes (App theme, simple color, vibrant color, Material You, blur) with palette extraction from the cover.

@@ -11,10 +11,12 @@
     .\scripts\mcp-emulator.ps1 watch
     .\scripts\mcp-emulator.ps1 install-watch
     .\scripts\mcp-emulator.ps1 uninstall-watch
+    .\scripts\mcp-emulator.ps1 install-autostart
+    .\scripts\mcp-emulator.ps1 uninstall-autostart
 #>
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("start", "stop", "status", "center", "watch", "install-watch", "uninstall-watch")]
+    [ValidateSet("start", "stop", "status", "center", "watch", "install-watch", "uninstall-watch", "install-autostart", "uninstall-autostart")]
     [string]$Action = "status",
     [switch]$KillEmulator
 )
@@ -28,6 +30,7 @@ $Pkg = "com.danielealbano.androidremotecontrolmcp"
 $Trampoline = "$Pkg/com.danielealbano.androidremotecontrolmcp.services.mcp.AdbServiceTrampolineActivity"
 $McpUrl = "http://localhost:8080/mcp"
 $WatchTask = "ssilencce-emulator-watch"
+$AutostartTask = "ssilencce-mcp-autostart"
 $CenterTolerance = 20
 $RecenteringGrace = 30
 $StartupTimeout = 120
@@ -210,5 +213,17 @@ switch ($Action) {
     "uninstall-watch" {
         Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name $WatchTask -ErrorAction SilentlyContinue
         Write-Host "Watch removed from HKCU Run"
+    }
+    "install-autostart" {
+        $runKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run"
+        $cmd = "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$(Join-Path $PSScriptRoot 'mcp-emulator.ps1')`" start"
+        New-ItemProperty -Path $runKey -Name $AutostartTask -Value $cmd -PropertyType String -Force | Out-Null
+        Write-Host "Autostart installed in HKCU Run (starts MCP at login, hidden, no admin needed)"
+        Write-Host "  Entry: $AutostartTask -> $cmd"
+        Write-Host "  Also ensure 'install-watch' is active to keep window centered."
+    }
+    "uninstall-autostart" {
+        Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name $AutostartTask -ErrorAction SilentlyContinue
+        Write-Host "Autostart removed from HKCU Run"
     }
 }

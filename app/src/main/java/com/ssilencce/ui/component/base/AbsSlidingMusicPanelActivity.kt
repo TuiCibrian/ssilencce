@@ -42,6 +42,7 @@ import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.core.view.size
 import androidx.core.view.updateLayoutParams
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import androidx.media3.session.MediaController
 import androidx.navigation.findNavController
@@ -87,6 +88,7 @@ import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.other.MiniPlayerFragment
 import com.ssilencce.ui.screen.permissions.PermissionsActivity
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.compose.ComposePlayerFragment
 import com.ssilencce.ui.screen.player.styles.defaultstyle.DefaultPlayerFragment
 import com.ssilencce.ui.screen.player.styles.expressivestyle.ExpressivePlayerFragment
 import com.ssilencce.ui.screen.player.styles.fullcoverstyle.FullCoverPlayerFragment
@@ -98,6 +100,7 @@ import com.ssilencce.util.ADAPTIVE_CONTROLS
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
 import com.ssilencce.util.CAROUSEL_EFFECT
 import com.ssilencce.util.CIRCLE_PLAY_BUTTON
+import com.ssilencce.util.COMPOSE_PLAYER
 import com.ssilencce.util.ENABLE_ROTATION_LOCK
 import com.ssilencce.util.HOLD_TAB_TO_SEARCH
 import com.ssilencce.util.LIBRARY_CATEGORIES
@@ -140,7 +143,7 @@ abstract class AbsSlidingMusicPanelActivity :
     val slidingPanel: FrameLayout
         get() = binding.sheetView
 
-    private var playerFragment: AbsPlayerFragment? = null
+    private var playerFragment: Fragment? = null
     private var paletteColor: Int = 0
 
     var panelState: Int
@@ -498,13 +501,13 @@ abstract class AbsSlidingMusicPanelActivity :
         // restore values
         setLightStatusBar()
         setLightNavigationBar()
-        playerFragment?.onHide()
+        (playerFragment as? AbsPlayerFragment)?.onHide()
     }
 
     protected open fun onPanelExpanded() {
         setMiniPlayerAlphaProgress(1f)
         onPaletteColorChanged()
-        playerFragment?.onShow()
+        (playerFragment as? AbsPlayerFragment)?.onShow()
     }
 
     protected fun updateTabs() {
@@ -671,6 +674,7 @@ abstract class AbsSlidingMusicPanelActivity :
             NOW_PLAYING_SMALL_IMAGE,
             PLAYER_BLUR_RADIUS,
             CIRCLE_PLAY_BUTTON,
+            COMPOSE_PLAYER,
             -> {
                 chooseFragmentForTheme()
             }
@@ -715,15 +719,19 @@ abstract class AbsSlidingMusicPanelActivity :
     private fun chooseFragmentForTheme() {
         nowPlayingScreen = Preferences.nowPlayingScreen
 
-        val fragment: AbsPlayerFragment =
-            when (nowPlayingScreen) {
-                NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
-                NowPlayingScreen.Gradient -> GradientPlayerFragment()
-                NowPlayingScreen.Peek -> PeekPlayerFragment()
-                NowPlayingScreen.Plain -> PlainPlayerFragment()
-                NowPlayingScreen.M3 -> M3PlayerFragment()
-                NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
-                else -> DefaultPlayerFragment()
+        val fragment: Fragment =
+            if (Preferences.useComposePlayer && nowPlayingScreen == NowPlayingScreen.Default) {
+                ComposePlayerFragment()
+            } else {
+                when (nowPlayingScreen) {
+                    NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
+                    NowPlayingScreen.Gradient -> GradientPlayerFragment()
+                    NowPlayingScreen.Peek -> PeekPlayerFragment()
+                    NowPlayingScreen.Plain -> PlainPlayerFragment()
+                    NowPlayingScreen.M3 -> M3PlayerFragment()
+                    NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
+                    else -> DefaultPlayerFragment()
+                }
             }
 
         supportFragmentManager.commit {

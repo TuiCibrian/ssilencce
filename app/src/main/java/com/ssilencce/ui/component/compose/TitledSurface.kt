@@ -1,6 +1,7 @@
 package com.ssilencce.ui.component.compose
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -107,9 +108,15 @@ private fun TitledCard(
         shape = MaterialTheme.shapes.large,
         colors =
             CardDefaults.cardColors(
-                containerColor = color ?: MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor =
+                    (color ?: MaterialTheme.colorScheme.surfaceContainerHigh).copy(alpha = .85f),
             ),
-        modifier = modifier,
+        modifier =
+            modifier.border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = MaterialTheme.shapes.large,
+            ),
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

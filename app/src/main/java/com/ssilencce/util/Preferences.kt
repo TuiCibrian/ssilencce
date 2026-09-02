@@ -187,6 +187,10 @@ object Preferences : KoinComponent {
         get() = preferences.enumValue(NOW_PLAYING_SCREEN, NowPlayingScreen.Default)
         set(value) = preferences.edit { putString(NOW_PLAYING_SCREEN, value.name) }
 
+    var useComposePlayer: Boolean
+        get() = preferences.getBoolean(COMPOSE_PLAYER, true)
+        set(value) = preferences.edit { putBoolean(COMPOSE_PLAYER, value) }
+
     val extraControls: Boolean
         get() = preferences.getBoolean(ADD_EXTRA_CONTROLS, false)
 
@@ -607,6 +611,7 @@ const val HORIZONTAL_ARTIST_ALBUMS = "horizontal_artist_albums"
 const val COMPACT_ALBUM_SONG_VIEW = "compact_album_song_view"
 const val COMPACT_ARTIST_SONG_VIEW = "compact_artist_song_view"
 const val NOW_PLAYING_SCREEN = "now_playing_screen"
+const val COMPOSE_PLAYER = "compose_player"
 const val OPEN_ON_PLAY = "open_on_play"
 const val ADD_EXTRA_CONTROLS = "add_extra_controls"
 const val ADAPTIVE_CONTROLS = "adaptive_controls"

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.border
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularWavyProgressIndicator
@@ -193,8 +194,10 @@ fun LyricsScreen(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEditClick(song) },
-                containerColor = MaterialTheme.colorScheme.surface,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = .85f),
                 contentColor = MaterialTheme.colorScheme.onSurface,
+                shape = MaterialTheme.shapes.large,
+                modifier = Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, MaterialTheme.shapes.large),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_edit_note_24dp),
@@ -223,7 +226,7 @@ fun LyricsScreen(
                     }
 
                     effect.isBlur -> {
-                        val backgroundColor = Color(0xFF1A1A1A)
+                        val backgroundColor = MaterialTheme.colorScheme.surface
 
                         Box(modifier = Modifier.fillMaxSize()) {
                             AsyncImage(

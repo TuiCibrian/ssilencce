@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingTop="16dp"
+    android:paddingEnd="16dp"
+    android:paddingBottom="4dp">
 
     <com.google.android.material.textview.MaterialTextView
         android:id="@android:id/title"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingStart="@dimen/pref_title_padding"
-        android:paddingTop="16dp"
-        android:paddingEnd="16dp"
-        android:textAppearance="?textAppearanceOverline"
+        android:background="@drawable/aurora_icon_chip"
+        android:paddingStart="12dp"
+        android:paddingTop="6dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="6dp"
+        android:textAllCaps="true"
+        android:textAppearance="?textAppearanceLabelSmall"
         android:textColor="?colorPrimary"
         tools:text="@tools:sample/full_names" />
 </LinearLayout>

@@ -2409,13 +2409,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `util/Preferences.kt` — Central typed SharedPreferences access for all app settings.
   - **Purpose:** Single typed access point for all app settings and preference keys.
-  - **Responsibilities:** Typed getters/setters (theme, player, queue, shuffle, cutoffs, folder actions, updates); listener registration; enum helpers; ~100 key constants.
+  - **Responsibilities:** Typed getters/setters (theme, player, queue, shuffle, cutoffs, folder actions, updates); listener registration; enum helpers; ~100 key constants including `COMPOSE_PLAYER` / `var useComposePlayer: Boolean` (default `true`) gating the Compose Default player, plus `LYRICS_ON_COVER`/`SWIPE_ON_COVER`/`CAROUSEL_EFFECT`/cover tap actions.
   - **Inputs:** Injected SharedPreferences, model enums (NowPlayingAction, SongClickBehavior...), `Cutoff`/`CategoryInfo`, string resources.
-  - **Outputs:** Typed settings values; SharedPreferences writes via `edit`; constant keys.
+  - **Outputs:** Typed settings values; SharedPreferences writes via `edit`; constant keys (`NOW_PLAYING_SCREEN`, `COMPOSE_PLAYER`, `DISPLAY_NEXT_SONG`, `CAROUSEL_EFFECT` etc).
   - **Dependencies:** SharedPreferences, AppCompatDelegate, CategoryInfo, Cutoff, FileUtil, Calendar/JSON helpers.
-  - **Consumed by:** PlaybackService, MainActivity, AbsThemeActivity, AbsPlayerFragment, EqualizerViewModel, ViewExt, NavigationExt, nearly all UI.
-  - **Related files:** `App.kt` (defaults), `extensions/SharedPreferencesExt.kt`, `extensions/utilities/Utilities.kt`, `extensions/utilities/CalendarExt.kt`.
-  - **Notes:** `LASTFM_LOGIN`/`LISTENBRAINZ_LOGIN` keys; lists serialized via kotlinx JSON; enums by name or ordinal.
+  - **Consumed by:** PlaybackService, MainActivity, AbsThemeActivity, AbsPlayerFragment, `AbsSlidingMusicPanelActivity.chooseFragmentForTheme` (gate `useComposePlayer && NowPlayingScreen.Default`), `DefaultNowPlayingScreen` (lyrics/cover gestures, carousel, `isShowNextSong`), EqualizerViewModel, ViewExt, NavigationExt, nearly all UI.
+  - **Related files:** `App.kt` (defaults), `extensions/SharedPreferencesExt.kt`, `extensions/utilities/Utilities.kt`, `extensions/utilities/CalendarExt.kt`, `res/xml/preferences_screen_appearance.xml` (`compose_player` SwitchPreference).
+  - **Notes:** `LASTFM_LOGIN`/`LISTENBRAINZ_LOGIN` keys; lists serialized via kotlinx JSON; enums by name or ordinal; `useComposePlayer` persisted as boolean `compose_player`.
 
 
 - `util/SongPlayCountHelper.kt` — Times playback per song to decide when to increment the counter (50% of duration).
@@ -3103,14 +3103,14 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 
 - `ui/component/base/AbsSlidingMusicPanelActivity.kt` — Base activity with sliding mini-player bottom sheet, bottom nav/rail, player styles, gestures, search.
-  - **Purpose:** Main app shell combining library navigation, mini-player sheet and player container.
-  - **Responsibilities:** BottomSheetBehavior state management, player style selection, bottom nav/rail tab updates, hold-tab search, back press routing, queue-driven sheet hiding, preference reactions, Aurora background ComposeView + nav caret positioning.
-  - **Inputs:** MediaControllerOwner connection, PlayerViewModel queue/currentSong/colorScheme flows, Preferences.
-  - **Outputs:** Panel expand/collapse, library margins, tab menu rebuild, player fragment replacement, auroraBackground draw, navCaret position/visibility.
-  - **Dependencies:** AbsBaseActivity, MediaControllerOwner, MiniPlayerFragment, all player style fragments, BottomSheetBehavior, NavigationBarView, AuroraBackground.
+  - **Purpose:** Main app shell combining library navigation, mini-player sheet and player container (now with Compose gate).
+  - **Responsibilities:** BottomSheetBehavior state management, `chooseFragmentForTheme()` gating `ComposePlayerFragment` when `Preferences.useComposePlayer && NowPlayingScreen.Default` else legacy `DefaultPlayerFragment`/other styles, bottom nav/rail tab updates, hold-tab search, back press routing, queue-driven sheet hiding, preference reactions (incl. `COMPOSE_PLAYER` → `chooseFragmentForTheme()`; `playerFragment: Fragment?` with `(as? AbsPlayerFragment)?.onShow/Hide`), Aurora background ComposeView + nav caret positioning.
+  - **Inputs:** MediaControllerOwner connection, PlayerViewModel queue/currentSong/colorScheme flows, Preferences (`nowPlayingScreen`, `useComposePlayer`, `CAROUSEL_EFFECT` etc).
+  - **Outputs:** Panel expand/collapse, library margins, tab menu rebuild, player fragment replacement (Compose vs legacy), auroraBackground draw, navCaret position/visibility.
+  - **Dependencies:** AbsBaseActivity, MediaControllerOwner, MiniPlayerFragment, `ComposePlayerFragment`, all legacy player style fragments (`DefaultPlayerFragment`, `M3`/`Expressive`/…), BottomSheetBehavior, NavigationBarView, AuroraBackground, `androidx.fragment.app.Fragment`.
   - **Consumed by:** MainActivity.
-  - **Related files:** `ui/screen/MainActivity.kt`, `ui/screen/other/MiniPlayerFragment.kt`, `ui/component/base/AbsBaseActivity.kt`, `ui/component/views/AuroraNavigationCaretView.kt`.
-  - **Notes:** STATE_HIDDEN clears the queue (RemoveAllSongs); peek height accounts for bottom insets; caret only when BottomNavigationView (not rail).
+  - **Related files:** `ui/screen/MainActivity.kt`, `ui/screen/other/MiniPlayerFragment.kt`, `ui/component/base/AbsBaseActivity.kt`, `ui/component/views/AuroraNavigationCaretView.kt`, `ui/screen/player/compose/ComposePlayerFragment.kt`, `util/Preferences.kt` (`COMPOSE_PLAYER`).
+  - **Notes:** `STATE_HIDDEN` clears the queue (RemoveAllSongs); peek height accounts for bottom insets; caret only when BottomNavigationView (not rail); `whichFragment(R.id.player_container) as Fragment` reified.
 
 
 - `ui/component/base/AbsTagEditorActivity.kt` — Tag editor base activity: image selection (Photo Picker), SAF writing, Coil loading, tag saving.
@@ -3521,14 +3521,14 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 
 - `ui/component/compose/TitledSurface.kt` — Collapsible card composables (TitledCard/SwitchCard) with title, icon and optional switch.
-  - **Purpose:** Grouped settings cards with collapsible content areas.
-  - **Responsibilities:** Render Card with clickable title row, icon, expand/collapse via AnimatedVisibility; SwitchCard adds toggle.
+  - **Purpose:** Grouped settings cards with collapsible content areas (now with Aurora Glass tint).
+  - **Responsibilities:** Render Card (`surfaceContainerHigh.copy(.85f)` + hairline `outlineVariant` border via `AuroraTokens.glassBorder`) with clickable title row, icon, expand/collapse via AnimatedVisibility; SwitchCard adds toggle; shared by equalizer/sound/info sheets.
   - **Inputs:** title, icon Painter, style, color, collapsible, titleEndContent, content slot; SwitchCard checked/onCheckedChange.
-  - **Outputs:** Composable Card with animated content visibility.
-  - **Dependencies:** Material3 Card, Switch, Icon, AnimatedVisibility, MaterialTheme.
-  - **Consumed by:** EqualizerScreen, SoundSettingsScreen, SongDetailFragment.
-  - **Related files:** Dialog.kt, MaterialSwitch.kt, EqualizerScreen.kt.
-  - **Notes:** Opts into ExperimentalMaterial3ExpressiveApi; content receives PaddingValues(16dp sides/bottom).
+  - **Outputs:** Composable Card with animated content visibility and glass border.
+  - **Dependencies:** Material3 Card, Switch, Icon, AnimatedVisibility, MaterialTheme, `AuroraTokens`.
+  - **Consumed by:** EqualizerScreen, SoundSettingsScreen, SongDetailFragment, `QueueScreen` header, `LyricsScreen` FAB area.
+  - **Related files:** Dialog.kt, MaterialSwitch.kt, EqualizerScreen.kt, `ui/theme/AuroraTokens.kt`.
+  - **Notes:** Opts into ExperimentalMaterial3ExpressiveApi; content receives PaddingValues(16dp sides/bottom); glass alpha .85 mirrors `ssilencce-auroras.html` surfaces.
 
 
 - `ui/component/compose/TipView.kt` — Tip/info card with icon and text.
@@ -4012,6 +4012,17 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Consumed by:** IconifiedSlider.kt, SoundSettingsScreen, SleepTimerScreen.
   - **Related files:** IconifiedSlider.kt, NowPlayingSlider.kt.
   - **Notes:** Track heights 32dp/40dp.
+
+
+- `ui/theme/AuroraTokens.kt` — Aurora Glass token constants for the Compose player.
+  - **Purpose:** Centralize frosted-glass surface/border/glow colors and dimensions.
+  - **Responsibilities:** Define `AuroraTokens` object: `surface2` (0x0DFFFFFF), `glassBorder` (hairline), `glowWhite`, corner radii and elevation values used by `AuroraIconButton`/`AuroraSlider`/`AuroraPlayButton`.
+  - **Inputs:** —.
+  - **Outputs:** Token constants.
+  - **Dependencies:** Compose Color, Dp.
+  - **Consumed by:** `ui/screen/player/compose/AuroraIconButton.kt`, `AuroraSlider.kt`, `DefaultNowPlayingScreen.kt`, `QueueScreen.kt`, `LyricsScreen.kt`, `TitledSurface.kt`.
+  - **Related files:** `ui/theme/Tokens.kt`, `ui/theme/Color.kt`.
+  - **Notes:** Mirrors `ssilencce-auroras.html` reference (`--accent #fff` on near-black navy, `rgba(255,255,255,.08)` hairline, white halos).
 
 
 - `ui/theme/Monet.kt` — Dynamic (Monet/M3) color scheme generation from a key color with palette styles and system contrast.
@@ -4512,14 +4523,14 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 
 - `ui/screen/lyrics/LyricsScreen.kt` — Compose synced-lyrics screen: auto-scrolling, blur/background effects, keepScreenOn, auto-advance with playback.
-  - **Purpose:** Render synced/plain lyrics with playback-synced highlighting.
-  - **Responsibilities:** LyricsUiState sealed class, smooth playback position interpolation, gradient/blur backgrounds, LyricsView rendering, seek callbacks.
+  - **Purpose:** Render synced/plain lyrics with playback-synced highlighting (now with Aurora scrim).
+  - **Responsibilities:** LyricsUiState sealed class, smooth playback position interpolation, `surface` scrim + `surfaceContainerHigh.copy(.85f)` glass FAB border (`AuroraTokens.glassBorder`), gradient/blur backgrounds, LyricsView rendering, seek callbacks.
   - **Inputs:** LibraryViewModel, LyricsViewModel, PlayerViewModel, Song.
   - **Outputs:** Lyrics UI states (Loading/Empty/Instrumental/Plain/Synced).
-  - **Dependencies:** LyricsViewModel, PlayerViewModel, LyricsView, AnimatedEqBars, Coil SingletonImageLoader, extractGradientColors.
+  - **Dependencies:** LyricsViewModel, PlayerViewModel, LyricsView, AnimatedEqBars, Coil SingletonImageLoader, extractGradientColors, `AuroraTokens`.
   - **Consumed by:** LyricsFragment, CoverLyricsFragment (CoverLyricsScreen).
-  - **Related files:** LyricsViewModel.kt, LyricsFragment.kt, player/cover/CoverLyricsFragment.kt, ui/component/compose/lyrics/LyricsView.kt.
-  - **Notes:** keepScreenOn and power-save mode respected; rememberSmoothPlaybackPosition public helper.
+  - **Related files:** LyricsViewModel.kt, LyricsFragment.kt, player/cover/CoverLyricsFragment.kt, ui/component/compose/lyrics/LyricsView.kt, `ui/theme/AuroraTokens.kt`.
+  - **Notes:** keepScreenOn and power-save mode respected; rememberSmoothPlaybackPosition public helper; glass FAB matches `TitledSurface`.
 
 
 - `ui/screen/lyrics/LyricsViewModel.kt` — Central lyrics ViewModel: loading from repository/network, InstrumentalDetector, view settings, editor state.
@@ -4636,9 +4647,86 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Inputs:** MediaController via setMediaController, SharedPreferences, Repository, MediaEvent.
   - **Outputs:** StateFlows (queueFlow, currentSongFlow, colorSchemeFlow), mediaEvent, stopAfterPosition.
   - **Dependencies:** MediaController, ProgressObserver, ShuffleManager, Repository, Preferences, Playback constants.
-  - **Consumed by:** AbsPlayerFragment, AbsPlayerControlsFragment, AbsSlidingMusicPanelActivity, MainActivity.
+  - **Consumed by:** AbsPlayerFragment, AbsPlayerControlsFragment, AbsSlidingMusicPanelActivity, MainActivity, `ui/screen/player/compose/DefaultNowPlayingScreen.kt`, `ComposePlayerFragment.kt`.
   - **Related files:** PlaybackService, MediaEvent, QueuePosition, QueueSong.
   - **Notes:** Koin-injected; debounced queue rebuild (QUEUE_DEBOUNCE=100ms); removes missing MediaItems.
+
+
+- `ui/screen/player/compose/ComposePlayerFragment.kt` — Fragment host for the Compose Default player.
+  - **Purpose:** Bridge the legacy `AbsSlidingMusicPanelActivity` fragment container to the Compose now-playing UI.
+  - **Responsibilities:** Host `ComposeView` with `SsilencceTheme`, collect `PlayerViewModel`/`LibraryViewModel`/`LyricsViewModel` flows (`currentSongFlow`/`queueFlow`/`positionFlow`/`isPlayingFlow` etc), compute `isFavorite` via `isSongFavorite(song).observeAsState`, render `DefaultNowPlayingScreen`, dispatch `performNowPlayingAction(NowPlayingAction)` (mirrors `AbsPlayerFragment.onQuickActionEvent`: goToAlbum/Artist/Destination, dialogs `WebSearch/Delete/AddToPlaylist`, `TagEditor` via `EditTarget`, `SleepTimer`/`SoundSettings` nav, `togglePlayPause`/`seekBack`/`Forward`).
+  - **Inputs:** `PlayerViewModel`, `LibraryViewModel`, `LyricsViewModel`, `Song`.
+  - **Outputs:** Compose UI; navigation/dialog intents.
+  - **Dependencies:** Fragment, ComposeView, `SsilencceTheme`, Koin `activityViewModel`, `findActivityNavController`, `goToAlbum`/`goToArtist`/`goToDestination`.
+  - **Consumed by:** `AbsSlidingMusicPanelActivity.chooseFragmentForTheme()` when `Preferences.useComposePlayer && NowPlayingScreen.Default`.
+  - **Related files:** `DefaultNowPlayingScreen.kt`, `AbsSlidingMusicPanelActivity.kt`, `AbsPlayerFragment.kt` (action mapping), `util/Preferences.kt` (`COMPOSE_PLAYER`).
+  - **Notes:** No `onShow`/`onHide` hooks; lifecycle tied to `ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed`.
+
+
+- `ui/screen/player/compose/DefaultNowPlayingScreen.kt` — Compose Default now-playing screen (Aurora Glass).
+  - **Purpose:** Full Compose replacement for `DefaultPlayerFragment` + `DefaultPlayerControlsFragment`.
+  - **Responsibilities:** Collect `isPlaying/progress/duration/currentSong/nextSong/queue/position/repeat/shuffle/extraInfo/scheme` flows, `PlayerTheme(scheme)`, `NowPlayingBackground` (blur `song` via `BlurTransformation` 0–25dp + vertical `surface` scrim), `Crossfade` between `CoverLyricsScreen` (when `showLyricsOnCover && supportsCoverLyrics`) and `CoverPager`, `SongMeta` (title via `MarqueeText`, artist—album, extraInfo), `IconActionsRow` (7 `AuroraIconButton`: equalizer→`SoundSettings`, favorite toggle, `lyrics`→local handle, queue, sleep, playlist, more→`WebSearch`), `ProgressSection` (`AuroraSlider` + time labels, `seekTo` on finish), `TransportRow` (repeat/prev/play/next/shuffle with long-press seekBack/Forward), `NextSongInfo` when `isShowNextSong` (tappable to queue), landscape detection, `handleAction` local toggle for `Lyrics` vs `onAction`.
+  - **Inputs:** `PlayerViewModel`, `LyricsViewModel`, `onAction: (NowPlayingAction)->Unit`, `isFavorite`.
+  - **Outputs:** Composable now-playing UI.
+  - **Dependencies:** `PlayerViewModel`, `LyricsViewModel`, `CoverPager`, `CoverLyricsScreen`, `AuroraIconButton`/`AuroraSlider`/`MarqueeText`/`PlayerGestures`, `Preferences` keys (`LYRICS_ON_COVER`, cover tap actions, `isShowNextSong`, `enableScrollingText`, `displayAlbumTitle`), `coil3` `BlurTransformation`.
+  - **Consumed by:** `ComposePlayerFragment.kt`.
+  - **Related files:** `CoverPager.kt`, `PlayerGestures.kt`, `AuroraIconButton.kt`, `AuroraSlider.kt`, `MarqueeText.kt`, `ui/theme/PlayerTheme`, `core/model/player/PlayerTransition`.
+  - **Notes:** `showLyricsOnCover` ↔ `Preferences.showLyricsOnCover` two-way; `playSongAt` on page selection; `transport` repeats/shuffle via `PlayerViewModel.cycleRepeatMode/toggleShuffleMode`.
+
+
+- `ui/screen/player/compose/CoverPager.kt` — Compose `HorizontalPager` cover carousel with `PlayerTransition` transforms.
+  - **Purpose:** Replace `CoverPagerFragment` + `AlbumCoverViewPager` + `CustomFragmentStatePagerAdapter` with a pager composable.
+  - **Responsibilities:** `rememberPagerState(pageCount=queue.size, initialPage=currentPosition)`, sync via `LaunchedEffect(currentPosition)` + `snapshotFlow(isScrollInProgress+currentPage)` → `onSongSelected(page)`, `isCarouselEffect && !isLandscape && queue.size>1` → `100.dp` padding, `pageOffset = currentPage + offsetFraction` transforms: `scale` (carousel/flip vs stack vs default), `alpha` (carousel/depth/zoom), `rotationY/X` (flips/hinge), `translationY` (stack/cascading), `graphicsLayer` + `shadow(42dp, White)` + `RoundedCornerShape(24dp)` + `MediaImage`.
+  - **Inputs:** `queue: List<Song>`, `currentPosition`, `transition`, `isCarouselEffect`, `isLandscape`, `coverGestures: Modifier`, `onSongSelected`.
+  - **Outputs:** Paged covers; page-select callback.
+  - **Dependencies:** `HorizontalPager`, `PagerState`, `graphicsLayer`, `MediaImage`, `PlayerTransition`, `kotlin.math.absoluteValue`.
+  - **Consumed by:** `DefaultNowPlayingScreen.kt`.
+  - **Related files:** `CoverPagerFragment.kt` (legacy), `PlayerGestures.kt`, `DefaultNowPlayingScreen.kt`, `ui/component/compose/MediaImage.kt`.
+  - **Notes:** Fixes `translationY` shadowing via `this.translationY`.
+
+
+- `ui/screen/player/compose/PlayerGestures.kt` — Cover gesture `Modifier` for the Compose player.
+  - **Purpose:** Port `PlayerGesturesController` to Compose `pointerInput`.
+  - **Responsibilities:** Define `CoverGestures(onTap, onDoubleTapLeft/Center/Right, onLongPress)` with thresholds `LEFT 0.30`/`RIGHT 0.70`; `Modifier.playerCoverGestures(gestures)` via `detectTapGestures(onTap=..., onDoubleTap={x-> zone dispatch}, onLongPress=...)`.
+  - **Inputs:** Touch positions, view width via `size.width`.
+  - **Outputs:** Gesture callbacks.
+  - **Dependencies:** `pointerInput`, `detectTapGestures`.
+  - **Consumed by:** `DefaultNowPlayingScreen.kt` (via `Modifier.playerCoverGestures` on `CoverPager`).
+  - **Related files:** `PlayerGesturesController.kt`, `CoverPager.kt`.
+  - **Notes:** Long-press via same detector; no fling (swipe handled by pager).
+
+
+- `ui/screen/player/compose/AuroraIconButton.kt` — Frosted-glass icon button and play button for the Aurora player.
+  - **Purpose:** Aurora-styled tappable icons matching `ssilencce-auroras.html`.
+  - **Responsibilities:** `AuroraIconButton(icon, desc, isActive, activeTint, onClick, onLongClick)` — 44dp `CircleShape`, `AuroraTokens.surface2` pressed bg, `AuroraTokens.glassBorder`, white glow, `graphicsLayer` scale .85 when pressed via `detectTapGestures`; `AuroraPlayButton(isPlaying, onClick)` — 62dp elevated `CircleShape` with white shadow, crossfades play/pause.
+  - **Inputs:** Painter, booleans, callbacks.
+  - **Outputs:** Composable buttons.
+  - **Dependencies:** `AuroraTokens`, `CircleShape`, `shadow`, `pointerInput`.
+  - **Consumed by:** `DefaultNowPlayingScreen.kt` (`IconActionsRow`, `TransportRow`).
+  - **Related files:** `AuroraSlider.kt`, `AuroraTokens.kt`, `DefaultNowPlayingScreen.kt`.
+  - **Notes:** `onLongClick` uses `detectTapGestures` long-press path to support both actions on same node.
+
+
+- `ui/screen/player/compose/AuroraSlider.kt` — Glass-style seek slider for the Compose player.
+  - **Purpose:** Replace `MusicSlider`/`SquigglyProgress` with a Compose slider matching Aurora tokens.
+  - **Responsibilities:** 28dp height touch target, 4dp track `primary.copy(.15)`, fill `primary` with white shadow glow, draggable thumb `primary` with `BoxWithConstraints` (`this@BoxWithConstraints.maxWidth * fraction - thumbSize/2` offset), `pointerInput(detectTapGestures)` for tap-to-seek, `animateFloatAsState` for `fraction`.
+  - **Inputs:** `value: Float` fraction, `onValueChangeFinished: (Float)->Unit`.
+  - **Outputs:** Drag progress, seek commit callback.
+  - **Dependencies:** `AuroraTokens`, `BoxWithConstraints`, `CircleShape`, `shadow`.
+  - **Consumed by:** `DefaultNowPlayingScreen.kt` (`ProgressSection`).
+  - **Related files:** `AuroraIconButton.kt`, `ui/component/views/MusicSlider.java`.
+  - **Notes:** Thumb size 16dp; track clipped `CircleShape`.
+
+
+- `ui/screen/player/compose/MarqueeText.kt` — Auto-scrolling marquee title for the Compose player.
+  - **Purpose:** Replace `ScrollingText`/`enableScrollingText` for the now-playing title with a Compose infinite marquee.
+  - **Responsibilities:** Measure `textWidth` vs `containerWidth`, when overflow apply `rememberInfiniteTransition` `animateFloat(0→travel, LinearEasing, Reverse, 22ms per dp, 2000–12000ms)`, `clipToBounds` + `offset(x)`; otherwise static centered `Text`.
+  - **Inputs:** `text: String`, `animationEnabled`, `style`.
+  - **Outputs:** Composable text.
+  - **Dependencies:** `infiniteTransition`, `LinearEasing`, `BoxWithConstraints`.
+  - **Consumed by:** `DefaultNowPlayingScreen.kt` (`SongMeta` title).
+  - **Related files:** `util/Preferences.kt` (`enableScrollingText`), `extensions/media/DataExt`.
+  - **Notes:** Travel computed as `textWidth - containerWidth + 24dp` padding.
 
 
 - `ui/screen/player/cover/CoverPagerFragment.kt` — ViewPager of covers (carousel effect) with player gestures and palette color capture.
@@ -4839,14 +4927,14 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 
 - `ui/screen/queue/QueueScreen.kt` — Compose queue UI: highlighted current song, search, drag reordering, filters, actions menu.
-  - **Purpose:** Interactive queue list with playback control.
-  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, up-next summary, locate-current button, per-item menu, stop-after events, auto-scroll to current.
+  - **Purpose:** Interactive queue list with playback control (Aurora active-row treatment).
+  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, glass header pill (`outlineVariant.copy(.7f)`), up-next summary, locate-current button, per-item `TitledSurface`-style cards; active row `primary.copy(.1f)` + `BorderStroke(1.dp, primary.copy(.9f))`; per-item menu, stop-after events, auto-scroll to current.
   - **Inputs:** PlayerViewModel flows, SharedPreferences LOCKED_QUEUE.
   - **Outputs:** PlayerViewModel commands (playSongAt, moveSong, stopAt, clearQueue).
-  - **Dependencies:** PlayerViewModel, reorderable (sh.calvin), LazyColumnScrollbar, AnimatedEqBars, MediaImage.
+  - **Dependencies:** PlayerViewModel, reorderable (sh.calvin), LazyColumnScrollbar, AnimatedEqBars, MediaImage, `AuroraTokens`.
   - **Consumed by:** QueueFragment.
-  - **Related files:** QueueFragment.kt, PlayerViewModel.kt.
-  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed.
+  - **Related files:** QueueFragment.kt, PlayerViewModel.kt, `ui/component/compose/TitledSurface.kt`.
+  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed; active-row border mirrors DefaultNowPlayingScreen card.
 
 
 - `ui/screen/scrobbling/ScrobblingServiceLoginFragment.kt` — Compose bottom sheet for scrobbling login (Last.fm/Libre.fm): user/token or API key form.
@@ -5038,37 +5126,37 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### res/ (resources)
 
-- `res/drawable/` — ~170 XML drawables: Material icons (ic_*), logos, selectors, shadows, animated vector drawables (play/pause/favorite), squiggly thumb.
+- `res/drawable/` — ~170 XML drawables: Material icons (ic_*), logos, selectors, shadows, animated vector drawables (play/pause/favorite), squiggly thumb, Aurora search pill.
   - **Purpose:** Static and animated vector drawable assets for the whole UI.
-  - **Responsibilities:** Material icons, player AVDs (play/pause/favorite), selectors, shadows, squiggly seekbar thumb.
+  - **Responsibilities:** Material icons, player AVDs (play/pause/favorite), selectors, shadows, squiggly seekbar thumb, `aurora_search_field*.xml` pill (normal/focused/selector) with `AuroraTokens`-matched glass fill + hairline stroke for `fragment_search`.
   - **Inputs:** Referenced from layouts, menus, code via R.drawable.
-  - **Outputs:** Rendered icons/animations across app, widgets and notifications.
+  - **Outputs:** Rendered icons/animations across app, widgets and notifications; search pill background.
   - **Dependencies:** AAPT2 vector resources, referenced drawables from code (nowPlayingButtonStyle, MorphicIconButton).
-  - **Consumed by:** All layouts/menus, player styles, widget Glance composables, AdapterExt, NowPlayingAction.
-  - **Related files:** res/values/, res/layout/, core/model/theme/NowPlayingButtonStyle.kt.
-  - **Notes:** Animated vector drawables named avd_* (avd_play/avd_pause) drive player animations.
+  - **Consumed by:** All layouts/menus, player styles, widget Glance composables, AdapterExt, NowPlayingAction, `fragment_search.xml`.
+  - **Related files:** res/values/, res/layout/, core/model/theme/NowPlayingButtonStyle.kt, `res/layout/fragment_search.xml`.
+  - **Notes:** Animated vector drawables named avd_* (avd_play/avd_pause) drive player animations; `aurora_search_field` (8dp radius, translucent white + .08 border) mirrors DefaultNowPlayingScreen card.
 
 
 - `res/layout/` — ~100 layouts: player fragments per style, home, details, item layouts, dialogs, tag editor, widgets; with `layout-land/` variants.
-  - **Purpose:** XML layouts for the legacy View UI (library, player, dialogs, widgets).
-  - **Responsibilities:** Fragment layouts per player style, item_* adapter rows, detail screens, dialogs, tag editor, permission views.
+  - **Purpose:** XML layouts for the legacy View UI (library, player, dialogs, widgets); now includes Aurora-treated search/category headers.
+  - **Responsibilities:** Fragment layouts per player style, item_* adapter rows, detail screens, dialogs, tag editor, permission views; `fragment_search.xml` pill shell (`aurora_search_field_selector` + `MaterialButtonToggleGroup` outlined chips), `preference_category_title.xml` Aurora pill chip.
   - **Inputs:** ViewBinding-generated classes consumed by fragments/adapters.
-  - **Outputs:** Inflated legacy Views bound in Kotlin.
-  - **Dependencies:** AndroidX View/ViewBinding, Material Components, custom views (MusicSlider, BaselineGridTextView, WidthFitSquareLayout).
-  - **Consumed by:** All legacy fragments/adapters/activities (Abs*Fragment, adapters, dialog bindings).
-  - **Related files:** res/values/, ui/component/views/, ui/adapters/.
-  - **Notes:** layout-land/ variants; Compose migration in progress (rule 12: new UI in Compose).
+  - **Outputs:** Inflated legacy Views bound in Kotlin; pill search/category headers.
+  - **Dependencies:** AndroidX View/ViewBinding, Material Components, custom views (MusicSlider, BaselineGridTextView, WidthFitSquareLayout), `aurora_search_field` drawables.
+  - **Consumed by:** All legacy fragments/adapters/activities (Abs*Fragment, adapters, dialog bindings), `SearchFragment` (pill field), `PreferencesScreenFragment` (category chip).
+  - **Related files:** res/values/, ui/component/views/, ui/adapters/, `res/drawable/aurora_search_field*.xml`.
+  - **Notes:** layout-land/ variants; Compose migration in progress (rule 12: new UI in Compose); search pill uses 8dp radius to match Compose cards.
 
 
 - `res/values/` — Strings (main file plus ~40 locale translations), colors (night/v31), dimens (land/large/sw600dp/xlarge), styles/themes, arrays, attrs, bools, ids, integers.
   - **Purpose:** Localized strings and static resource values.
-  - **Responsibilities:** strings.xml base + ~40 locales, colors (incl. night/v31 black theme), dimens buckets, themes/styles, attributes, booleans, integers.
+  - **Responsibilities:** strings.xml base + ~40 locales (`use_compose_player_title/summary` since Aurora player), colors (incl. night/v31 black theme), dimens buckets, themes/styles, attributes, booleans, integers.
   - **Inputs:** Referenced via R.string/R.color/R.dimen/R.style/R.attr everywhere.
-  - **Outputs:** Localized UI text and themed resources.
+  - **Outputs:** Localized UI text and themed resources; `use_compose_player_*` shown in `preferences_screen_appearance.xml`.
   - **Dependencies:** Android resource system; Material 3 themes.
-  - **Consumed by:** Entire app (string/color/dimension resolution in Kotlin and XML).
-  - **Related files:** res/layout/, res/xml/, ui/theme/.
-  - **Notes:** Rule 4: only edit values/strings.xml; translations are managed elsewhere.
+  - **Consumed by:** Entire app (string/color/dimension resolution in Kotlin and XML), `DefaultNowPlayingScreen` (`action_toggle_shuffle`/`action_more`/`equalizer_label` fixes), `AbsSlidingMusicPanelActivity`.
+  - **Related files:** res/layout/, res/xml/, ui/theme/, `util/Preferences.kt` (`COMPOSE_PLAYER`).
+  - **Notes:** Rule 4: only edit values/strings.xml; translations are managed elsewhere; new `use_compose_player_*` must stay in main file.
 
 
 - `res/navigation/` — NavGraphs: `graph_main.xml` and `graph_settings.xml`.
@@ -5095,13 +5183,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `res/xml/` — Preference screens per category, widget info files, shortcuts, searchable, backup descriptors, provider paths, automotive app descriptor.
   - **Purpose:** XML configuration: preference screens, widget metadata, shortcuts, providers.
-  - **Responsibilities:** preferences_screen_* per category, widget_info files, shortcuts.xml, searchable.xml, backup rules, file_paths, automotive_app_desc.
+  - **Responsibilities:** `preferences_screen_*` per category (incl. `preferences_screen_appearance.xml` `compose_player` `SwitchPreferenceCompat` with `app:key="compose_player"`, `defaultValue="true"`, `@layout/list_item_view`), widget_info files, shortcuts.xml, searchable.xml, backup rules, file_paths, automotive_app_desc.
   - **Inputs:** Referenced from AndroidManifest and PreferencesScreenFragment/SettingsScreen.
-  - **Outputs:** Preference screens rendered by PreferenceFragmentCompat; system metadata.
+  - **Outputs:** Preference screens rendered by PreferenceFragmentCompat; system metadata; `compose_player` toggle driving `useComposePlayer`.
   - **Dependencies:** AndroidX Preference, App Widget metadata, FileProvider paths.
-  - **Consumed by:** PreferencesScreenFragment, manifest components, Glance widget receivers.
-  - **Related files:** ui/screen/settings/, app/src/main/AndroidManifest.xml.
-  - **Notes:** Preference keys must match util/Preferences.kt constants.
+  - **Consumed by:** PreferencesScreenFragment, manifest components, Glance widget receivers, `AbsSlidingMusicPanelActivity` (`COMPOSE_PLAYER` pref listener → `chooseFragmentForTheme()`).
+  - **Related files:** ui/screen/settings/, app/src/main/AndroidManifest.xml, `util/Preferences.kt` (`COMPOSE_PLAYER`), `res/values/strings.xml` (`use_compose_player_*`).
+  - **Notes:** Preference keys must match `util/Preferences.kt` constants; `compose_player` mirrors `NowPlayingScreen.Default` gate.
 
 
 - `res/font/`, `res/anim/`, `res/raw/` — Google Sans Flex font, fragment/item animations, keep.xml.

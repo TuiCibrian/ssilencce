@@ -682,6 +682,8 @@
     <string name="general_theme_title">General theme</string>
     <string name="pure_black_theme_title">Pure Black</string>
     <string name="material_you_title">Material You</string>
+    <string name="use_compose_player_title">Jetpack Compose player</string>
+    <string name="use_compose_player_summary">Use the new Compose-based now playing screen (Default style).</string>
     <string name="background_animation_title">Background animation</string>
     <string name="background_animation_summary">Animate the aurora background. Turn off for reduced motion or to save battery.</string>
     <string name="use_custom_font_title">Use custom font</string>

@@ -25,7 +25,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -307,6 +309,7 @@ fun QueueScreen(
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(themeColors.surfaceContainerLowest.copy(alpha = .6f))
+                    .border(1.dp, themeColors.outlineVariant.copy(alpha = .7f), RoundedCornerShape(16.dp))
                     .padding(vertical = 12.dp)
                     .padding(start = 16.dp, end = 8.dp),
         ) {
@@ -386,7 +389,7 @@ fun QueueScreen(
                             val color by animateColorAsState(
                                 targetValue =
                                     if (isCurrentSong) {
-                                        themeColors.primaryContainer
+                                        themeColors.primary.copy(alpha = .1f)
                                     } else {
                                         themeColors.surfaceContainer
                                     },
@@ -395,7 +398,7 @@ fun QueueScreen(
                             val contentColor by animateColorAsState(
                                 targetValue =
                                     if (isCurrentSong) {
-                                        themeColors.onPrimaryContainer
+                                        themeColors.primary
                                     } else {
                                         themeColors.onSurfaceVariant
                                     },
@@ -421,6 +424,12 @@ fun QueueScreen(
                                 shape = RoundedCornerShape(cornerRadius),
                                 color = color.copy(alpha),
                                 contentColor = contentColor.copy(alpha),
+                                border =
+                                    if (isCurrentSong) {
+                                        BorderStroke(1.dp, themeColors.primary.copy(alpha = .9f))
+                                    } else {
+                                        null
+                                    },
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -511,6 +520,7 @@ fun QueueScreen(
                                     QueueItemMenu(
                                         itemIndex = index,
                                         queueIndex = position.current,
+                                        isCurrentSong = isCurrentSong,
                                         onStopAfterThisTrackClick = {
                                             playerViewModel.stopAt(index)
                                         },
@@ -573,6 +583,7 @@ fun QueueScreen(
 private fun QueueItemMenu(
     itemIndex: Int,
     queueIndex: Int,
+    isCurrentSong: Boolean,
     onStopAfterThisTrackClick: () -> Unit,
     onPutAfterCurrentTrackClick: () -> Unit,
     onRemoveFromQueueClick: () -> Unit,
@@ -625,6 +636,18 @@ private fun QueueItemMenu(
         colors =
             MenuDefaults.dropDownMenuColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                overflowContainerColor =
+                    if (isCurrentSong) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = .12f)
+                    } else {
+                        MaterialTheme.colorScheme.surfaceContainerHigh
+                    },
+                overflowIconColor =
+                    if (isCurrentSong) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
             ),
     )
 }
