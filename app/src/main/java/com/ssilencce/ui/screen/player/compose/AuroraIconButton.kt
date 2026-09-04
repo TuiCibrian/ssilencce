@@ -77,6 +77,7 @@ fun AuroraPlayButton(
     modifier: Modifier = Modifier,
     playIcon: Painter = painterResource(R.drawable.ic_play_24dp),
     pauseIcon: Painter = painterResource(R.drawable.ic_pause_24dp),
+    size: Dp = 62.dp,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -85,7 +86,7 @@ fun AuroraPlayButton(
         contentAlignment = Alignment.Center,
         modifier =
             modifier
-                .size(62.dp)
+                .size(size)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale

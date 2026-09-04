@@ -58,3 +58,25 @@ recompose the player in full and retire the legacy machinery once all 7 styles a
   `compose-performance-audit` skill; fallback = alpha dim outside the Blur scheme.
 - Gestures may feel subtly different on Compose: thresholds are ported from legacy; verify
   per configured gesture set on the emulator.
+
+## Addendum (after cleanup)
+
+The initial decision has been fully implemented and the legacy stack removed (all 7 styles,
+`CoverPagerFragment` + `CustomFragmentStatePagerAdapter` + `AlbumCoverViewPager`, 10
+transforms, `AbsPlayerFragment`/`AbsPlayerControlsFragment`, `PlayerAnimator`,
+`PlayerGesturesController`, `PlayerTintTarget`, `MusicSlider`, `MorphicIconButton`,
+`SquigglyProgress`, player/cover layouts, `preference_dialog_now_playing_screen*` layouts).
+Notable follow-ups beyond the letter of the decision:
+
+- The `compose_player` preference was **removed** (not just defaulted): with the legacy
+  stack gone it had no function. `chooseFragmentForTheme()` always hosts
+  `ComposePlayerFragment`, which dispatches on `Preferences.nowPlayingScreen`.
+- No `GlassSurface` shared composable was added; player surfaces use
+  `NowPlayingBackground`/scrims + existing `AuroraTokens` instead.
+- `PlayerTransition` lost its `transformerFactory` (ViewPager machinery); `CoverPager`
+  maps the enum directly to `graphicsLayer` values (AD-28/29-compatible).
+- `SkipButtonTouchHandler` was extracted from `AbsPlayerControlsFragment` into its own file
+  (mini player still uses it); `PlayerNavigation.kt` holds the `goToAlbum`/`goToArtist`/
+  `goToGenre`/`goToDestination` helpers that lived in `AbsPlayerFragment`.
+- FullCover/Gradient keep Coil-based blur via `NowPlayingBackground` gated by the Blur
+  scheme, matching the legacy visual.

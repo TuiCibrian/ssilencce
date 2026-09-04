@@ -33,16 +33,18 @@ fun AuroraSlider(
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: (Float) -> Unit,
     modifier: Modifier = Modifier,
+    trackHeight: androidx.compose.ui.unit.Dp = 4.dp,
+    thumbSize: androidx.compose.ui.unit.Dp = 17.dp,
+    containerHeight: androidx.compose.ui.unit.Dp = 28.dp,
 ) {
     val primary = MaterialTheme.colorScheme.primary
     var dragOffset by remember { mutableFloatStateOf(value) }
     val fraction by animateFloatAsState(if (enabled) dragOffset else value)
-    val thumbSize = 17.dp
 
     BoxWithConstraints(
         modifier =
             modifier
-                .height(28.dp)
+                .height(containerHeight)
                 .pointerInput(enabled) {
                     if (enabled) {
                         detectDragGestures(
@@ -79,14 +81,14 @@ fun AuroraSlider(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(4.dp)
+                        .height(trackHeight)
                         .background(primary.copy(alpha = 0.15f), CircleShape),
             )
             Box(
                 modifier =
                     Modifier
                         .fillMaxWidth(fraction)
-                        .height(4.dp)
+                        .height(trackHeight)
                         .shadow(10.dp, CircleShape, ambientColor = Color.White, spotColor = Color.White)
                         .background(primary, CircleShape),
             )

@@ -20,15 +20,6 @@
         app:key="material_you"/>
 
     <SwitchPreferenceCompat
-        app:icon="@drawable/ic_music_note_24dp"
-        app:title="@string/use_compose_player_title"
-        app:summary="@string/use_compose_player_summary"
-        app:defaultValue="true"
-        app:layout="@layout/list_item_view"
-        app:widgetLayout="@layout/preference_switch"
-        app:key="compose_player"/>
-
-    <SwitchPreferenceCompat
         app:iconSpaceReserved="true"
         app:title="@string/pure_black_theme_title"
         app:defaultValue="false"

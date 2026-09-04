@@ -39,6 +39,8 @@ fun CoverPager(
     coverGestures: Modifier,
     onSongSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    cornerRadius: androidx.compose.ui.unit.Dp = 24.dp,
+    enableShadow: Boolean = true,
 ) {
     val pagerState =
         rememberPagerState(
@@ -77,6 +79,8 @@ fun CoverPager(
             transition = transition,
             isCarousel = isCarousel,
             coverGestures = coverGestures,
+            cornerRadius = cornerRadius,
+            enableShadow = enableShadow,
         )
     }
 }
@@ -88,8 +92,10 @@ private fun CoverPage(
     transition: PlayerTransition,
     isCarousel: Boolean,
     coverGestures: Modifier,
+    cornerRadius: androidx.compose.ui.unit.Dp = 24.dp,
+    enableShadow: Boolean = true,
 ) {
-    val shape = RoundedCornerShape(24.dp)
+    val shape = RoundedCornerShape(cornerRadius)
     val offset = pageOffset.coerceIn(-1f, 1f)
     val scale =
         when {
@@ -128,27 +134,34 @@ private fun CoverPage(
         modifier =
             Modifier
                 .fillMaxSize()
-                .padding(8.dp),
+                .padding(if (cornerRadius > 0.dp) 8.dp else 0.dp),
     ) {
+        val coverModifier =
+            Modifier
+                .fillMaxWidth(if (cornerRadius > 0.dp) 0.9f else 1f)
+                .aspectRatio(1f)
+                .graphicsLayer {
+                    scaleX = scale
+                    scaleY = scale
+                    this.alpha = alpha
+                    this.rotationY = rotationY
+                    this.rotationX = rotationX
+                    this.translationY = translationY
+                }
+        val shadowedModifier =
+            if (enableShadow) {
+                coverModifier.shadow(
+                    elevation = 42.dp,
+                    shape = shape,
+                    ambientColor = Color.White,
+                    spotColor = Color.White,
+                )
+            } else {
+                coverModifier
+            }
         Box(
             modifier =
-                Modifier
-                    .fillMaxWidth(0.9f)
-                    .aspectRatio(1f)
-                    .graphicsLayer {
-                        scaleX = scale
-                        scaleY = scale
-                        this.alpha = alpha
-                        this.rotationY = rotationY
-                        this.rotationX = rotationX
-                        this.translationY = translationY
-                    }
-                    .shadow(
-                        elevation = 42.dp,
-                        shape = shape,
-                        ambientColor = Color.White,
-                        spotColor = Color.White,
-                    )
+                shadowedModifier
                     .clip(shape)
                     .background(MaterialTheme.colorScheme.surfaceContainerHighest),
         ) {

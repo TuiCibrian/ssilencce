@@ -30,7 +30,9 @@ import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.lyrics.LyricsEditorFragmentArgs
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
+import com.ssilencce.core.model.theme.NowPlayingScreen
 import com.ssilencce.ui.theme.SsilencceTheme
+import com.ssilencce.util.Preferences
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class ComposePlayerFragment : Fragment() {
@@ -55,12 +57,50 @@ class ComposePlayerFragment : Fragment() {
                         libraryViewModel
                             .isSongFavorite(currentSong)
                             .observeAsState(initial = false)
-                    DefaultNowPlayingScreen(
-                        playerViewModel = playerViewModel,
-                        lyricsViewModel = lyricsViewModel,
-                        onAction = { performNowPlayingAction(it) },
-                        isFavorite = isFavorite,
-                    )
+                    when (Preferences.nowPlayingScreen) {
+                        NowPlayingScreen.M3 -> M3NowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            lyricsViewModel = lyricsViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                        )
+                        NowPlayingScreen.Plain -> PlainNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            lyricsViewModel = lyricsViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                        )
+                        NowPlayingScreen.Gradient -> GradientNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            lyricsViewModel = lyricsViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                        )
+                        NowPlayingScreen.FullCover -> FullCoverNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                            onClose = { requireActivity().onBackPressedDispatcher.onBackPressed() },
+                        )
+                        NowPlayingScreen.Expressive -> ExpressiveNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            lyricsViewModel = lyricsViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                            onClose = { requireActivity().onBackPressedDispatcher.onBackPressed() },
+                        )
+                        NowPlayingScreen.Peek -> PeekNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            onClose = { requireActivity().onBackPressedDispatcher.onBackPressed() },
+                        )
+                        else -> DefaultNowPlayingScreen(
+                            playerViewModel = playerViewModel,
+                            lyricsViewModel = lyricsViewModel,
+                            onAction = { performNowPlayingAction(it) },
+                            isFavorite = isFavorite,
+                        )
+                    }
                 }
             }
         }

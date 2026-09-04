@@ -18,7 +18,6 @@
 package com.ssilencce.core.model.theme
 
 import androidx.annotation.DrawableRes
-import androidx.annotation.LayoutRes
 import androidx.annotation.StringRes
 import com.ssilencce.R
 import com.ssilencce.core.model.player.PlayerColorSchemeList
@@ -30,8 +29,6 @@ enum class NowPlayingScreen(
     val titleRes: Int,
     @param:DrawableRes
     val drawableResId: Int,
-    @param:LayoutRes
-    val albumCoverLayoutRes: Int,
     val buttonStyle: NowPlayingButtonStyle,
     val supportsCoverLyrics: Boolean,
     val supportsCarouselEffect: Boolean,
@@ -41,7 +38,6 @@ enum class NowPlayingScreen(
     Default(
         R.string.normal_style,
         R.drawable.np_normal,
-        R.layout.fragment_album_cover_default,
         buttonStyle = NowPlayingButtonStyle.Normal,
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
@@ -51,7 +47,6 @@ enum class NowPlayingScreen(
     FullCover(
         R.string.full_cover_style,
         R.drawable.np_full,
-        R.layout.fragment_album_cover,
         buttonStyle = NowPlayingButtonStyle.Normal,
         supportsCoverLyrics = false,
         supportsCarouselEffect = false,
@@ -61,7 +56,6 @@ enum class NowPlayingScreen(
     Gradient(
         R.string.gradient_style,
         R.drawable.np_gradient,
-        R.layout.fragment_album_cover,
         buttonStyle = NowPlayingButtonStyle.Normal,
         supportsCoverLyrics = true,
         supportsCarouselEffect = false,
@@ -71,7 +65,6 @@ enum class NowPlayingScreen(
     Plain(
         R.string.plain_style,
         R.drawable.np_plain,
-        R.layout.fragment_album_cover_default,
         buttonStyle = NowPlayingButtonStyle.Normal,
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
@@ -81,7 +74,6 @@ enum class NowPlayingScreen(
     M3(
         R.string.m3_style,
         R.drawable.np_m3,
-        R.layout.fragment_album_cover_m3,
         buttonStyle = NowPlayingButtonStyle.Material3,
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
@@ -91,7 +83,6 @@ enum class NowPlayingScreen(
     Expressive(
         R.string.expressive_style,
         R.drawable.np_expressive,
-        R.layout.fragment_album_cover_m3,
         buttonStyle = NowPlayingButtonStyle.Expressive,
         supportsCoverLyrics = true,
         supportsCarouselEffect = true,
@@ -101,7 +92,6 @@ enum class NowPlayingScreen(
     Peek(
         R.string.peek_style,
         R.drawable.np_peek,
-        R.layout.fragment_album_cover_peek,
         buttonStyle = NowPlayingButtonStyle.Normal,
         supportsCoverLyrics = false,
         supportsCarouselEffect = false,

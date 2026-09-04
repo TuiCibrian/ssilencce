@@ -83,7 +83,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - CoverProvider (content:// URIs), CustomArtistImageManager, CustomPlaylistImageManager, KeyerStore/MapperStore, bitmap loader for notifications.
 
 ### util/ and extensions/
-- `util/Preferences.kt` — Central typed access to all app settings (`COMPOSE_PLAYER` / `useComposePlayer` for Compose gate).
+- `util/Preferences.kt` — Central typed access to all app settings.
 - BackupHelper (ZIP backup), MusicUtil (batch delete), CryptoUtil (Keystore AES), StorageUtil, m3u/ (M3U export), cursor/, oem/ (MIUI/Samsung output switcher).
 - `extensions/` — Activity, Fragment, Context, files/ (File, SAF), media/, navigation/, resources/ (Color/Drawable/View), utilities/.
 
@@ -94,10 +94,9 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### ui/ — Components, adapters & theme
 - `ui/adapters/` — Adapter per entity (song/album/artist/genre/playlist/year/file/search/home) with multi-select (CAB).
-- `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity with Compose gate, AbsRecyclerViewFragment, AbsPlayerFragment, AbsTagEditorActivity...).
+- `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity hosting the Compose player, AbsRecyclerViewFragment, PlayerNavigation, SkipButtonTouchHandler, AbsTagEditorActivity...).
 - `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences, AuroraBackground (glass shell background).
-- `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress, AuroraNavigationCaretView, EqMiniView).
-- `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
+- `ui/component/views/` — Legacy views (AuroraNavigationCaretView, EqMiniView, InfoView, PermissionView...).
 - `ui/component/preferences/` — Custom preferences + Compose preference dialogs.
 - `ui/dialogs/` — Playlist, delete-songs, SAF, folder-chooser, multi-check dialogs.
 - `ui/theme/` — SsilencceTheme, static M3 palettes (Aurora Glass default in Color.kt/colors.xml), `AuroraTokens` (glass surfaces/borders/glows), typography, Monet dynamic schemes.
@@ -105,11 +104,11 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 ### ui/screen/ — Screens
 - `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
 - library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`.
-- player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment; Compose `DefaultNowPlayingScreen` (`compose/` with `ComposePlayerFragment`/`CoverPager`/`PlayerGestures`/`AuroraIconButton`/`AuroraSlider`/`MarqueeText`) gated by `useComposePlayer`.
+- player/ — `PlayerViewModel`; Compose now-playing screens under `compose/` (`ComposePlayerFragment` host + one screen per style: Default/M3/Plain/Gradient/FullCover/Expressive/Peek, shared blocks in `SharedPlayerSections`, `CoverPager`, `PlayerGestures`, `AuroraIconButton`, `AuroraSlider`, `MarqueeText`, `PlayerNavigation` helpers).
 - lyrics/, queue/, settings/, equalizer/, tageditor/, sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes), error/ (crash handler).
 
 ### res/ (resources)
-- drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (~25), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
+- drawable/ (~170 XML icons, AVDs, shadows), layout/ (~80, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (~25), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
 
 ## Agent Skills
 

@@ -1,268 +1,187 @@
-/*
- * Copyright (c) 2024 Christians Martínez Alvarado
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 package com.ssilencce.ui.component.preferences.dialog
 
 import android.app.Dialog
-import android.content.Context
-import android.content.DialogInterface
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.TextView
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.fragment.app.DialogFragment
-import androidx.viewpager.widget.PagerAdapter
-import androidx.viewpager.widget.ViewPager
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ssilencce.R
 import com.ssilencce.core.model.player.PlayerColorSchemeMode
 import com.ssilencce.core.model.player.PlayerTransition
 import com.ssilencce.core.model.theme.NowPlayingScreen
-import com.ssilencce.databinding.PreferenceDialogNowPlayingScreenBinding
-import com.ssilencce.databinding.PreferenceDialogNowPlayingScreenItemBinding
-import com.ssilencce.extensions.dp
-import com.ssilencce.extensions.resources.hide
+import com.ssilencce.ui.theme.SsilencceTheme
 import com.ssilencce.util.Preferences
 
-class NowPlayingScreenPreferenceDialog :
-    DialogFragment(),
-    ViewPager.OnPageChangeListener,
-    AdapterView.OnItemSelectedListener {
-    private var _binding: PreferenceDialogNowPlayingScreenBinding? = null
-    private val binding get() = requireNotNull(_binding)
-
-    private var viewPagerAdapter: NowPlayingScreenAdapter? = null
-    private var colorSchemeAdapter: ColorSchemeAdapter? = null
-    private var transitionAdapter: TransitionAdapter? = null
-
-    private var viewPagerPosition = 0
-
+class NowPlayingScreenPreferenceDialog : DialogFragment() {
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        _binding = PreferenceDialogNowPlayingScreenBinding.inflate(layoutInflater)
-
-        viewPagerAdapter = NowPlayingScreenAdapter(requireContext())
-        binding.nowPlayingScreenViewPager.adapter = viewPagerAdapter
-        binding.nowPlayingScreenViewPager.addOnPageChangeListener(this)
-        binding.nowPlayingScreenViewPager.pageMargin = 32.dp(resources)
-        binding.nowPlayingScreenViewPager.currentItem = Preferences.nowPlayingScreen.ordinal
-
-        colorSchemeAdapter = ColorSchemeAdapter(requireContext(), mutableListOf())
-        binding.colorScheme.setAdapter(colorSchemeAdapter)
-        binding.colorScheme.onItemSelectedListener = this
-        updateColorScheme()
-
-        transitionAdapter = TransitionAdapter(requireContext(), mutableListOf())
-        binding.transition.setAdapter(transitionAdapter)
-        binding.transition.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
-                    val selectedTransition = transitionAdapter?.transitions?.getOrNull(position)
-                    if (currentItem != null && selectedTransition != null) {
-                        Preferences.setNowPlayingTransition(currentItem, selectedTransition)
-                    }
+        val composeView = ComposeView(requireContext()).apply {
+            setContent {
+                SsilencceTheme {
+                    StylePickerContent(
+                        onStyleSelected = { screen ->
+                            pendingScreen = screen
+                        },
+                    )
                 }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {}
             }
-        updateTransition()
-
+        }
         return MaterialAlertDialogBuilder(requireContext())
             .setTitle(R.string.now_playing_screen_title)
-            .setView(binding.root)
-            .setPositiveButton(android.R.string.ok) { _: DialogInterface, _: Int ->
-                Preferences.nowPlayingScreen = NowPlayingScreen.entries[viewPagerPosition]
+            .setView(composeView)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                pendingScreen?.let { Preferences.nowPlayingScreen = it }
             }.setNegativeButton(android.R.string.cancel, null)
             .create()
     }
 
-    override fun onPageScrolled(
-        position: Int,
-        positionOffset: Float,
-        positionOffsetPixels: Int,
-    ) {}
+    private var pendingScreen: NowPlayingScreen? = null
 
-    override fun onPageSelected(position: Int) {
-        viewPagerPosition = position
-        updateColorScheme()
-        updateTransition()
-    }
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun StylePickerContent(onStyleSelected: (NowPlayingScreen) -> Unit) {
+        val screens = NowPlayingScreen.entries
+        val initialPage = Preferences.nowPlayingScreen.ordinal.coerceIn(screens.indices)
+        val pagerState = rememberPagerState(pageCount = { screens.size }, initialPage = initialPage)
+        var currentPage by remember { mutableStateOf(initialPage) }
 
-    override fun onPageScrollStateChanged(state: Int) {}
-
-    override fun onItemSelected(
-        parent: AdapterView<*>?,
-        view: View?,
-        position: Int,
-        id: Long,
-    ) {
-        val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
-        if (currentItem != null) {
-            val selectedScheme = colorSchemeAdapter?.schemes?.getOrNull(position)
-            if (selectedScheme != null) {
-                Preferences.setNowPlayingColorSchemeMode(currentItem, selectedScheme)
+        LaunchedEffect(pagerState) {
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                currentPage = page
+                onStyleSelected(screens[page])
             }
         }
-    }
+        LaunchedEffect(Unit) { onStyleSelected(screens[initialPage]) }
 
-    override fun onNothingSelected(parent: AdapterView<*>?) {}
-
-    private fun updateColorScheme() {
-        val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
-        if (currentItem != null) {
-            val supportedSchemes = currentItem.supportedColorSchemes
-            val selectedScheme = Preferences.getNowPlayingColorSchemeMode(currentItem)
-            colorSchemeAdapter?.submitList(supportedSchemes)
-            binding.colorScheme.isEnabled = supportedSchemes.size > 1
-            binding.colorScheme.setSelection(supportedSchemes.indexOf(selectedScheme))
+        val currentScreen = screens[currentPage]
+        var selectedScheme by remember(currentPage) {
+            mutableStateOf(Preferences.getNowPlayingColorSchemeMode(currentScreen))
         }
-    }
-
-    private fun updateTransition() {
-        val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
-        if (currentItem != null) {
-            val supportedTransitions = currentItem.supportedTransitions
-            val selectedTransition = Preferences.getNowPlayingTransition(currentItem)
-            transitionAdapter?.submitList(supportedTransitions)
-            binding.transition.isEnabled = supportedTransitions.size > 1
-            binding.transition.setSelection(supportedTransitions.indexOf(selectedTransition))
+        var selectedTransition by remember(currentPage) {
+            mutableStateOf(Preferences.getNowPlayingTransition(currentScreen))
         }
-    }
+        var schemeExpanded by remember { mutableStateOf(false) }
+        var transitionExpanded by remember { mutableStateOf(false) }
 
-    private class NowPlayingScreenAdapter(
-        private val context: Context,
-    ) : PagerAdapter() {
-        override fun instantiateItem(
-            collection: ViewGroup,
-            position: Int,
-        ): Any {
-            val nowPlayingScreen = NowPlayingScreen.entries[position]
-            val inflater = LayoutInflater.from(collection.context)
-
-            val binding = PreferenceDialogNowPlayingScreenItemBinding.inflate(inflater)
-            collection.addView(binding.root)
-
-            binding.image.setImageResource(nowPlayingScreen.drawableResId)
-            return binding.root
-        }
-
-        override fun destroyItem(
-            collection: ViewGroup,
-            position: Int,
-            view: Any,
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            collection.removeView(view as View)
-        }
-
-        override fun getCount(): Int = NowPlayingScreen.entries.size
-
-        override fun isViewFromObject(
-            view: View,
-            `object`: Any,
-        ): Boolean = view === `object`
-
-        override fun getPageTitle(position: Int): CharSequence = context.getString(NowPlayingScreen.entries[position].titleRes)
-    }
-
-    class ColorSchemeAdapter(
-        context: Context,
-        val schemes: List<PlayerColorSchemeMode>,
-    ) : ArrayAdapter<PlayerColorSchemeMode>(context, android.R.layout.simple_list_item_1, schemes) {
-        private val inflater = LayoutInflater.from(context)
-
-        override fun getDropDownView(
-            position: Int,
-            convertView: View?,
-            parent: ViewGroup,
-        ): View {
-            val view = convertView ?: inflater.inflate(R.layout.item_dialog_list, parent, false)
-            val titleView = view.findViewById<TextView>(R.id.title)
-            val descriptionView = view.findViewById<TextView>(R.id.text)
-            val iconView = view.findViewById<View>(R.id.icon_view)
-            iconView?.hide()
-
-            getItem(position)?.let {
-                titleView?.setText(it.titleRes)
-                descriptionView?.setText(it.descriptionRes)
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth(),
+            ) { page ->
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Image(
+                        painter = painterResource(screens[page].drawableResId),
+                        contentDescription = stringResource(screens[page].titleRes),
+                        modifier = Modifier.fillMaxWidth().height(220.dp),
+                    )
+                    Text(
+                        text = stringResource(screens[page].titleRes),
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
             }
 
-            return view
-        }
+            val schemes = currentScreen.supportedColorSchemes
+            ExposedDropdownMenuBox(
+                expanded = schemeExpanded,
+                onExpandedChange = { if (schemes.size > 1) schemeExpanded = !schemeExpanded },
+            ) {
+                OutlinedTextField(
+                    value = schemeName(selectedScheme),
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = schemes.size > 1,
+                    label = { Text(stringResource(R.string.now_playing_color_scheme)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = schemeExpanded) },
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                )
+                ExposedDropdownMenu(
+                    expanded = schemeExpanded,
+                    onDismissRequest = { schemeExpanded = false },
+                ) {
+                    schemes.forEach { scheme ->
+                        DropdownMenuItem(
+                            text = { Text(schemeName(scheme)) },
+                            onClick = {
+                                selectedScheme = scheme
+                                Preferences.setNowPlayingColorSchemeMode(currentScreen, scheme)
+                                schemeExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
 
-        override fun getView(
-            position: Int,
-            convertView: View?,
-            parent: ViewGroup,
-        ): View {
-            val view = super.getView(position, convertView, parent) as TextView
-            val item = getItem(position)
-            view.text = item?.titleRes?.let { view.context.getString(it) } ?: ""
-            return view
-        }
-
-        fun submitList(newList: List<PlayerColorSchemeMode>) {
-            clear()
-            addAll(newList)
-            notifyDataSetChanged()
+            val transitions = currentScreen.supportedTransitions
+            ExposedDropdownMenuBox(
+                expanded = transitionExpanded,
+                onExpandedChange = { if (transitions.size > 1) transitionExpanded = !transitionExpanded },
+            ) {
+                OutlinedTextField(
+                    value = transitionName(selectedTransition),
+                    onValueChange = {},
+                    readOnly = true,
+                    enabled = transitions.size > 1,
+                    label = { Text(stringResource(R.string.now_playing_transition)) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = transitionExpanded) },
+                    modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                )
+                ExposedDropdownMenu(
+                    expanded = transitionExpanded,
+                    onDismissRequest = { transitionExpanded = false },
+                ) {
+                    transitions.forEach { transition ->
+                        DropdownMenuItem(
+                            text = { Text(transitionName(transition)) },
+                            onClick = {
+                                selectedTransition = transition
+                                Preferences.setNowPlayingTransition(currentScreen, transition)
+                                transitionExpanded = false
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 
-    class TransitionAdapter(
-        context: Context,
-        val transitions: List<PlayerTransition>,
-    ) : ArrayAdapter<PlayerTransition>(context, android.R.layout.simple_list_item_1, transitions) {
-        override fun getDropDownView(
-            position: Int,
-            convertView: View?,
-            parent: ViewGroup,
-        ): View {
-            val dropDownView = super.getDropDownView(position, convertView, parent)
-            val item = getItem(position)
-            if (item != null) {
-                (dropDownView as? TextView)?.setText(item.nameRes)
-            }
-            return dropDownView
-        }
+    @Composable
+    private fun schemeName(scheme: PlayerColorSchemeMode): String = stringResource(scheme.titleRes)
 
-        override fun getView(
-            position: Int,
-            convertView: View?,
-            parent: ViewGroup,
-        ): View {
-            val view = super.getView(position, convertView, parent)
-            val item = getItem(position)
-            if (item != null) {
-                (view as? TextView)?.setText(item.nameRes)
-            }
-            return view
-        }
-
-        fun submitList(newList: List<PlayerTransition>) {
-            clear()
-            addAll(newList)
-            notifyDataSetChanged()
-        }
-    }
+    @Composable
+    private fun transitionName(transition: PlayerTransition): String = stringResource(transition.nameRes)
 }

@@ -71,8 +71,6 @@
 -keep class com.google.android.material.transition.** { *; }
 
 -keep class com.ssilencce.ui.component.base.** { *; }
--keep class com.ssilencce.ui.screen.player.styles.** { *; }
-
 -keep class com.ssilencce.core.model.** { *; }
 -keep class com.ssilencce.data.local.room.LyricsEntity { *; }
 -keep class com.ssilencce.data.remote.deezer.model.** { *; }

@@ -89,18 +89,10 @@ import com.ssilencce.ui.screen.other.MiniPlayerFragment
 import com.ssilencce.ui.screen.permissions.PermissionsActivity
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.player.compose.ComposePlayerFragment
-import com.ssilencce.ui.screen.player.styles.defaultstyle.DefaultPlayerFragment
-import com.ssilencce.ui.screen.player.styles.expressivestyle.ExpressivePlayerFragment
-import com.ssilencce.ui.screen.player.styles.fullcoverstyle.FullCoverPlayerFragment
-import com.ssilencce.ui.screen.player.styles.gradientstyle.GradientPlayerFragment
-import com.ssilencce.ui.screen.player.styles.m3style.M3PlayerFragment
-import com.ssilencce.ui.screen.player.styles.peekplayerstyle.PeekPlayerFragment
-import com.ssilencce.ui.screen.player.styles.plainstyle.PlainPlayerFragment
 import com.ssilencce.util.ADAPTIVE_CONTROLS
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
 import com.ssilencce.util.CAROUSEL_EFFECT
 import com.ssilencce.util.CIRCLE_PLAY_BUTTON
-import com.ssilencce.util.COMPOSE_PLAYER
 import com.ssilencce.util.ENABLE_ROTATION_LOCK
 import com.ssilencce.util.HOLD_TAB_TO_SEARCH
 import com.ssilencce.util.LIBRARY_CATEGORIES
@@ -501,13 +493,11 @@ abstract class AbsSlidingMusicPanelActivity :
         // restore values
         setLightStatusBar()
         setLightNavigationBar()
-        (playerFragment as? AbsPlayerFragment)?.onHide()
     }
 
     protected open fun onPanelExpanded() {
         setMiniPlayerAlphaProgress(1f)
         onPaletteColorChanged()
-        (playerFragment as? AbsPlayerFragment)?.onShow()
     }
 
     protected fun updateTabs() {
@@ -674,7 +664,6 @@ abstract class AbsSlidingMusicPanelActivity :
             NOW_PLAYING_SMALL_IMAGE,
             PLAYER_BLUR_RADIUS,
             CIRCLE_PLAY_BUTTON,
-            COMPOSE_PLAYER,
             -> {
                 chooseFragmentForTheme()
             }
@@ -719,20 +708,7 @@ abstract class AbsSlidingMusicPanelActivity :
     private fun chooseFragmentForTheme() {
         nowPlayingScreen = Preferences.nowPlayingScreen
 
-        val fragment: Fragment =
-            if (Preferences.useComposePlayer && nowPlayingScreen == NowPlayingScreen.Default) {
-                ComposePlayerFragment()
-            } else {
-                when (nowPlayingScreen) {
-                    NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
-                    NowPlayingScreen.Gradient -> GradientPlayerFragment()
-                    NowPlayingScreen.Peek -> PeekPlayerFragment()
-                    NowPlayingScreen.Plain -> PlainPlayerFragment()
-                    NowPlayingScreen.M3 -> M3PlayerFragment()
-                    NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
-                    else -> DefaultPlayerFragment()
-                }
-            }
+        val fragment: Fragment = ComposePlayerFragment()
 
         supportFragmentManager.commit {
             replace(R.id.player_container, fragment)
