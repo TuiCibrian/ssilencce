@@ -21,6 +21,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.ssilencce.R
@@ -44,9 +45,12 @@ class LyricsFragment : Fragment() {
     ): View =
         ComposeView(requireContext())
             .apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
                 setContent {
                     SsilencceTheme {
                         LyricsScreen(
+                            contentVisible = (activity as? MainActivity)?.isAuroraContentVisible != false,
+                            onBackgroundVisibilityChanged = { (activity as? MainActivity)?.updateAuroraRibbonOcclusion(it) },
                             onEditClick = { currentSong ->
                                 findNavController().navigate(
                                     R.id.nav_lyrics_editor,

@@ -1,0 +1,249 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]: 11:28
+    - generic [ref=e14]:
+      - generic [ref=e15]:
+        - button [ref=e16] [cursor=pointer]
+        - generic [ref=e19]: ssilencce
+        - button [ref=e21] [cursor=pointer]
+        - button [ref=e24] [cursor=pointer]
+      - generic [ref=e27]:
+        - generic [ref=e28]:
+          - button "Pistas destacadas" [ref=e29] [cursor=pointer]
+          - button "Último añadido" [ref=e35] [cursor=pointer]
+          - button "Historial" [ref=e41] [cursor=pointer]
+          - button "Aleatorio 1 247 canciones" [ref=e47] [cursor=pointer]:
+            - generic [ref=e51]:
+              - generic [ref=e52]: Aleatorio
+              - generic [ref=e53]: 1 247 canciones
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - heading "Top artists" [level=3] [ref=e56]
+            - button [ref=e57] [cursor=pointer]
+          - generic [ref=e60]:
+            - generic [ref=e61]:
+              - generic [ref=e62]: "N"
+              - generic [ref=e64]: Nach
+              - emphasis [ref=e65]: 3 álbumes
+            - generic [ref=e66]:
+              - generic [ref=e67]: JS
+              - generic [ref=e69]: Joaquín Sabina
+              - emphasis [ref=e70]: 8 álbumes
+            - generic [ref=e71]:
+              - generic [ref=e72]: BA
+              - generic [ref=e74]: Brock Ansiolitiko
+              - emphasis [ref=e75]: 13 álbumes
+            - generic [ref=e76]:
+              - generic [ref=e77]: NV
+              - generic [ref=e79]: Nacho Vegas
+              - emphasis [ref=e80]: 18 álbumes
+            - generic [ref=e81]:
+              - generic [ref=e82]: R
+              - generic [ref=e84]: Rayden
+              - emphasis [ref=e85]: 23 álbumes
+            - generic [ref=e86]:
+              - generic [ref=e87]: S
+              - generic [ref=e89]: Sharif
+              - emphasis [ref=e90]: 28 álbumes
+        - generic [ref=e91]:
+          - generic [ref=e92]:
+            - heading "Top albums" [level=3] [ref=e93]
+            - button [ref=e94] [cursor=pointer]
+          - generic [ref=e97]:
+            - generic [ref=e98]:
+              - generic [ref=e99]: Un Día En Suburbia
+              - generic [ref=e101]: Un Día En Suburbia
+              - generic [ref=e102]: Nach
+            - generic [ref=e103]:
+              - generic [ref=e104]: 19 Días y 500 Noches
+              - generic [ref=e106]: 19 Días y 500 Noches
+              - generic [ref=e107]: Joaquín Sabina
+            - generic [ref=e108]:
+              - generic [ref=e109]: Detrás de la Piel
+              - generic [ref=e111]: Detrás de la Piel
+              - generic [ref=e112]: Brock Ansiolitiko
+            - generic [ref=e113]:
+              - generic [ref=e114]: El Manifiesto Desastre
+              - generic [ref=e116]: El Manifiesto Desastre
+              - generic [ref=e117]: Nacho Vegas
+        - generic [ref=e118]:
+          - generic [ref=e119]:
+            - heading "Recent albums" [level=3] [ref=e120]
+            - button [ref=e121] [cursor=pointer]
+          - generic [ref=e124]:
+            - generic [ref=e125]:
+              - generic [ref=e126]: Detrás de la Piel
+              - generic [ref=e128]: Detrás de la Piel
+              - generic [ref=e129]: Brock Ansiolitiko
+            - generic [ref=e130]:
+              - generic [ref=e131]: El Manifiesto Desastre
+              - generic [ref=e133]: El Manifiesto Desastre
+              - generic [ref=e134]: Nacho Vegas
+            - generic [ref=e135]:
+              - generic [ref=e136]: En Alma y Hueso
+              - generic [ref=e138]: En Alma y Hueso
+              - generic [ref=e139]: Rayden
+            - generic [ref=e140]:
+              - generic [ref=e141]: Sobre los Márgenes
+              - generic [ref=e143]: Sobre los Márgenes
+              - generic [ref=e144]: Sharif
+        - generic [ref=e145]:
+          - generic [ref=e146]:
+            - heading "Not recently played" [level=3] [ref=e147]
+            - button [ref=e148] [cursor=pointer]
+          - generic [ref=e151]:
+            - generic [ref=e152]:
+              - generic [ref=e154]: Noches Sin Dormir
+              - generic [ref=e155]: Rayden
+            - generic [ref=e156]:
+              - generic [ref=e158]: El Aprendiz
+              - generic [ref=e159]: Sharif
+            - generic [ref=e160]:
+              - generic [ref=e162]: Rap vs Racismo
+              - generic [ref=e163]: El Chojin
+            - generic [ref=e164]:
+              - generic [ref=e166]: Boogaloo
+              - generic [ref=e167]: Kase.O
+        - generic [ref=e168]:
+          - heading "Añadidas recientemente" [level=3] [ref=e169]
+          - generic [ref=e170]: Últimos álbumes
+        - generic [ref=e171]:
+          - generic [ref=e172]:
+            - generic [ref=e177]: Un Día En Suburbia
+            - generic [ref=e178]: Nach
+          - generic [ref=e179]:
+            - generic [ref=e184]: 19 Días y 500 Noches
+            - generic [ref=e185]: Joaquín Sabina
+          - generic [ref=e186]:
+            - generic [ref=e191]: Detrás de la Piel
+            - generic [ref=e192]: Brock Ansiolitiko
+          - generic [ref=e193]:
+            - generic [ref=e198]: El Manifiesto Desastre
+            - generic [ref=e199]: Nacho Vegas
+          - generic [ref=e200]:
+            - generic [ref=e205]: En Alma y Hueso
+            - generic [ref=e206]: Rayden
+          - generic [ref=e207]:
+            - generic [ref=e212]: Sobre los Márgenes
+            - generic [ref=e213]: Sharif
+        - generic [ref=e214]:
+          - heading "Artistas más escuchados" [level=3] [ref=e215]
+          - generic [ref=e216]: Top 4
+        - generic [ref=e217]:
+          - generic [ref=e218]:
+            - generic [ref=e219]: "N"
+            - generic [ref=e221]: Nach
+            - generic [ref=e222]: 5 álbumes · 13 canciones
+          - generic [ref=e223]:
+            - generic [ref=e224]: JS
+            - generic [ref=e226]: Joaquín Sabina
+            - generic [ref=e227]: 12 álbumes · 26 canciones
+          - generic [ref=e228]:
+            - generic [ref=e229]: BA
+            - generic [ref=e231]: Brock Ansiolitiko
+            - generic [ref=e232]: 19 álbumes · 39 canciones
+          - generic [ref=e233]:
+            - generic [ref=e234]: NV
+            - generic [ref=e236]: Nacho Vegas
+            - generic [ref=e237]: 8 álbumes · 52 canciones
+    - generic [ref=e238]:
+      - navigation "Navegación secundaria":
+        - button "Listas"
+        - button "Etiquetas"
+        - button "Artistas"
+        - button "Buscar"
+      - generic [ref=e239] [cursor=pointer]:
+        - generic [ref=e243]:
+          - generic [ref=e244]: Axe to Grind
+          - generic [ref=e245]: Lyn
+        - button [ref=e246]
+        - button [ref=e249]
+      - navigation [ref=e252]:
+        - button "ssilencce" [ref=e253] [cursor=pointer]
+        - button "Colas" [ref=e257] [cursor=pointer]
+        - button "Ahora suena — Axe to Grind" [ref=e261] [cursor=pointer]
+        - button "Carpetas" [ref=e265] [cursor=pointer]
+        - button "Álbumes" [ref=e269] [cursor=pointer]
+        - button "Más" [ref=e273] [cursor=pointer]
+    - generic [ref=e277]:
+      - generic [ref=e278]:
+        - img "ssilencce" [ref=e280]
+        - generic [ref=e281]:
+          - generic [ref=e282]: ssilencce
+          - generic [ref=e283]: Reproductor de música sin anuncios
+      - generic [ref=e284]:
+        - generic [ref=e285]:
+          - heading "Biblioteca" [level=4] [ref=e286]
+          - button "Canciones 1 247" [ref=e287] [cursor=pointer]:
+            - text: Canciones
+            - generic [ref=e290]: 1 247
+          - button "Álbumes 148" [ref=e291] [cursor=pointer]:
+            - text: Álbumes
+            - generic [ref=e294]: "148"
+          - button "Artistas 96" [ref=e295] [cursor=pointer]:
+            - text: Artistas
+            - generic [ref=e298]: "96"
+          - button "Carpetas" [ref=e299] [cursor=pointer]
+          - button "Listas de reproducción 23" [ref=e302] [cursor=pointer]:
+            - text: Listas de reproducción
+            - generic [ref=e305]: "23"
+          - button "Colas 3" [ref=e306] [cursor=pointer]:
+            - text: Colas
+            - generic [ref=e309]: "3"
+        - generic [ref=e310]:
+          - heading "Descubrir" [level=4] [ref=e311]
+          - button "Más reproducidas" [ref=e312] [cursor=pointer]
+          - button "Añadidas recientemente" [ref=e315] [cursor=pointer]
+          - button "Buscar" [ref=e318] [cursor=pointer]
+        - generic [ref=e321]:
+          - heading "Sonido & sistema" [level=4] [ref=e322]
+          - button "Ecualizador" [ref=e323] [cursor=pointer]
+          - button "Ajustes" [ref=e326] [cursor=pointer]
+    - status
+  - complementary [ref=e329]:
+    - heading "ssilencce · pantallas" [level=2] [ref=e330]
+    - generic [ref=e331]:
+      - generic [ref=e332]:
+        - text: Home — 4 tiles + 4 rails
+        - generic [ref=e335]: new
+      - generic [ref=e336]: Canciones
+      - generic [ref=e339]:
+        - text: Top Tracks
+        - generic [ref=e342]: new
+      - generic [ref=e343]: Álbumes
+      - generic [ref=e346]:
+        - text: Album Detail
+        - generic [ref=e349]: new
+      - generic [ref=e350]: Artistas
+      - generic [ref=e353]:
+        - text: Artist Detail
+        - generic [ref=e356]: new
+      - generic [ref=e357]: Carpetas
+      - generic [ref=e360]:
+        - text: Listas — empty + menú
+        - generic [ref=e363]: new
+      - generic [ref=e364]:
+        - text: Colas (múltiples) + badge
+        - generic [ref=e367]: ★
+      - generic [ref=e368]:
+        - text: Buscar — chips + kbd
+        - generic [ref=e371]: new
+    - generic [ref=e372]:
+      - generic [ref=e373]:
+        - text: Ahora suena — 6 variantes
+        - generic [ref=e376]: new
+      - generic [ref=e377]:
+        - text: Lyrics Sync
+        - generic [ref=e380]: new
+      - generic [ref=e381]:
+        - text: Lyrics Edit LRC
+        - generic [ref=e384]: new
+      - generic [ref=e385]: Letras legacy
+      - generic [ref=e388]:
+        - text: Ecualizador — Virtualizer+
+        - generic [ref=e391]: new
+      - generic [ref=e392]: Editor de etiquetas
+      - generic [ref=e395]:
+        - text: Ajustes — Network/Advanced
+        - generic [ref=e398]: new
+    - generic [ref=e399]: Aurora — base neutra profunda, superficies de cristal esmerilado con bordes finos, halos de luz blanca suave y acento blanco (sin azul). Mismo contenido y lógica Booming; solo cambia la estética.

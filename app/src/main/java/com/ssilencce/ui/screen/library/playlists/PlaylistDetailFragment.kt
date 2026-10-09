@@ -118,7 +118,7 @@ class PlaylistDetailFragment :
         // binding.collapsingAppBarLayout.setupStatusBarScrim(requireContext())
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace())
+            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
         }
 
         detailViewModel.getPlaylist().observe(viewLifecycleOwner) { playlistWithSongs ->

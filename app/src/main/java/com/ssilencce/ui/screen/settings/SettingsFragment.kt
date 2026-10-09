@@ -33,6 +33,7 @@ import com.ssilencce.extensions.applyHorizontalWindowInsets
 import com.ssilencce.extensions.getOnBackPressedDispatcher
 import com.ssilencce.extensions.materialSharedAxis
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)
@@ -61,6 +62,7 @@ class SettingsFragment :
 
         materialSharedAxis(view)
         view.applyHorizontalWindowInsets()
+        if (!Preferences.isAuroraAppearance) checkForMargins(binding.contentFrame)
 
         val navHostFragment = childFragmentManager.findFragmentById(R.id.contentFrame) as NavHostFragment
         childNavController =
@@ -98,6 +100,7 @@ class SettingsFragment :
     private val onBackPressedCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
+                if (mainActivity.dismissAuroraOverlay()) return
                 if (mainActivity.panelState != BottomSheetBehavior.STATE_COLLAPSED) {
                     mainActivity.collapsePanel()
                     return

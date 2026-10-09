@@ -35,6 +35,7 @@ import com.ssilencce.extensions.hasQ
 import com.ssilencce.extensions.resources.isColorLight
 import com.ssilencce.extensions.resources.surfaceColor
 import com.ssilencce.util.Preferences
+import com.ssilencce.ui.theme.styleAuroraHierarchy
 
 /**
  * @author Christians M. A. (mardous)
@@ -86,6 +87,11 @@ abstract class AbsThemeActivity : AppCompatActivity() {
 
     fun setLightNavigationBar(lightNavigationBar: Boolean = surfaceColor().isColorLight) {
         windowInsetsController?.isAppearanceLightNavigationBars = lightNavigationBar
+    }
+
+    override fun onPostCreate(savedInstanceState: Bundle?) {
+        super.onPostCreate(savedInstanceState)
+        styleAuroraHierarchy(window.decorView)
     }
 
     override fun onDestroy() {

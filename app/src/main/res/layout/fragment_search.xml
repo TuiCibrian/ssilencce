@@ -22,18 +22,13 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
                 android:layout_marginEnd="8dp"
-                android:layout_marginBottom="6dp"
-                android:gravity="center_vertical"
-                android:background="@drawable/aurora_search_field_selector"
-                android:paddingStart="12dp"
-                android:paddingEnd="4dp">
+                android:gravity="center_vertical">
 
                 <androidx.appcompat.widget.AppCompatEditText
                     android:id="@+id/search_view"
                     android:layout_width="0dp"
-                    android:layout_height="48dp"
+                    android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:ellipsize="end"
                     android:gravity="start|center_vertical"
@@ -41,7 +36,7 @@
                     android:inputType="text|textAutoComplete|textNoSuggestions"
                     android:imeOptions="actionSearch"
                     android:hint="@string/search_hint"
-                    android:paddingStart="4dp"
+                    android:paddingStart="8dp"
                     android:textAlignment="viewStart"
                     tools:ignore="Autofill,RtlSymmetry" />
 
@@ -91,52 +86,36 @@
                 android:layout_height="wrap_content"
                 app:overflowMode="none"
                 app:singleSelection="true"
-                app:selectionRequired="true"
                 tools:checkedButton="@id/modeSongs">
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/modeSongs"
-                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
                     android:text="@string/songs_label" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/modeAlbums"
-                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
                     android:text="@string/albums_label" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/modeArtists"
-                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
                     android:text="@string/artists_label" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/modeGenres"
-                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
                     android:text="@string/genres_label" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/modePlaylists"
-                    style="?attr/materialButtonOutlinedStyle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:insetTop="0dp"
-                    android:insetBottom="0dp"
                     android:text="@string/playlists_label" />
 
             </com.google.android.material.button.MaterialButtonToggleGroup>

@@ -11,13 +11,15 @@
         android:id="@+id/auroraBackground"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:importantForAccessibility="no"/>
+        android:importantForAccessibility="no"
+        android:visibility="gone"/>
 
     <androidx.fragment.app.FragmentContainerView
         android:id="@+id/fragment_container"
         android:name="androidx.navigation.fragment.NavHostFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:background="?colorSurface"
         app:defaultNavHost="true"
         app:layout_behavior="com.google.android.material.appbar.AppBarLayout$ScrollingViewBehavior"
         tools:layout="@layout/fragment_home"/>
@@ -49,7 +51,7 @@
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/navigationView"
-        style="@style/Widget.Ssilencce.Aurora.NavigationBar"
+        style="?bottomNavigationStyle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom"
@@ -60,13 +62,17 @@
         app:menu="@menu/menu_bottom_navigation"
         tools:viewBindingType="com.google.android.material.navigation.NavigationBarView"/>
 
-    <com.ssilencce.ui.component.views.AuroraNavigationCaretView
-        android:id="@+id/navCaret"
-        android:layout_width="42dp"
-        android:layout_height="3dp"
-        android:layout_gravity="bottom|center_horizontal"
-        android:importantForAccessibility="no"
-        android:visibility="gone"
-        tools:ignore="InaccessibleViewModel,UnusedAttributeRtl,ViewWithOnlyOneLayoutOrVisibility"/>
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/auroraScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"/>
+
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/auroraNavigation"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        android:visibility="gone"/>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

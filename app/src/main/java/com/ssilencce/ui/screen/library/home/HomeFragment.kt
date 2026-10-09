@@ -22,6 +22,13 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
@@ -36,6 +43,7 @@ import com.ssilencce.data.model.Suggestion
 import com.ssilencce.databinding.FragmentHomeBinding
 import com.ssilencce.extensions.dp
 import com.ssilencce.extensions.isNullOrEmpty
+import com.ssilencce.extensions.media.asNumberOfSongs
 import com.ssilencce.extensions.navigation.albumDetailArgs
 import com.ssilencce.extensions.navigation.artistDetailArgs
 import com.ssilencce.extensions.navigation.asFragmentExtras
@@ -58,6 +66,7 @@ import com.ssilencce.ui.adapters.album.AlbumAdapter
 import com.ssilencce.ui.adapters.artist.ArtistAdapter
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.compose.aurora.AuroraHomeActions
 import com.ssilencce.ui.component.menu.onAlbumMenu
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.component.menu.onArtistMenu
@@ -65,6 +74,8 @@ import com.ssilencce.ui.component.menu.onArtistsMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
+import com.ssilencce.ui.theme.SsilencceTheme
+import com.ssilencce.util.Preferences
 
 /**
  * @author Christians M. A. (mardous)
@@ -81,6 +92,8 @@ class HomeFragment :
     private val binding get() = _binding!!
 
     private var homeAdapter: HomeAdapter? = null
+    private var songCount by mutableIntStateOf(0)
+    private var allSongs: List<Song> = emptyList()
 
     private val currentContent: SuggestedResult
         get() = libraryViewModel.getSuggestions().value ?: SuggestedResult.Idle
@@ -98,6 +111,7 @@ class HomeFragment :
 
         setupTitle()
         setupListeners()
+        setupAuroraActions(homeBinding)
         checkForMargins()
 
         homeAdapter =
@@ -131,6 +145,10 @@ class HomeFragment :
                     libraryViewModel.forceReload(ReloadType.Suggestions)
                 }
             }
+        libraryViewModel.allSongs().observe(viewLifecycleOwner) { songs ->
+            allSongs = songs
+            songCount = songs.size
+        }
 
         applyWindowInsetsFromView(view)
     }
@@ -158,6 +176,34 @@ class HomeFragment :
         binding.shuffleButton.setOnClickListener(this)
     }
 
+    private fun setupAuroraActions(homeBinding: FragmentHomeBinding) {
+        if (!Preferences.isAuroraAppearance) return
+        val legacyActions = homeBinding.homeContent.absPlaylists.root
+        legacyActions.visibility = View.GONE
+        val container = legacyActions.parent as LinearLayout
+        container.descendantFocusability = ViewGroup.FOCUS_AFTER_DESCENDANTS
+        container.isFocusable = false
+        container.isFocusableInTouchMode = false
+        container.addView(
+            ComposeView(requireContext()).apply {
+                layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setContent {
+                    SsilencceTheme {
+                        AuroraHomeActions(
+                            songCount.asNumberOfSongs(requireContext()),
+                            { onClick(binding.myTopTracks) },
+                            { onClick(binding.lastAdded) },
+                            { onClick(binding.history) },
+                            { onClick(binding.shuffleButton) },
+                        )
+                    }
+                }
+            },
+            0,
+        )
+    }
+
     private fun checkIsEmpty() {
         binding.empty.isVisible = !currentContent.isLoading && homeAdapter.isNullOrEmpty
     }
@@ -181,9 +227,7 @@ class HomeFragment :
             }
 
             binding.shuffleButton -> {
-                libraryViewModel.allSongs().observe(viewLifecycleOwner) {
-                    playerViewModel.openAndShuffleQueue(it)
-                }
+                playerViewModel.openAndShuffleQueue(allSongs)
             }
         }
     }
@@ -235,7 +279,7 @@ class HomeFragment :
                 AlbumAdapter(
                     activity = mainActivity,
                     dataSet = (suggestion.items as List<Album>),
-                    itemLayoutRes = R.layout.item_album_gradient,
+                    itemLayoutRes = if (Preferences.isAuroraAppearance) R.layout.item_album else R.layout.item_album_gradient,
                     callback = this,
                 )
             }
@@ -343,10 +387,22 @@ class HomeFragment :
         menu.removeItem(R.id.action_grid_size)
         menu.removeItem(R.id.action_view_type)
         menu.removeItem(R.id.action_sort_order)
-        menu.findItem(R.id.action_settings).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+        if (Preferences.isAuroraAppearance) {
+            menu.findItem(R.id.action_settings).setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER)
+            menu
+                .add(Menu.NONE, R.id.action_search, Menu.NONE, R.string.search_label)
+                .setIcon(R.drawable.ic_search_24dp)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        } else {
+            menu.findItem(R.id.action_settings).setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+        }
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+        if (menuItem.itemId == R.id.action_search && Preferences.isAuroraAppearance) {
+            mainActivity.navigateAuroraDestination(R.id.nav_search)
+            return true
+        }
         if (menuItem.itemId == R.id.action_settings) {
             findNavController().navigate(R.id.nav_settings)
             return true

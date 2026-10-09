@@ -11,6 +11,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.common.util.concurrent.Futures
@@ -112,6 +113,15 @@ class MainActivity :
         val navController = whichFragment<NavHostFragment>(R.id.fragment_container).navController
         val navInflater = navController.navInflater
         val navGraph = navInflater.inflate(R.navigation.graph_main)
+        if (Preferences.isAuroraAppearance) {
+            navGraph.addDestination(
+                navController.navigatorProvider.getNavigator(FragmentNavigator::class.java).createDestination().apply {
+                    id = R.id.nav_queue
+                    setClassName("com.ssilencce.ui.screen.queue.AuroraQueueFragment")
+                    label = getString(R.string.playing_queue_label)
+                },
+            )
+        }
 
         val categoryInfo: CategoryInfo = Preferences.libraryCategories.first { it.visible }
         if (categoryInfo.visible) {
@@ -137,7 +147,7 @@ class MainActivity :
         }
 
         navController.graph = navGraph
-        navigationView.setupWithNavController(navController)
+        if (!Preferences.isAuroraAppearance) navigationView.setupWithNavController(navController)
         // Scroll Fragment to top
         navigationView.setOnItemReselectedListener {
             currentFragment(R.id.fragment_container).apply {
@@ -152,6 +162,15 @@ class MainActivity :
                 currentFragment(R.id.fragment_container)?.enterTransition = null
             }
             if (destination.navigatorName == "dialog") {
+                return@addOnDestinationChangedListener
+            }
+            if (Preferences.isAuroraAppearance) {
+                auroraDestination = destination.id
+                if (Preferences.isRememberLastPage) saveTab(destination.id)
+                setBottomNavVisibility(
+                    visible = true,
+                    hideBottomSheet = if (destination.id in listOf(R.id.nav_lyrics_editor, R.id.nav_play_info, R.id.nav_about)) true else null,
+                )
                 return@addOnDestinationChangedListener
             }
             when (destination.id) {

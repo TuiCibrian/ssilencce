@@ -217,10 +217,6 @@
     <string name="last_added_label">Last added</string>
     <string name="top_tracks_label">Top Tracks</string>
     <string name="history_label">History</string>
-    <string name="top_tracks_subtitle">Most played songs</string>
-    <string name="last_added_subtitle">Recently added songs</string>
-    <string name="history_subtitle">Listen again</string>
-    <string name="shuffle_subtitle">Play everything shuffled</string>
     <string name="not_recently_played">Not Recently Played</string>
     <string name="play_info">Play info</string>
     <string name="track_play_counts">Track Play Counts</string>
@@ -430,6 +426,8 @@
     <string name="autoeq_label">AutoEq</string>
     <string name="graphic_eq_label">Graphic EQ</string>
     <string name="graphic_eq_band_count">%d-band</string>
+    <string name="aurora_eq_bands">Bands</string>
+    <string name="aurora_eq_sound">Sound</string>
     <string name="eq_profiles_title">EQ Profiles</string>
     <string name="autoeq_profiles_title">AutoEq Profiles</string>
     <string name="eq_profile_title">Profile</string>
@@ -543,6 +541,7 @@
     <string name="download_lyrics">Download lyrics</string>
     <string name="write_lyrics_here">Write lyrics here</string>
     <string name="no_lyrics_found">No lyrics found</string>
+    <string name="lyrics_loading">Loading lyrics…</string>
     <string name="lyrics_were_updated_successfully">Lyrics were updated successfully.</string>
     <string name="failed_to_update_lyrics">Failed to update lyrics.</string>
     <string name="there_are_no_changes_to_save">There are no changes to save.</string>
@@ -682,8 +681,6 @@
     <string name="general_theme_title">General theme</string>
     <string name="pure_black_theme_title">Pure Black</string>
     <string name="material_you_title">Material You</string>
-    <string name="background_animation_title">Background animation</string>
-    <string name="background_animation_summary">Animate the aurora background. Turn off for reduced motion or to save battery.</string>
     <string name="use_custom_font_title">Use custom font</string>
     <string name="appbar_mode_title">Header style</string>
     <string name="library_categories_title">Library categories</string>
@@ -762,8 +759,6 @@
 
     <!-- Now playing preferences -->
     <string name="now_playing_screen_title">Style</string>
-    <string name="now_playing_color_scheme">Color scheme</string>
-    <string name="now_playing_transition">Transition</string>
     <string name="open_on_play_title">Open on play</string>
     <string name="open_on_play_summary">Expand the Now Playing panel automatically after start playing a song.</string>
     <string name="squiggly_seek_bar_title">Squiggly seek bar</string>
@@ -1028,4 +1023,32 @@
     <string name="uncaught_error_restart_app">Restart app</string>
     <string name="uncaught_error_github">Open issue on GitHub</string>
     <string name="uncaught_error_send">Send report</string>
+    <string name="aurora_appearance_title">Aurora Glass</string>
+    <string name="aurora_appearance_summary">Black glass surfaces, white accents and a flowing ribbon. Turn off to use your saved theme.</string>
+    <string name="aurora_motion_title">Animate the Aurora ribbon</string>
+    <string name="aurora_motion_summary">Stops in the background, in battery saver and when system animations are disabled.</string>
+    <string name="aurora_player_label">Player</string>
+    <string name="aurora_queue_label">Queue</string>
+    <string name="aurora_library_drawer">Browse library</string>
+    <string name="aurora_future_title">Not available yet</string>
+    <string name="aurora_future_summary">This feature is not available yet.</string>
+    <string name="aurora_multiple_queues">Multiple queues</string>
+    <string name="aurora_queue_search">Search in queue</string>
+    <string name="aurora_custom_tags">Custom tags</string>
+    <string name="aurora_composers">Composers</string>
+    <string name="aurora_lyrics_sync">Synchronize lyrics manually</string>
+    <string name="aurora_lyrics_qr">Share lyrics with QR</string>
+    <string name="aurora_crossfade">Crossfade</string>
+    <string name="aurora_mono">Mono output</string>
+    <string name="aurora_song_timer">Timer by number of songs</string>
+    <string name="aurora_remaining_time">Remaining time</string>
+    <string name="aurora_total_time">Total time</string>
+    <string name="repeat_mode_one">Repeat one song</string>
+    <string name="repeat_mode_all">Repeat all songs</string>
+    <string name="repeat_mode_off">Repeat off</string>
+    <string name="shuffle_on">Shuffle on</string>
+    <string name="shuffle_off">Shuffle off</string>
+    <string name="aurora_empty_queue">Your queue is empty. Play a song from your library to get started.</string>
+    <string name="aurora_saved_player_colors">Aurora uses white accents. Your saved player colors return when Aurora is off.</string>
+    <string name="aurora_collapse_player">Collapse player</string>
 </resources>

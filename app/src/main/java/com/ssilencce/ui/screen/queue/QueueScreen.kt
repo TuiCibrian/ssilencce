@@ -27,19 +27,21 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,6 +54,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -60,6 +63,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -68,9 +72,11 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.painterResource
@@ -78,12 +84,16 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.edit
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import com.ssilencce.R
+import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.data.model.QueueSong
 import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.asReadableDuration
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.songCountStr
 import com.ssilencce.extensions.media.songInfo
@@ -95,12 +105,18 @@ import com.ssilencce.ui.component.compose.AnimatedEqBars
 import com.ssilencce.ui.component.compose.MediaImage
 import com.ssilencce.ui.component.compose.ObserveAsEvent
 import com.ssilencce.ui.component.compose.SmallHeader
+import com.ssilencce.ui.component.compose.aurora.AuroraUnavailableRow
+import com.ssilencce.ui.component.compose.aurora.rememberAuroraMotionScale
 import com.ssilencce.ui.component.compose.menu.MenuDefaults
 import com.ssilencce.ui.component.compose.menu.MenuItem
 import com.ssilencce.ui.component.compose.menu.OverflowMenu
+import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.player.QUEUE_DEBOUNCE
+import com.ssilencce.ui.theme.AuroraDesign
+import com.ssilencce.util.ANIMATE_PLAYER_CONTROL
 import com.ssilencce.util.LOCKED_QUEUE
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import my.nanihadesuka.compose.LazyColumnScrollbar
@@ -119,6 +135,8 @@ fun QueueScreen(
     onShareClick: (Song) -> Unit,
     onDetailsClick: (Song) -> Unit,
     playerViewModel: PlayerViewModel = koinActivityViewModel(),
+    libraryViewModel: LibraryViewModel = koinActivityViewModel(),
+    contentVisible: Boolean = true,
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -127,13 +145,17 @@ fun QueueScreen(
     val coroutineScope = rememberCoroutineScope()
 
     val themeColors = MaterialTheme.colorScheme
+    val aurora = Preferences.isAuroraAppearance
+    val animateBars = !aurora || rememberAuroraMotionScale(contentVisible, ANIMATE_PLAYER_CONTROL) > 0f
+    val miniMargin by libraryViewModel.getMiniPlayerMargin().observeAsState(LibraryMargin(0))
+    val bottomPadding = with(LocalDensity.current) { miniMargin.totalMarginWithNavigation.toDp() }
 
-    val isPlaying by playerViewModel.isPlayingFlow.collectAsState()
-    val currentSong by playerViewModel.currentSongFlow.collectAsState()
-    val position by playerViewModel.positionFlow.collectAsState()
-    val playQueue by playerViewModel.queueFlow.collectAsState()
-    val repeatMode by playerViewModel.repeatModeFlow.collectAsState()
-    val shuffleMode by playerViewModel.shuffleModeFlow.collectAsState()
+    val isPlaying by playerViewModel.isPlayingFlow.collectAsStateWithLifecycle()
+    val currentSong by playerViewModel.currentSongFlow.collectAsStateWithLifecycle()
+    val position by playerViewModel.positionFlow.collectAsStateWithLifecycle()
+    val playQueue by playerViewModel.queueFlow.collectAsStateWithLifecycle()
+    val repeatMode by playerViewModel.repeatModeFlow.collectAsStateWithLifecycle()
+    val shuffleMode by playerViewModel.shuffleModeFlow.collectAsStateWithLifecycle()
 
     val queueLocked by sharedPreferences.observeKeyAsState(LOCKED_QUEUE, false)
 
@@ -148,21 +170,25 @@ fun QueueScreen(
         animationSpec = tween(200),
     )
 
-    val listState = rememberLazyListState(position.current)
+    val queueContentOffset = if (aurora) 1 else 0
+    val listState = rememberLazyListState(if (aurora) 0 else position.current.coerceAtLeast(0))
     val reorderableListState =
         rememberReorderableLazyListState(listState) { from, to ->
+            val fromSong = from.index - queueContentOffset
+            val toSong = to.index - queueContentOffset
+            if (fromSong !in playQueue.indices || toSong !in playQueue.indices) return@rememberReorderableLazyListState
             hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
 
             reorderInfo =
                 if (reorderInfo == null) {
-                    Pair(from.index, to.index)
+                    Pair(fromSong, toSong)
                 } else {
-                    reorderInfo!!.first to to.index
+                    reorderInfo!!.first to toSong
                 }
 
             reorderingQueue =
                 reorderingQueue?.toMutableList()?.apply {
-                    add(to.index, removeAt(from.index))
+                    add(toSong, removeAt(fromSong))
                 }
         }
 
@@ -191,45 +217,48 @@ fun QueueScreen(
 
     LaunchedEffect(position, playQueue) {
         delay(QUEUE_DEBOUNCE.milliseconds)
-        if (shouldLocateCurrentTrackOnUpdate ||
-            listState.firstVisibleItemIndex == position.previous
+        if (position.current in playQueue.indices && (
+                shouldLocateCurrentTrackOnUpdate ||
+                    (position.previous in playQueue.indices && listState.firstVisibleItemIndex == position.previous + queueContentOffset)
+            )
         ) {
-            listState.animateScrollToItem(position.current)
+            listState.animateScrollToItem(position.current + queueContentOffset)
             if (shouldLocateCurrentTrackOnUpdate) {
                 shouldLocateCurrentTrackOnUpdate = false
             }
         }
     }
 
-    LaunchedEffect(listState) {
+    LaunchedEffect(listState, position.current, playQueue.size) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo }
             .collect { itemInfos ->
-                showLocateCurrentTrack = itemInfos.none { it.index == position.current }
+                showLocateCurrentTrack = position.current in playQueue.indices && itemInfos.none { it.index == position.current + queueContentOffset }
             }
     }
 
-    Column(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .wrapContentHeight()
-                .nestedScroll(rememberNestedScrollInteropConnection()),
-    ) {
-        BottomSheetDefaults.DragHandle(
-            modifier = Modifier.align(Alignment.CenterHorizontally),
-        )
+    val header: @Composable ColumnScope.() -> Unit = {
+        if (aurora) {
+            Text(stringResource(R.string.playing_queue_label), Modifier.padding(horizontal = 18.dp, vertical = 16.dp), fontSize = 19.sp, fontWeight = FontWeight.Medium)
+            Text(stringResource(R.string.aurora_multiple_queues) + " · " + stringResource(R.string.aurora_future_title), Modifier.padding(horizontal = 18.dp, vertical = 4.dp), fontSize = 12.sp, color = AuroraDesign.muted)
+        } else {
+            BottomSheetDefaults.DragHandle(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+            )
+        }
 
-        SmallHeader(
-            title = currentSong.title,
-            subtitle = currentSong.displayArtistName(),
-            imageModel = currentSong,
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-        )
+        if (!aurora && playQueue.isNotEmpty()) {
+            SmallHeader(
+                title = currentSong.title,
+                subtitle = currentSong.displayArtistName(),
+                imageModel = currentSong,
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+            )
+        }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(if (aurora) 4.dp else 16.dp))
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
@@ -299,29 +328,40 @@ fun QueueScreen(
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(if (aurora) 4.dp else 16.dp))
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (aurora) 0.dp else 16.dp),
             modifier =
                 Modifier
                     .padding(horizontal = 16.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(themeColors.surfaceContainerLowest.copy(alpha = .6f))
-                    .border(1.dp, themeColors.outlineVariant.copy(alpha = .7f), RoundedCornerShape(16.dp))
-                    .padding(vertical = 12.dp)
-                    .padding(start = 16.dp, end = 8.dp),
+                    .padding(vertical = if (aurora) 4.dp else 12.dp)
+                    .padding(start = if (aurora) 0.dp else 16.dp, end = 8.dp),
         ) {
-            Icon(
-                painterResource(R.drawable.ic_queue_music_24dp),
-                tint = themeColors.secondary,
-                contentDescription = null,
-            )
+            if (aurora) {
+                IconButton(onClick = playerViewModel::seekToPrevious, enabled = playQueue.isNotEmpty()) {
+                    Icon(painterResource(R.drawable.ic_previous_24dp), stringResource(R.string.action_previous))
+                }
+                IconButton(onClick = playerViewModel::togglePlayPause, enabled = playQueue.isNotEmpty()) {
+                    Icon(painterResource(if (isPlaying) R.drawable.ic_pause_24dp else R.drawable.ic_play_24dp), stringResource(if (isPlaying) R.string.action_pause else R.string.action_play))
+                }
+                IconButton(onClick = playerViewModel::seekToNext, enabled = playQueue.isNotEmpty()) {
+                    Icon(painterResource(R.drawable.ic_next_24dp), stringResource(R.string.action_next))
+                }
+            } else {
+                Icon(
+                    painterResource(R.drawable.ic_queue_music_24dp),
+                    tint = themeColors.secondary,
+                    contentDescription = null,
+                )
+            }
 
             Column(Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.up_next),
+                    text = if (aurora) "${(position.current + 1).coerceIn(0, playQueue.size)} / ${playQueue.size}" else stringResource(R.string.up_next),
                     style = MaterialTheme.typography.titleMedium,
                     color = themeColors.secondary,
                     fontWeight = FontWeight.SemiBold,
@@ -359,8 +399,29 @@ fun QueueScreen(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
+    }
 
-        Box {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .then(
+                    if (aurora) {
+                        Modifier
+                            .fillMaxSize()
+                            .statusBarsPadding()
+                            .navigationBarsPadding()
+                            .padding(bottom = bottomPadding)
+                    } else {
+                        Modifier.wrapContentHeight()
+                    },
+                ).nestedScroll(rememberNestedScrollInteropConnection()),
+    ) {
+        if (!aurora) header()
+        Box(if (aurora) Modifier.weight(1f) else Modifier) {
+            if (!aurora && playQueue.isEmpty()) {
+                Text(stringResource(R.string.aurora_empty_queue), Modifier.align(Alignment.Center).padding(24.dp), color = themeColors.onSurfaceVariant)
+            }
             LazyColumnScrollbar(
                 state = listState,
                 settings =
@@ -376,20 +437,30 @@ fun QueueScreen(
                     contentPadding = PaddingValues(8.dp) + PaddingValues(bottom = listBottomPadding),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
+                    if (aurora) {
+                        item(key = "aurora_queue_header") { Column { header() } }
+                        if (playQueue.isEmpty()) {
+                            item(key = "aurora_empty_queue") {
+                                Text(stringResource(R.string.aurora_empty_queue), Modifier.padding(24.dp), color = themeColors.onSurfaceVariant)
+                            }
+                        }
+                    }
                     itemsIndexed(
                         items = reorderingQueue ?: playQueue,
                         key = { _, item -> item.key },
                     ) { index, song ->
                         ReorderableItem(reorderableListState, key = song.key) {
-                            val isCurrentSong = remember(position) { index == position.current }
+                            val isCurrentSong = index == position.current
 
                             val alpha by animateFloatAsState(
                                 targetValue = if (isCurrentSong || index >= position.current) 1f else .5f,
                             )
                             val color by animateColorAsState(
                                 targetValue =
-                                    if (isCurrentSong) {
-                                        themeColors.primary.copy(alpha = .1f)
+                                    if (aurora) {
+                                        if (isCurrentSong) Color.White.copy(alpha = .06f) else AuroraDesign.glass
+                                    } else if (isCurrentSong) {
+                                        themeColors.primaryContainer
                                     } else {
                                         themeColors.surfaceContainer
                                     },
@@ -398,18 +469,32 @@ fun QueueScreen(
                             val contentColor by animateColorAsState(
                                 targetValue =
                                     if (isCurrentSong) {
-                                        themeColors.primary
+                                        themeColors.onPrimaryContainer
                                     } else {
                                         themeColors.onSurfaceVariant
                                     },
                                 animationSpec = tween(400),
                             )
                             val cornerRadius by animateDpAsState(
-                                targetValue = if (isPlaying && isCurrentSong) 50.dp else 12.dp,
+                                targetValue =
+                                    if (aurora) {
+                                        6.dp
+                                    } else if (isPlaying && isCurrentSong) {
+                                        50.dp
+                                    } else {
+                                        12.dp
+                                    },
                                 animationSpec = tween(400),
                             )
                             val imageCornerRadius by animateDpAsState(
-                                targetValue = if (isPlaying && isCurrentSong) 50.dp else 8.dp,
+                                targetValue =
+                                    if (aurora) {
+                                        4.dp
+                                    } else if (isPlaying && isCurrentSong) {
+                                        50.dp
+                                    } else {
+                                        8.dp
+                                    },
                                 animationSpec = tween(400),
                             )
 
@@ -422,14 +507,9 @@ fun QueueScreen(
                                     }
                                 },
                                 shape = RoundedCornerShape(cornerRadius),
-                                color = color.copy(alpha),
+                                color = color.copy(alpha = color.alpha * alpha),
                                 contentColor = contentColor.copy(alpha),
-                                border =
-                                    if (isCurrentSong) {
-                                        BorderStroke(1.dp, themeColors.primary.copy(alpha = .9f))
-                                    } else {
-                                        null
-                                    },
+                                border = if (aurora && isCurrentSong) BorderStroke(1.dp, Color.White) else null,
                             ) {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically,
@@ -445,7 +525,16 @@ fun QueueScreen(
                                                 .size(48.dp)
                                                 .clip(RoundedCornerShape(imageCornerRadius)),
                                     ) { isPlayingSong ->
-                                        if (isPlayingSong) {
+                                        if (aurora) {
+                                            Box(Modifier.fillMaxSize()) {
+                                                MediaImage(model = song, modifier = Modifier.fillMaxSize())
+                                                if (isPlayingSong) {
+                                                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .6f)), contentAlignment = Alignment.Center) {
+                                                        AnimatedEqBars(color = Color.White, isPlaying = isPlaying, modifier = Modifier.size(16.dp), animate = animateBars)
+                                                    }
+                                                }
+                                            }
+                                        } else if (isPlayingSong) {
                                             Box(
                                                 contentAlignment = Alignment.Center,
                                                 modifier =
@@ -474,28 +563,31 @@ fun QueueScreen(
                                     ) {
                                         Text(
                                             text = song.title,
-                                            style = MaterialTheme.typography.titleMedium,
+                                            style = if (aurora) MaterialTheme.typography.bodyMedium.copy(fontSize = 14.5.sp) else MaterialTheme.typography.titleMedium,
                                             overflow = TextOverflow.Ellipsis,
                                             maxLines = 1,
                                         )
 
                                         Text(
-                                            text = song.songInfo(),
-                                            style = MaterialTheme.typography.bodyMedium,
+                                            text = if (aurora) song.displayArtistName() else song.songInfo(),
+                                            style = if (aurora) MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp) else MaterialTheme.typography.bodyMedium,
                                             color = contentColor.copy(alpha = 0.8f),
                                             overflow = TextOverflow.Ellipsis,
                                             maxLines = 1,
                                         )
+                                        if (aurora) Text(song.albumName, style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.5.sp), color = AuroraDesign.muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                     }
 
                                     Spacer(Modifier.width(8.dp))
+
+                                    if (aurora) Text(song.duration.asReadableDuration(), color = AuroraDesign.muted, fontSize = 12.5.sp)
 
                                     if (!queueLocked) {
                                         Icon(
                                             painter = painterResource(R.drawable.ic_drag_handle_24dp),
                                             contentDescription = stringResource(R.string.reorder_action),
                                             modifier =
-                                                Modifier.draggableHandle(
+                                                Modifier.size(48.dp).draggableHandle(
                                                     onDragStarted = {
                                                         hapticFeedback.performHapticFeedback(
                                                             HapticFeedbackType.GestureThresholdActivate,
@@ -520,7 +612,6 @@ fun QueueScreen(
                                     QueueItemMenu(
                                         itemIndex = index,
                                         queueIndex = position.current,
-                                        isCurrentSong = isCurrentSong,
                                         onStopAfterThisTrackClick = {
                                             playerViewModel.stopAt(index)
                                         },
@@ -547,11 +638,12 @@ fun QueueScreen(
                             }
                         }
                     }
+                    if (aurora) item(key = "aurora_queue_search") { AuroraUnavailableRow(R.string.aurora_queue_search) }
                 }
             }
 
             androidx.compose.animation.AnimatedVisibility(
-                visible = showLocateCurrentTrack,
+                visible = showLocateCurrentTrack && position.current in playQueue.indices,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it },
                 modifier =
@@ -562,7 +654,7 @@ fun QueueScreen(
                 Button(
                     onClick = {
                         coroutineScope.launch {
-                            listState.animateScrollToItem(position.current)
+                            listState.animateScrollToItem(position.current + queueContentOffset)
                         }
                     },
                     contentPadding = ButtonDefaults.MediumContentPadding,
@@ -583,7 +675,6 @@ fun QueueScreen(
 private fun QueueItemMenu(
     itemIndex: Int,
     queueIndex: Int,
-    isCurrentSong: Boolean,
     onStopAfterThisTrackClick: () -> Unit,
     onPutAfterCurrentTrackClick: () -> Unit,
     onRemoveFromQueueClick: () -> Unit,
@@ -636,18 +727,6 @@ private fun QueueItemMenu(
         colors =
             MenuDefaults.dropDownMenuColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                overflowContainerColor =
-                    if (isCurrentSong) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = .12f)
-                    } else {
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    },
-                overflowIconColor =
-                    if (isCurrentSong) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
             ),
     )
 }

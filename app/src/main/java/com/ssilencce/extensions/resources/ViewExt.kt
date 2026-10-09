@@ -76,6 +76,7 @@ import com.skydoves.balloon.createBalloon
 import com.ssilencce.R
 import com.ssilencce.extensions.dip
 import com.ssilencce.extensions.resolveColor
+import com.ssilencce.ui.component.views.MorphicIconButton
 import com.ssilencce.util.Preferences
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
@@ -316,6 +317,10 @@ fun View.animateTintColor(
                     }
 
                     is TextView -> {
+                        applyColor(animatedColor)
+                    }
+
+                    is MorphicIconButton -> {
                         applyColor(animatedColor)
                     }
 

@@ -1,3 +1,10 @@
+## Status
+
+Implementation reverted on 2026-10-03 by
+[ADR-035](../../../docs/architecture/ADR-035-restore-pre-aurora-ui.md). This proposal and its
+design, specs and tasks are historical records, not current implementation targets. Resuming
+this design requires a new explicit request.
+
 ## Why
 
 ssilencce must adopt the visual language of the approved "Aurora Ondulante (glass · white accent)"

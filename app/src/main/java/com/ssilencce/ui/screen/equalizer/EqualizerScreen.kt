@@ -12,6 +12,7 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -29,17 +31,21 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,23 +56,29 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalSlider
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,11 +89,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ShareCompat
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ssilencce.R
 import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.core.model.audiodevice.AudioDeviceType
@@ -93,6 +109,7 @@ import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 import com.ssilencce.data.model.replaygain.ReplayGainMode
 import com.ssilencce.extensions.MIME_TYPE_APPLICATION
 import com.ssilencce.extensions.MIME_TYPE_PLAIN_TEXT
+import com.ssilencce.extensions.hasR
 import com.ssilencce.extensions.isLandscape
 import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.component.compose.ButtonGroup
@@ -112,6 +129,8 @@ import com.ssilencce.ui.component.compose.TitledCard
 import com.ssilencce.ui.component.compose.menu.MenuItem
 import com.ssilencce.ui.component.compose.menu.TopAppBarMenu
 import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.theme.AuroraDesign
+import com.ssilencce.util.Preferences
 import java.util.Locale
 
 private const val PRESET_NAME_MAX_LENGTH = 48
@@ -132,6 +151,9 @@ fun EqualizerScreen(
 ) {
     val context = LocalContext.current
     val configuration = LocalConfiguration.current
+    val aurora = Preferences.isAuroraAppearance
+    var auroraSoundPage by rememberSaveable { mutableStateOf(false) }
+    val outputDevice by eqViewModel.audioDevice.collectAsStateWithLifecycle()
 
     val hasSystemEqualizer = remember { eqViewModel.hasSystemEqualizer(context) }
 
@@ -606,558 +628,649 @@ fun EqualizerScreen(
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        miniPlayerMargin = miniPlayerMargin.totalMargin,
+        miniPlayerMargin = miniPlayerMargin.totalMarginWithNavigation,
         onBackClick = onBackClick,
     ) { contentPadding ->
-        LazyColumn(
-            contentPadding =
-                PaddingValues(
-                    horizontal = if (configuration.isLandscape) 64.dp else 16.dp,
-                    vertical = 16.dp,
-                ),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier =
-                Modifier
-                    .fillMaxSize()
-                    .padding(contentPadding),
-        ) {
-            if (eqState.isDisabledByReason) {
-                eqState.disableReason?.let {
+        Column(Modifier.fillMaxSize().padding(contentPadding)) {
+            LazyColumn(
+                contentPadding =
+                    PaddingValues(
+                        horizontal = if (configuration.isLandscape) 64.dp else 16.dp,
+                        vertical = 16.dp,
+                    ),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+            ) {
+                if (aurora) {
+                    item {
+                        Card(colors = CardDefaults.cardColors(containerColor = AuroraDesign.glass)) {
+                            Row(Modifier.fillMaxWidth().padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Row(Modifier.weight(1f).heightIn(min = 48.dp).clickable(enabled = hasR(), onClick = { eqViewModel.showOutputDeviceSelector(context) }), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                    Icon(painterResource(outputDevice.type.iconRes), null)
+                                    Text(outputDevice.getDeviceName(context), Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                    Icon(painterResource(R.drawable.ic_arrow_drop_down_24dp), null)
+                                }
+                                val enableDescription = stringResource(R.string.enable_equalizer)
+                                Switch(checked = eqState.isUsable, onCheckedChange = { eqViewModel.setEqualizerState(isEnabled = it) }, enabled = eqState.supported && !eqState.isDisabledByReason, modifier = Modifier.semantics { contentDescription = enableDescription })
+                            }
+                        }
+                    }
+                }
+                if (aurora && !eqState.supported && !eqState.isDisabledByReason) {
                     item {
                         EmptyView(
                             icon = painterResource(R.drawable.ic_equalizer_24dp),
-                            title = stringResource(it.titleRes),
+                            title = stringResource(R.string.not_supported),
                             modifier = Modifier.fillParentMaxSize(),
                         )
                     }
                 }
-            } else {
-                item {
-                    MaterialSwitch(
-                        title = stringResource(R.string.enable_equalizer),
-                        subtitle = if (!eqState.supported) stringResource(R.string.not_supported) else null,
-                        isChecked = eqState.isUsable,
-                        enabled = eqState.supported,
-                        onClick = {
-                            eqViewModel.setEqualizerState(isEnabled = eqState.enabled.not())
-                        },
-                    )
-                }
+                if (eqState.isDisabledByReason) {
+                    eqState.disableReason?.let {
+                        item {
+                            EmptyView(
+                                icon = painterResource(R.drawable.ic_equalizer_24dp),
+                                title = stringResource(it.titleRes),
+                                modifier = Modifier.fillParentMaxSize(),
+                            )
+                        }
+                    }
+                } else {
+                    if (!aurora) {
+                        item {
+                            MaterialSwitch(
+                                title = stringResource(R.string.enable_equalizer),
+                                subtitle = if (!eqState.supported) stringResource(R.string.not_supported) else null,
+                                isChecked = eqState.isUsable,
+                                enabled = eqState.supported,
+                                onClick = {
+                                    eqViewModel.setEqualizerState(isEnabled = eqState.enabled.not())
+                                },
+                            )
+                        }
+                    }
 
-                if (eqState.supported) {
-                    item {
-                        TitledCard(
-                            title = stringResource(R.string.eq_profile_title),
-                            icon = painterResource(R.drawable.ic_equalizer_24dp),
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ) { cardContentPadding ->
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                                modifier = Modifier.padding(cardContentPadding),
-                            ) {
-                                val containerColor =
-                                    if (eqState.isUsable) {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh
-                                    } else {
-                                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
-                                    }
-                                val contentColor = contentColorFor(containerColor)
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier =
-                                        Modifier
-                                            .fillMaxWidth()
-                                            .clip(MaterialTheme.shapes.medium)
-                                            .background(containerColor)
-                                            .clickable(
-                                                enabled = eqState.isUsable,
-                                                onClick = { showProfileSelectorDialog = true },
-                                            ).padding(horizontal = 16.dp, vertical = 12.dp),
-                                ) {
-                                    Text(
-                                        text = eqCurrentProfile.getName(context),
-                                        style = MaterialTheme.typography.titleMedium,
-                                        color = contentColor,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f),
-                                    )
-
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_arrow_drop_down_24dp),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp),
-                                    )
+                    if (eqState.supported) {
+                        if (aurora) {
+                            item {
+                                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    AssistChip(onClick = {
+                                        auroraSoundPage = false
+                                        showBandCountSelector = !showBandCountSelector
+                                    }, enabled = eqState.isUsable && eqBandCapabilities.hasMultipleBandConfigurations, label = { Text(stringResource(R.string.graphic_eq_band_count, eqState.preferredBandCount)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_equalizer_24dp), null) }, modifier = Modifier.heightIn(min = 48.dp))
+                                    AssistChip(onClick = { showProfileSelectorDialog = true }, enabled = eqState.isUsable, label = { Text(eqCurrentProfile.getName(context)) }, modifier = Modifier.heightIn(min = 48.dp))
+                                    IconButton(onClick = { showProfileSaverDialog = true }, enabled = eqState.isUsable && eqCurrentProfile.isCustom) { Icon(painterResource(R.drawable.ic_save_24dp), stringResource(R.string.action_save)) }
+                                    IconButton(onClick = { deleteProfileState = Pair(eqCurrentProfile, true) }, enabled = eqState.isUsable && !eqCurrentProfile.isCustom) { Icon(painterResource(R.drawable.ic_delete_24dp), stringResource(R.string.delete_action)) }
                                 }
-
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    val deleteInteractionSource = remember { MutableInteractionSource() }
-                                    val deleteIsPressed by deleteInteractionSource.collectIsPressedAsState()
-                                    Button(
-                                        onClick = { deleteProfileState = Pair(eqCurrentProfile, true) },
-                                        colors =
-                                            ButtonDefaults.buttonColors(
-                                                containerColor = MaterialTheme.colorScheme.errorContainer,
-                                                contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                            ),
-                                        shape =
-                                            if (deleteIsPressed) {
-                                                ButtonGroupDefaults.connectedLeadingButtonPressShape
-                                            } else {
-                                                ButtonGroupDefaults.connectedLeadingButtonShape
-                                            },
-                                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                                        enabled = eqState.isUsable && !eqCurrentProfile.isCustom,
-                                        interactionSource = deleteInteractionSource,
-                                        modifier = Modifier.weight(1f),
+                            }
+                        } else {
+                            item {
+                                TitledCard(
+                                    title = stringResource(R.string.eq_profile_title),
+                                    icon = painterResource(R.drawable.ic_equalizer_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                ) { cardContentPadding ->
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                                        modifier = Modifier.padding(cardContentPadding),
                                     ) {
-                                        Icon(painterResource(R.drawable.ic_delete_24dp), null)
-                                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                        Text(stringResource(R.string.delete_action))
-                                    }
-
-                                    val saveInteractionSource = remember { MutableInteractionSource() }
-                                    val saveIsPressed by saveInteractionSource.collectIsPressedAsState()
-                                    Button(
-                                        onClick = { showProfileSaverDialog = true },
-                                        shape =
-                                            if (saveIsPressed) {
-                                                ButtonGroupDefaults.connectedTrailingButtonPressShape
+                                        val containerColor =
+                                            if (eqState.isUsable) {
+                                                MaterialTheme.colorScheme.surfaceContainerHigh
                                             } else {
-                                                ButtonGroupDefaults.connectedTrailingButtonShape
-                                            },
-                                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-                                        enabled = eqState.isUsable && eqCurrentProfile.isCustom,
-                                        interactionSource = saveInteractionSource,
-                                        modifier = Modifier.weight(1f),
-                                    ) {
-                                        Icon(painterResource(R.drawable.ic_save_24dp), null)
-                                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
-                                        Text(stringResource(R.string.action_save))
+                                                MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.7f)
+                                            }
+                                        val contentColor = contentColorFor(containerColor)
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier =
+                                                Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(MaterialTheme.shapes.medium)
+                                                    .background(containerColor)
+                                                    .clickable(
+                                                        enabled = eqState.isUsable,
+                                                        onClick = { showProfileSelectorDialog = true },
+                                                    ).padding(horizontal = 16.dp, vertical = 12.dp),
+                                        ) {
+                                            Text(
+                                                text = eqCurrentProfile.getName(context),
+                                                style = MaterialTheme.typography.titleMedium,
+                                                color = contentColor,
+                                                maxLines = 1,
+                                                overflow = TextOverflow.Ellipsis,
+                                                modifier = Modifier.weight(1f),
+                                            )
+
+                                            Icon(
+                                                painter = painterResource(R.drawable.ic_arrow_drop_down_24dp),
+                                                contentDescription = null,
+                                                modifier = Modifier.size(24.dp),
+                                            )
+                                        }
+
+                                        Row(
+                                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            val deleteInteractionSource = remember { MutableInteractionSource() }
+                                            val deleteIsPressed by deleteInteractionSource.collectIsPressedAsState()
+                                            Button(
+                                                onClick = { deleteProfileState = Pair(eqCurrentProfile, true) },
+                                                colors =
+                                                    ButtonDefaults.buttonColors(
+                                                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                                                    ),
+                                                shape =
+                                                    if (deleteIsPressed) {
+                                                        ButtonGroupDefaults.connectedLeadingButtonPressShape
+                                                    } else {
+                                                        ButtonGroupDefaults.connectedLeadingButtonShape
+                                                    },
+                                                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                                                enabled = eqState.isUsable && !eqCurrentProfile.isCustom,
+                                                interactionSource = deleteInteractionSource,
+                                                modifier = Modifier.weight(1f),
+                                            ) {
+                                                Icon(painterResource(R.drawable.ic_delete_24dp), null)
+                                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                                Text(stringResource(R.string.delete_action))
+                                            }
+
+                                            val saveInteractionSource = remember { MutableInteractionSource() }
+                                            val saveIsPressed by saveInteractionSource.collectIsPressedAsState()
+                                            Button(
+                                                onClick = { showProfileSaverDialog = true },
+                                                shape =
+                                                    if (saveIsPressed) {
+                                                        ButtonGroupDefaults.connectedTrailingButtonPressShape
+                                                    } else {
+                                                        ButtonGroupDefaults.connectedTrailingButtonShape
+                                                    },
+                                                contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                                                enabled = eqState.isUsable && eqCurrentProfile.isCustom,
+                                                interactionSource = saveInteractionSource,
+                                                modifier = Modifier.weight(1f),
+                                            ) {
+                                                Icon(painterResource(R.drawable.ic_save_24dp), null)
+                                                Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                                                Text(stringResource(R.string.action_save))
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    item {
-                        TitledCard(
-                            title = stringResource(R.string.graphic_eq_label),
-                            icon = painterResource(R.drawable.ic_graphic_eq_24dp),
-                            titleEndContent = {
-                                if (eqBandCapabilities.hasMultipleBandConfigurations) {
-                                    ShapedText(
-                                        text =
-                                            stringResource(
-                                                R.string.graphic_eq_band_count,
-                                                eqState.preferredBandCount,
-                                            ),
-                                        style = MaterialTheme.typography.bodySmallEmphasized,
-                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                        shape = CircleShape,
-                                        enabled = eqState.isUsable,
-                                        onClick = {
-                                            showBandCountSelector = showBandCountSelector.not()
-                                        },
-                                    )
-                                }
-                            },
-                            color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        ) { cardContentPadding ->
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier =
-                                    Modifier
-                                        .fillMaxWidth()
-                                        .wrapContentHeight()
-                                        .padding(cardContentPadding),
-                            ) {
-                                AnimatedVisibility(
-                                    visible = eqState.enabled && showBandCountSelector,
-                                ) {
-                                    ButtonGroup(
-                                        onSelected = { newBandCount ->
-                                            if (newBandCount != eqState.preferredBandCount) {
-                                                changeBandCountState = Pair(newBandCount, true)
-                                            }
-                                        },
-                                        buttonItems = availableBandCounts,
-                                        buttonStateResolver = { it == eqState.preferredBandCount },
-                                        modifier =
-                                            Modifier.padding(
-                                                vertical = 8.dp,
-                                                horizontal = 16.dp,
-                                            ),
-                                    )
-                                }
-
-                                if (eqBands.isNotEmpty()) {
-                                    EqualizerWaveform(
-                                        bands = bandResponseValues,
-                                        valueRange = eqBandCapabilities.bandRange,
-                                        enabled = eqState.isUsable,
+                        if (!aurora || !auroraSoundPage) {
+                            item {
+                                TitledCard(
+                                    title = stringResource(R.string.graphic_eq_label),
+                                    icon = painterResource(R.drawable.ic_graphic_eq_24dp),
+                                    titleEndContent = {
+                                        if (!aurora && eqBandCapabilities.hasMultipleBandConfigurations) {
+                                            ShapedText(
+                                                text =
+                                                    stringResource(
+                                                        R.string.graphic_eq_band_count,
+                                                        eqState.preferredBandCount,
+                                                    ),
+                                                style = MaterialTheme.typography.bodySmallEmphasized,
+                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                shape = CircleShape,
+                                                enabled = eqState.isUsable,
+                                                onClick = {
+                                                    showBandCountSelector = showBandCountSelector.not()
+                                                },
+                                            )
+                                        }
+                                    },
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                ) { cardContentPadding ->
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
                                         modifier =
                                             Modifier
                                                 .fillMaxWidth()
-                                                .height(100.dp)
-                                                .padding(vertical = 8.dp),
-                                    )
-                                    eqBands.forEachIndexed { index, band ->
-                                        EQBandSlider(
-                                            enabled = eqState.isUsable,
-                                            band = band,
-                                            onValueChange = { bandResponseValues[index] = it },
-                                            onValueChangeFinished = { bandGain ->
-                                                eqViewModel.setCustomProfileBandGain(
-                                                    band.index,
-                                                    bandGain,
+                                                .wrapContentHeight()
+                                                .padding(cardContentPadding),
+                                    ) {
+                                        AnimatedVisibility(
+                                            visible = eqState.enabled && showBandCountSelector,
+                                        ) {
+                                            ButtonGroup(
+                                                onSelected = { newBandCount ->
+                                                    if (newBandCount != eqState.preferredBandCount) {
+                                                        changeBandCountState = Pair(newBandCount, true)
+                                                    }
+                                                },
+                                                buttonItems = availableBandCounts,
+                                                buttonStateResolver = { it == eqState.preferredBandCount },
+                                                modifier =
+                                                    Modifier.padding(
+                                                        vertical = 8.dp,
+                                                        horizontal = 16.dp,
+                                                    ),
+                                            )
+                                        }
+
+                                        if (aurora && eqBands.isNotEmpty()) {
+                                            AuroraEqBands(eqBands, eqState.isUsable, eqViewModel::setCustomProfileBandGain)
+                                        } else if (eqBands.isNotEmpty()) {
+                                            EqualizerWaveform(
+                                                bands = bandResponseValues,
+                                                valueRange = eqBandCapabilities.bandRange,
+                                                enabled = eqState.isUsable,
+                                                modifier =
+                                                    Modifier
+                                                        .fillMaxWidth()
+                                                        .height(100.dp)
+                                                        .padding(vertical = 8.dp),
+                                            )
+                                            eqBands.forEachIndexed { index, band ->
+                                                EQBandSlider(
+                                                    enabled = eqState.isUsable,
+                                                    band = band,
+                                                    onValueChange = { bandResponseValues[index] = it },
+                                                    onValueChangeFinished = { bandGain ->
+                                                        eqViewModel.setCustomProfileBandGain(
+                                                            band.index,
+                                                            bandGain,
+                                                        )
+                                                    },
                                                 )
+                                            }
+                                        } else {
+                                            Text(
+                                                text = stringResource(R.string.eq_empty_bands),
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                textAlign = TextAlign.Center,
+                                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if ((!aurora || auroraSoundPage) && virtualizer.supported) {
+                            item {
+                                var virtualizerStrength by remember(virtualizer.strength) {
+                                    mutableFloatStateOf(virtualizer.strength)
+                                }
+                                SwitchCard(
+                                    onCheckedChange = { eqViewModel.setVirtualizer(enabled = it) },
+                                    checked = virtualizer.enabled && eqState.enabled,
+                                    title = stringResource(R.string.virtualizer_label),
+                                    icon = painterResource(R.drawable.ic_headphones_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    enabled = eqState.isUsable,
+                                ) { cardContentPadding ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(cardContentPadding),
+                                    ) {
+                                        Slider(
+                                            steps = 10,
+                                            value = virtualizerStrength,
+                                            onValueChange = { virtualizerStrength = it },
+                                            onValueChangeFinished = {
+                                                eqViewModel.setVirtualizer(strength = virtualizerStrength)
+                                            },
+                                            valueRange = virtualizer.strengthRange,
+                                            enabled = eqState.isUsable,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        EQValueText(
+                                            text = "${((virtualizerStrength * 100) / virtualizer.strengthRange.endInclusive).toInt()}%",
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if ((!aurora || auroraSoundPage) && bassBoost.supported) {
+                            item {
+                                var bassBoostStrength by remember(bassBoost.strength) {
+                                    mutableFloatStateOf(bassBoost.strength)
+                                }
+                                SwitchCard(
+                                    onCheckedChange = { eqViewModel.setBassBoost(enabled = it) },
+                                    checked = bassBoost.enabled && eqState.enabled,
+                                    title = stringResource(R.string.bassboost_label),
+                                    icon = painterResource(R.drawable.ic_edit_audio_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    enabled = eqState.isUsable,
+                                ) { cardContentPadding ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(cardContentPadding),
+                                    ) {
+                                        Slider(
+                                            steps = 10,
+                                            value = bassBoostStrength,
+                                            onValueChange = { bassBoostStrength = it },
+                                            onValueChangeFinished = {
+                                                eqViewModel.setBassBoost(strength = bassBoostStrength)
+                                            },
+                                            valueRange = bassBoost.strengthRange,
+                                            enabled = eqState.isUsable,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        EQValueText(
+                                            text = "${((bassBoostStrength * 100) / bassBoost.strengthRange.endInclusive).toInt()}%",
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if ((!aurora || auroraSoundPage) && loudnessGain.supported) {
+                            item {
+                                var loudnessGainValue by remember(loudnessGain.gainInDb) {
+                                    mutableFloatStateOf(loudnessGain.gainInDb)
+                                }
+                                SwitchCard(
+                                    onCheckedChange = { eqViewModel.setLoudnessGain(enabled = it) },
+                                    checked = loudnessGain.enabled && eqState.enabled,
+                                    title = stringResource(R.string.loudness_enhancer),
+                                    icon = painterResource(R.drawable.ic_volume_up_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    enabled = eqState.isUsable,
+                                ) { cardContentPadding ->
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(cardContentPadding),
+                                    ) {
+                                        Slider(
+                                            value = loudnessGainValue,
+                                            onValueChange = {
+                                                loudnessGainValue = it
+                                            },
+                                            onValueChangeFinished = {
+                                                eqViewModel.setLoudnessGain(gain = loudnessGainValue)
+                                            },
+                                            valueRange = loudnessGain.gainRange,
+                                            enabled = eqState.isUsable,
+                                            modifier = Modifier.weight(1f),
+                                        )
+
+                                        EQValueText(
+                                            text = "%.1f dB".format(Locale.ROOT, loudnessGainValue),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        if ((!aurora || auroraSoundPage) && eqState.proMode) {
+                            item {
+                                SwitchCard(
+                                    onCheckedChange = { eqViewModel.setCompressor(enabled = it) },
+                                    checked = compressor.enabled && eqState.enabled,
+                                    title = stringResource(R.string.compressor_label),
+                                    icon = painterResource(R.drawable.ic_instant_mix_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    enabled = eqState.isUsable,
+                                ) { cardContentPadding ->
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.padding(cardContentPadding),
+                                    ) {
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_threshold),
+                                            value = compressor.threshold,
+                                            range = compressor.thresholdRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(threshold = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_ratio),
+                                            value = compressor.ratio,
+                                            range = compressor.ratioRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(ratio = it) },
+                                            format = "%.1f:1",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_attack_time),
+                                            value = compressor.attackTimeMs,
+                                            range = compressor.attackTimeRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(attackTimeMs = it) },
+                                            unit = " ms",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_release_time),
+                                            value = compressor.releaseTimeMs,
+                                            range = compressor.releaseTimeRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(releaseTimeMs = it) },
+                                            unit = " ms",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_knee_width),
+                                            value = compressor.kneeWidth,
+                                            range = compressor.kneeWidthRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(kneeWidth = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_noise_gate),
+                                            value = compressor.noiseGateThreshold,
+                                            range = compressor.noiseGateThresholdRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(noiseGateThreshold = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_pre_gain),
+                                            value = compressor.preGain,
+                                            range = compressor.preGainRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(preGain = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_post_gain),
+                                            value = compressor.postGain,
+                                            range = compressor.postGainRange,
+                                            onValueChangeFinished = { eqViewModel.setCompressor(postGain = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        ResetButton(
+                                            onClick = {
+                                                eqViewModel.resetCompressor()
                                             },
                                         )
                                     }
-                                } else {
-                                    Text(
-                                        text = stringResource(R.string.eq_empty_bands),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                                    )
+                                }
+                            }
+                        }
+
+                        if ((!aurora || auroraSoundPage) && eqState.proMode) {
+                            item {
+                                SwitchCard(
+                                    onCheckedChange = { eqViewModel.setLimiter(enabled = it) },
+                                    checked = limiter.enabled && eqState.enabled,
+                                    title = stringResource(R.string.limiter_label),
+                                    icon = painterResource(R.drawable.ic_instant_mix_24dp),
+                                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    enabled = eqState.isUsable,
+                                ) { cardContentPadding ->
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        modifier = Modifier.padding(cardContentPadding),
+                                    ) {
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_threshold),
+                                            value = limiter.threshold,
+                                            range = limiter.thresholdRange,
+                                            onValueChangeFinished = { eqViewModel.setLimiter(threshold = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_ratio),
+                                            value = limiter.ratio,
+                                            range = limiter.ratioRange,
+                                            onValueChangeFinished = { eqViewModel.setLimiter(ratio = it) },
+                                            format = "%.1f:1",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_attack_time),
+                                            value = limiter.attackTimeMs,
+                                            range = limiter.attackTimeRange,
+                                            onValueChangeFinished = { eqViewModel.setLimiter(attackTimeMs = it) },
+                                            unit = " ms",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_release_time),
+                                            value = limiter.releaseTimeMs,
+                                            range = limiter.releaseTimeRange,
+                                            onValueChangeFinished = { eqViewModel.setLimiter(releaseTimeMs = it) },
+                                            unit = " ms",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        ParameterSlider(
+                                            label = stringResource(R.string.eq_post_gain),
+                                            value = limiter.postGain,
+                                            range = limiter.postGainRange,
+                                            onValueChangeFinished = { eqViewModel.setLimiter(postGain = it) },
+                                            unit = " dB",
+                                            enabled = eqState.isUsable,
+                                        )
+                                        Spacer(Modifier.height(4.dp))
+                                        ResetButton(
+                                            onClick = {
+                                                eqViewModel.resetLimiter()
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
 
-                    if (virtualizer.supported) {
+                    if (!aurora || auroraSoundPage) {
                         item {
-                            var virtualizerStrength by remember(virtualizer.strength) {
-                                mutableFloatStateOf(virtualizer.strength)
-                            }
-                            SwitchCard(
-                                onCheckedChange = { eqViewModel.setVirtualizer(enabled = it) },
-                                checked = virtualizer.enabled && eqState.enabled,
-                                title = stringResource(R.string.virtualizer_label),
-                                icon = painterResource(R.drawable.ic_headphones_24dp),
+                            TitledCard(
+                                title = stringResource(R.string.replay_gain),
+                                icon = painterResource(R.drawable.ic_sound_sampler_24dp),
                                 color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable,
-                            ) { cardContentPadding ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding),
-                                ) {
-                                    Slider(
-                                        steps = 10,
-                                        value = virtualizerStrength,
-                                        onValueChange = { virtualizerStrength = it },
-                                        onValueChangeFinished = {
-                                            eqViewModel.setVirtualizer(strength = virtualizerStrength)
-                                        },
-                                        valueRange = virtualizer.strengthRange,
-                                        enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f),
-                                    )
-
-                                    EQValueText(
-                                        text = "${((virtualizerStrength * 100) / virtualizer.strengthRange.endInclusive).toInt()}%",
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (bassBoost.supported) {
-                        item {
-                            var bassBoostStrength by remember(bassBoost.strength) {
-                                mutableFloatStateOf(bassBoost.strength)
-                            }
-                            SwitchCard(
-                                onCheckedChange = { eqViewModel.setBassBoost(enabled = it) },
-                                checked = bassBoost.enabled && eqState.enabled,
-                                title = stringResource(R.string.bassboost_label),
-                                icon = painterResource(R.drawable.ic_edit_audio_24dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable,
-                            ) { cardContentPadding ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding),
-                                ) {
-                                    Slider(
-                                        steps = 10,
-                                        value = bassBoostStrength,
-                                        onValueChange = { bassBoostStrength = it },
-                                        onValueChangeFinished = {
-                                            eqViewModel.setBassBoost(strength = bassBoostStrength)
-                                        },
-                                        valueRange = bassBoost.strengthRange,
-                                        enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f),
-                                    )
-
-                                    EQValueText(
-                                        text = "${((bassBoostStrength * 100) / bassBoost.strengthRange.endInclusive).toInt()}%",
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (loudnessGain.supported) {
-                        item {
-                            var loudnessGainValue by remember(loudnessGain.gainInDb) {
-                                mutableFloatStateOf(loudnessGain.gainInDb)
-                            }
-                            SwitchCard(
-                                onCheckedChange = { eqViewModel.setLoudnessGain(enabled = it) },
-                                checked = loudnessGain.enabled && eqState.enabled,
-                                title = stringResource(R.string.loudness_enhancer),
-                                icon = painterResource(R.drawable.ic_volume_up_24dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable,
-                            ) { cardContentPadding ->
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier.padding(cardContentPadding),
-                                ) {
-                                    Slider(
-                                        value = loudnessGainValue,
-                                        onValueChange = {
-                                            loudnessGainValue = it
-                                        },
-                                        onValueChangeFinished = {
-                                            eqViewModel.setLoudnessGain(gain = loudnessGainValue)
-                                        },
-                                        valueRange = loudnessGain.gainRange,
-                                        enabled = eqState.isUsable,
-                                        modifier = Modifier.weight(1f),
-                                    )
-
-                                    EQValueText(
-                                        text = "%.1f dB".format(Locale.ROOT, loudnessGainValue),
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    if (eqState.proMode) {
-                        item {
-                            SwitchCard(
-                                onCheckedChange = { eqViewModel.setCompressor(enabled = it) },
-                                checked = compressor.enabled && eqState.enabled,
-                                title = stringResource(R.string.compressor_label),
-                                icon = painterResource(R.drawable.ic_instant_mix_24dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable,
+                                modifier = Modifier.fillMaxWidth(),
                             ) { cardContentPadding ->
                                 Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
                                     modifier = Modifier.padding(cardContentPadding),
                                 ) {
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_threshold),
-                                        value = compressor.threshold,
-                                        range = compressor.thresholdRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(threshold = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_ratio),
-                                        value = compressor.ratio,
-                                        range = compressor.ratioRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(ratio = it) },
-                                        format = "%.1f:1",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_attack_time),
-                                        value = compressor.attackTimeMs,
-                                        range = compressor.attackTimeRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(attackTimeMs = it) },
-                                        unit = " ms",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_release_time),
-                                        value = compressor.releaseTimeMs,
-                                        range = compressor.releaseTimeRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(releaseTimeMs = it) },
-                                        unit = " ms",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_knee_width),
-                                        value = compressor.kneeWidth,
-                                        range = compressor.kneeWidthRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(kneeWidth = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_noise_gate),
-                                        value = compressor.noiseGateThreshold,
-                                        range = compressor.noiseGateThresholdRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(noiseGateThreshold = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_pre_gain),
-                                        value = compressor.preGain,
-                                        range = compressor.preGainRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(preGain = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_post_gain),
-                                        value = compressor.postGain,
-                                        range = compressor.postGainRange,
-                                        onValueChangeFinished = { eqViewModel.setCompressor(postGain = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    ResetButton(
-                                        onClick = {
-                                            eqViewModel.resetCompressor()
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
+                                    ReplayGainModeSelector(replayGain) {
+                                        eqViewModel.setReplayGain(mode = it)
+                                    }
 
-                    if (eqState.proMode) {
-                        item {
-                            SwitchCard(
-                                onCheckedChange = { eqViewModel.setLimiter(enabled = it) },
-                                checked = limiter.enabled && eqState.enabled,
-                                title = stringResource(R.string.limiter_label),
-                                icon = painterResource(R.drawable.ic_instant_mix_24dp),
-                                color = MaterialTheme.colorScheme.surfaceContainerLow,
-                                enabled = eqState.isUsable,
-                            ) { cardContentPadding ->
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.padding(cardContentPadding),
-                                ) {
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_threshold),
-                                        value = limiter.threshold,
-                                        range = limiter.thresholdRange,
-                                        onValueChangeFinished = { eqViewModel.setLimiter(threshold = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_ratio),
-                                        value = limiter.ratio,
-                                        range = limiter.ratioRange,
-                                        onValueChangeFinished = { eqViewModel.setLimiter(ratio = it) },
-                                        format = "%.1f:1",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_attack_time),
-                                        value = limiter.attackTimeMs,
-                                        range = limiter.attackTimeRange,
-                                        onValueChangeFinished = { eqViewModel.setLimiter(attackTimeMs = it) },
-                                        unit = " ms",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_release_time),
-                                        value = limiter.releaseTimeMs,
-                                        range = limiter.releaseTimeRange,
-                                        onValueChangeFinished = { eqViewModel.setLimiter(releaseTimeMs = it) },
-                                        unit = " ms",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.eq_post_gain),
-                                        value = limiter.postGain,
-                                        range = limiter.postGainRange,
-                                        onValueChangeFinished = { eqViewModel.setLimiter(postGain = it) },
-                                        unit = " dB",
-                                        enabled = eqState.isUsable,
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    ResetButton(
-                                        onClick = {
-                                            eqViewModel.resetLimiter()
-                                        },
-                                    )
+                                    AnimatedVisibility(
+                                        visible = replayGain.mode.isOn,
+                                        modifier = Modifier.padding(top = 8.dp),
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier.fillMaxWidth(),
+                                        ) {
+                                            ParameterSlider(
+                                                label = stringResource(R.string.rg_with_tag),
+                                                value = replayGain.preamp,
+                                                range = -15f..15f,
+                                                onValueChangeFinished = {
+                                                    eqViewModel.setReplayGain(preamp = it)
+                                                },
+                                                format = "%+.1f",
+                                                unit = " dB",
+                                            )
+                                            ParameterSlider(
+                                                label = stringResource(R.string.rg_without_tag),
+                                                value = replayGain.preampWithoutGain,
+                                                range = -15f..15f,
+                                                onValueChangeFinished = {
+                                                    eqViewModel.setReplayGain(preampWithoutGain = it)
+                                                },
+                                                format = "%+.1f",
+                                                unit = " dB",
+                                            )
+                                            Spacer(Modifier.height(4.dp))
+                                            ResetButton(
+                                                onClick = {
+                                                    eqViewModel.setReplayGain(
+                                                        preamp = 0f,
+                                                        preampWithoutGain = 0f,
+                                                    )
+                                                },
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 }
+            }
+            if (aurora) {
+                HorizontalDivider(color = AuroraDesign.border)
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    FilterChip(selected = !auroraSoundPage, onClick = { auroraSoundPage = false }, label = { Text(stringResource(R.string.aurora_eq_bands)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_equalizer_24dp), null) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp))
+                    FilterChip(selected = auroraSoundPage, onClick = { auroraSoundPage = true }, label = { Text(stringResource(R.string.aurora_eq_sound)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_edit_audio_24dp), null) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp))
+                }
+            }
+        }
+    }
+}
 
-                item {
-                    TitledCard(
-                        title = stringResource(R.string.replay_gain),
-                        icon = painterResource(R.drawable.ic_sound_sampler_24dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerLow,
-                        modifier = Modifier.fillMaxWidth(),
-                    ) { cardContentPadding ->
-                        Column(
-                            modifier = Modifier.padding(cardContentPadding),
-                        ) {
-                            ReplayGainModeSelector(replayGain) {
-                                eqViewModel.setReplayGain(mode = it)
-                            }
-
-                            AnimatedVisibility(
-                                visible = replayGain.mode.isOn,
-                                modifier = Modifier.padding(top = 8.dp),
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    modifier = Modifier.fillMaxWidth(),
-                                ) {
-                                    ParameterSlider(
-                                        label = stringResource(R.string.rg_with_tag),
-                                        value = replayGain.preamp,
-                                        range = -15f..15f,
-                                        onValueChangeFinished = {
-                                            eqViewModel.setReplayGain(preamp = it)
-                                        },
-                                        format = "%+.1f",
-                                        unit = " dB",
-                                    )
-                                    ParameterSlider(
-                                        label = stringResource(R.string.rg_without_tag),
-                                        value = replayGain.preampWithoutGain,
-                                        range = -15f..15f,
-                                        onValueChangeFinished = {
-                                            eqViewModel.setReplayGain(preampWithoutGain = it)
-                                        },
-                                        format = "%+.1f",
-                                        unit = " dB",
-                                    )
-                                    Spacer(Modifier.height(4.dp))
-                                    ResetButton(
-                                        onClick = {
-                                            eqViewModel.setReplayGain(
-                                                preamp = 0f,
-                                                preampWithoutGain = 0f,
-                                            )
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun AuroraEqBands(
+    bands: List<EqBand>,
+    enabled: Boolean,
+    onGainChanged: (Int, Float) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        bands.forEach { band ->
+            key(band.index) {
+                val slider = remember(band.index, band.valueRange) { SliderState(value = band.value, valueRange = band.valueRange) }
+                val commit by rememberUpdatedState(onGainChanged)
+                slider.onValueChangeFinished = { commit(band.index, slider.value) }
+                LaunchedEffect(band.value) { slider.value = band.value }
+                val frequency = remember(band) { band.readableFrequency }
+                val gain = "%+.1f dB".format(Locale.ROOT, slider.value)
+                Column(Modifier.width(56.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(gain, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                    VerticalSlider(
+                        state = slider,
+                        topToBottom = false,
+                        enabled = enabled,
+                        modifier =
+                            Modifier.width(48.dp).height(220.dp).semantics {
+                                contentDescription = frequency
+                                stateDescription = gain
+                            },
+                    )
+                    Text(frequency, style = MaterialTheme.typography.labelSmall, textAlign = TextAlign.Center, maxLines = 2)
                 }
             }
         }

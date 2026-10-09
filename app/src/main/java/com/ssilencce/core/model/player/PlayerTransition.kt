@@ -1,6 +1,8 @@
 package com.ssilencce.core.model.player
 
+import androidx.viewpager.widget.ViewPager
 import com.ssilencce.R
+import com.ssilencce.ui.component.transform.*
 
 enum class PlayerTransition(
     val nameRes: Int,
@@ -15,4 +17,18 @@ enum class PlayerTransition(
     ZoomOut(R.string.zoom_out),
     Parallax(R.string.parallax),
     ;
+
+    val transformerFactory: (Int) -> Pair<ViewPager.PageTransformer?, Boolean>
+        get() =
+            when (this) {
+                Cascading -> { _ -> CascadingPageTransformer() to true }
+                Depth -> { _ -> DepthTransformation() to true }
+                Hinge -> { _ -> HingeTransformation() to true }
+                HorizontalFlip -> { _ -> HorizontalFlipTransformation() to true }
+                VerticalFlip -> { _ -> VerticalFlipTransformation() to true }
+                Stack -> { _ -> VerticalStackTransformer() to true }
+                ZoomOut -> { _ -> ZoomOutPageTransformer() to true }
+                Parallax -> { id -> ParallaxPagerTransformer(id).apply { setSpeed(0.3f) } to false }
+                Simple -> { _ -> Pair(null, true) }
+            }
 }

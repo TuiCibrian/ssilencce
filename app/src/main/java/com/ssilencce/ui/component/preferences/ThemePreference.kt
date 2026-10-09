@@ -20,6 +20,7 @@ package com.ssilencce.ui.component.preferences
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
+import androidx.core.view.children
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -56,7 +57,9 @@ class ThemePreference
             val generalTheme = Preferences.generalTheme
             widgetView = holder.findViewById(android.R.id.widget_frame)
             widgetView?.findViewById<MaterialButtonToggleGroup>(R.id.buttonGroup)?.apply {
-                isEnabled = (generalTheme != GeneralTheme.BLACK)
+                removeOnButtonCheckedListener(this@ThemePreference)
+                isEnabled = this@ThemePreference.isEnabled && generalTheme != GeneralTheme.BLACK
+                children.forEach { it.isEnabled = isEnabled }
                 check(generalTheme.let { selectorIds[it] ?: R.id.systemDefault })
                 addOnButtonCheckedListener(this@ThemePreference)
             }
@@ -73,7 +76,7 @@ class ThemePreference
             checkedId: Int,
             isChecked: Boolean,
         ) {
-            if (isChecked) {
+            if (isChecked && isEnabled) {
                 when (checkedId) {
                     R.id.lightTheme -> customCallback?.onThemeSelected(GeneralTheme.LIGHT)
                     R.id.darkTheme -> customCallback?.onThemeSelected(GeneralTheme.DARK)

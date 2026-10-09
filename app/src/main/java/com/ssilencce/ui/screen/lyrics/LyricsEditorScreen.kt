@@ -69,6 +69,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,9 +83,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -95,6 +98,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ssilencce.R
+import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.lyrics.LyricsMode
 import com.ssilencce.data.model.lyrics.LyricsSource
@@ -113,6 +117,8 @@ import com.ssilencce.ui.component.compose.ObserveAsEvent
 import com.ssilencce.ui.component.compose.menu.MenuItem
 import com.ssilencce.ui.component.compose.menu.OverflowMenu
 import com.ssilencce.ui.component.compose.menu.TopAppBarMenu
+import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinActivityViewModel
@@ -169,6 +175,9 @@ fun LyricsEditorScreen(
     onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
+    val libraryViewModel: LibraryViewModel = koinActivityViewModel()
+    val miniPlayerMargin by libraryViewModel.getMiniPlayerMargin().observeAsState(LibraryMargin(0))
+    val navigationPadding = with(LocalDensity.current) { miniPlayerMargin.navigationMargin.toDp() }
     val clipboard = LocalClipboard.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -404,6 +413,8 @@ fun LyricsEditorScreen(
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
+        modifier = Modifier.padding(bottom = navigationPadding),
+        containerColor = if (Preferences.isAuroraAppearance) Color.Transparent else MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = {},
@@ -416,6 +427,25 @@ fun LyricsEditorScreen(
                     }
                 },
                 actions = {
+                    if (Preferences.isAuroraAppearance) {
+                        TopAppBarMenu(
+                            items =
+                                listOf(
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(R.string.aurora_lyrics_sync) + " · " + stringResource(R.string.aurora_future_title),
+                                        icon = painterResource(R.drawable.ic_timer_24dp),
+                                        enabled = false,
+                                        onClick = {},
+                                    ),
+                                    MenuItem.Button.DropDown(
+                                        text = stringResource(R.string.aurora_lyrics_qr) + " · " + stringResource(R.string.aurora_future_title),
+                                        icon = painterResource(R.drawable.ic_share_24dp),
+                                        enabled = false,
+                                        onClick = {},
+                                    ),
+                                ),
+                        )
+                    }
                     if (isLandscape) {
                         TopAppBarMenu(
                             showItemIcons = true,

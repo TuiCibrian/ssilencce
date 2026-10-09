@@ -53,6 +53,8 @@ import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.error.ErrorActivity
 import com.ssilencce.ui.screen.settings.SettingsScreen
 import com.ssilencce.util.EXPERIMENTAL_UPDATES
+import com.ssilencce.util.AURORA_APPEARANCE
+import com.ssilencce.util.USE_CUSTOM_FONT
 import com.ssilencce.util.Preferences.getDayNightMode
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
@@ -71,6 +73,13 @@ class App :
         if (BuildConfig.DEBUG) enableStrictMode()
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        if (!prefs.contains(AURORA_APPEARANCE)) {
+            val isNewInstallation = prefs.all.isEmpty()
+            prefs.edit {
+                putBoolean(AURORA_APPEARANCE, isNewInstallation)
+                if (isNewInstallation) putBoolean(USE_CUSTOM_FONT, false)
+            }
+        }
         // we cannot call setDefaultValues for multiple fragment based XML preference
         // files with readAgain flag set to false, so always check KEY_HAS_SET_DEFAULT_VALUES
         if (!prefs.getBoolean(PreferenceManager.KEY_HAS_SET_DEFAULT_VALUES, false)) {

@@ -23,6 +23,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -32,9 +34,11 @@ import com.ssilencce.extensions.getShareSongIntent
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
 import com.ssilencce.extensions.navigation.songDetailArgs
 import com.ssilencce.extensions.toChooser
+import com.ssilencce.ui.component.base.AbsMainActivityFragment
 import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
 import com.ssilencce.ui.dialogs.playlists.AddToPlaylistDialog
 import com.ssilencce.ui.dialogs.songs.DeleteSongsDialog
+import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
@@ -53,38 +57,7 @@ class QueueFragment : BottomSheetDialogFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View =
-        ComposeView(requireContext()).apply {
-            setContent {
-                SsilencceTheme {
-                    BottomSheetDialogSurface {
-                        QueueScreen(
-                            onAddToPlaylistClick = { songs ->
-                                AddToPlaylistDialog
-                                    .create(songs)
-                                    .show(childFragmentManager, "ADD_TO_PLAYLIST")
-                            },
-                            onDeleteSongClick = { song ->
-                                DeleteSongsDialog
-                                    .create(song)
-                                    .show(childFragmentManager, "DELETE_SONGS")
-                            },
-                            onShareClick = { song ->
-                                startActivity(
-                                    requireContext()
-                                        .getShareSongIntent(song)
-                                        .toChooser(getString(R.string.action_share)),
-                                )
-                            },
-                            onDetailsClick = { song ->
-                                findNavController()
-                                    .navigate(R.id.nav_song_details, songDetailArgs(song))
-                            },
-                        )
-                    }
-                }
-            }
-        }
+    ): View = createQueueView(asDialog = true)
 
     override fun onViewCreated(
         view: View,
@@ -100,3 +73,54 @@ class QueueFragment : BottomSheetDialogFragment() {
         }
     }
 }
+
+class AuroraQueueFragment : AbsMainActivityFragment() {
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?,
+    ): View = createQueueView(asDialog = false)
+
+    override fun onCreateMenu(
+        menu: android.view.Menu,
+        menuInflater: android.view.MenuInflater,
+    ) {}
+
+    override fun onMenuItemSelected(menuItem: android.view.MenuItem): Boolean = false
+}
+
+private fun Fragment.createQueueView(asDialog: Boolean): ComposeView =
+    ComposeView(requireContext()).apply {
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            SsilencceTheme {
+                val content: @androidx.compose.runtime.Composable () -> Unit = {
+                    QueueScreen(
+                        contentVisible = asDialog || (activity as? MainActivity)?.isAuroraContentVisible != false,
+                        onAddToPlaylistClick = { songs ->
+                            AddToPlaylistDialog
+                                .create(songs)
+                                .show(childFragmentManager, "ADD_TO_PLAYLIST")
+                        },
+                        onDeleteSongClick = { song ->
+                            DeleteSongsDialog
+                                .create(song)
+                                .show(childFragmentManager, "DELETE_SONGS")
+                        },
+                        onShareClick = { song ->
+                            startActivity(
+                                requireContext()
+                                    .getShareSongIntent(song)
+                                    .toChooser(getString(R.string.action_share)),
+                            )
+                        },
+                        onDetailsClick = { song ->
+                            findNavController()
+                                .navigate(R.id.nav_song_details, songDetailArgs(song))
+                        },
+                    )
+                }
+                if (asDialog) BottomSheetDialogSurface { content() } else content()
+            }
+        }
+    }

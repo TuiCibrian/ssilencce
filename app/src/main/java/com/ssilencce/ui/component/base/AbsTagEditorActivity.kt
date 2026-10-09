@@ -16,6 +16,10 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.content.IntentCompat
 import coil3.Image
 import coil3.SingletonImageLoader
@@ -31,7 +35,10 @@ import com.ssilencce.data.local.EditTarget
 import com.ssilencce.databinding.ActivityTagEditorBinding
 import com.ssilencce.extensions.*
 import com.ssilencce.extensions.resources.setupStatusBarForeground
+import com.ssilencce.ui.component.compose.aurora.AuroraRibbon
 import com.ssilencce.ui.screen.tageditor.TagEditorViewModel
+import com.ssilencce.ui.theme.styleAuroraHierarchy
+import com.ssilencce.util.Preferences
 import org.jaudiotagger.tag.reference.GenreTypes
 
 /**
@@ -77,6 +84,18 @@ abstract class AbsTagEditorActivity :
         binding.image.setOnClickListener(this@AbsTagEditorActivity)
         binding.actionSave.setOnClickListener(this@AbsTagEditorActivity)
         binding.appBar.setupStatusBarForeground()
+        if (Preferences.isAuroraAppearance) {
+            styleAuroraHierarchy(binding.root)
+            binding.root.addView(
+                ComposeView(this).apply {
+                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS
+                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                    setContent { AuroraRibbon(Modifier.fillMaxSize()) }
+                },
+                0,
+                ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT),
+            )
+        }
     }
 
     override fun onDestroy() {

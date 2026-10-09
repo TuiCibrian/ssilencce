@@ -35,7 +35,6 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="16dp"
                     android:maxLines="2"
-                    android:textAlignment="center"
                     android:textAppearance="?textAppearanceHeadline5"
                     android:textColor="?android:attr/textColorPrimary"
                     app:layout_constrainedWidth="true"
@@ -50,9 +49,8 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:singleLine="true"
-                    android:textAlignment="center"
                     android:textAppearance="?textAppearanceSubtitle1"
-                    android:textColor="?colorOnSurfaceVariant"
+                    android:textColor="?android:attr/textColorSecondary"
                     app:lineHeightHint="24sp"
                     app:layout_constrainedWidth="true"
                     app:layout_constraintTop_toBottomOf="@id/title"
@@ -90,23 +88,22 @@
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/playAction"
-                        style="@style/AuroraPillPrimaryButton"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:singleLine="true"
-                        android:paddingVertical="12dp"
+                        android:paddingVertical="16dp"
                         android:text="@string/action_play"
                         app:icon="@drawable/ic_play_24dp" />
 
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/shuffleAction"
-                        style="@style/AuroraPillSecondaryButton"
+                        style="?materialButtonTonalStyle"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:singleLine="true"
-                        android:paddingVertical="12dp"
+                        android:paddingVertical="16dp"
                         android:text="@string/shuffle_action"
                         app:icon="@drawable/ic_shuffle_24dp" />
 

@@ -85,7 +85,9 @@ object Preferences : KoinComponent {
         }
 
     fun getDayNightMode(themeName: String = generalTheme) =
-        when (themeName) {
+        if (isAuroraAppearance) {
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else when (themeName) {
             GeneralTheme.LIGHT -> {
                 AppCompatDelegate.MODE_NIGHT_NO
             }
@@ -108,14 +110,17 @@ object Preferences : KoinComponent {
     val blackTheme: Boolean
         get() = preferences.getBoolean(BLACK_THEME, false)
 
+    val isAuroraAppearance: Boolean
+        get() = preferences.getBoolean(AURORA_APPEARANCE, false)
+
+    val auroraMotion: Boolean
+        get() = preferences.getBoolean(AURORA_MOTION, true)
+
     val isMaterialYouTheme: Boolean
-        get() = preferences.getBoolean(MATERIAL_YOU, false)
+        get() = preferences.getBoolean(MATERIAL_YOU, hasS())
 
     val isCustomFont: Boolean
         get() = preferences.getBoolean(USE_CUSTOM_FONT, true)
-
-    val backgroundAnimation: Boolean
-        get() = preferences.getBoolean(BACKGROUND_ANIMATION, true)
 
     val appBarMode: TopAppBarLayout.AppBarMode
         get() =
@@ -592,7 +597,6 @@ interface UpdateSearchMode {
 
 const val BLACK_THEME = "black_theme"
 const val MATERIAL_YOU = "material_you"
-const val BACKGROUND_ANIMATION = "background_animation"
 const val USE_CUSTOM_FONT = "use_custom_font"
 const val APPBAR_MODE = "appbar_mode"
 const val GENERAL_THEME = "general_theme"

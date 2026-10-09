@@ -40,7 +40,7 @@ class TopAppBarLayout
         private var simpleAppbarBinding: SimpleAppbarLayoutBinding? = null
         private var collapsingAppbarBinding: CollapsingAppbarLayoutBinding? = null
 
-        val mode: AppBarMode = Preferences.appBarMode
+        val mode: AppBarMode = if (Preferences.isAuroraAppearance) AppBarMode.SIMPLE else Preferences.appBarMode
 
         init {
             if (mode == AppBarMode.COLLAPSING) {

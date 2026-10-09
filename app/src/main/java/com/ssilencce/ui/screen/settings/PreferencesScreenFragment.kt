@@ -72,7 +72,9 @@ import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.scrobbling.ScrobblingServiceLoginFragment
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
+import com.ssilencce.ui.theme.styleAuroraHierarchy
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
+import com.ssilencce.util.AURORA_APPEARANCE
 import com.ssilencce.util.BACKUP_DATA
 import com.ssilencce.util.BLACKLIST_ENABLED
 import com.ssilencce.util.BLACK_THEME
@@ -250,14 +252,18 @@ open class PreferenceScreenFragment :
         super.onViewCreated(view, savedInstanceState)
         preferences.registerOnSharedPreferenceChangeListener(this)
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            listView.updatePadding(bottom = it.getWithSpace())
+            listView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
         }
         setDivider(Color.TRANSPARENT.toDrawable())
         materialSharedAxis(view)
         preparePreferences()
+        styleAuroraHierarchy(view)
     }
 
     fun preparePreferences() {
+        listOf(GENERAL_THEME, MATERIAL_YOU, BLACK_THEME).forEach { key ->
+            findPreference<Preference>(key)?.isEnabled = !Preferences.isAuroraAppearance
+        }
         findPreference<Preference>("about")?.summary =
             getString(R.string.about_summary, BuildConfig.VERSION_NAME)
 
@@ -512,19 +518,32 @@ open class PreferenceScreenFragment :
         key: String?,
     ) {
         when (key) {
-            NOW_PLAYING_SCREEN -> onUpdateNowPlayingScreen()
+            AURORA_APPEARANCE -> {
+                setDefaultNightMode(Preferences.getDayNightMode())
+                requireActivity().recreate()
+            }
+
+            NOW_PLAYING_SCREEN -> {
+                onUpdateNowPlayingScreen()
+            }
 
             COVER_DOUBLE_TAP_ACTION,
             COVER_LEFT_DOUBLE_TAP_ACTION,
             COVER_RIGHT_DOUBLE_TAP_ACTION,
             COVER_LONG_PRESS_ACTION,
-            -> onUpdateCoverActions()
+            -> {
+                onUpdateCoverActions()
+            }
 
             ON_SONG_CLICK_ACTION,
             ON_CLEAR_QUEUE_ACTION,
-            -> onUpdateQueuePreferences()
+            -> {
+                onUpdateQueuePreferences()
+            }
 
-            LyricsViewSettings.Key.BACKGROUND_EFFECT -> onUpdateLyricsPreferences()
+            LyricsViewSettings.Key.BACKGROUND_EFFECT -> {
+                onUpdateLyricsPreferences()
+            }
         }
     }
 

@@ -20,7 +20,7 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 2. Equalizer & Sound
 
-- **Equalizer** with two engines: classic `android.media.audiofx.Equalizer` and `DynamicsProcessing` (API 28+, multiband compressor/limiter).
+- **Equalizer** with two engines: classic `android.media.audiofx.Equalizer` and `DynamicsProcessing` (API 28+, multiband compressor/limiter); band counts/configuration follow the selected engine's capabilities.
 - **Effects** — Bass boost, virtualizer, loudness, compressor, limiter.
 - **Balance, tempo (speed/pitch), system volume** controls.
 - **EQ profiles** — Named profiles with per-output-device associations, import/export (JSON and AutoEq TXT format), persistence in DataStore.
@@ -64,15 +64,13 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 7. Now Playing Screen
 
-- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — all implemented as Jetpack Compose screens hosted by `ComposePlayerFragment`; legacy View/XML style fragments and cover ViewPager removed.
-- **Compose player (all styles)** — `ComposePlayerFragment` dispatches on `Preferences.nowPlayingScreen` to `DefaultNowPlayingScreen`, `M3NowPlayingScreen`, `PlainNowPlayingScreen`, `GradientNowPlayingScreen`, `FullCoverNowPlayingScreen`, `ExpressiveNowPlayingScreen` (incl. landscape side-by-side) or `PeekNowPlayingScreen` (compact, sheet `wrap_content`); `PlayerTheme` tints from `PlayerColorScheme`, blurred cover via `BlurTransformation` (`Commit451` + `coil3.request.transformations`), `CoverPager` (`HorizontalPager` with `PlayerTransition` scale/alpha/rotation/translation maps, 100dp carousel padding, optional zero-corner/full-bleed), `CoverGestures` zone taps (30/70%), `MarqueeText` infinite scroll, `AuroraSlider` (configurable track/thumb; thick 12dp/28dp in Expressive) and `AuroraIconButton`/`AuroraPlayButton` (44/62dp, `AuroraTokens.surface2/border/glow`), `SharedPlayerSections` shared blocks, `Crossfade` toggles `CoverPager` ↔ `CoverLyricsScreen`.
-- **Style picker** — Compose `NowPlayingScreenPreferenceDialog` with horizontal pager previews and color-scheme/transition dropdowns.
+- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — retained View/controls fragments outside Aurora; Compose Aurora chrome reuses their shared cover pager and actions without adding a style.
 - **Gestures** — Configurable single-tap, double-tap (left/right/center), long-press on cover; swipe on cover, swipe anywhere, swipe-up for queue, swipe-down to dismiss.
-- **Page transitions** — 9 transitions applied by the Compose `CoverPager` (simple, cascading, depth, 3D flips, hinge, stack, zoom-out, parallax; carousel effect).
+- **Page transitions** — Carousel effect plus 10 PageTransformers (depth, 3D flips, hinge, cascading, parallax, vertical stack, zoom-out…).
 - **Color schemes** — 5 modes (App theme, simple color, vibrant color, Material You, blur) with palette extraction from the cover.
 - **Display options** — Small image, corner radius, player blur intensity, squiggly seek bar, scrolling text, remaining-time preference, album-artist name, album title, next song preview, extra metadata fields (bitrate, genre, year…) with draggable configuration.
 - **Buttons** — Circle play button, adaptive controls, animated controls, extra controls, button style (Normal/M3/Expressive).
-- **Queue screen** — Compose UI with highlighted current song, search, drag reordering and filters.
+- **Queue screen** — Compose UI with highlighted current song, repeat/shuffle, lock, drag reordering, locate-current-track, song actions and stop-after-song. One active queue; no queue-local search or filters. Aurora hosts it as a full-screen destination; other appearances retain the dialog.
 
 ## 8. Network & Integrations
 
@@ -85,7 +83,14 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 9. UI, Themes & System
 
-- **Themes** — Aurora Glass default theme (Compose + XML tokens: near-black/near-white Chroma-0 palettes, white accent, glass-fill/alpha surfaces with hairline dividers, painted aurora background with optional animated serpentine). Light/dark/system toggle, Material You (Monet dynamic color with palette styles and system contrast, opt-in — default off), pure black theme, custom font (Google Sans Flex).
+- **Themes** — Light/dark/system toggle, Material You (Monet dynamic color with palette styles and system contrast), pure black theme, custom font (Google Sans Flex).
+- **Aurora appearance** — Optional native black-and-white glass appearance with a shared white ribbon, six primary destinations, secondary navigation, configurable category tabs/drawer and Compose home/player chrome (compact home action rows, always-visible home search with Settings in overflow). Enabled only for new empty preference stores; saved themes, fonts and all seven player styles remain retained (ADR-036).
+- **Aurora motion** — User switch; ribbon updates stop off-screen, outside the resumed lifecycle, with disabled system animations and in battery saver. Saved player colors return when Aurora is off.
+- **Aurora compatibility controls** — Category hold-to-search, compact Peek and expressive morph controls are retained; supporting screens use the shell's actual navigation clearance, and landscape controls respect cutouts.
+- **Aurora player preferences** — Scrolling metadata and extra-info changes remain live; scrolling respects visibility, reduced motion and battery saver. Sound and EQ transport actions open the actual native controls.
+- **Aurora lyrics legibility** — inactive lyrics use a higher `.92` alpha; the Player/background-effects lyrics plate is fixed black (`.72`) with explicit white foreground (full-screen Player mode included) so media-derived tints cannot darken text; legacy/default inactive alpha remains `.4`.
+- **Aurora equalizer layout** — Output-device header, actual engine band-count/profile chips, accessible vertical sliders and Bands/Sound pages reuse existing profile/effect commands.
+- **Capability-aware reference controls** — Prototype-only multiple queues, queue search, tags/composers, manual lyrics timing, QR sharing, crossfade, mono and song-count timer remain visibly unavailable, not simulated features. See `docs/AURORA_REFERENCE.md`.
 - **App language** — ~40 locale translations, per-app language override.
 - **Library UI** — Configurable visible categories (max 5, draggable), tab titles mode, remember last page, appbar mode (compact/simple/collapsing), rotation lock.
 - **Widgets** — 3 Glance widgets (responsive, card, full) with cover, title, artist, progress and controls; dynamic colors, widget layout style, third-line content, corner radius.

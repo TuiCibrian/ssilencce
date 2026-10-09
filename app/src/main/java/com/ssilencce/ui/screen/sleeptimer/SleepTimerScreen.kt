@@ -57,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import com.ssilencce.R
 import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
 import com.ssilencce.ui.theme.SliderTokens
+import com.ssilencce.ui.component.compose.aurora.AuroraUnavailableRow
+import com.ssilencce.util.Preferences
 import kotlin.math.round
 
 data class SleepTimerUiState(
@@ -368,6 +370,8 @@ fun SleepTimerBottomSheet(
                         },
                     )
                 }
+
+                if (Preferences.isAuroraAppearance) AuroraUnavailableRow(R.string.aurora_song_timer)
 
                 Button(
                     onClick = {

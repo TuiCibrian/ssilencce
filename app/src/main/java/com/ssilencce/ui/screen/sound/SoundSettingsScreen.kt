@@ -69,6 +69,8 @@ import com.ssilencce.ui.component.compose.ShapedText
 import com.ssilencce.ui.component.compose.TitledCard
 import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
 import com.ssilencce.ui.theme.SliderTokens
+import com.ssilencce.ui.component.compose.aurora.AuroraUnavailableRow
+import com.ssilencce.util.Preferences
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -463,6 +465,11 @@ fun SoundSettingsSheet(
                             }
                         }
                     }
+                }
+
+                if (Preferences.isAuroraAppearance) item {
+                    AuroraUnavailableRow(R.string.aurora_crossfade)
+                    AuroraUnavailableRow(R.string.aurora_mono)
                 }
 
                 item {

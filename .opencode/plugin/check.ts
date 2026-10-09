@@ -1,9 +1,23 @@
 import { spawn } from "node:child_process"
 import { createWriteStream, existsSync } from "node:fs"
 import path from "node:path"
-import type { Plugin } from "@opencode-ai/plugin"
 
 const KOTLIN_RE = /\.kts?$/i
+
+interface ToolExecuteAfterEvent {
+  tool: string
+  input: unknown
+}
+
+interface PluginContext {
+  location: { directory: string }
+  tool: {
+    hook(
+      name: "execute.after",
+      callback: (event: ToolExecuteAfterEvent) => Promise<void> | void,
+    ): Promise<unknown>
+  }
+}
 
 const runSync = (cmd: string, args: string[]): Promise<void> =>
   new Promise((resolve) => {
@@ -12,18 +26,24 @@ const runSync = (cmd: string, args: string[]): Promise<void> =>
     child.on("error", () => resolve())
   })
 
-export default (async ({ directory }) => {
-  const root = directory
-  const ktlintScript = path.join(root, "scripts", "ktlint.ps1")
-  const gradlew = path.join(root, "gradlew.bat")
+// OpenCode V2 validates the default export as a definition object ({ id, setup });
+// the V1 factory-function shape is rejected at load time.
+export default {
+  id: "ssilencce.check",
+  async setup(ctx: PluginContext) {
+    const root = ctx.location.directory
+    const ktlintScript = path.join(root, "scripts", "ktlint.ps1")
+    const gradlew = path.join(root, "gradlew.bat")
 
-  return {
-    "tool.execute.after": async (input) => {
-      if (input.tool !== "edit" && input.tool !== "write") return
-      const filePath = input.args?.filePath as string | undefined
+    await ctx.tool.hook("execute.after", async (event) => {
+      if (event.tool !== "edit" && event.tool !== "write") return
+
+      const args = event.input as { path?: string; filePath?: string } | undefined
+      const filePath = args?.path ?? args?.filePath
       if (!filePath || !KOTLIN_RE.test(filePath)) return
 
-      const normalized = filePath.replace(/\\/g, "/")
+      const abs = path.isAbsolute(filePath) ? filePath : path.join(root, filePath)
+      const normalized = path.relative(root, abs).replace(/\\/g, "/")
       if (
         normalized.startsWith(".opencode/") ||
         normalized.includes("/node_modules/") ||
@@ -32,8 +52,6 @@ export default (async ({ directory }) => {
         return
       }
       if (normalized.endsWith(".kt") && !normalized.startsWith("app/src/")) return
-
-      const abs = path.join(root, filePath)
       if (!existsSync(abs)) return
 
       await runSync("powershell.exe", [
@@ -53,6 +71,6 @@ export default (async ({ directory }) => {
         { cwd: root, detached: true, stdio: ["ignore", logStream, logStream], windowsHide: true },
       )
       lint.unref()
-    },
-  }
-}) satisfies Plugin
+    })
+  },
+}

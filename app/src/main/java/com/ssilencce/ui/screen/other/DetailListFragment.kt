@@ -93,7 +93,7 @@ class DetailListFragment :
         binding.title.setText(contentType.titleRes)
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace())
+            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
         }
     }
 

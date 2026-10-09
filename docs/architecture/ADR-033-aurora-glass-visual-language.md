@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Superseded by [ADR-035](ADR-035-restore-pre-aurora-ui.md) on 2026-10-03.
 
 ## Context
 

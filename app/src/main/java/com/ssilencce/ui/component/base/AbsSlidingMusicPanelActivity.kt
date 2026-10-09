@@ -34,19 +34,33 @@ import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import android.widget.FrameLayout
 import androidx.activity.OnBackPressedCallback
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.animation.doOnEnd
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.get
 import androidx.core.view.isGone
+import androidx.core.view.isInvisible
 import androidx.core.view.isVisible
 import androidx.core.view.size
 import androidx.core.view.updateLayoutParams
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.session.MediaController
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.navOptions
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetBehavior.BottomSheetCallback
@@ -69,11 +83,11 @@ import com.ssilencce.databinding.SlidingMusicPanelLayoutBinding
 import com.ssilencce.extensions.applyWindowInsets
 import com.ssilencce.extensions.currentFragment
 import com.ssilencce.extensions.dip
+import com.ssilencce.extensions.dp
 import com.ssilencce.extensions.getBottomInsets
 import com.ssilencce.extensions.hasT
 import com.ssilencce.extensions.isLandscape
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
-import com.ssilencce.extensions.resources.SSILENCCE_ANIM_TIME
 import com.ssilencce.extensions.resources.darkenColor
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.extensions.resources.isColorLight
@@ -81,14 +95,25 @@ import com.ssilencce.extensions.resources.peekHeightAnimate
 import com.ssilencce.extensions.resources.show
 import com.ssilencce.extensions.whichFragment
 import com.ssilencce.ui.IBackConsumer
-import com.ssilencce.ui.component.compose.background.AuroraBackground
+import com.ssilencce.ui.IScrollHelper
+import com.ssilencce.ui.component.compose.aurora.AuroraLibraryDrawer
+import com.ssilencce.ui.component.compose.aurora.AuroraNavigation
+import com.ssilencce.ui.component.compose.aurora.AuroraRibbon
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.library.search.SearchFragment
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.other.MiniPlayerFragment
 import com.ssilencce.ui.screen.permissions.PermissionsActivity
 import com.ssilencce.ui.screen.player.PlayerViewModel
-import com.ssilencce.ui.screen.player.compose.ComposePlayerFragment
+import com.ssilencce.ui.screen.player.aurora.AuroraPlayerFragment
+import com.ssilencce.ui.screen.player.styles.defaultstyle.DefaultPlayerFragment
+import com.ssilencce.ui.screen.player.styles.expressivestyle.ExpressivePlayerFragment
+import com.ssilencce.ui.screen.player.styles.fullcoverstyle.FullCoverPlayerFragment
+import com.ssilencce.ui.screen.player.styles.gradientstyle.GradientPlayerFragment
+import com.ssilencce.ui.screen.player.styles.m3style.M3PlayerFragment
+import com.ssilencce.ui.screen.player.styles.peekplayerstyle.PeekPlayerFragment
+import com.ssilencce.ui.screen.player.styles.plainstyle.PlainPlayerFragment
+import com.ssilencce.ui.theme.SsilencceTheme
 import com.ssilencce.util.ADAPTIVE_CONTROLS
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
 import com.ssilencce.util.CAROUSEL_EFFECT
@@ -132,10 +157,34 @@ abstract class AbsSlidingMusicPanelActivity :
 
     val navigationView: NavigationBarView
         get() = binding.navigationView
+    private val navigationSurface: View
+        get() = if (Preferences.isAuroraAppearance) binding.auroraNavigation else navigationView
+    val navigationHeight: Int
+        get() =
+            if (Preferences.isAuroraAppearance) {
+                dip(R.dimen.ribbon_navigation_height) + if (auroraMoreExpanded) 64.dp(resources) else 0
+            } else {
+                dip(R.dimen.bottom_nav_height)
+            }
+    var auroraDestination by mutableIntStateOf(R.id.nav_home)
+        protected set
+    private var auroraPlayerExpanded by mutableStateOf(false)
+    private var auroraMoreExpanded by mutableStateOf(false)
+    private var auroraDrawerVisible by mutableStateOf(false)
+    private var auroraHoldToSearch by mutableStateOf(Preferences.holdTabToSearch)
+    private var auroraRibbonOccluded by mutableStateOf(false)
+    private var auroraCategories by mutableStateOf(Preferences.libraryCategories)
+    private val auroraFocusability = mutableMapOf<ViewGroup, Int>()
+    val isAuroraOverlayVisible: Boolean
+        get() = auroraMoreExpanded || auroraDrawerVisible
+    val isAuroraContentVisible: Boolean
+        get() = !auroraPlayerExpanded && !isAuroraOverlayVisible
+    val isAuroraPlayerVisible: Boolean
+        get() = auroraPlayerExpanded && !isAuroraOverlayVisible
     val slidingPanel: FrameLayout
         get() = binding.sheetView
 
-    private var playerFragment: Fragment? = null
+    private var playerFragment: AbsPlayerFragment? = null
     private var paletteColor: Int = 0
 
     var panelState: Int
@@ -146,7 +195,7 @@ abstract class AbsSlidingMusicPanelActivity :
     private var panelStateBefore: Int? = null
     private var panelStateCurrent: Int? = null
     val isBottomNavVisible: Boolean
-        get() = navigationView.isVisible && navigationView is BottomNavigationView
+        get() = navigationSurface.isVisible && (Preferences.isAuroraAppearance || navigationView is BottomNavigationView)
 
     val isBottomSheetHidden: Boolean
         get() = panelState == STATE_COLLAPSED && bottomSheetBehavior.peekHeight == 0
@@ -183,7 +232,7 @@ abstract class AbsSlidingMusicPanelActivity :
 
         binding = SlidingMusicPanelLayoutBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        binding.auroraBackground.setContent { AuroraBackground() }
+        setupAuroraShell()
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.sheetView) { _, insets ->
             insets.also { windowInsets = it }
@@ -271,55 +320,132 @@ abstract class AbsSlidingMusicPanelActivity :
         if (navigationView is NavigationRailView) {
             navigationView.applyWindowInsets(left = true, top = true)
         }
-        setupNavCaret()
     }
 
-    private fun setupNavCaret() {
-        val caret = binding.navCaret ?: return
-        if (navigationView !is BottomNavigationView) {
-            caret.isVisible = false
+    private fun setupAuroraShell() {
+        if (!Preferences.isAuroraAppearance) return
+        navigationView.isGone = true
+        binding.fragmentContainer.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        binding.sheetView.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        binding.auroraBackground.isVisible = true
+        binding.auroraBackground.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        binding.auroraBackground.setContent {
+            AuroraRibbon(Modifier.fillMaxSize(), visible = !isAuroraOverlayVisible && if (auroraPlayerExpanded) Preferences.nowPlayingScreen != NowPlayingScreen.FullCover else !auroraRibbonOccluded)
+        }
+        binding.auroraNavigation.isVisible = true
+        binding.auroraScrim.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        binding.auroraScrim.setContent {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = .52f)).clickable(onClickLabel = getString(R.string.close_action)) { updateAuroraMoreExpanded(false) })
+        }
+        binding.auroraNavigation.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        binding.auroraNavigation.setContent {
+            val queue by playerViewModel.queueFlow.collectAsStateWithLifecycle()
+            SsilencceTheme {
+                AuroraNavigation(
+                    destination = auroraDestination,
+                    playerExpanded = auroraPlayerExpanded,
+                    playerAvailable = queue.isNotEmpty(),
+                    moreExpanded = auroraMoreExpanded,
+                    onNavigate = ::navigateAuroraDestination,
+                    onPlayer = {
+                        updateAuroraMoreExpanded(false)
+                        expandPanel()
+                    },
+                    onMore = { updateAuroraMoreExpanded(!auroraMoreExpanded) },
+                    onLibrary = ::showAuroraLibraryMenu,
+                    onSearchCategory = if (auroraHoldToSearch) ::searchAuroraCategory else null,
+                )
+                if (auroraDrawerVisible) {
+                    AuroraLibraryDrawer(auroraCategories, auroraDestination, ::navigateAuroraDestination, { auroraDrawerVisible = false })
+                }
+            }
+        }
+    }
+
+    private fun updateAuroraMoreExpanded(expanded: Boolean) {
+        auroraMoreExpanded = expanded
+        binding.auroraScrim.isVisible = expanded
+        if (expanded) binding.auroraScrim.bringToFront()
+        binding.auroraNavigation.bringToFront()
+        hideBottomSheet(isHiddenByDestination || playerViewModel.queue.isEmpty())
+        updateAuroraContentVisibility()
+    }
+
+    fun showAuroraLibraryMenu() {
+        auroraDrawerVisible = true
+        updateAuroraMoreExpanded(false)
+    }
+
+    fun dismissAuroraOverlay(): Boolean {
+        if (!Preferences.isAuroraAppearance || !isAuroraOverlayVisible) return false
+        auroraDrawerVisible = false
+        updateAuroraMoreExpanded(false)
+        return true
+    }
+
+    fun navigateAuroraDestination(id: Int) {
+        navigateAuroraDestination(id, null)
+    }
+
+    private fun navigateAuroraDestination(
+        id: Int,
+        arguments: Bundle?,
+    ) {
+        auroraDrawerVisible = false
+        updateAuroraMoreExpanded(false)
+        collapsePanel()
+        val controller = findNavController(R.id.fragment_container)
+        if (controller.currentDestination?.id == id && arguments == null) {
+            (currentFragment(R.id.fragment_container) as? IScrollHelper)?.scrollToTop()
+            hideBottomSheet(isHiddenByDestination || playerViewModel.queue.isEmpty())
             return
         }
-        navigationView.setOnItemSelectedListener {
-            postCaretToSelectedItem()
-            true
+        if (arguments != null) {
+            controller.clearBackStack(id)
+            if (controller.currentDestination?.id == id) controller.popBackStack(id, true)
         }
-        val menuContainer = navigationView.getChildAt(0) as? ViewGroup
-        menuContainer?.addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-            if (caret.isVisible) {
-                postCaretToSelectedItem()
-            }
-        }
-        caret.isVisible = navigationView.isVisible
-        if (caret.isVisible) {
-            postCaretToSelectedItem()
-        }
+        controller.navigate(
+            id,
+            arguments,
+            navOptions {
+                launchSingleTop = true
+                restoreState = arguments == null
+                popUpTo(controller.graph.findStartDestination().id) { saveState = true }
+            },
+        )
     }
 
-    private fun postCaretToSelectedItem() {
-        val caret = binding.navCaret ?: return
-        val menuContainer = navigationView.getChildAt(0) as? ViewGroup ?: return
-        val selectedId = navigationView.selectedItemId
-        val selectedIndex =
-            (0 until navigationView.menu.size).firstOrNull {
-                navigationView.menu.getItem(it).itemId == selectedId
-            } ?: return
-        navigationView.post {
-            val itemView = menuContainer.getChildAt(selectedIndex) ?: return@post
-            if (menuContainer.width <= 0 || itemView.width <= 0) {
-                return@post
-            }
-            caret.translationX = menuContainer.x + itemView.x + itemView.width / 2f - caret.width / 2f
-            caret.y = navigationView.y - caret.height
-        }
+    fun searchAuroraCategory(id: Int) {
+        val category = CategoryInfo.Category.entries.firstOrNull { it.id == id } ?: return
+        val filter = SearchQuery.FilterMode.entries.firstOrNull { it.name == category.name }
+        navigateAuroraDestination(R.id.nav_search, Bundle().apply { putSerializable(SearchFragment.MODE, filter) })
     }
 
-    private fun syncNavCaretVisibility() {
-        val caret = binding.navCaret ?: return
-        val show = navigationView.isVisible && navigationView is BottomNavigationView
-        caret.isVisible = show
-        if (show) {
-            postCaretToSelectedItem()
+    fun updateAuroraRibbonOcclusion(occluded: Boolean) {
+        auroraRibbonOccluded = occluded
+    }
+
+    private fun updateAuroraContentVisibility() {
+        if (!Preferences.isAuroraAppearance) return
+        binding.fragmentContainer.isInvisible = auroraPlayerExpanded && nowPlayingScreen != NowPlayingScreen.Peek
+        setAuroraFocusBlocked(binding.fragmentContainer, auroraPlayerExpanded || auroraMoreExpanded)
+        setAuroraFocusBlocked(binding.sheetView, auroraMoreExpanded)
+        setAuroraFocusBlocked(binding.playerContainer, !auroraPlayerExpanded || auroraMoreExpanded)
+    }
+
+    private fun setAuroraFocusBlocked(
+        group: ViewGroup,
+        blocked: Boolean,
+    ) {
+        group.importantForAccessibility = if (blocked) View.IMPORTANT_FOR_ACCESSIBILITY_NO_HIDE_DESCENDANTS else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
+        if (blocked) {
+            if (!auroraFocusability.containsKey(group)) {
+                auroraFocusability[group] = group.descendantFocusability
+                group.clearFocus()
+                group.descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+            }
+        } else {
+            auroraFocusability.remove(group)?.let { group.descendantFocusability = it }
         }
     }
 
@@ -374,40 +500,39 @@ abstract class AbsSlidingMusicPanelActivity :
             hideBottomSheet(hide = hide, animate = animate, isBottomNavVisible = false)
             return
         }
-        val isBottomNavView = (navigationView is BottomNavigationView)
+        val isBottomNavView = Preferences.isAuroraAppearance || (navigationView is BottomNavigationView)
+        val navigationView = navigationSurface
         if (visible xor navigationView.isVisible) {
             val mAnimate = animate && isBottomNavView && panelState == STATE_COLLAPSED
             if (mAnimate) {
                 if (visible) {
                     navigationView.bringToFront()
                     navigationView.show()
-                    navigationView.postDelayed({ syncNavCaretVisibility() }, SSILENCCE_ANIM_TIME + 50)
                 } else {
                     navigationView.hide()
-                    navigationView.postDelayed({ syncNavCaretVisibility() }, SSILENCCE_ANIM_TIME + 50)
                 }
             } else {
                 navigationView.isVisible = visible
                 if (visible && isBottomNavView && panelState != STATE_EXPANDED) {
                     navigationView.bringToFront()
                 }
-                syncNavCaretVisibility()
             }
         }
         hideBottomSheet(
             hide = hide,
             animate = animate,
-            isBottomNavVisible = visible && navigationView is BottomNavigationView,
+            isBottomNavVisible = visible && isBottomNavView,
         )
     }
 
     private fun hideBottomSheet(
         hide: Boolean,
         animate: Boolean = false,
-        isBottomNavVisible: Boolean = navigationView.isVisible && navigationView is BottomNavigationView,
+        isBottomNavVisible: Boolean = this.isBottomNavVisible,
     ) {
         val miniPlayerHeight = dip(R.dimen.mini_player_height)
-        val bottomNavHeight = dip(R.dimen.bottom_nav_height)
+        val bottomNavHeight = navigationHeight
+        val auroraNavigationMargin = if (Preferences.isAuroraAppearance && isBottomNavVisible) bottomNavHeight else 0
 
         val bottomInsets = windowInsets.getBottomInsets(this)
         val heightOfBar = bottomInsets + miniPlayerHeight
@@ -426,12 +551,13 @@ abstract class AbsSlidingMusicPanelActivity :
                     LibraryMargin(
                         margin = 0,
                         bottomInsets = windowInsets.getBottomInsets(this),
+                        navigationMargin = auroraNavigationMargin,
                     ),
             )
         } else {
             if (playerViewModel.queue.isNotEmpty()) {
                 slidingPanel.elevation = 0f
-                navigationView.elevation = 5f
+                navigationSurface.elevation = 5f
                 if (isBottomNavVisible) {
                     if (animate) {
                         bottomSheetBehavior.peekHeightAnimate(heightOfBarWithTabs)
@@ -449,6 +575,7 @@ abstract class AbsSlidingMusicPanelActivity :
                             LibraryMargin(
                                 margin = miniPlayerHeight,
                                 bottomInsets = windowInsets.getBottomInsets(this),
+                                navigationMargin = auroraNavigationMargin,
                             ),
                     )
                 } else {
@@ -471,6 +598,7 @@ abstract class AbsSlidingMusicPanelActivity :
                             LibraryMargin(
                                 margin = miniPlayerHeight,
                                 bottomInsets = windowInsets.getBottomInsets(this),
+                                navigationMargin = auroraNavigationMargin,
                             ),
                     )
                 }
@@ -493,14 +621,21 @@ abstract class AbsSlidingMusicPanelActivity :
         // restore values
         setLightStatusBar()
         setLightNavigationBar()
+        playerFragment?.onHide()
     }
 
     protected open fun onPanelExpanded() {
         setMiniPlayerAlphaProgress(1f)
         onPaletteColorChanged()
+        playerFragment?.onShow()
     }
 
     protected fun updateTabs() {
+        if (Preferences.isAuroraAppearance) {
+            auroraCategories = Preferences.libraryCategories
+            isInOneTabMode = false
+            return
+        }
         clearNavigationViewGestures()
         navigationView.menu.clear()
         val currentTabs: List<CategoryInfo> = Preferences.libraryCategories
@@ -518,9 +653,6 @@ abstract class AbsSlidingMusicPanelActivity :
             navigationView.isVisible = false
         } else {
             isInOneTabMode = false
-        }
-        if (navigationView.isVisible) {
-            postCaretToSelectedItem()
         }
     }
 
@@ -569,16 +701,23 @@ abstract class AbsSlidingMusicPanelActivity :
         val alpha = 1 - progress
         miniPlayerFragment?.view?.alpha = 1 - (progress / 0.2F)
         miniPlayerFragment?.view?.isGone = alpha == 0f
-        if (!resources.isLandscape) {
+        if (Preferences.isAuroraAppearance) {
+            auroraPlayerExpanded = panelState == STATE_EXPANDED || progress > .8f
+            navigationSurface.bringToFront()
+            updateAuroraContentVisibility()
+        } else if (!resources.isLandscape) {
             binding.navigationView.translationY = progress * 500
             binding.navigationView.alpha = alpha
-            binding.navCaret?.translationY = progress * 500
-            binding.navCaret?.alpha = alpha
         }
         binding.playerContainer.alpha = (progress - 0.2F) / 0.2F
     }
 
     private fun onPaletteColorChanged() {
+        if (Preferences.isAuroraAppearance) {
+            setLightStatusBar(false)
+            setLightNavigationBar(false)
+            return
+        }
         if (panelState == STATE_EXPANDED) {
             val isColorLight = paletteColor.isColorLight
             when (nowPlayingScreen) {
@@ -607,6 +746,7 @@ abstract class AbsSlidingMusicPanelActivity :
     }
 
     private fun handleBackPress(): Boolean {
+        if (dismissAuroraOverlay()) return true
         if (panelState == STATE_EXPANDED || (panelState == STATE_SETTLING && panelStateBefore != STATE_EXPANDED)) {
             collapsePanel()
             return true
@@ -624,7 +764,9 @@ abstract class AbsSlidingMusicPanelActivity :
             }
 
             HOLD_TAB_TO_SEARCH -> {
-                if (preferences.getBoolean(key, true)) {
+                if (Preferences.isAuroraAppearance) {
+                    auroraHoldToSearch = Preferences.holdTabToSearch
+                } else if (preferences.getBoolean(key, true)) {
                     setupNavigationViewGestures()
                 } else {
                     clearNavigationViewGestures()
@@ -707,8 +849,26 @@ abstract class AbsSlidingMusicPanelActivity :
 
     private fun chooseFragmentForTheme() {
         nowPlayingScreen = Preferences.nowPlayingScreen
+        if (Preferences.isAuroraAppearance) {
+            val height = if (nowPlayingScreen == NowPlayingScreen.Peek) ViewGroup.LayoutParams.WRAP_CONTENT else ViewGroup.LayoutParams.MATCH_PARENT
+            slidingPanel.updateLayoutParams<ViewGroup.LayoutParams> { this.height = height }
+            binding.playerContainer.updateLayoutParams<ViewGroup.LayoutParams> { this.height = height }
+        }
 
-        val fragment: Fragment = ComposePlayerFragment()
+        val fragment: AbsPlayerFragment =
+            if (Preferences.isAuroraAppearance) {
+                AuroraPlayerFragment()
+            } else {
+                when (nowPlayingScreen) {
+                    NowPlayingScreen.FullCover -> FullCoverPlayerFragment()
+                    NowPlayingScreen.Gradient -> GradientPlayerFragment()
+                    NowPlayingScreen.Peek -> PeekPlayerFragment()
+                    NowPlayingScreen.Plain -> PlainPlayerFragment()
+                    NowPlayingScreen.M3 -> M3PlayerFragment()
+                    NowPlayingScreen.Expressive -> ExpressivePlayerFragment()
+                    else -> DefaultPlayerFragment()
+                }
+            }
 
         supportFragmentManager.commit {
             replace(R.id.player_container, fragment)

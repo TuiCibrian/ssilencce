@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Partially superseded by ADR-036 for the optional monochrome Aurora scheme and fresh-install default; saved alternative themes and player colors remain available.
 
 ## Context
 

@@ -24,6 +24,9 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
+import androidx.core.view.doOnAttach
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import coil3.request.Disposable
 import com.ssilencce.R
@@ -40,6 +43,8 @@ import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTIO
 import com.ssilencce.ui.component.base.SkipButtonTouchHandler.Companion.DIRECTION_PREVIOUS
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.util.Preferences
+import com.ssilencce.ui.theme.auroraGlassDrawable
+import com.ssilencce.extensions.dp
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -75,6 +80,27 @@ class MiniPlayerFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentMiniPlayerBinding.bind(view)
+        if (Preferences.isAuroraAppearance) {
+            view.background = auroraGlassDrawable(view)
+            view.doOnAttach {
+                it.updateLayoutParams<android.view.ViewGroup.MarginLayoutParams> {
+                    leftMargin = 12.dp(it.context)
+                    rightMargin = 12.dp(it.context)
+                    topMargin = 6.dp(it.context)
+                    height = resources.getDimensionPixelSize(R.dimen.mini_player_height) - 12.dp(it.context)
+                }
+            }
+            binding.image.updateLayoutParams<ConstraintLayout.LayoutParams> {
+                width = 42.dp(requireContext())
+                height = 42.dp(requireContext())
+                marginStart = 8.dp(requireContext())
+            }
+            binding.songTitle.textSize = 13.5f
+            binding.actionPlayPause.updateLayoutParams<android.view.ViewGroup.LayoutParams> {
+                width = 48.dp(requireContext())
+                height = 48.dp(requireContext())
+            }
+        }
         binding.progressBar.installWavyAnimatorCleanup()
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.currentSongFlow.collect { currentSong ->
@@ -94,8 +120,6 @@ class MiniPlayerFragment :
                 .collectLatest {
                     binding.progressBar.max = it.total.toInt()
                     binding.progressBar.setProgressCompat(it.progress.toInt(), true)
-                    binding.seekProgress.max = it.total.toInt()
-                    binding.seekProgress.progress = it.progress.toInt()
                 }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
@@ -130,8 +154,6 @@ class MiniPlayerFragment :
         val isWavy = playerViewModel.isPlaying && Preferences.squigglySeekBar
         binding.progressBar.setAnimatedWave(isWavy)
         binding.progressBar.setWavy(isWavy)
-        binding.progressBar.isVisible = isWavy
-        binding.seekProgress.isVisible = !isWavy
     }
 
     fun setupButtonStyle() {

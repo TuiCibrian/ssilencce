@@ -42,6 +42,7 @@ import com.google.android.material.slider.Slider
 import com.ssilencce.R
 import com.ssilencce.extensions.isNightMode
 import com.ssilencce.extensions.resolveColor
+import com.ssilencce.ui.component.views.MorphicIconButton
 import kotlin.math.abs
 
 val Int.isColorLight: Boolean
@@ -206,6 +207,11 @@ fun FloatingActionButton.applyColor(color: Int) {
 fun TextView.applyColor(color: Int) {
     setTextColor(color)
     TextViewCompat.setCompoundDrawableTintList(this, color.toColorStateList())
+}
+
+fun MorphicIconButton.applyColor(color: Int) {
+    backgroundTintList = color.toColorStateList()
+    setIconTintColor(getPrimaryTextColor(context, color.isColorLight))
 }
 
 @SuppressLint("RestrictedApi")
