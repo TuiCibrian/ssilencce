@@ -22,12 +22,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.view.ViewCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.ssilencce.R
 import com.ssilencce.data.model.Suggestion
+import com.ssilencce.extensions.dp
 import com.ssilencce.ui.IHomeCallback
+import com.ssilencce.ui.theme.styleAuroraHierarchy
+import com.ssilencce.util.Preferences
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 
@@ -81,6 +85,32 @@ class HomeAdapter(
         internal val recyclerView: RecyclerView? = itemView.findViewById(R.id.recycler_view)
 
         init {
+            if (Preferences.isAuroraAppearance) {
+                headingTitle?.apply {
+                    textSize = 13f
+                    isAllCaps = true
+                    letterSpacing = .06f
+                    ViewCompat.setAccessibilityHeading(this, true)
+                }
+            }
+            if (Preferences.isAuroraAppearance) {
+                recyclerView?.addOnChildAttachStateChangeListener(
+                    object : RecyclerView.OnChildAttachStateChangeListener {
+                        override fun onChildViewAttachedToWindow(view: View) {
+                            view.layoutParams =
+                                (view.layoutParams as RecyclerView.LayoutParams).apply {
+                                    width = 112.dp(view.context)
+                                    height = ViewGroup.LayoutParams.WRAP_CONTENT
+                                    leftMargin = 0
+                                    rightMargin = 12.dp(view.context)
+                                }
+                            styleAuroraHierarchy(view)
+                        }
+
+                        override fun onChildViewDetachedFromWindow(view: View) {}
+                    },
+                )
+            }
             openSuggestion?.setOnClickListener(this)
         }
 

@@ -79,7 +79,7 @@ class YearDetailFragment :
         view.applyHorizontalWindowInsets()
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace())
+            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
         }
 
         setupButtons()

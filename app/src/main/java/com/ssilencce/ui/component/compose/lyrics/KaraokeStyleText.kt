@@ -58,6 +58,7 @@ fun KaraokeLineView(
     currentMillis: Long,
     syllables: List<SyncedLyrics.Word>,
     contentColor: Color,
+    inactiveTextAlpha: Float = .4f,
     style: TextStyle,
     align: TextAlign,
     modifier: Modifier = Modifier,
@@ -130,7 +131,7 @@ fun KaraokeLineView(
         val lineEnd = rowRenderData.last().lastWordEnd
         val lineHasAlreadyPassed = currentMillis >= lineEnd && !selectedLine
         val animatedAlpha by animateFloatAsState(
-            targetValue = if (lineHasAlreadyPassed) .4f else 1f,
+            targetValue = if (lineHasAlreadyPassed) inactiveTextAlpha else 1f,
             animationSpec = tween(400),
         )
 
@@ -141,6 +142,7 @@ fun KaraokeLineView(
                 rowRenderData = rowRenderData,
                 currentTimeMs = currentMillis,
                 contentColor = contentColor,
+                inactiveTextAlpha = inactiveTextAlpha,
                 animatedAlpha = animatedAlpha,
                 shadowEffect = shadowEffect,
                 rtlContent = isRtlContent,
@@ -399,6 +401,7 @@ private fun DrawScope.drawLyricsLine(
     rowRenderData: List<RowRenderData>,
     currentTimeMs: Long,
     contentColor: Color,
+    inactiveTextAlpha: Float,
     animatedAlpha: Float,
     shadowEffect: Boolean,
     rtlContent: Boolean,
@@ -443,7 +446,7 @@ private fun DrawScope.drawLyricsLine(
                     currentTimeMs = currentTimeMs,
                     rtlContent = rtlContent,
                     activeColor = contentColor,
-                    inactiveColor = contentColor.copy(alpha = 0.4f),
+                    inactiveColor = contentColor.copy(alpha = inactiveTextAlpha),
                 )
 
             drawRect(

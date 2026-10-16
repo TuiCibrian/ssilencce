@@ -149,7 +149,7 @@ class ArtistDetailFragment :
         }
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(16.dp(resources)))
+            binding.recyclerView.updatePadding(bottom = it.getWithSpace(16.dp(resources), includeNavigation = true))
         }
 
         setupRecyclerView()

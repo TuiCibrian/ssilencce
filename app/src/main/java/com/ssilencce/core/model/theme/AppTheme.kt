@@ -47,6 +47,9 @@ class AppTheme private constructor(
 
     companion object {
         fun createAppTheme(context: Context): AppTheme {
+            if (Preferences.isAuroraAppearance) {
+                return AppTheme("aurora", R.style.Theme_Ssilencce_Aurora, applyDynamicColors = false)
+            }
             val generalTheme = Preferences.generalTheme
             val themeMode = Preferences.getThemeMode(generalTheme)
             if (DynamicColors.isDynamicColorAvailable()) {

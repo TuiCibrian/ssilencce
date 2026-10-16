@@ -87,6 +87,7 @@ fun LyricsView(
     contentColor: Color,
     isPowerSaveMode: Boolean,
     hasBackgroundEffects: Boolean,
+    inactiveTextAlpha: Float = .4f,
     modifier: Modifier = Modifier,
     onSeekTo: (Long) -> Unit,
 ) {
@@ -187,6 +188,7 @@ fun LyricsView(
                 enableBlurEffect = settings.blurEffect && disableBlurEffect.not(),
                 enableShadowEffect = settings.shadowEffect && disableAdvancedEffects.not(),
                 contentColor = contentColor,
+                inactiveTextAlpha = inactiveTextAlpha,
                 progressMillis = state.position,
                 line = line,
                 textStyle = textStyle,
@@ -211,7 +213,7 @@ fun LyricsView(
                     Text(
                         text = stringResource(R.string.lyrics_by_x, provider),
                         style = MaterialTheme.typography.labelSmall,
-                        color = contentColor.copy(alpha = .5f),
+                        color = contentColor.copy(alpha = inactiveTextAlpha.coerceAtLeast(.5f)),
                     )
                 }
             }
@@ -233,6 +235,7 @@ private fun LyricsLineView(
     enableBlurEffect: Boolean,
     enableShadowEffect: Boolean,
     contentColor: Color,
+    inactiveTextAlpha: Float = .4f,
     progressMillis: Long,
     line: SyncedLyrics.Line,
     textStyle: TextStyle,
@@ -344,6 +347,7 @@ private fun LyricsLineView(
                         progressMillis = progressMillis,
                         startMillis = line.start,
                         endMillis = line.end,
+                        inactiveTextAlpha = inactiveTextAlpha,
                         style = textStyle,
                         align = textAlign,
                     )
@@ -369,6 +373,7 @@ private fun LyricsLineView(
                             progressMillis = progressMillis,
                             startMillis = line.start,
                             endMillis = line.end,
+                            inactiveTextAlpha = inactiveTextAlpha,
                             style =
                                 textStyle.copy(
                                     fontSize = textStyle.fontSize / 1.40f,
@@ -398,6 +403,7 @@ fun LyricsLineContentView(
     enableShadowEffect: Boolean,
     selectedLine: Boolean,
     contentColor: Color,
+    inactiveTextAlpha: Float = .4f,
     progressMillis: Long,
     startMillis: Long,
     endMillis: Long,
@@ -448,6 +454,7 @@ fun LyricsLineContentView(
         progressiveColoring = progressiveColoring,
         selectedLine = selectedLine,
         contentColor = contentColor,
+        inactiveTextAlpha = inactiveTextAlpha,
         effectDuration = effectDuration,
         progressFraction = progressFraction,
         progressMillis = progressMillis,
@@ -469,6 +476,7 @@ fun LyricsLineContentView(
             progressiveColoring = progressiveColoring && mainSyllables.isEmpty(),
             selectedLine = selectedLine,
             contentColor = contentColor,
+            inactiveTextAlpha = inactiveTextAlpha,
             effectDuration = effectDuration,
             progressFraction = progressFraction,
             progressMillis = progressMillis,
@@ -498,6 +506,7 @@ fun LyricsLineContentView(
             progressiveColoring = progressiveColoring && mainSyllables.isEmpty(),
             selectedLine = selectedLine,
             contentColor = contentColor,
+            inactiveTextAlpha = inactiveTextAlpha,
             effectDuration = effectDuration,
             progressFraction = progressFraction,
             progressMillis = progressMillis,
@@ -525,6 +534,7 @@ private fun LineTextView(
     progressiveColoring: Boolean,
     selectedLine: Boolean,
     contentColor: Color,
+    inactiveTextAlpha: Float = .4f,
     effectDuration: Int,
     progressFraction: Float,
     progressMillis: Long,
@@ -540,6 +550,7 @@ private fun LineTextView(
             progress = progressMillis,
             syllables = syllables,
             contentColor = contentColor,
+            inactiveTextAlpha = inactiveTextAlpha,
             style = style,
             align = align,
             modifier = modifier,
@@ -553,6 +564,7 @@ private fun LineTextView(
             progressFraction = progressFraction,
             content = plainText,
             color = contentColor,
+            inactiveTextAlpha = inactiveTextAlpha,
             style = style,
             align = align,
             modifier = modifier,
@@ -569,6 +581,7 @@ private fun LineSyncedView(
     progressFraction: Float,
     content: String,
     color: Color,
+    inactiveTextAlpha: Float = .4f,
     style: TextStyle,
     align: TextAlign,
     modifier: Modifier = Modifier,
@@ -576,7 +589,7 @@ private fun LineSyncedView(
     var textHeight by remember { mutableFloatStateOf(0f) }
 
     val animatedAlpha by animateFloatAsState(
-        targetValue = if (selectedLine) 1f else .4f,
+        targetValue = if (selectedLine) 1f else inactiveTextAlpha,
         animationSpec = tween(400),
         label = "current-line-alpha-animation",
     )
@@ -601,13 +614,13 @@ private fun LineSyncedView(
             Shadow.None
         }
 
-    val textStyle by remember(color, selectedLine, progressiveColoring, animatedOrigin) {
+    val textStyle by remember(color, selectedLine, progressiveColoring, animatedOrigin, inactiveTextAlpha) {
         derivedStateOf {
             if (progressiveColoring) {
                 style.copy(
                     brush =
                         Brush.verticalGradient(
-                            colors = listOf(color, color.copy(alpha = .4f)),
+                            colors = listOf(color, color.copy(alpha = inactiveTextAlpha)),
                             startY = animatedOrigin - 10f,
                             endY = animatedOrigin + 10f,
                         ),
@@ -638,6 +651,7 @@ private fun WordSyncedText(
     progress: Long,
     syllables: List<SyncedLyrics.Word>,
     contentColor: Color,
+    inactiveTextAlpha: Float = .4f,
     style: TextStyle,
     align: TextAlign,
     modifier: Modifier = Modifier,
@@ -649,6 +663,7 @@ private fun WordSyncedText(
             currentMillis = progress,
             syllables = syllables,
             contentColor = contentColor,
+            inactiveTextAlpha = inactiveTextAlpha,
             style = style,
             align = align,
             modifier = modifier,

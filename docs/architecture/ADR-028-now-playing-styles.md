@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted. Partially superseded by ADR-036 for Aurora's Compose chrome; the seven styles and shared cover/gesture capabilities remain in effect.
 
 ## Context
 

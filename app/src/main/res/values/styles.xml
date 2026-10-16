@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Ssilencce" parent="Base.Theme.Ssilencce"/>
+    <style name="Theme.Ssilencce" parent="Base.Theme.Ssilencce">
+        <item name="slidingPanelBackgroundTint">?attr/colorSurface</item>
+    </style>
 
-    <style name="Theme.Ssilencce.Light" parent="Base.Theme.Ssilencce.Light"/>
+    <style name="Theme.Ssilencce.Light" parent="Base.Theme.Ssilencce.Light">
+        <item name="slidingPanelBackgroundTint">?attr/colorSurface</item>
+    </style>
 
-    <style name="Theme.Ssilencce.Black" parent="Base.Theme.Ssilencce.Black"/>
+    <style name="Theme.Ssilencce.Black" parent="Base.Theme.Ssilencce.Black">
+        <item name="slidingPanelBackgroundTint">?attr/colorSurface</item>
+    </style>
 
-    <style name="Theme.Ssilencce.FollowSystem" parent="Base.Theme.Ssilencce.Adaptive"/>
+    <style name="Theme.Ssilencce.FollowSystem" parent="Base.Theme.Ssilencce.Adaptive">
+        <item name="slidingPanelBackgroundTint">?attr/colorSurface</item>
+    </style>
 
     <style name="Theme.Ssilencce.SplashScreen" parent="Theme.SplashScreen">
         <item name="windowSplashScreenAnimatedIcon">@drawable/app_logo_splash</item>
@@ -67,6 +75,7 @@
     </style>
 
     <style name="BottomSheetStyle" parent="Widget.Material3.BottomSheet">
+        <item name="backgroundTint">?attr/slidingPanelBackgroundTint</item>
         <item name="paddingBottomSystemWindowInsets">false</item>
         <item name="android:maxWidth">@null</item>
         <item name="shapeAppearance">?attr/shapeAppearanceCornerMedium</item>

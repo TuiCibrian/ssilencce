@@ -25,6 +25,7 @@ import androidx.lifecycle.ViewModel
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.ssilencce.R
+import com.ssilencce.ui.theme.styleAuroraMediaRow
 import org.koin.androidx.viewmodel.ext.android.getViewModel
 
 open class MediaEntryViewHolder(
@@ -44,6 +45,7 @@ open class MediaEntryViewHolder(
     val paletteColorContainer: View? = itemView.findViewById(R.id.palette_color_container)
 
     init {
+        styleAuroraMediaRow(itemView)
         itemView.setOnLongClickListener(this)
         itemView.setOnClickListener(this)
     }

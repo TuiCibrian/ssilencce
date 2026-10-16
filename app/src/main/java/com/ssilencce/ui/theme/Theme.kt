@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -99,6 +100,10 @@ fun SsilencceTheme(
 ) {
     var colorScheme =
         when {
+            Preferences.isAuroraAppearance -> {
+                AuroraDesign.colors
+            }
+
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
                 val context = LocalContext.current
                 if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
@@ -113,7 +118,7 @@ fun SsilencceTheme(
             }
         }
 
-    if (darkTheme && blackTheme) {
+    if (!Preferences.isAuroraAppearance && darkTheme && blackTheme) {
         colorScheme =
             colorScheme.copy(
                 background = Color.Black,
@@ -126,9 +131,14 @@ fun SsilencceTheme(
 
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = customTypography,
-        content = content,
-    )
+        typography = if (Preferences.isAuroraAppearance && !Preferences.isCustomFont) defaultTypography else customTypography,
+    ) {
+        if (Preferences.isAuroraAppearance) {
+            CompositionLocalProvider(LocalContentColor provides colorScheme.onSurface, content = content)
+        } else {
+            content()
+        }
+    }
 }
 
 @Composable
@@ -139,7 +149,7 @@ fun PlayerTheme(
     val base = MaterialTheme.colorScheme
 
     val scheme =
-        remember(playerColorScheme) {
+        remember(playerColorScheme, base) {
             if (playerColorScheme.mode == PlayerColorScheme.Mode.AppTheme) {
                 base
             } else {
@@ -155,7 +165,7 @@ fun PlayerTheme(
 
     MaterialTheme(
         colorScheme = scheme,
-        typography = customTypography,
+        typography = MaterialTheme.typography,
         content = content,
     )
 }

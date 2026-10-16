@@ -35,8 +35,7 @@ described. Items in the appendix are not applicable to an open-source app.
 
 - **Multiple numbered queues (3+)** with active-queue concept (ssilencce has a single queue).
 - **End-of-queue behaviors** — resume next/previous queue from its last position, re-shuffle the queue, jump to next/first queue.
-- **Save queue as playlist**; duplicate-name handling (**replace / merge / keep both**).
-- **Queue counter** (current position + total) and scroll-to-current.
+- **Playlist duplicate-name handling when saving a queue** — **replace / merge / keep both**; saving the active queue already exists.
 - **Max queue limit** with auto-delete of oldest.
 - **Swipe-right-to-remove** in the queue tab (toggle).
 - **Confirm before removing queues**.
@@ -67,7 +66,7 @@ described. Items in the appendix are not applicable to an open-source app.
 ## 5. Library & browsing
 
 - **Composers tab** and **Album-Artists tab** (ssilencce has album-artist support inside Artists only).
-- **Queues tab** in the library.
+- **Configurable Queues library category outside Aurora** — Aurora provides a fixed primary Queue destination, not a multiple-queue browser.
 - **Sub-categorization** — albums by artist/album-artist/composer, artists by albums, albums sorted by year, genre sub-categorization.
 - **Extra sort keys** — filename, track number, path, date modified, date last played, most/least played, alphanumeric sorting.
 - **Ignore-keyword whitelist** (custom list beyond A/An/The).
@@ -301,9 +300,10 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: multiple queues with counter (position + total), scroll-to-current,
   swipe-right-to-remove, drag-reorder incl. multiple selected songs, album-art show/hide,
   quick search box.
-- ssilencce: Compose queue UI with highlighted current song, search, drag reordering and
-  filters.
-- See Part 1 §2 (multi-queue, counter, swipe-remove).
+- ssilencce: one real Compose queue with highlighted current song, position/total counter,
+  scroll-to-current, single-item drag reordering and song actions; full-screen in Aurora and
+  a dialog otherwise. Queue-local search and filters are not implemented.
+- See Part 1 §2 (multi-queue, swipe-remove, duplicate-name choices).
 
 ## 14. Android Auto
 

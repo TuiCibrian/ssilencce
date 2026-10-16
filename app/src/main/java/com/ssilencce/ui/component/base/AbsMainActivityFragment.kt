@@ -31,17 +31,21 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.MediaEvent
 import com.ssilencce.extensions.applyWindowInsets
 import com.ssilencce.extensions.dip
 import com.ssilencce.extensions.isLandscape
+import com.ssilencce.ui.component.views.TopAppBarLayout
 import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.theme.styleAuroraHierarchy
 import com.ssilencce.util.OPEN_ON_PLAY
 import com.ssilencce.util.PLAY_ON_STARTUP_MODE
 import com.ssilencce.util.PlayOnStartupMode
 import com.ssilencce.util.PlayOnStartupMode.Companion.WITH_EXPANDED_PLAYER
+import com.ssilencce.util.Preferences
 import com.ssilencce.util.Preferences.requireString
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
@@ -70,6 +74,20 @@ abstract class AbsMainActivityFragment
             super.onViewCreated(view, savedInstanceState)
             val menuHost: MenuHost = requireActivity()
             menuHost.addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.STARTED)
+            if (Preferences.isAuroraAppearance) {
+                view.post {
+                    if (this.view === view && isAdded) {
+                        styleAuroraHierarchy(view)
+                        val appBar = view.findViewById<View>(R.id.appBarLayout) as? TopAppBarLayout
+                        val destination = mainActivity.auroraDestination
+                        if (appBar != null && CategoryInfo.Category.entries.any { it.id == destination }) {
+                            appBar.toolbar.setNavigationIcon(R.drawable.ic_menu_24dp)
+                            appBar.toolbar.navigationContentDescription = getString(R.string.aurora_library_drawer)
+                            appBar.toolbar.setNavigationOnClickListener { mainActivity.showAuroraLibraryMenu() }
+                        }
+                    }
+                }
+            }
             viewLifecycleOwner.lifecycleScope.launch {
                 viewLifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
                     playerViewModel.mediaEvent.collect {
@@ -115,7 +133,7 @@ abstract class AbsMainActivityFragment
         protected fun checkForMargins(view: View) {
             if (mainActivity.isBottomNavVisible) {
                 view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                    bottomMargin = dip(R.dimen.bottom_nav_height)
+                    bottomMargin = mainActivity.navigationHeight
                 }
             }
         }

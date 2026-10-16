@@ -6,6 +6,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
@@ -36,6 +38,7 @@ import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -48,6 +51,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.keepScreenOn
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -79,6 +83,7 @@ import com.ssilencce.ui.component.views.PlaceholderDrawable
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.theme.PlayerTheme
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -144,9 +149,14 @@ fun LyricsScreen(
     lyricsViewModel: LyricsViewModel = koinActivityViewModel(),
     playerViewModel: PlayerViewModel = koinActivityViewModel(),
     onEditClick: (Song) -> Unit,
+    onBackgroundVisibilityChanged: (Boolean) -> Unit = {},
+    contentVisible: Boolean = true,
 ) {
     val context = LocalContext.current
     val isPowerSaveMode = context.isPowerSaveMode()
+    val animateDecorations =
+        !Preferences.isAuroraAppearance || com.ssilencce.ui.component.compose.aurora
+            .rememberAuroraMotionScale(contentVisible, com.ssilencce.util.ANIMATE_PLAYER_CONTROL) > 0f
 
     val miniPlayerMargin by libraryViewModel.getMiniPlayerMargin().observeAsState(LibraryMargin(0))
 
@@ -157,7 +167,7 @@ fun LyricsScreen(
     val isPlaying by playerViewModel.isPlayingFlow.collectAsStateWithLifecycle()
 
     var gradientColors by remember { mutableStateOf<List<Color>>(emptyList()) }
-    LaunchedEffect(song) {
+    LaunchedEffect(song, lyricsViewSettings.backgroundEffect, isPowerSaveMode) {
         if (isPowerSaveMode) {
             return@LaunchedEffect
         }
@@ -183,13 +193,21 @@ fun LyricsScreen(
         }
     }
 
-    var hasBackgroundEffects by remember { mutableStateOf(false) }
+    val hasBackgroundEffects =
+        lyricsViewSettings.backgroundEffect.isBlur ||
+            (lyricsViewSettings.backgroundEffect.isGradient && gradientColors.size >= 2)
+    val backgroundCallback by rememberUpdatedState(onBackgroundVisibilityChanged)
+    DisposableEffect(hasBackgroundEffects) {
+        backgroundCallback(hasBackgroundEffects)
+        onDispose { backgroundCallback(false) }
+    }
 
     Scaffold(
+        containerColor = if (Preferences.isAuroraAppearance) Color.Transparent else MaterialTheme.colorScheme.background,
         contentWindowInsets =
             WindowInsets
                 .navigationBars
-                .add(WindowInsets(bottom = miniPlayerMargin.totalMargin)),
+                .add(WindowInsets(bottom = miniPlayerMargin.totalMarginWithNavigation)),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { onEditClick(song) },
@@ -217,9 +235,8 @@ fun LyricsScreen(
                             modifier =
                                 Modifier
                                     .fillMaxSize()
-                                    .animatedGradient(gradientColors, isPlaying),
+                                    .animatedGradient(gradientColors, isPlaying && animateDecorations),
                         )
-                        hasBackgroundEffects = true
                     }
 
                     effect.isBlur -> {
@@ -252,11 +269,9 @@ fun LyricsScreen(
                                         },
                             )
                         }
-                        hasBackgroundEffects = true
                     }
 
                     else -> {
-                        hasBackgroundEffects = false
                     }
                 }
             }
@@ -267,10 +282,11 @@ fun LyricsScreen(
                 settings = lyricsViewSettings,
                 contentPadding = PaddingValues(vertical = 96.dp, horizontal = 16.dp),
                 fadingEdges = FadingEdges(top = 56.dp, bottom = 32.dp),
-                textAlign = TextAlign.Start,
+                textAlign = if (Preferences.isAuroraAppearance) TextAlign.Center else TextAlign.Start,
                 isPlaying = isPlaying,
                 isPowerSaveMode = isPowerSaveMode,
                 hasBackgroundEffects = hasBackgroundEffects,
+                animateDecorations = animateDecorations,
                 onSeekTo = { position ->
                     playerViewModel.seekTo(position)
                     if (lyricsViewSettings.resumeOnSeek) {
@@ -292,9 +308,13 @@ fun CoverLyricsScreen(
     playerViewModel: PlayerViewModel,
     onExpandClick: () -> Unit,
     modifier: Modifier = Modifier,
+    contentVisible: Boolean = true,
 ) {
     val context = LocalContext.current
     val isPowerSaveMode = context.isPowerSaveMode()
+    val animateDecorations =
+        !Preferences.isAuroraAppearance || com.ssilencce.ui.component.compose.aurora
+            .rememberAuroraMotionScale(contentVisible, com.ssilencce.util.ANIMATE_PLAYER_CONTROL) > 0f
 
     val isPlaying by playerViewModel.isPlayingFlow.collectAsStateWithLifecycle()
 
@@ -317,6 +337,7 @@ fun CoverLyricsScreen(
                 isPlaying = isPlaying,
                 isPowerSaveMode = isPowerSaveMode,
                 hasBackgroundEffects = false,
+                animateDecorations = animateDecorations,
                 onSeekTo = { position ->
                     playerViewModel.seekTo(position)
                     if (lyricsViewSettings.resumeOnSeek) {
@@ -341,12 +362,21 @@ fun CoverLyricsScreen(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_open_in_full_24dp),
-                    contentDescription = stringResource(R.string.action_lyrics_editor),
+                    contentDescription = stringResource(R.string.action_show_lyrics),
                 )
             }
         }
     }
 }
+
+// Aurora needs a higher inactive-line alpha to meet contrast over bright/photographic lyrics backgrounds
+// (measured inactive cores 2.47-2.63:1 at the legacy 0.4 alpha; .92 still measured 4.42-4.50 on the
+// brightest normal-surface band, so .96 holds the >=4.5 target there). Legacy appearances keep 0.4.
+private const val AURORA_INACTIVE_LYRIC_ALPHA = .96f
+
+// Over unbounded bright surfaces (blur/gradient lyrics backgrounds and inline cover lyrics) even a high
+// inactive alpha cannot reach 4.5:1; a bounded dark backplate restores the measured contrast floor.
+private val AURORA_LYRICS_BACKPLATE = Color.Black.copy(alpha = .72f)
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -360,6 +390,7 @@ private fun LyricsSurface(
     isPlaying: Boolean,
     isPowerSaveMode: Boolean,
     hasBackgroundEffects: Boolean,
+    animateDecorations: Boolean,
     onSeekTo: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -370,6 +401,11 @@ private fun LyricsSurface(
                 Color.White
             }
 
+            // Aurora cover lyrics sit on a fixed dark backplate; a media-derived player text color can be dark.
+            Preferences.isAuroraAppearance && settings.mode == LyricsViewSettings.Mode.Player -> {
+                Color.White
+            }
+
             else -> {
                 when (settings.mode) {
                     LyricsViewSettings.Mode.Player -> colorScheme.onSurface
@@ -377,7 +413,10 @@ private fun LyricsSurface(
                 }
             }
         }
-    Box(modifier) {
+    val auroraLyricsBackplate =
+        Preferences.isAuroraAppearance &&
+            (settings.mode == LyricsViewSettings.Mode.Player || hasBackgroundEffects)
+    Box(modifier.then(if (auroraLyricsBackplate) Modifier.background(AURORA_LYRICS_BACKPLATE) else Modifier)) {
         when (uiState) {
             is LyricsUiState.Empty -> {
                 Text(
@@ -392,10 +431,19 @@ private fun LyricsSurface(
             }
 
             is LyricsUiState.Loading -> {
-                CircularWavyProgressIndicator(
-                    color = contentColor,
-                    modifier = Modifier.align(Alignment.Center),
-                )
+                if (animateDecorations) {
+                    CircularWavyProgressIndicator(
+                        color = contentColor,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.lyrics_loading),
+                        color = contentColor,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.align(Alignment.Center),
+                    )
+                }
             }
 
             is LyricsUiState.Instrumental -> {
@@ -403,6 +451,7 @@ private fun LyricsSurface(
                     color = contentColor,
                     isPlaying = isPlaying,
                     barCount = 5,
+                    animate = animateDecorations,
                     modifier =
                         Modifier
                             .size(56.dp)
@@ -446,7 +495,7 @@ private fun LyricsSurface(
                 val smoothProgress by rememberSmoothPlaybackPosition(
                     playerPosition = playerPosition,
                     playbackSpeed = playbackSpeed,
-                    isPlaying = isPlaying,
+                    isPlaying = isPlaying && animateDecorations,
                 )
 
                 LaunchedEffect(playerPosition) {
@@ -461,6 +510,7 @@ private fun LyricsSurface(
                     contentColor = contentColor,
                     isPowerSaveMode = isPowerSaveMode,
                     hasBackgroundEffects = hasBackgroundEffects,
+                    inactiveTextAlpha = if (Preferences.isAuroraAppearance) AURORA_INACTIVE_LYRIC_ALPHA else .4f,
                     onSeekTo = onSeekTo,
                 )
             }

@@ -97,6 +97,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment, AbsPlayerFragment, AbsTagEditorActivity...).
 - `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences.
 - `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress...).
+- `ui/component/compose/aurora/` — Optional Aurora ribbon, six-destination navigation, grouped vector-mark drawer (Library/Discover/Sound & system), home actions and explicit unavailable states; `ui/theme/AuroraDesign.kt`, `AuroraLegacyStyling.kt` and `AuroraHeaderScroll.kt` bridge monochrome styling and the floating header treatment to both UI stacks (ADR-036, ADR-037).
 - `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
 - `ui/component/preferences/` — Custom preferences + Compose preference dialogs.
 - `ui/dialogs/` — Playlist, delete-songs, SAF, folder-chooser, multi-check dialogs.
@@ -106,6 +107,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
 - library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`.
 - player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment.
+- player/aurora/ — Compose Aurora chrome for the same seven saved styles, reusing the native cover pager, gestures, ViewModel and inherited song actions; non-Aurora players remain available.
 - lyrics/, queue/, settings/, equalizer/, tageditor/, sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes), error/ (crash handler).
 
 ### res/ (resources)

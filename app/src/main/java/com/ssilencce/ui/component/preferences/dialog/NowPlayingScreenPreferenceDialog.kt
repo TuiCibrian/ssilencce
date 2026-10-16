@@ -118,6 +118,7 @@ class NowPlayingScreenPreferenceDialog :
         position: Int,
         id: Long,
     ) {
+        if (Preferences.isAuroraAppearance) return
         val currentItem = NowPlayingScreen.entries.getOrNull(viewPagerPosition)
         if (currentItem != null) {
             val selectedScheme = colorSchemeAdapter?.schemes?.getOrNull(position)
@@ -135,7 +136,8 @@ class NowPlayingScreenPreferenceDialog :
             val supportedSchemes = currentItem.supportedColorSchemes
             val selectedScheme = Preferences.getNowPlayingColorSchemeMode(currentItem)
             colorSchemeAdapter?.submitList(supportedSchemes)
-            binding.colorScheme.isEnabled = supportedSchemes.size > 1
+            binding.colorScheme.isEnabled = !Preferences.isAuroraAppearance && supportedSchemes.size > 1
+            if (Preferences.isAuroraAppearance) binding.colorScheme.contentDescription = getString(R.string.aurora_saved_player_colors)
             binding.colorScheme.setSelection(supportedSchemes.indexOf(selectedScheme))
         }
     }
@@ -218,7 +220,7 @@ class NowPlayingScreenPreferenceDialog :
         ): View {
             val view = super.getView(position, convertView, parent) as TextView
             val item = getItem(position)
-            view.text = item?.titleRes?.let { view.context.getString(it) } ?: ""
+            view.text = if (Preferences.isAuroraAppearance) view.context.getString(R.string.aurora_saved_player_colors) else item?.titleRes?.let { view.context.getString(it) } ?: ""
             return view
         }
 

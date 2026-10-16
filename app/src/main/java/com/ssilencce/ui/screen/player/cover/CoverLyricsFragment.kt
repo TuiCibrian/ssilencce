@@ -43,6 +43,7 @@ class CoverLyricsFragment : Fragment() {
                                 goToDestination(requireActivity(), R.id.nav_lyrics)
                             }
                         },
+                        contentVisible = (activity as? MainActivity)?.isAuroraPlayerVisible != false,
                     )
                 }
             }

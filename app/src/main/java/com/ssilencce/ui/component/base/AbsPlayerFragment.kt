@@ -114,7 +114,7 @@ abstract class AbsPlayerFragment(
     private var coverFragment: CoverPagerFragment? = null
 
     protected abstract val colorSchemeMode: PlayerColorSchemeMode
-    protected abstract val playerControlsFragment: AbsPlayerControlsFragment
+    protected open val playerControlsFragment: AbsPlayerControlsFragment? = null
 
     protected open val playerToolbar: Toolbar?
         get() = null
@@ -355,7 +355,7 @@ abstract class AbsPlayerFragment(
 
                     GestureType.Fling.DIRECTION_UP -> {
                         if (Preferences.isSwipeUpQueue) {
-                            findNavController().navigate(R.id.nav_queue)
+                            onQuickActionEvent(NowPlayingAction.OpenPlayQueue)
                             true
                         } else {
                             false
@@ -489,7 +489,9 @@ abstract class AbsPlayerFragment(
             }
 
             NowPlayingAction.OpenPlayQueue -> {
-                findNavController().navigate(R.id.nav_queue)
+                if (Preferences.isAuroraAppearance) {
+                    (activity as? MainActivity)?.navigateAuroraDestination(R.id.nav_queue)
+                } else findNavController().navigate(R.id.nav_queue)
                 true
             }
 
@@ -582,13 +584,13 @@ abstract class AbsPlayerFragment(
     @CallSuper
     open fun onShow() {
         coverFragment?.showLyrics()
-        playerControlsFragment.onShow()
+        playerControlsFragment?.onShow()
     }
 
     @CallSuper
     open fun onHide() {
         coverFragment?.hideLyrics()
-        playerControlsFragment.onHide()
+        playerControlsFragment?.onHide()
     }
 
     protected fun getTintedDrawable(

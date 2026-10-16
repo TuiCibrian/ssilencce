@@ -3,6 +3,25 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <SwitchPreferenceCompat
+        app:icon="@drawable/ic_contrast_24dp"
+        app:title="@string/aurora_appearance_title"
+        app:summary="@string/aurora_appearance_summary"
+        app:defaultValue="false"
+        app:layout="@layout/list_item_view"
+        app:widgetLayout="@layout/preference_switch"
+        app:key="aurora_appearance"/>
+
+    <SwitchPreferenceCompat
+        app:iconSpaceReserved="true"
+        app:title="@string/aurora_motion_title"
+        app:summary="@string/aurora_motion_summary"
+        app:defaultValue="true"
+        app:dependency="aurora_appearance"
+        app:layout="@layout/list_item_view"
+        app:widgetLayout="@layout/preference_switch"
+        app:key="aurora_ribbon_motion"/>
+
     <com.ssilencce.ui.component.preferences.ThemePreference
         app:icon="@drawable/ic_contrast_24dp"
         app:title="@string/general_theme_title"

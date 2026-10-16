@@ -85,7 +85,9 @@ object Preferences : KoinComponent {
         }
 
     fun getDayNightMode(themeName: String = generalTheme) =
-        when (themeName) {
+        if (isAuroraAppearance) {
+            AppCompatDelegate.MODE_NIGHT_YES
+        } else when (themeName) {
             GeneralTheme.LIGHT -> {
                 AppCompatDelegate.MODE_NIGHT_NO
             }
@@ -107,6 +109,12 @@ object Preferences : KoinComponent {
 
     val blackTheme: Boolean
         get() = preferences.getBoolean(BLACK_THEME, false)
+
+    val isAuroraAppearance: Boolean
+        get() = preferences.getBoolean(AURORA_APPEARANCE, false)
+
+    val auroraMotion: Boolean
+        get() = preferences.getBoolean(AURORA_MOTION, true)
 
     val isMaterialYouTheme: Boolean
         get() = preferences.getBoolean(MATERIAL_YOU, hasS())

@@ -2,6 +2,8 @@ package com.ssilencce.ui.component.compose
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -28,6 +30,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
+import com.ssilencce.ui.theme.AuroraDesign
+import com.ssilencce.util.Preferences
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -104,10 +110,11 @@ private fun TitledCard(
     content: @Composable (PaddingValues) -> Unit,
 ) {
     Card(
-        shape = MaterialTheme.shapes.large,
+        shape = if (Preferences.isAuroraAppearance) RoundedCornerShape(12.dp) else MaterialTheme.shapes.large,
+        border = if (Preferences.isAuroraAppearance) BorderStroke(1.dp, AuroraDesign.border) else null,
         colors =
             CardDefaults.cardColors(
-                containerColor = color ?: MaterialTheme.colorScheme.surfaceContainerHigh,
+                containerColor = color ?: if (Preferences.isAuroraAppearance) AuroraDesign.glass else MaterialTheme.colorScheme.surfaceContainerHigh,
             ),
         modifier = modifier,
     ) {
@@ -133,7 +140,7 @@ private fun TitledCard(
             Text(
                 text = title,
                 style = style ?: MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).semantics { heading() },
             )
 
             Spacer(Modifier.width(16.dp))

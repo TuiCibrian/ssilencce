@@ -3,7 +3,9 @@ package com.ssilencce.ui.component.compose
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -25,29 +27,38 @@ fun AnimatedEqBars(
     minHeightFraction: Float = 0.10f,
     maxHeightFraction: Float = 0.95f,
     basePeriodMillis: Int = 1800,
+    animate: Boolean = true,
 ) {
     val density = LocalDensity.current
     val barWidthPx = with(density) { barWidth.toPx() }
     val gapPx = with(density) { gap.toPx() }
 
-    val transition = rememberInfiniteTransition(label = "eq")
+    val t =
+        if (animate && isPlaying) {
+            rememberInfiniteTransition(label = "eq").animateFloat(
+                initialValue = 0f,
+                targetValue = (2f * Math.PI).toFloat(),
+                animationSpec =
+                    infiniteRepeatable(
+                        animation = tween(basePeriodMillis, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse,
+                    ),
+                label = "time",
+            )
+        } else {
+            remember { mutableFloatStateOf(0f) }
+        }
 
-    val t by transition.animateFloat(
-        initialValue = 0f,
-        targetValue = (2f * Math.PI).toFloat(),
-        animationSpec =
-            infiniteRepeatable(
-                animation = tween(basePeriodMillis, easing = LinearEasing),
-                repeatMode = RepeatMode.Reverse,
-            ),
-        label = "time",
-    )
-
-    val activity by animateFloatAsState(
-        targetValue = if (isPlaying) 1f else 0f,
-        animationSpec = tween(220, easing = FastOutSlowInEasing),
-        label = "activity",
-    )
+    val activity =
+        if (animate) {
+            animateFloatAsState(
+                targetValue = if (isPlaying) 1f else 0f,
+                animationSpec = tween(220, easing = FastOutSlowInEasing),
+                label = "activity",
+            )
+        } else {
+            rememberUpdatedState(if (isPlaying) 1f else 0f)
+        }
 
     Canvas(modifier = modifier) {
         val h = size.height
@@ -56,13 +67,13 @@ fun AnimatedEqBars(
         var x = (size.width - totalWidth) / 2f
 
         repeat(barCount) { i ->
-            val phase = t * (1f + i * 0.35f) + i * 0.8f
+            val phase = t.value * (1f + i * 0.35f) + i * 0.8f
             val wave = (sin(phase) + 1f) * 0.5f
             val shaped = wave * wave
 
             val frac =
                 minHeightFraction + (maxHeightFraction - minHeightFraction) *
-                    shaped * activity + minHeightFraction * (1f - activity)
+                    shaped * activity.value + minHeightFraction * (1f - activity.value)
 
             val barH = h * frac
             val y = (h - barH) / 2f
