@@ -1,6 +1,12 @@
 package com.ssilencce.ui.screen.player.aurora
 
 import android.content.res.ColorStateList
+import android.graphics.Bitmap
+import android.graphics.BlurMaskFilter
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.RectF
 import android.view.View
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -23,10 +29,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -42,6 +53,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -71,6 +84,8 @@ import com.ssilencce.util.SQUIGGLY_SEEK_BAR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.math.abs
+import kotlin.math.roundToInt
+import android.graphics.Canvas as AndroidCanvas
 
 @Composable
 internal fun AuroraPlayerScreen(
@@ -121,13 +136,15 @@ internal fun AuroraPlayerScreen(
     ) {
         val landscape = maxWidth > maxHeight
         val controlsMaxHeight = maxHeight * if (compact) .72f else .58f
+        val coverCorner = if (style == NowPlayingScreen.M3 || style == NowPlayingScreen.Expressive) 24.dp else 6.dp
+        val coverShape = RoundedCornerShape(coverCorner)
         val cover: @Composable (Modifier) -> Unit = { coverModifier ->
             AndroidView(
                 factory = { coverView },
                 modifier =
                     coverModifier
-                        .clip(RoundedCornerShape(if (style == NowPlayingScreen.M3 || style == NowPlayingScreen.Expressive) 24.dp else 6.dp))
-                        .border(1.dp, AuroraDesign.border, RoundedCornerShape(if (style == NowPlayingScreen.M3 || style == NowPlayingScreen.Expressive) 24.dp else 6.dp)),
+                        .clip(coverShape)
+                        .border(1.dp, AuroraDesign.border, coverShape),
             )
         }
         val metadata: @Composable () -> Unit = {
@@ -281,24 +298,25 @@ internal fun AuroraPlayerScreen(
             }
         } else {
             if (fullCover) {
-                cover(Modifier.fillMaxSize())
+                // The square cover now sits centered in its stage; the reference
+                // backdrop stays behind header, cover and controls.
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .1f), Color.Black.copy(alpha = .9f)))))
             }
             Column(Modifier.fillMaxSize()) {
                 header()
                 if (landscape) {
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                        if (!fullCover) BoxWithConstraints(Modifier.weight(1f).padding(10.dp), contentAlignment = Alignment.Center) { cover(Modifier.size(minOf(maxWidth, maxHeight))) }
+                        BoxWithConstraints(Modifier.weight(1f).padding(10.dp), contentAlignment = Alignment.Center) {
+                            val square = minOf(maxWidth, maxHeight)
+                            Box(Modifier.size(square).coverHalo(coverCorner)) { cover(Modifier.fillMaxSize()) }
+                        }
                         Box(Modifier.weight(1f)) { controls() }
                     }
                 } else {
-                    if (!fullCover) {
-                        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = if (compact) 46.dp else 10.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
-                            cover(Modifier.size(minOf(maxWidth, maxHeight, if (compact) 280.dp else 360.dp)))
-                            if (style == NowPlayingScreen.Gradient) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .48f)))))
-                        }
-                    } else {
-                        Spacer(Modifier.weight(1f))
+                    BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = if (compact) 46.dp else 10.dp, vertical = 6.dp), contentAlignment = Alignment.Center) {
+                        val square = minOf(maxWidth, maxHeight, if (compact) 280.dp else 360.dp)
+                        Box(Modifier.size(square).coverHalo(coverCorner)) { cover(Modifier.fillMaxSize()) }
+                        if (style == NowPlayingScreen.Gradient) Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = .48f)))))
                     }
                     Box(Modifier.heightIn(max = controlsMaxHeight).background(if (fullCover) AuroraDesign.glass else Color.Transparent)) { controls() }
                 }
@@ -353,6 +371,90 @@ private fun PlayPauseButton(
             Icon(painterResource(if (playing) R.drawable.ic_pause_24dp else R.drawable.ic_play_24dp), description, Modifier.size(42.dp))
         }
     }
+}
+
+// Mirrors .np-cover's white box-shadow halo (42px at .16 plus 90px at .05 in
+// the reference). A CSS blur radius is a Gaussian sigma of half its value, so
+// both layers are rendered once per size as a low-resolution blurred
+// silhouette, composited and punched so the glow stays outside the frame
+// (a page's own transparent margins stay clean). The result is one cached
+// bitmap and a single drawImage per frame: no bands, no per-frame blur or
+// allocation, and bounded memory.
+private const val HALO_RASTER_SCALE = .4f
+private const val HALO_RASTER_MAX_SIDE = 768
+private const val HALO_MARGIN_DP = 96f
+
+private class CoverHalo(
+    val image: ImageBitmap,
+    val marginPx: Float,
+)
+
+private fun Modifier.coverHalo(cornerRadius: Dp): Modifier =
+    drawWithCache {
+        val glow = buildCoverHalo(size, cornerRadius.toPx(), density)
+        onDrawBehind {
+            glow?.let {
+                drawImage(
+                    image = it.image,
+                    srcOffset = IntOffset.Zero,
+                    srcSize = IntSize(it.image.width, it.image.height),
+                    dstOffset = IntOffset(-it.marginPx.roundToInt(), -it.marginPx.roundToInt()),
+                    dstSize =
+                        IntSize(
+                            (size.width + it.marginPx * 2f).roundToInt(),
+                            (size.height + it.marginPx * 2f).roundToInt(),
+                        ),
+                    filterQuality = FilterQuality.Low,
+                )
+            }
+        }
+    }
+
+private fun buildCoverHalo(
+    size: Size,
+    cornerRadius: Float,
+    density: Float,
+): CoverHalo? {
+    if (size.width < 1f || size.height < 1f) return null
+    val marginPx = HALO_MARGIN_DP * density
+    val fullWidth = size.width + marginPx * 2f
+    val fullHeight = size.height + marginPx * 2f
+    val scale = minOf(HALO_RASTER_SCALE, HALO_RASTER_MAX_SIDE / fullWidth, HALO_RASTER_MAX_SIDE / fullHeight)
+    if (scale <= 0f) return null
+    val bitmap =
+        Bitmap.createBitmap(
+            (fullWidth * scale).roundToInt().coerceAtLeast(1),
+            (fullHeight * scale).roundToInt().coerceAtLeast(1),
+            Bitmap.Config.ARGB_8888,
+        )
+    val canvas = AndroidCanvas(bitmap)
+    val rect = RectF(marginPx * scale, marginPx * scale, (marginPx + size.width) * scale, (marginPx + size.height) * scale)
+    val corner = cornerRadius * scale
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    paint.color = android.graphics.Color.WHITE
+    drawHaloLayer(canvas, paint, rect, corner, alpha = .16f, sigmaPx = 21f * density * scale)
+    drawHaloLayer(canvas, paint, rect, corner, alpha = .05f, sigmaPx = 45f * density * scale)
+    paint.alpha = 255
+    paint.maskFilter = null
+    paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+    canvas.drawRoundRect(rect, corner, corner, paint)
+    return CoverHalo(bitmap.asImageBitmap(), marginPx)
+}
+
+private fun drawHaloLayer(
+    canvas: AndroidCanvas,
+    paint: Paint,
+    rect: RectF,
+    cornerRadius: Float,
+    alpha: Float,
+    sigmaPx: Float,
+) {
+    paint.alpha = (255f * alpha).roundToInt()
+    // Skia maps a BlurMaskFilter radius to sigma = radius * .57735 + .5. The
+    // raster keeps an identity matrix, so this sigma is in bitmap pixels and
+    // the upscaled draw yields the intended dp blur on screen.
+    paint.maskFilter = BlurMaskFilter(((sigmaPx - .5f) / .57735f).coerceAtLeast(.1f), BlurMaskFilter.Blur.NORMAL)
+    canvas.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
 }
 
 private fun Modifier.playerFlingGestures(

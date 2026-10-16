@@ -78,6 +78,7 @@ import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.core.model.action.QueueClearingBehavior
 import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.search.SearchQuery
 import com.ssilencce.databinding.SlidingMusicPanelLayoutBinding
 import com.ssilencce.extensions.applyWindowInsets
@@ -88,6 +89,7 @@ import com.ssilencce.extensions.getBottomInsets
 import com.ssilencce.extensions.hasT
 import com.ssilencce.extensions.isLandscape
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
+import com.ssilencce.extensions.navigation.detailArgs
 import com.ssilencce.extensions.resources.darkenColor
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.extensions.resources.isColorLight
@@ -356,7 +358,14 @@ abstract class AbsSlidingMusicPanelActivity :
                     onSearchCategory = if (auroraHoldToSearch) ::searchAuroraCategory else null,
                 )
                 if (auroraDrawerVisible) {
-                    AuroraLibraryDrawer(auroraCategories, auroraDestination, ::navigateAuroraDestination, { auroraDrawerVisible = false })
+                    AuroraLibraryDrawer(
+                        categories = auroraCategories,
+                        destination = auroraDestination,
+                        onNavigate = ::navigateAuroraDestination,
+                        onDismiss = { auroraDrawerVisible = false },
+                        onTopTracks = { navigateAuroraDestination(R.id.nav_detail_list, detailArgs(ContentType.TopTracks)) },
+                        onRecentlyAdded = { navigateAuroraDestination(R.id.nav_detail_list, detailArgs(ContentType.RecentSongs)) },
+                    )
                 }
             }
         }

@@ -22,9 +22,6 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.LayoutRes
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.view.MenuHost
 import androidx.core.view.MenuProvider
 import androidx.core.view.isGone
@@ -39,16 +36,11 @@ import com.ssilencce.core.model.MediaEvent
 import com.ssilencce.extensions.applyWindowInsets
 import com.ssilencce.extensions.dip
 import com.ssilencce.extensions.isLandscape
-import com.ssilencce.extensions.observeKeyAsState
-import com.ssilencce.ui.component.compose.aurora.AuroraCategoryTabs
 import com.ssilencce.ui.component.views.TopAppBarLayout
 import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
-import com.ssilencce.ui.theme.SsilencceTheme
 import com.ssilencce.ui.theme.styleAuroraHierarchy
-import com.ssilencce.util.HOLD_TAB_TO_SEARCH
-import com.ssilencce.util.LIBRARY_CATEGORIES
 import com.ssilencce.util.OPEN_ON_PLAY
 import com.ssilencce.util.PLAY_ON_STARTUP_MODE
 import com.ssilencce.util.PlayOnStartupMode
@@ -86,26 +78,12 @@ abstract class AbsMainActivityFragment
                 view.post {
                     if (this.view === view && isAdded) {
                         styleAuroraHierarchy(view)
-                        val appBar = view.findViewById<TopAppBarLayout>(R.id.appBarLayout)
+                        val appBar = view.findViewById<View>(R.id.appBarLayout) as? TopAppBarLayout
                         val destination = mainActivity.auroraDestination
                         if (appBar != null && CategoryInfo.Category.entries.any { it.id == destination }) {
                             appBar.toolbar.setNavigationIcon(R.drawable.ic_menu_24dp)
                             appBar.toolbar.navigationContentDescription = getString(R.string.aurora_library_drawer)
                             appBar.toolbar.setNavigationOnClickListener { mainActivity.showAuroraLibraryMenu() }
-                            appBar.addView(
-                                ComposeView(requireContext()).apply {
-                                    setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-                                    setContent {
-                                        SsilencceTheme {
-                                            val currentDestination = mainActivity.auroraDestination
-                                            val categoryPreference by preferences.observeKeyAsState(LIBRARY_CATEGORIES, "")
-                                            val holdToSearch by preferences.observeKeyAsState(HOLD_TAB_TO_SEARCH, Preferences.holdTabToSearch)
-                                            val categories = androidx.compose.runtime.remember(categoryPreference) { Preferences.libraryCategories }
-                                            AuroraCategoryTabs(categories, currentDestination, mainActivity::navigateAuroraDestination, onSearchCategory = if (holdToSearch) mainActivity::searchAuroraCategory else null)
-                                        }
-                                    }
-                                },
-                            )
                         }
                     }
                 }

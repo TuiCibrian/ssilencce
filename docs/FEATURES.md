@@ -64,13 +64,13 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 ## 7. Now Playing Screen
 
-- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — retained View/controls fragments outside Aurora; Compose Aurora chrome reuses their shared cover pager and actions without adding a style.
+- **7 player styles** — Default, FullCover, Gradient, Plain, Material 3, Expressive, Peek — retained View/controls fragments outside Aurora; Compose Aurora chrome reuses their shared cover pager and actions without adding a style. The Aurora square cover sits centered in its stage (360 dp, 280 dp compact) with a smooth pre-blurred cached bitmap halo (bounded cache, single draw per frame, no per-frame blur), and FullCover keeps its glass controls over the reference backdrop.
 - **Gestures** — Configurable single-tap, double-tap (left/right/center), long-press on cover; swipe on cover, swipe anywhere, swipe-up for queue, swipe-down to dismiss.
 - **Page transitions** — Carousel effect plus 10 PageTransformers (depth, 3D flips, hinge, cascading, parallax, vertical stack, zoom-out…).
 - **Color schemes** — 5 modes (App theme, simple color, vibrant color, Material You, blur) with palette extraction from the cover.
 - **Display options** — Small image, corner radius, player blur intensity, squiggly seek bar, scrolling text, remaining-time preference, album-artist name, album title, next song preview, extra metadata fields (bitrate, genre, year…) with draggable configuration.
 - **Buttons** — Circle play button, adaptive controls, animated controls, extra controls, button style (Normal/M3/Expressive).
-- **Queue screen** — Compose UI with highlighted current song, repeat/shuffle, lock, drag reordering, locate-current-track, song actions and stop-after-song. One active queue; no queue-local search or filters. Aurora hosts it as a full-screen destination; other appearances retain the dialog.
+- **Queue screen** — Compose UI with highlighted current song, repeat/shuffle, lock, drag reordering, locate-current-track, song actions and stop-after-song. One active queue; no queue-local search or filters. Aurora hosts it as a full-screen reference queue (queue selector opening the queues manager, play/pause state, next-title badge, disabled named-queue actions and an explicit unavailable search row); other appearances retain the dialog.
 
 ## 8. Network & Integrations
 
@@ -84,9 +84,9 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 ## 9. UI, Themes & System
 
 - **Themes** — Light/dark/system toggle, Material You (Monet dynamic color with palette styles and system contrast), pure black theme, custom font (Google Sans Flex).
-- **Aurora appearance** — Optional native black-and-white glass appearance with a shared white ribbon, six primary destinations, secondary navigation, configurable category tabs/drawer and Compose home/player chrome (compact home action rows, always-visible home search with Settings in overflow). Enabled only for new empty preference stores; saved themes, fonts and all seven player styles remain retained (ADR-036).
-- **Aurora motion** — User switch; ribbon updates stop off-screen, outside the resumed lifecycle, with disabled system animations and in battery saver. Saved player colors return when Aurora is off.
-- **Aurora compatibility controls** — Category hold-to-search, compact Peek and expressive morph controls are retained; supporting screens use the shell's actual navigation clearance, and landscape controls respect cutouts.
+- **Aurora appearance** — Optional native black-and-white glass appearance with a layered white S ribbon (distinct rear/main halos, static veil, horizon and top glow, eight-stop dark overlay), six primary destinations, a scrim-dismissable library drawer grouped as Library / Discover / Sound & system with the app-mark header, configurable library screens and Compose home/player chrome (compact home action rows with per-row equal heights, always-visible home search with Settings in overflow). The upper horizontal category strip is not used; navigation lives in the drawer and primary navigation (ADR-037). Enabled only for new empty preference stores; saved themes, fonts and all seven player styles remain retained (ADR-036).
+- **Aurora motion** — User switch; ribbon updates stop off-screen, outside the resumed lifecycle, with disabled system animations and in battery saver, where the ribbon paints the reference's un-waved shape. The pinned header actions fade their title and adopt floating glass pills as the page scrolls, snapping to the end state instead of interpolating when system animations are disabled. Saved player colors return when Aurora is off.
+- **Aurora compatibility controls** — Category hold-to-search on the primary navigation, compact Peek and expressive morph controls are retained; supporting screens use the shell's actual navigation clearance, and landscape controls respect cutouts.
 - **Aurora player preferences** — Scrolling metadata and extra-info changes remain live; scrolling respects visibility, reduced motion and battery saver. Sound and EQ transport actions open the actual native controls.
 - **Aurora lyrics legibility** — inactive lyrics use a higher `.92` alpha; the Player/background-effects lyrics plate is fixed black (`.72`) with explicit white foreground (full-screen Player mode included) so media-derived tints cannot darken text; legacy/default inactive alpha remains `.4`.
 - **Aurora equalizer layout** — Output-device header, actual engine band-count/profile chips, accessible vertical sliders and Bands/Sound pages reuse existing profile/effect commands.

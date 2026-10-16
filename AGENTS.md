@@ -97,7 +97,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment, AbsPlayerFragment, AbsTagEditorActivity...).
 - `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences.
 - `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress...).
-- `ui/component/compose/aurora/` — Optional Aurora ribbon, six-destination navigation, category tabs/drawer, home actions and explicit unavailable states; `ui/theme/AuroraDesign.kt` / `AuroraLegacyStyling.kt` bridge monochrome styling to both UI stacks (ADR-036).
+- `ui/component/compose/aurora/` — Optional Aurora ribbon, six-destination navigation, grouped vector-mark drawer (Library/Discover/Sound & system), home actions and explicit unavailable states; `ui/theme/AuroraDesign.kt`, `AuroraLegacyStyling.kt` and `AuroraHeaderScroll.kt` bridge monochrome styling and the floating header treatment to both UI stacks (ADR-036, ADR-037).
 - `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
 - `ui/component/preferences/` — Custom preferences + Compose preference dialogs.
 - `ui/dialogs/` — Playlist, delete-songs, SAF, folder-chooser, multi-check dialogs.

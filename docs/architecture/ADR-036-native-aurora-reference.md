@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted on 2026-10-03. Partially supersedes ADR-028, ADR-029 and ADR-035 for the explicitly selected Aurora appearance. The restored interface remains available.
+Accepted on 2026-10-03. Partially supersedes ADR-028, ADR-029 and ADR-035 for the explicitly selected Aurora appearance. The restored interface remains available. The chrome navigation surface was refined on 2026-10-09 by ADR-037 (category strip retired, floating header actions, grouped drawer).
 
 ## Context
 

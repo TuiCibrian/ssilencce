@@ -21,4 +21,5 @@
 
     <item name="id_inset_consumed" type="id"/>
     <item name="id_wave_amplitude_animator" type="id" />
+    <item name="aurora_header_scroll_styled" type="id" />
 </resources>

@@ -1,6 +1,8 @@
 package com.ssilencce.ui.component.compose.aurora
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
@@ -14,8 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -29,6 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -124,32 +125,10 @@ private fun NavigationItem(
     }
 }
 
-@Composable
-fun AuroraCategoryTabs(
-    categories: List<CategoryInfo>,
-    destination: Int,
-    onNavigate: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-    onSearchCategory: ((Int) -> Unit)? = null,
-) {
-    Column(modifier) {
-        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 6.dp)) {
-            categories.filter { it.visible }.forEach { info ->
-                val selected = destination == info.category.id
-                Column(
-                    Modifier.combinedClickable(role = Role.Tab, onClick = { onNavigate(info.category.id) }, onLongClick = onSearchCategory?.let { { it(info.category.id) } }, onLongClickLabel = stringResource(R.string.search_label)).semantics { this.selected = selected }.heightIn(min = 48.dp).drawBehind {
-                        if (selected) drawLine(Color.White, Offset(12.dp.toPx(), size.height - 1.5.dp.toPx()), Offset(size.width - 12.dp.toPx(), size.height - 1.5.dp.toPx()), 3.dp.toPx())
-                    },
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(stringResource(info.category.titleRes), Modifier.padding(horizontal = 13.dp, vertical = 13.dp), fontSize = 14.sp, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium, color = if (selected) Color.White else AuroraDesign.muted)
-                    Spacer(Modifier.height(3.dp))
-                }
-            }
-        }
-        HorizontalDivider(color = AuroraDesign.border)
-    }
-}
+// Historical: foreground used by the retired category strip to keep selectable
+// normal text at 4.5:1 or more over the moving ribbon. Kept intentionally with no
+// current callers; AuroraDesign.muted stays unchanged for captions elsewhere.
+private val AuroraInactiveTabColor = Color(0xFFDCDCDC)
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -158,6 +137,8 @@ fun AuroraLibraryDrawer(
     destination: Int,
     onNavigate: (Int) -> Unit,
     onDismiss: () -> Unit,
+    onTopTracks: () -> Unit,
+    onRecentlyAdded: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false)) {
@@ -168,24 +149,36 @@ fun AuroraLibraryDrawer(
                         .statusBarsPadding()
                         .navigationBarsPadding()
                         .verticalScroll(rememberScrollState())
-                        .padding(12.dp),
+                        .padding(vertical = 12.dp),
                 ) {
-                    Text("ssilencce", Modifier.padding(16.dp).semantics { heading() }, fontSize = 22.sp, fontWeight = FontWeight.SemiBold)
-                    categories.forEach { info ->
-                        ListItem(
-                            content = { Text(stringResource(info.category.titleRes), fontSize = 15.sp) },
-                            leadingContent = { Icon(painterResource(auroraNavigationIcon(info.category.iconRes, info.category.id == destination)), null) },
-                            colors = ListItemDefaults.colors(containerColor = if (info.category.id == destination) Color.White.copy(alpha = .06f) else Color.Transparent),
-                            modifier = Modifier.clip(RoundedCornerShape(8.dp)).selectable(info.category.id == destination, role = Role.Tab, onClick = { onNavigate(info.category.id) }),
+                    AuroraDrawerHeader()
+                    AuroraDrawerGroup(R.string.aurora_drawer_group_library) {
+                        val referenceOrder = listOf(R.id.nav_songs, R.id.nav_albums, R.id.nav_artists, R.id.nav_folders, R.id.nav_playlists)
+                        categories
+                            .sortedBy { info -> referenceOrder.indexOf(info.category.id).let { if (it < 0) Int.MAX_VALUE else it } }
+                            .forEach { info ->
+                                AuroraDrawerTabItem(
+                                    icon = auroraNavigationIcon(info.category.iconRes, info.category.id == destination),
+                                    title = info.category.titleRes,
+                                    selected = info.category.id == destination,
+                                    onClick = { onNavigate(info.category.id) },
+                                )
+                            }
+                        AuroraDrawerTabItem(
+                            icon = R.drawable.ic_queue_music_24dp,
+                            title = R.string.aurora_queue_label,
+                            selected = destination == R.id.nav_queue,
+                            onClick = { onNavigate(R.id.nav_queue) },
                         )
                     }
-                    HorizontalDivider(Modifier.padding(vertical = 12.dp), color = AuroraDesign.border)
-                    listOf(
-                        Triple(R.id.nav_search, R.string.search_label, R.drawable.ic_search_24dp),
-                        Triple(R.id.nav_equalizer, R.string.equalizer_label, R.drawable.ic_equalizer_24dp),
-                        Triple(R.id.nav_settings, R.string.settings_title, R.drawable.ic_settings_24dp),
-                    ).forEach { (id, title, icon) ->
-                        ListItem(content = { Text(stringResource(title)) }, leadingContent = { Icon(painterResource(icon), null) }, colors = ListItemDefaults.colors(containerColor = Color.Transparent), modifier = Modifier.clickable { onNavigate(id) })
+                    AuroraDrawerGroup(R.string.aurora_drawer_group_discover) {
+                        AuroraDrawerActionItem(R.drawable.ic_trending_up_24dp, R.string.aurora_most_played, onTopTracks)
+                        AuroraDrawerActionItem(R.drawable.ic_history_24dp, R.string.aurora_recently_added, onRecentlyAdded)
+                        AuroraDrawerActionItem(R.drawable.ic_search_24dp, R.string.search_label) { onNavigate(R.id.nav_search) }
+                    }
+                    AuroraDrawerGroup(R.string.aurora_drawer_group_system) {
+                        AuroraDrawerActionItem(R.drawable.ic_equalizer_24dp, R.string.equalizer_label) { onNavigate(R.id.nav_equalizer) }
+                        AuroraDrawerActionItem(R.drawable.ic_settings_24dp, R.string.settings_title) { onNavigate(R.id.nav_settings) }
                     }
                     AuroraUnavailableRow(R.string.aurora_composers)
                     AuroraUnavailableRow(R.string.aurora_custom_tags)
@@ -193,6 +186,75 @@ fun AuroraLibraryDrawer(
             }
         }
     }
+}
+
+@Composable
+private fun AuroraDrawerHeader() {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 10.dp, bottom = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Box(
+            Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(Color.Black)
+                .border(1.dp, Color.White.copy(alpha = .08f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(painterResource(R.drawable.app_logo_splash), contentDescription = null, modifier = Modifier.size(46.dp))
+        }
+        Column {
+            Text(stringResource(R.string.app_name), Modifier.semantics { heading() }, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = AuroraDesign.foreground)
+            Text(stringResource(R.string.aurora_drawer_subtitle), Modifier.padding(top = 2.dp), fontSize = 12.sp, color = AuroraDesign.muted)
+        }
+    }
+}
+
+@Composable
+private fun AuroraDrawerGroup(
+    title: Int,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Text(
+        stringResource(title),
+        Modifier.padding(start = 22.dp, top = 10.dp, bottom = 5.dp).semantics { heading() },
+        fontSize = 11.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = .08.em,
+        color = AuroraDesign.muted,
+    )
+    Column(Modifier.fillMaxWidth().padding(horizontal = 8.dp), content = content)
+}
+
+@Composable
+private fun AuroraDrawerTabItem(
+    icon: Int,
+    title: Int,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        content = { Text(stringResource(title), fontSize = 15.sp) },
+        leadingContent = { Icon(painterResource(icon), null) },
+        colors = ListItemDefaults.colors(containerColor = if (selected) Color.White.copy(alpha = .06f) else Color.Transparent),
+        modifier = Modifier.clip(RoundedCornerShape(8.dp)).selectable(selected, role = Role.Tab, onClick = onClick),
+    )
+}
+
+@Composable
+private fun AuroraDrawerActionItem(
+    icon: Int,
+    title: Int,
+    onClick: () -> Unit,
+) {
+    ListItem(
+        content = { Text(stringResource(title), fontSize = 15.sp) },
+        leadingContent = { Icon(painterResource(icon), null) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button, onClick = onClick),
+    )
 }
 
 private fun auroraNavigationIcon(

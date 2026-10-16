@@ -32,13 +32,15 @@ fun AuroraHomeActions(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.padding(horizontal = 18.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ActionTile(R.drawable.ic_trending_up_24dp, R.string.top_tracks_label, onTopTracks, Modifier.weight(1f))
-            ActionTile(R.drawable.ic_album_24dp, R.string.last_added_label, onLastAdded, Modifier.weight(1f))
+        // Each row stretches like the reference 2x2 grid: tiles share the row height
+        // (the subtitle tile must not be taller than its peer).
+        Row(Modifier.heightIn(min = 66.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ActionTile(R.drawable.ic_trending_up_24dp, R.string.top_tracks_label, onTopTracks, Modifier.weight(1f).fillMaxHeight())
+            ActionTile(R.drawable.ic_album_24dp, R.string.last_added_label, onLastAdded, Modifier.weight(1f).fillMaxHeight())
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            ActionTile(R.drawable.ic_history_24dp, R.string.history_label, onHistory, Modifier.weight(1f))
-            ActionTile(R.drawable.ic_shuffle_24dp, R.string.shuffle_action, onShuffle, Modifier.weight(1f), songCount)
+        Row(Modifier.heightIn(min = 66.dp).height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            ActionTile(R.drawable.ic_history_24dp, R.string.history_label, onHistory, Modifier.weight(1f).fillMaxHeight())
+            ActionTile(R.drawable.ic_shuffle_24dp, R.string.shuffle_action, onShuffle, Modifier.weight(1f).fillMaxHeight(), songCount)
         }
     }
 }

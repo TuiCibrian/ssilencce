@@ -3049,13 +3049,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `ui/component/base/AbsMainActivityFragment.kt` — MainActivity fragment base exposing PlayerViewModel/LibraryViewModel and reacting to playback events.
   - **Purpose:** Shared base for fragments hosted inside MainActivity.
-  - **Responsibilities:** Activity-scoped PlayerViewModel/LibraryViewModel, MenuProvider registration, MediaEvent collection, window insets and bottom margins; conditionally style Aurora hierarchies and host configurable category tabs plus a hamburger drawer entry (`ic_menu_24dp` with the library-drawer description) with hold-to-search.
+  - **Responsibilities:** Activity-scoped PlayerViewModel/LibraryViewModel, MenuProvider registration, MediaEvent collection, window insets and bottom margins; conditionally style Aurora hierarchies and install the hamburger drawer entry (`ic_menu_24dp` with the library-drawer description) for library destinations.
   - **Inputs:** MediaEvent flow, preferences (PLAY_ON_STARTUP_MODE, OPEN_ON_PLAY).
   - **Outputs:** onFavoriteContentChanged/onMediaContentChanged hooks; panel expansion.
   - **Dependencies:** Fragment, MenuProvider, Koin activityViewModel, applyWindowInsets, MainActivity.
   - **Consumed by:** AbsRecyclerViewFragment, lyrics/settings/equalizer fragments.
   - **Related files:** `ui/screen/MainActivity.kt`, `ui/screen/library/LibraryViewModel.kt`, `ui/screen/player/PlayerViewModel.kt`, `res/drawable/ic_menu_24dp.xml`.
-  - **Notes:** expandPanel triggered when playback starts or restores per preferences. Aurora category tabs read the activity destination inside the composition, so they react to destination changes without view recreation.
+  - **Notes:** expandPanel triggered when playback starts or restores per preferences. The former configurable category strip is intentionally no longer injected anywhere (user decision recorded in ADR-037); category navigation lives in the drawer.
 
 
 - `ui/component/base/AbsRecyclerViewFragment.kt` — Base fragment with RecyclerView, toolbar, shuffle button, fast-scroller, mini-player margins.
@@ -3961,46 +3961,57 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `ui/theme/AuroraLegacyStyling.kt` — Conditional reference styling for retained View-based screens and rows.
   - **Purpose:** Keep existing adapters/actions while sharing Aurora's visual vocabulary.
-  - **Responsibilities:** Transparent floating toolbars and scroll-title visibility, glass cards/search field, row typography/image corners/menu targets, reusable glass drawable.
+  - **Responsibilities:** Transparent toolbars, glass cards/search field, row typography/image corners/menu targets, reusable glass drawable, and delegation of the reference header scroll treatment to `AuroraHeaderScroll`.
   - **Inputs:** Existing View hierarchy or media row; selected appearance.
   - **Outputs:** In-place styling without replacing data, menus or selection listeners.
-  - **Dependencies:** Material View components, RecyclerView, Preferences.
+  - **Dependencies:** Material View components, Preferences.
   - **Consumed by:** AbsMainActivityFragment, MediaEntryViewHolder, preferences, MiniPlayerFragment.
-  - **Related files:** `ui/theme/AuroraDesign.kt`, `res/values/aurora.xml`.
+  - **Related files:** `ui/theme/AuroraDesign.kt`, `ui/theme/AuroraHeaderScroll.kt`, `res/values/aurora.xml`.
   - **Notes:** Returns immediately outside Aurora; per-row padding reserves 48 dp for menu controls.
 
 
-- `ui/component/compose/aurora/AuroraRibbon.kt` — Lifecycle-aware white ribbon and shared Aurora motion gates.
-  - **Purpose:** Render the soft shared backdrop without runtime foreground blur.
-  - **Responsibilities:** Pre-render a bounded low-resolution bitmap on Default; cache two bounded draw-phase bitmap meshes and the scrim; observe lifecycle, animation scale, battery saver and the relevant motion preference.
+- `ui/theme/AuroraHeaderScroll.kt` — Reference scroll treatment for the Aurora toolbar.
+  - **Purpose:** Keep the hamburger/search/overflow actions visible and readable while the page scrolls, matching the golden header behaviour.
+  - **Responsibilities:** Pin simple app bars, fade/translate/blur the title with progress `(scrollTop - 6dp) / 28dp`, switch the action icons to floating glass pills (rounded, `#C716161A` with a `#17FFFFFF` stroke plus ripple and a soft elevation), collapse the simple header space through the scrolling-view overlay, and snap states when system animations are disabled. Collapsing-header screens (`R.id.app_bar` with `CollapsingToolbarLayout`) keep their scroll flags and pinned toolbar and receive the same pill treatment.
+  - **Inputs:** Fragment root view containing `R.id.appBarLayout` and `R.id.recyclerView` or `R.id.container`.
+  - **Outputs:** In-place header/action styling driven by the scroll position; no data or menu changes.
+  - **Dependencies:** `TopAppBarLayout`, `AppBarLayout.ScrollingViewBehavior`, Preferences, RenderEffect (API 31+).
+  - **Consumed by:** Aurora library screens through `styleAuroraHierarchy`.
+  - **Related files:** `ui/theme/AuroraLegacyStyling.kt`, `ui/component/views/TopAppBarLayout.kt`.
+  - **Notes:** Reduced motion replaces interpolation with a binary snap (observed once and on change, not per scroll event); blur is skipped below API 31 and throttled to 0.5 px changes; styling is idempotent per scroll view through the `aurora_header_scroll_styled` tag; collapsing-header screens keep their own collapse behaviour and are covered by the pill-only path; the floating pill uses a static translucent fill because View content has no backdrop blur. Target semantics and 48 dp touch targets are preserved.
+
+
+- `ui/component/compose/aurora/AuroraRibbon.kt` — Faithful native reproduction of the reference aurora background and the shared Aurora motion gates.
+  - **Purpose:** Reproduce the reference's layered white S, veil/glow field and dark overlay without runtime foreground blur.
+  - **Responsibilities:** Pre-render two per-layer rasters on Default from the reference stroke profiles (main five strokes w 240/180/96/32/3.2, SD 118/88/64/36/18; back three strokes w 190/110/28, SD 110/76/40 with .32 layer opacity) using the CTM-aware BlurMaskFilter conversion; cache paints, elliptical glow gradients (static veil, horizon, top), the eight-stop scrim and the mesh vertex buffer; warp each layer through its own overscan mapping (-8%/-16% main, -10%/-20% back) with the traveling wave (A=40, K=.0105, .55 rad/s, back phase pi) plus the approximated CSS wiggle; observe lifecycle, animation scale, battery saver and the motion preference.
   - **Inputs:** Visibility, modifier, motion preference and platform signals.
-  - **Outputs:** Static or approximately 30 Hz ribbon; motion scale for native player animations.
-  - **Dependencies:** Canvas, Android bitmap/blur mask, coroutines, Lifecycle, ContentObserver, PowerManager, SharedPreferences.
+  - **Outputs:** Static reduced-motion shape or approximately 30 Hz warped ribbon; motion scale for native player animations.
+  - **Dependencies:** Canvas, Android bitmap/blur mask/mesh/radial gradients, coroutines, Lifecycle, ContentObserver, PowerManager, SharedPreferences.
   - **Consumed by:** AbsSlidingMusicPanelActivity, AbsTagEditorActivity, AuroraPlayerScreen, QueueScreen, LyricsScreen.
-  - **Related files:** `util/AuroraPreferences.kt`, `ui/theme/AuroraDesign.kt`.
-  - **Notes:** Observers are disposed with composition; frame-clock-aligned updates stop when obscured, paused, disabled or power-saving. Meshes replace 96 separate strip draws; emulator frame timing is not evidence of physical-device performance.
+  - **Related files:** `util/AuroraPreferences.kt`, `ui/theme/AuroraDesign.kt`, reference `ssilencce-auroras.html`.
+  - **Notes:** Two ~0.77 MB bounded rasters replace the previous single shared bitmap; paints, gradients and vertices are created off-frame and no per-frame allocations occur. Updates stop when obscured, paused, disabled or power-saving; animation scale zero paints the reference's un-waved shape. Glow blurs are approximated by the gradients' soft ramps and the wiggle phase origin differs cosmetically from the CSS keyframes; emulator frame timing is not evidence of physical-device performance.
 
 
-- `ui/component/compose/aurora/AuroraNavigation.kt` — Six-destination shell, category tabs, drawer and unavailable rows.
+- `ui/component/compose/aurora/AuroraNavigation.kt` — Six-destination shell, grouped library drawer and unavailable rows.
   - **Purpose:** Native reference navigation using actual Navigation destinations.
-  - **Responsibilities:** Primary/More navigation, accessible selected/disabled states, configurable category tabs with hold-to-search, labelled scrim-dismissable library drawer and capability reservations.
-  - **Inputs:** Destination, player/More availability, CategoryInfo list and navigation/search callbacks.
+  - **Responsibilities:** Primary/More navigation, accessible selected/disabled states, scrim-dismissable library drawer with the reference groups (Library / Discover / Sound & system), the app-mark header, real category/queue/search/EQ/settings destinations, most-played and recently-added entries, and capability reservations.
+  - **Inputs:** Destination, player/More availability, CategoryInfo list and navigation/search/top-tracks/last-added callbacks.
   - **Outputs:** Real destination/search callbacks or explicitly unavailable explanatory rows.
-  - **Dependencies:** Compose Foundation/Material 3, CategoryInfo, AuroraDesign.
+  - **Dependencies:** Compose Foundation/Material 3, CategoryInfo, AuroraDesign, main string/icon resources.
   - **Consumed by:** AbsSlidingMusicPanelActivity, AbsMainActivityFragment, queue/sound/timer screens.
-  - **Related files:** `ui/screen/MainActivity.kt`, `ui/theme/AuroraDesign.kt`.
-  - **Notes:** Horizontal scrolling preserves 48 dp targets in narrow windows; drawer retains hidden library categories.
+  - **Related files:** `ui/screen/MainActivity.kt`, `ui/theme/AuroraDesign.kt`, `res/drawable/app_logo_splash.xml`.
+  - **Notes:** The drawer header draws the app mark with the existing vector `app_logo_splash` in a 46 dp rounded black box (no raster/mipmap). The former category strip is retired app-wide per ADR-037; its contrast token `AuroraInactiveTabColor` is kept unused with an explanatory comment and `AuroraDesign.muted` is unchanged.
 
 
 - `ui/component/compose/aurora/AuroraHomeActions.kt` — Reference home action rows with real callbacks and library count.
   - **Purpose:** Native 2x2 compact action rows entering existing library actions.
-  - **Responsibilities:** Render top-tracks, last-added, history and shuffle rows with glass styling, 38 dp icon boxes, an optional song-count subtitle and a 66 dp minimum height.
+  - **Responsibilities:** Render top-tracks, last-added, history and shuffle rows with glass styling, 38 dp icon boxes, an optional song-count subtitle, a 66 dp minimum height and per-row equal heights so the subtitle tile matches its peer.
   - **Inputs:** Real song-count text and four callbacks.
   - **Outputs:** Existing HomeFragment actions.
   - **Dependencies:** Compose Foundation/Material 3, AuroraDesign, main string/icon resources.
   - **Consumed by:** HomeFragment.
   - **Related files:** `ui/adapters/HomeAdapter.kt`, `ui/screen/library/home/HomeFragment.kt`.
-  - **Notes:** No prototype song counts or library fixtures are used at runtime; the shuffle subtitle shows the real library count.
+  - **Notes:** No prototype song counts or library fixtures are used at runtime; the shuffle subtitle shows the real library count. Each row stretches to its intrinsic height (`IntrinsicSize.Min` + `fillMaxHeight`) like the reference's CSS grid, so no tile grows beyond its peer.
 
 
 - `ui/theme/Color.kt` — Static Material 3 color palettes (lightScheme/darkScheme) for the default theme.
@@ -4857,18 +4868,18 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** PlayerViewModel, AddToPlaylistDialog, DeleteSongsDialog, getShareSongIntent, songDetailArgs.
   - **Consumed by:** Main navigation graph and mini-player/player queue actions.
   - **Related files:** QueueScreen.kt, other/MiniPlayerFragment.kt, MainActivity.kt.
-  - **Notes:** MainActivity replaces only Aurora's nav_queue destination with the full-screen Fragment; non-Aurora retains the dialog.
+  - **Notes:** MainActivity replaces only Aurora's nav_queue destination with the full-screen Fragment; non-Aurora retains the dialog. The Aurora host renders QueueScreen's header, so the queue selector opens the queues-manager dialog from the same surface.
 
 
-- `ui/screen/queue/QueueScreen.kt` — Compose real-queue UI: highlighted current song, drag reordering, playback and actions menu.
-  - **Purpose:** Interactive queue list with playback control.
-  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, up-next summary, locate-current button, per-item menu, stop-after events, auto-scroll to current; one scrolling Aurora surface for the header, songs, empty state and unavailable-search footer.
+- `ui/screen/queue/QueueScreen.kt` — Compose real-queue UI and reference queues manager: highlighted current song, drag reordering, playback/actions and honest unavailable states.
+  - **Purpose:** Interactive queue list with playback control and the reference queue chrome.
+  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, up-next summary, locate-current button, per-item menu, stop-after events, auto-scroll to current; Aurora header with the queue selector that opens the queues-manager dialog, play/pause state, in-queue badge with the next title, save control, reference-only queue actions (rename/remove/remove-others) exposed as disabled controls, and a disabled queue-search row that states the unavailable state; one scrolling Aurora surface for the header, songs, empty state and footer.
   - **Inputs:** PlayerViewModel flows, SharedPreferences LOCKED_QUEUE.
   - **Outputs:** PlayerViewModel commands (playSongAt, moveSong, stopAt, clearQueue).
   - **Dependencies:** PlayerViewModel, reorderable (sh.calvin), LazyColumnScrollbar, AnimatedEqBars, MediaImage.
   - **Consumed by:** QueueFragment, AuroraQueueFragment.
   - **Related files:** QueueFragment.kt, PlayerViewModel.kt.
-  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed. Aurora translates list indices past the header and rejects header/footer reorder targets. Its scrolling header/footer keep songs reachable in landscape and with large text. There is no queue-local search or filter engine.
+  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed. Aurora translates list indices past the header and rejects header/footer reorder targets. There is no queue-local search or filter engine; the single playback queue is real while the reference's named-queue manager, renaming and removing other queues stay unavailable (ADR-036) and never simulate success.
 
 
 - `ui/screen/scrobbling/ScrobblingServiceLoginFragment.kt` — Compose bottom sheet for scrobbling login (Last.fm/Libre.fm): user/token or API key form.
@@ -5071,7 +5082,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `ui/screen/player/aurora/AuroraPlayerScreen.kt` — Style-aware Compose metadata, actions, progress and transport.
   - **Purpose:** Reference-based chrome for all seven saved player variants.
-  - **Responsibilities:** Native cover interoperability, full-cover/gradient/plain/M3/expressive/compact-Peek anatomy, lifecycle-collected playback state, seeking/remaining time, hold-to-seek, configured flings, reactive extra-info/album settings, gated marquee and accessible controls; the action-row More opens an anchored Material3 `DropdownMenu` whose items route by id through `onOverflowItem` (same action set).
+  - **Responsibilities:** Native cover interoperability, full-cover/gradient/plain/M3/expressive/compact-Peek anatomy, lifecycle-collected playback state, seeking/remaining time, hold-to-seek, configured flings, reactive extra-info/album settings, gated marquee and accessible controls; a square cover centered in its stage (bounded by the available space, 360 dp normally and 280 dp compact) with a smooth pre-blurred cached bitmap halo (bounded raster cache, one drawImage per frame, no per-frame blur) matching the reference cover shadows, FullCover keeping its glass controls and reference backdrop behind header, cover and controls; the action-row More opens an anchored Material3 `DropdownMenu` whose items route by id through `onOverflowItem` (same action set).
   - **Inputs:** PlayerViewModel, cover View, favorite/lyrics/visibility state, shell navigation height and inherited action callbacks.
   - **Outputs:** Real playback commands, cover gestures and action/dialog callbacks.
   - **Dependencies:** Compose Foundation/Material 3, AndroidView, MusicSlider, MorphicIconButton, shared motion gates, Preferences.

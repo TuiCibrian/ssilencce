@@ -79,7 +79,7 @@ class AuroraQueueFragment : AbsMainActivityFragment() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View = createQueueView(asDialog = false)
+    ): View = createQueueView(asDialog = false, onCloseClick = { findNavController().navigateUp() })
 
     override fun onCreateMenu(
         menu: android.view.Menu,
@@ -89,7 +89,10 @@ class AuroraQueueFragment : AbsMainActivityFragment() {
     override fun onMenuItemSelected(menuItem: android.view.MenuItem): Boolean = false
 }
 
-private fun Fragment.createQueueView(asDialog: Boolean): ComposeView =
+private fun Fragment.createQueueView(
+    asDialog: Boolean,
+    onCloseClick: (() -> Unit)? = null,
+): ComposeView =
     ComposeView(requireContext()).apply {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
@@ -118,6 +121,7 @@ private fun Fragment.createQueueView(asDialog: Boolean): ComposeView =
                             findNavController()
                                 .navigate(R.id.nav_song_details, songDetailArgs(song))
                         },
+                        onCloseClick = onCloseClick,
                     )
                 }
                 if (asDialog) BottomSheetDialogSurface { content() } else content()

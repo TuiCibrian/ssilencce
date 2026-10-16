@@ -10,7 +10,6 @@ import android.widget.TextView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.children
 import androidx.core.view.updatePadding
-import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
@@ -64,22 +63,7 @@ fun styleAuroraHierarchy(root: View) {
         if (view is ViewGroup) view.children.forEach(::visit)
     }
     visit(root)
-    val toolbar = root.findViewById<Toolbar>(R.id.toolbar) ?: return
-    val recycler = root.findViewById<RecyclerView>(R.id.recyclerView) ?: return
-    recycler.addOnScrollListener(
-        object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(
-                recyclerView: RecyclerView,
-                dx: Int,
-                dy: Int,
-            ) {
-                toolbar.children.filterIsInstance<TextView>().forEach {
-                    it.alpha = if (recyclerView.canScrollVertically(-1)) 0f else 1f
-                    it.importantForAccessibility = if (it.alpha == 0f) View.IMPORTANT_FOR_ACCESSIBILITY_NO else View.IMPORTANT_FOR_ACCESSIBILITY_AUTO
-                }
-            }
-        },
-    )
+    styleAuroraHeaderScroll(root)
 }
 
 fun styleAuroraMediaRow(root: View) {
