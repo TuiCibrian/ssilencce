@@ -28,6 +28,7 @@ import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.hasQ
 import com.ssilencce.extensions.showToast
 import com.ssilencce.util.FileUtil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.component.KoinComponent
@@ -35,18 +36,27 @@ import org.koin.core.component.get
 import java.io.BufferedWriter
 import java.io.File
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
 
 object M3UWriter : KoinComponent {
     suspend fun export(
         context: Context,
         playlist: PlaylistWithSongs,
+        format: PlaylistExportFormat = PlaylistExportFormat.M3U,
     ) {
         val success =
             withContext(Dispatchers.IO) {
-                runCatching { write(context, playlist) }
+                try {
+                    write(context, playlist, format)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    false
+                }
             }
         val message =
-            if (success.getOrDefault(false)) {
+            if (success) {
                 context.getString(R.string.saved_playlist_x, playlist.playlistEntity.playlistName)
             } else {
                 context.getString(R.string.failed_to_save_playlist)
@@ -57,14 +67,22 @@ object M3UWriter : KoinComponent {
     suspend fun export(
         context: Context,
         playlists: List<PlaylistWithSongs>,
+        format: PlaylistExportFormat = PlaylistExportFormat.M3U,
     ) {
         var exported = 0
         var failed = 0
 
         withContext(Dispatchers.IO) {
             for (playlist in playlists) {
-                val saved = runCatching { write(context, playlist) }
-                if (saved.getOrDefault(false)) exported++ else failed++
+                val saved =
+                    try {
+                        write(context, playlist, format)
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        false
+                    }
+                if (saved) exported++ else failed++
             }
         }
 
@@ -82,28 +100,32 @@ object M3UWriter : KoinComponent {
     fun write(
         context: Context?,
         playlist: PlaylistWithSongs,
+        format: PlaylistExportFormat = PlaylistExportFormat.M3U,
     ): Boolean {
         if (context != null) {
+            if (playlist.songs.isEmpty()) return false
             val exportedPlaylistName =
-                String.format("%s.%s", playlist.playlistEntity.playlistName, M3UConstants.EXTENSION)
-            val playlistsUri =
+                String.format("%s.%s", safePlaylistName(playlist.playlistEntity.playlistName), format.extension)
+            val mediaUri =
                 when {
-                    hasQ() -> MediaStore.Audio.Playlists.getContentUri(MediaStore.VOLUME_EXTERNAL)
+                    // Audio.Playlists rewrites file names on publish; exports belong in Files.
+                    hasQ() -> MediaStore.Files.getContentUri(MediaStore.VOLUME_EXTERNAL)
+
                     else -> MediaStore.Audio.Playlists.EXTERNAL_CONTENT_URI
                 }
             val scopedStorageResult =
                 get<MediaStoreWriter>().toMediaStore(
-                    playlistsUri,
-                    MediaStoreWriter.Request.forPlaylist(exportedPlaylistName),
+                    mediaUri,
+                    MediaStoreWriter.Request.forPlaylist(exportedPlaylistName, format.mimeType),
                 ) { stream ->
-                    stream.bufferedWriter().use {
-                        writeImpl(it, playlist.songs)
+                    stream.bufferedWriter(Charsets.UTF_8).use {
+                        writeImpl(it, playlist.songs, format)
                     }
                 }
             if (scopedStorageResult.resultCode == MediaStoreWriter.Result.Code.NO_SCOPED_STORAGE) {
                 val directory = FileUtil.playlistsDirectory()
                 if (directory != null) {
-                    return writeToDirectory(directory, playlist).isFile
+                    return writeToDirectory(directory, playlist, format).isFile
                 }
                 return false
             }
@@ -116,38 +138,96 @@ object M3UWriter : KoinComponent {
     fun writeToDirectory(
         dir: File,
         playlist: PlaylistWithSongs,
+        format: PlaylistExportFormat = PlaylistExportFormat.M3U,
     ): File {
-        val exportFile = File(dir, String.format("%s.%s", playlist.playlistEntity.playlistName, M3UConstants.EXTENSION))
-        if (exportFile.createNewFile()) {
-            exportFile.bufferedWriter().use {
-                if (!writeImpl(it, playlist.songs)) {
-                    exportFile.delete()
+        val exportFile =
+            File(
+                dir,
+                String.format(
+                    "%s.%s",
+                    safePlaylistName(playlist.playlistEntity.playlistName),
+                    format.extension,
+                ),
+            )
+        val temporaryFile = File.createTempFile(".${exportFile.name}.", ".tmp", dir)
+        try {
+            temporaryFile.bufferedWriter(Charsets.UTF_8).use { writer ->
+                if (!writeImpl(writer, playlist.songs, format)) {
+                    throw IOException("Playlist ${playlist.playlistEntity.playlistName} has no songs")
                 }
             }
+            Files.move(
+                temporaryFile.toPath(),
+                exportFile.toPath(),
+                StandardCopyOption.REPLACE_EXISTING,
+            )
+            return exportFile
+        } catch (throwable: Throwable) {
+            temporaryFile.delete()
+            throw throwable
         }
-        return exportFile
     }
 
     @Throws(IOException::class)
     private fun writeImpl(
         bw: BufferedWriter,
         songs: List<SongEntity>,
+        format: PlaylistExportFormat,
     ): Boolean {
         val songs: List<Song> =
             songs
                 .sortedBy {
                     it.songPrimaryKey
                 }.toSongs()
-        if (songs.isNotEmpty()) {
-            bw.write(M3UConstants.HEADER)
-            for (song in songs) {
-                bw.newLine()
-                bw.write("${M3UConstants.ENTRY}${song.duration}${M3UConstants.DURATION_SEPARATOR}${song.artistName} - ${song.title}")
-                bw.newLine()
-                bw.write(song.data)
-            }
-            return true
+        if (songs.isEmpty()) return false
+        return when (format) {
+            PlaylistExportFormat.M3U,
+            PlaylistExportFormat.M3U8,
+            -> writeExtendedM3u(bw, songs)
+
+            PlaylistExportFormat.PLS -> writePls(bw, songs)
         }
-        return false
     }
+
+    private fun writeExtendedM3u(
+        bw: BufferedWriter,
+        songs: List<Song>,
+    ): Boolean {
+        bw.write(M3UConstants.HEADER)
+        for (song in songs) {
+            bw.newLine()
+            bw.write("${M3UConstants.ENTRY}${song.duration}${M3UConstants.DURATION_SEPARATOR}${song.artistName} - ${song.title}")
+            bw.newLine()
+            bw.write(song.data)
+        }
+        return true
+    }
+
+    private fun writePls(
+        bw: BufferedWriter,
+        songs: List<Song>,
+    ): Boolean {
+        bw.write("[playlist]")
+        bw.newLine()
+        bw.write("NumberOfEntries=${songs.size}")
+        for ((index, song) in songs.withIndex()) {
+            val number = index + 1
+            bw.newLine()
+            bw.write("File$number=${song.data}")
+            bw.newLine()
+            bw.write("Title$number=${song.artistName} - ${song.title}")
+            bw.newLine()
+            bw.write("Length$number=${song.duration / 1000}")
+        }
+        bw.newLine()
+        bw.write("Version=2")
+        return true
+    }
+
+    private fun safePlaylistName(name: String): String =
+        name
+            .replace('/', '_')
+            .replace('\\', '_')
+            .trim()
+            .ifBlank { "playlist" }
 }

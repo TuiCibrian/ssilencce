@@ -5,13 +5,14 @@ import android.content.pm.ShortcutManager
 import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.core.content.getSystemService
+import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
-import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.fragment.FragmentNavigator
+import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.common.util.concurrent.Futures
@@ -29,10 +30,16 @@ import com.ssilencce.playback.Playback
 import com.ssilencce.playback.library.MediaIDs
 import com.ssilencce.ui.IScrollHelper
 import com.ssilencce.ui.component.base.AbsSlidingMusicPanelActivity
+import com.ssilencce.ui.dialogs.AudioFocusAskDialog
 import com.ssilencce.ui.screen.update.UpdateDialog
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import com.ssilencce.util.Preferences
+import com.ssilencce.util.ShortcutEntityType
+import com.ssilencce.util.ShortcutHelper
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -42,10 +49,19 @@ class MainActivity :
     AbsSlidingMusicPanelActivity(),
     MediaController.Listener {
     private val updateViewModel: UpdateViewModel by viewModel()
+    private var audioFocusStateRevision = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         title = null
+        supportFragmentManager.setFragmentResultListener(AudioFocusAskDialog.RESULT_KEY, this) { _, result ->
+            val requestId = result.getString(AudioFocusAskDialog.ARG_REQUEST_ID) ?: return@setFragmentResultListener
+            if (result.getBoolean(AudioFocusAskDialog.ARG_CONFIRM)) {
+                playerViewModel.confirmAudioFocus(requestId)
+            } else {
+                playerViewModel.cancelAudioFocus(requestId)
+            }
+        }
 
         updateTabs()
         setupNavigationController()
@@ -58,7 +74,13 @@ class MainActivity :
 
     override fun onConnected(controller: MediaController) {
         super.onConnected(controller)
+        refreshAudioFocusAskState(controller)
         intent?.let { handlePlaybackIntent(it, true) }
+    }
+
+    override fun onResumeFragments() {
+        super.onResumeFragments()
+        mediaControllerOwner.get()?.let(::refreshAudioFocusAskState)
     }
 
     @OptIn(UnstableApi::class)
@@ -86,6 +108,12 @@ class MainActivity :
 
                 Playback.EVENT_PLAYBACK_RESTORED -> {
                     playerViewModel.submitEvent(MediaEvent.PlaybackRestored)
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
+
+                Playback.EVENT_AUDIO_FOCUS_ASK -> {
+                    audioFocusStateRevision++
+                    reconcileAudioFocusAskDialog(args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID))
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 }
 
@@ -242,6 +270,11 @@ class MainActivity :
                 setIntent(Intent())
             }
 
+            APP_SHORTCUT_ENTITY -> {
+                handleEntityShortcut(intent)
+                setIntent(Intent())
+            }
+
             else -> {
                 libraryViewModel.handleIntent(intent).observe(this) { result ->
                     if (result.handled) {
@@ -261,6 +294,60 @@ class MainActivity :
                     }
                 }
             }
+        }
+    }
+
+    private fun handleEntityShortcut(intent: Intent) {
+        val type = intent.getStringExtra(ShortcutHelper.EXTRA_TYPE) ?: return
+        val id = intent.getStringExtra(ShortcutHelper.EXTRA_ID) ?: ""
+        val path = intent.getStringExtra(ShortcutHelper.EXTRA_PATH)
+        lifecycleScope.launch {
+            val songs = libraryViewModel.shortcutSongs(type, id, path)
+            if (songs.isEmpty()) {
+                val exists = libraryViewModel.shortcutTargetExists(type, id, path)
+                if (exists == false) {
+                    ShortcutEntityType.entries
+                        .firstOrNull { it.name == type }
+                        ?.let { ShortcutHelper.remove(this@MainActivity, it, id) }
+                }
+                showToast(if (exists == true) R.string.shortcut_target_empty else R.string.shortcut_unavailable)
+            } else {
+                playerViewModel.openQueue(songs, shuffleMode = OpenShuffleMode.Off)
+            }
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun refreshAudioFocusAskState(controller: MediaController) {
+        val revision = audioFocusStateRevision
+        lifecycleScope.launch {
+            try {
+                val result =
+                    controller
+                        .sendCustomCommand(
+                            SessionCommand(Playback.GET_AUDIO_FOCUS_STATE, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        ).await()
+                if (revision == audioFocusStateRevision && mediaControllerOwner.get() === controller &&
+                    result.resultCode == SessionResult.RESULT_SUCCESS
+                ) {
+                    reconcileAudioFocusAskDialog(result.extras.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID))
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                // Reconnection queries authoritative state again; never infer consent from failure.
+            }
+        }
+    }
+
+    private fun reconcileAudioFocusAskDialog(requestId: String?) {
+        if (isFinishing || supportFragmentManager.isStateSaved) return
+        val existing = supportFragmentManager.findFragmentByTag(AudioFocusAskDialog.TAG) as? AudioFocusAskDialog
+        if (existing != null && existing.requestId == requestId) return
+        existing?.dismissNow()
+        if (requestId != null) {
+            AudioFocusAskDialog.newInstance(requestId).showNow(supportFragmentManager, AudioFocusAskDialog.TAG)
         }
     }
 
@@ -304,6 +391,7 @@ class MainActivity :
         private const val APP_SHORTCUT_TOP_TRACKS = "com.ssilencce.shortcut.TOP_TRACKS"
         private const val APP_SHORTCUT_SHUFFLE = "com.ssilencce.shortcut.SHUFFLE"
         private const val APP_SHORTCUT_FAVORITES = "com.ssilencce.shortcut.FAVORITES"
+        private const val APP_SHORTCUT_ENTITY = ShortcutHelper.ACTION_ENTITY
 
         private val OLD_SHORTCUT_IDS =
             listOf(

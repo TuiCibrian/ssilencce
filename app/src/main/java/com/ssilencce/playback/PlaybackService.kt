@@ -27,6 +27,7 @@ import androidx.annotation.OptIn
 import androidx.concurrent.futures.CallbackToFutureAdapter
 import androidx.core.content.ContextCompat
 import androidx.core.content.IntentCompat
+import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import androidx.core.os.postDelayed
 import androidx.glance.appwidget.GlanceAppWidgetManager
@@ -80,6 +81,7 @@ import com.ssilencce.core.palette.PaletteProcessor
 import com.ssilencce.data.local.MediaStoreObserver
 import com.ssilencce.data.local.ReplayGainTagExtractor
 import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.room.TrackPositionDao
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.data.model.network.ScrobblingService
@@ -94,6 +96,8 @@ import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 import com.ssilencce.playback.renderer.AlacWorkaroundCodecSelector
 import com.ssilencce.playback.renderer.SsilencceRenderersFactory
 import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
+import com.ssilencce.util.AUDIO_FOCUS_MODE
 import com.ssilencce.util.CLEAR_QUEUE_ON_COMPLETION
 import com.ssilencce.util.ENABLE_HISTORY
 import com.ssilencce.util.IGNORE_AUDIO_FOCUS
@@ -104,14 +108,17 @@ import com.ssilencce.util.PlayOnStartupMode
 import com.ssilencce.util.Preferences
 import com.ssilencce.util.Preferences.requireString
 import com.ssilencce.util.QUEUE_NEXT_MODE
+import com.ssilencce.util.REMEMBER_TRACK_POSITION
 import com.ssilencce.util.REWIND_WITH_BACK
 import com.ssilencce.util.SEEK_INTERVAL
+import com.ssilencce.util.SESSION_RECOVERY
 import com.ssilencce.util.STOP_WHEN_CLOSED_FROM_RECENTS
 import com.ssilencce.util.SongPlayCountHelper
 import com.ssilencce.util.WIDGET_DYNAMIC_COLORS
 import com.ssilencce.util.WIDGET_IMAGE_CORNER_RADIUS
 import com.ssilencce.util.WIDGET_SMALL_LAYOUT_STYLE
 import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
@@ -120,10 +127,21 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.guava.future
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import java.io.ByteArrayOutputStream
 import kotlin.random.Random
+
+/**
+ * Process-wide one-shot guard for session recovery. A service recreation in the same process
+ * must not auto-resume again after the first recovery attempt.
+ */
+internal object SessionRecoveryGuard {
+    @Volatile
+    var consumed: Boolean = false
+}
 
 @OptIn(UnstableApi::class)
 class PlaybackService :
@@ -132,6 +150,7 @@ class PlaybackService :
     Player.Listener,
     SharedPreferences.OnSharedPreferenceChangeListener {
     private val serviceScope = CoroutineScope(Job() + Main)
+    private val namedQueueSwitchMutex = Mutex()
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private val glanceManager by lazy { GlanceAppWidgetManager(applicationContext) }
@@ -141,6 +160,7 @@ class PlaybackService :
     private val equalizerManager: EqualizerManager by inject()
     private val audioOutputObserver: AudioOutputObserver by inject()
     private val repository: Repository by inject()
+    private val trackPositionDao: TrackPositionDao by inject()
 
     private val libraryProvider = LibraryProvider(repository)
     private val songPlayCountHelper = SongPlayCountHelper()
@@ -158,6 +178,7 @@ class PlaybackService :
 
     private lateinit var nm: NotificationManager
     private lateinit var persistentStorage: PersistentStorage
+    private lateinit var audioFocusController: AudioFocusController
     private lateinit var customCommands: List<CommandButton>
     private lateinit var player: AdvancedForwardingPlayer
     private var mediaSession: MediaLibrarySession? = null
@@ -169,6 +190,13 @@ class PlaybackService :
     private var hasSetUnshuffledOrder = false
     private var stopIndex = -1
 
+    private var lastKnownPositionMs = 0L
+    private var lastKnownDurationMs = 0L
+    private var lastKnownMediaId: String? = null
+    private var lastPositionPersistedAt = 0L
+    private var suppressNextPerTrackRestore = false
+    private var positionSeekGeneration = 0L
+
     private var headsetClickCount = 0
     private val headsetClickRunnable =
         Runnable {
@@ -176,7 +204,7 @@ class PlaybackService :
             val count = headsetClickCount
             headsetClickCount = 0
             when (count) {
-                1 -> if (player.isPlaying) player.pause() else player.play()
+                1 -> if (player.isPlaying) pausePlayback() else player.play()
                 2 -> player.seekToNext()
                 3 -> player.seekToPrevious()
             }
@@ -187,10 +215,26 @@ class PlaybackService :
     private var fadeOutAnimator: ValueAnimator? = null
 
     val isInTransientFocusLoss: Boolean
-        get() = player.playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
+        get() =
+            if (::audioFocusController.isInitialized) {
+                audioFocusController.isInTransientLoss
+            } else {
+                player.playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
+            }
 
     val isPlaying: Boolean
         get() = player.isPlaying
+
+    /**
+     * Pauses playback for a user or policy action. This must disarm auto-resume even when the
+     * player is already paused, because no playWhenReady callback is emitted for a no-op pause.
+     */
+    private fun pausePlayback() {
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.onUserPause()
+        }
+        player.pause()
+    }
 
     private val shuffleCommand: CommandButton
         get() =
@@ -213,7 +257,9 @@ class PlaybackService :
     private val sequentialTimeline: Boolean
         get() = preferences.getString(QUEUE_NEXT_MODE, "1") == "1"
     private val handleAudioFocus: Boolean
-        get() = preferences.getBoolean(IGNORE_AUDIO_FOCUS, false).not()
+        get() = false
+    private val rememberTrackPosition: Boolean
+        get() = preferences.getBoolean(REMEMBER_TRACK_POSITION, false)
     private val maxSeekToPreviousMs: Long
         get() = if (preferences.getBoolean(REWIND_WITH_BACK, true)) REWIND_INSTEAD_PREVIOUS_MILLIS else 0
     private val seekInterval: Long
@@ -296,6 +342,15 @@ class PlaybackService :
         player.setSequentialTimelineEnabled(sequentialTimeline)
         player.addListener(this)
 
+        audioFocusController =
+            AudioFocusController(
+                context = this,
+                player = player.exoPlayer,
+                preferences = preferences,
+                onPendingAskChanged = ::broadcastAudioFocusAsk,
+            )
+        player.onPlaybackIntent = audioFocusController::onPlaybackIntent
+
         mediaSession =
             with(MediaLibrarySession.Builder(this, player, this)) {
                 setId(packageName)
@@ -320,12 +375,25 @@ class PlaybackService :
 
         persistentStorage = PersistentStorage(this, serviceScope, player)
         persistentStorage.restoreState { items, shuffleOrder ->
+            val shouldResume =
+                !SessionRecoveryGuard.consumed &&
+                    preferences.getBoolean(SESSION_RECOVERY, false) &&
+                    persistentStorage.wasPlaying
+            suppressNextPerTrackRestore = items.mediaItems.isNotEmpty()
             player.setMediaItems(items.mediaItems, items.startIndex, items.startPositionMs)
+            if (items.mediaItems.isEmpty()) {
+                suppressNextPerTrackRestore = false
+            }
             player.prepare()
             if (player.shuffleModeEnabled && shuffleOrder != null) {
                 player.exoPlayer.shuffleOrder = shuffleOrder
             }
+            if (shouldResume && items.mediaItems.isNotEmpty()) {
+                SessionRecoveryGuard.consumed = true
+                player.play()
+            }
         }
+        startTrackPositionObserver()
 
         sleepTimer.addFinishListener { sleepParams ->
             if (player.playWhenReady && player.isPlaying) {
@@ -335,7 +403,7 @@ class PlaybackService :
                     if (sleepParams.fadeOut) {
                         launchMusicFadeOut(sleepParams.fadeDuration)
                     } else {
-                        player.pause()
+                        pausePlayback()
                     }
                 }
             }
@@ -357,6 +425,11 @@ class PlaybackService :
     }
 
     override fun onDestroy() {
+        if (!player.playWhenReady) {
+            persistentStorage.markNotPlaying()
+        }
+        persistentStorage.finish()
+        persistTrackPositionOnDestroy()
         super.onDestroy()
         if (bluetoothConnectedRegistered) {
             unregisterReceiver(bluetoothReceiver)
@@ -373,6 +446,9 @@ class PlaybackService :
         audioOutputObserver.stopObserver()
         mediaStoreObserver.stop(this)
         mediaSession?.release()
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.release()
+        }
         player.removeListener(this)
         player.release()
         playerThread.quitSafely()
@@ -418,7 +494,9 @@ class PlaybackService :
         availableCommands.add(SessionCommand(Playback.CYCLE_REPEAT, Bundle.EMPTY))
         availableCommands.add(SessionCommand(Playback.TOGGLE_SHUFFLE, Bundle.EMPTY))
         availableCommands.add(SessionCommand(Playback.TOGGLE_FAVORITE, Bundle.EMPTY))
-        availableCommands.add(SessionCommand(Playback.RESTORE_PLAYBACK, Bundle.EMPTY))
+        if (controller.uid == Process.myUid()) {
+            APP_INTERNAL_COMMANDS.forEach { availableCommands.add(SessionCommand(it, Bundle.EMPTY)) }
+        }
         availableCommands.add(SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY))
         availableCommands.add(SessionCommand(Playback.SET_STOP_POSITION, Bundle.EMPTY))
 
@@ -633,8 +711,11 @@ class PlaybackService :
         controller: MediaSession.ControllerInfo,
         customCommand: SessionCommand,
         args: Bundle,
-    ): ListenableFuture<SessionResult> =
-        when (customCommand.customAction) {
+    ): ListenableFuture<SessionResult> {
+        if (customCommand.customAction in APP_INTERNAL_COMMANDS && controller.uid != Process.myUid()) {
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_PERMISSION_DENIED))
+        }
+        return when (customCommand.customAction) {
             Playback.TOGGLE_SHUFFLE -> {
                 toggleShuffle()
                 Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
@@ -703,10 +784,42 @@ class PlaybackService :
                 )
             }
 
+            Playback.CONFIRM_AUDIO_FOCUS -> {
+                val requestId = args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID)
+                val confirmed = requestId != null && audioFocusController.confirmPendingAsk(requestId)
+                Futures.immediateFuture(
+                    SessionResult(if (confirmed) SessionResult.RESULT_SUCCESS else SessionError.ERROR_INVALID_STATE),
+                )
+            }
+
+            Playback.CANCEL_AUDIO_FOCUS -> {
+                val requestId = args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID)
+                val cancelled = requestId != null && audioFocusController.cancelPendingAsk(requestId)
+                Futures.immediateFuture(
+                    SessionResult(if (cancelled) SessionResult.RESULT_SUCCESS else SessionError.ERROR_INVALID_STATE),
+                )
+            }
+
+            Playback.GET_AUDIO_FOCUS_STATE -> {
+                Futures.immediateFuture(
+                    SessionResult(
+                        SessionResult.RESULT_SUCCESS,
+                        Bundle().apply {
+                            putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, audioFocusController.pendingAskId)
+                        },
+                    ),
+                )
+            }
+
+            Playback.SWITCH_NAMED_QUEUE -> {
+                switchNamedQueue(customCommand.customExtras)
+            }
+
             else -> {
                 Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
             }
         }
+    }
 
     override fun onPlaybackResumption(
         mediaSession: MediaSession,
@@ -732,6 +845,9 @@ class PlaybackService :
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
+        if (player.playbackState == Player.STATE_ENDED) {
+            forgetCurrentTrackPosition()
+        }
         if (player.playbackState == Player.STATE_ENDED &&
             preferences.getBoolean(CLEAR_QUEUE_ON_COMPLETION, false)
         ) {
@@ -751,6 +867,9 @@ class PlaybackService :
         playWhenReady: Boolean,
         reason: Int,
     ) {
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.onPlayWhenReadyChanged(playWhenReady, reason)
+        }
         if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
             player.exoPlayer.pauseAtEndOfMediaItems = false
             sleepTimer.consumePendingQuit()
@@ -762,12 +881,16 @@ class PlaybackService :
 
     override fun onIsPlayingChanged(isPlaying: Boolean) {
         if (!isPlaying) {
-            val currentDurationMs = player.mediaMetadata.durationMs ?: 0
-            if (currentDurationMs > 0) {
-                if (!player.currentTimeline.isEmpty) {
-                    persistentStorage.saveState()
-                }
+            rememberCurrentTrackPosition()
+            // Persist the inactive state immediately and again through the normal debounced path.
+            // If the service is destroyed before the debounce fires, recovery must not resume a
+            // queue that the user paused.
+            persistentStorage.markNotPlaying()
+            if (!player.currentTimeline.isEmpty) {
+                persistentStorage.saveState()
             }
+        } else {
+            persistentStorage.saveState()
         }
         songPlayCountHelper.notifyPlayStateChanged(isPlaying)
         updateWidgets()
@@ -785,10 +908,31 @@ class PlaybackService :
         persistentStorage.saveState()
     }
 
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+            // Any seek invalidates a bookmark lookup that was started for this item.
+            positionSeekGeneration++
+            // A same-item seek is not followed by onMediaItemTransition, so refresh the sample
+            // used when the user immediately skips to another track.
+            if (oldPosition.mediaItem?.mediaId == newPosition.mediaItem?.mediaId) {
+                lastKnownPositionMs = newPosition.positionMs.coerceAtLeast(0L)
+                val duration = player.duration
+                if (duration > 0) {
+                    lastKnownDurationMs = duration
+                }
+            }
+        }
+    }
+
     override fun onMediaItemTransition(
         mediaItem: MediaItem?,
         reason: Int,
     ) {
+        handleTrackPositionTransition(mediaItem, reason)
         val isPlaying = player.isPlaying
 
         serviceScope.launch(IO) {
@@ -836,6 +980,150 @@ class PlaybackService :
 
         persistentStorage.saveState()
         updateWidgets(force = true)
+        applyRememberedTrackPosition(mediaItem, reason)
+    }
+
+    private fun persistTrackPositionOnDestroy() {
+        if (!rememberTrackPosition || !player.isPlaying) return
+        val mediaId = lastKnownMediaId ?: player.currentMediaItem?.mediaId ?: return
+        val duration = if (lastKnownDurationMs > 0) lastKnownDurationMs else player.duration
+        val position = player.currentPosition.coerceAtLeast(0L)
+        if (duration < LONG_TRACK_THRESHOLD_MS || position < TRACK_START_TOLERANCE_MS) return
+        TrackPositionWriter.persistFinalSnapshot(
+            dao = trackPositionDao,
+            snapshot = TrackPositionSnapshot(mediaId, position, duration),
+        )
+    }
+
+    private fun startTrackPositionObserver() =
+        serviceScope.launch {
+            while (true) {
+                delay(TRACK_POSITION_TICK_MS)
+                if (!player.isPlaying) continue
+                val mediaId = player.currentMediaItem?.mediaId ?: continue
+                val duration = player.duration
+                lastKnownMediaId = mediaId
+                lastKnownPositionMs = player.currentPosition
+                lastKnownDurationMs = duration
+                val now = System.currentTimeMillis()
+                if (rememberTrackPosition &&
+                    duration >= LONG_TRACK_THRESHOLD_MS &&
+                    now - lastPositionPersistedAt >= TRACK_POSITION_PERSIST_INTERVAL_MS
+                ) {
+                    persistTrackPosition(mediaId, lastKnownPositionMs)
+                    lastPositionPersistedAt = now
+                }
+            }
+        }
+
+    private fun handleTrackPositionTransition(
+        nextMediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        val previousMediaId = lastKnownMediaId
+        // At onMediaItemTransition the player already points at the next item, so currentPosition
+        // is not the previous track's position. lastKnown* is the last sample of the old track.
+        val previousPosition = lastKnownPositionMs.coerceAtLeast(0L)
+        val previousDuration = lastKnownDurationMs
+        if (previousMediaId != null && rememberTrackPosition) {
+            val completed =
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                    reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                    (
+                        previousDuration > 0 &&
+                            previousPosition >= previousDuration - TRACK_END_TOLERANCE_MS
+                    )
+            if (completed) {
+                TrackPositionWriter.delete(trackPositionDao, previousMediaId)
+            } else if (previousDuration >= LONG_TRACK_THRESHOLD_MS &&
+                previousPosition >= TRACK_START_TOLERANCE_MS
+            ) {
+                TrackPositionWriter.persist(trackPositionDao, previousMediaId, previousPosition)
+                TrackPositionWriter.prune(trackPositionDao, MAX_REMEMBERED_TRACKS)
+            }
+        }
+        lastKnownMediaId = nextMediaItem?.mediaId
+        lastKnownPositionMs = 0L
+        lastKnownDurationMs = 0L
+        lastPositionPersistedAt = 0L
+    }
+
+    private fun applyRememberedTrackPosition(
+        mediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        // The first transition during a full-session restore must keep the queue-level
+        // position instead of applying a per-track position from another session. Consume the
+        // marker even when the feature is off or the item is null so it cannot suppress a later
+        // user transition.
+        if (suppressNextPerTrackRestore) {
+            suppressNextPerTrackRestore = false
+            return
+        }
+        if (mediaItem == null) return
+        if (!rememberTrackPosition) return
+        if (persistentStorage.restorationState != PersistentStorage.RestorationState.Restored) {
+            return
+        }
+        // The queue-level restore already seeks to the saved session position.
+        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED &&
+            player.currentPosition >= TRACK_START_TOLERANCE_MS
+        ) {
+            return
+        }
+        val mediaId = mediaItem.mediaId
+        val generation = positionSeekGeneration
+        serviceScope.launch(IO) {
+            val saved = trackPositionDao.position(mediaId) ?: return@launch
+            val duration = withContext(Main) { player.duration }
+            val position = saved.positionMs
+            if (position < TRACK_START_TOLERANCE_MS) return@launch
+            if (duration > 0 && duration - position < TRACK_END_TOLERANCE_MS) return@launch
+            if (duration in 1 until LONG_TRACK_THRESHOLD_MS) return@launch
+            withContext(Main) {
+                if (generation == positionSeekGeneration &&
+                    player.currentMediaItem?.mediaId == mediaId
+                ) {
+                    player.seekTo(position)
+                }
+            }
+        }
+    }
+
+    private fun rememberCurrentTrackPosition() {
+        if (!rememberTrackPosition) return
+        val mediaId = player.currentMediaItem?.mediaId ?: lastKnownMediaId ?: return
+        val duration = if (lastKnownDurationMs > 0) lastKnownDurationMs else player.duration
+        // Pause must use the live player position and refresh the transition sample; otherwise
+        // a subsequent skip can persist an older observer sample over this accurate pause.
+        val position = player.currentPosition.coerceAtLeast(0L)
+        lastKnownMediaId = mediaId
+        lastKnownPositionMs = position
+        lastKnownDurationMs = duration
+        if (duration < LONG_TRACK_THRESHOLD_MS) return
+        if (position < TRACK_START_TOLERANCE_MS) {
+            TrackPositionWriter.delete(trackPositionDao, mediaId)
+            return
+        }
+        if (position >= duration - TRACK_END_TOLERANCE_MS) {
+            TrackPositionWriter.delete(trackPositionDao, mediaId)
+        } else {
+            persistTrackPosition(mediaId, position)
+        }
+    }
+
+    private fun persistTrackPosition(
+        mediaId: String,
+        positionMs: Long,
+    ) {
+        TrackPositionWriter.persist(trackPositionDao, mediaId, positionMs)
+        TrackPositionWriter.prune(trackPositionDao, MAX_REMEMBERED_TRACKS)
+    }
+
+    private fun forgetCurrentTrackPosition() {
+        val mediaId = player.currentMediaItem?.mediaId ?: lastKnownMediaId ?: return
+        lastKnownPositionMs = 0L
+        TrackPositionWriter.delete(trackPositionDao, mediaId)
     }
 
     override fun onPlayerError(error: PlaybackException) {
@@ -918,7 +1206,15 @@ class PlaybackService :
             }
 
             IGNORE_AUDIO_FOCUS -> {
-                player.setAudioAttributes(player.audioAttributes, handleAudioFocus)
+                if (::audioFocusController.isInitialized) {
+                    audioFocusController.onModeChanged()
+                }
+            }
+
+            AUDIO_FOCUS_MODE -> {
+                if (::audioFocusController.isInitialized) {
+                    audioFocusController.onModeChanged()
+                }
             }
 
             REWIND_WITH_BACK -> {
@@ -1045,6 +1341,126 @@ class PlaybackService :
         }
     }
 
+    private fun switchNamedQueue(extras: Bundle): ListenableFuture<SessionResult> {
+        val targetQueueId = extras.getString("queueId")
+        val mediaIds = extras.getStringArrayList("mediaIds")
+        if (targetQueueId == null || mediaIds.isNullOrEmpty()) {
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
+        }
+        val future = SettableFuture.create<SessionResult>()
+        serviceScope.launch {
+            try {
+                namedQueueSwitchMutex.withLock {
+                    val requestedItems =
+                        mediaIds.map { mediaId ->
+                            MediaItem.Builder().setMediaId(mediaId).build()
+                        }
+                    val (resolvedSongs, _) =
+                        withContext(IO) { repository.songsByMediaItems(requestedItems) }
+                    val restoredItems = withContext(IO) { resolvedSongs.toMediaItems() }
+                    if (restoredItems.isEmpty()) {
+                        future.set(SessionResult(SessionError.ERROR_BAD_VALUE))
+                        return@launch
+                    }
+
+                    val savedToRestored = IntArray(mediaIds.size) { -1 }
+                    var restoredPointer = 0
+                    mediaIds.forEachIndexed { savedIndex, mediaId ->
+                        if (resolvedSongs.getOrNull(restoredPointer)?.id?.toString() == mediaId) {
+                            savedToRestored[savedIndex] = restoredPointer
+                            restoredPointer++
+                        }
+                    }
+                    var startIndex = 0
+                    var startPositionMs = 0L
+                    val savedStartIndex = extras.getInt("startIndex", 0)
+                    if (savedStartIndex in savedToRestored.indices) {
+                        val mappedIndex = savedToRestored[savedStartIndex]
+                        if (mappedIndex >= 0) {
+                            startIndex = mappedIndex
+                            startPositionMs = extras.getLong("startPositionMs", 0L)
+                        }
+                    }
+
+                    val targetMediaIds = restoredItems.map { it.mediaId }
+                    val departingSave =
+                        withContext(Main) {
+                            val previousQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null)
+                            // Resolve first, then capture the actual departing queue and replace the
+                            // timeline without suspension. Intervening user edits remain in its snapshot.
+                            val outgoing =
+                                if (previousQueueId != null && previousQueueId != targetQueueId) {
+                                    persistentStorage.saveNamedQueueState(previousQueueId)
+                                } else {
+                                    null
+                                }
+                            persistentStorage.expectNamedQueueSwitch(targetQueueId, targetMediaIds)
+                            // Bind the target before replacing the timeline: setMediaItems triggers
+                            // onTimelineChanged -> saveState(true) synchronously, and that save must not
+                            // attribute the target timeline to the previous queue.
+                            preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, targetQueueId) }
+                            var timelineApplied = false
+                            try {
+                                player.setMediaItems(restoredItems, startIndex, startPositionMs)
+                                timelineApplied = true
+                                player.repeatMode = extras.getInt("repeatMode", Player.REPEAT_MODE_OFF)
+                                player.shuffleModeEnabled = extras.getBoolean("shuffleEnabled", false)
+                                player.prepare()
+                                player.play()
+                            } catch (throwable: Throwable) {
+                                if (!timelineApplied) {
+                                    timelineApplied =
+                                        player.mediaItems.map { it.mediaId } == targetMediaIds
+                                }
+                                if (!timelineApplied) {
+                                    persistentStorage.cancelNamedQueueSwitch()
+                                    preferences.edit {
+                                        if (previousQueueId != null) {
+                                            putString(ACTIVE_NAMED_QUEUE_ID, previousQueueId)
+                                        } else {
+                                            remove(ACTIVE_NAMED_QUEUE_ID)
+                                        }
+                                    }
+                                }
+                                throw throwable
+                            }
+                            outgoing
+                        }
+                    try {
+                        departingSave?.await()
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (error: Exception) {
+                        // The target timeline and binding are already committed; a failed outgoing
+                        // snapshot must not turn that switch into a misleading UI failure.
+                        Log.e(TAG, "Departing named queue was not saved after switch", error)
+                    }
+                    future.set(
+                        SessionResult(
+                            SessionResult.RESULT_SUCCESS,
+                            Bundle().apply { putBoolean("switched", true) },
+                        ),
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                future.cancel(false)
+                throw cancellation
+            } catch (throwable: Throwable) {
+                Log.e(TAG, "Failed to switch named queue", throwable)
+                future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+            }
+        }
+        return future
+    }
+
+    private fun broadcastAudioFocusAsk(requestId: String?) {
+        val session = mediaSession ?: return
+        val args = Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) }
+        session.connectedControllers.filter { it.uid == Process.myUid() }.forEach {
+            session.sendCustomCommand(it, SessionCommand(Playback.EVENT_AUDIO_FOCUS_ASK, Bundle.EMPTY), args)
+        }
+    }
+
     private fun updateWidgets(
         force: Boolean = false,
         isForeground: Boolean = isPlaybackOngoing,
@@ -1158,7 +1574,7 @@ class PlaybackService :
                         }
 
                         override fun onAnimationEnd(animation: Animator) {
-                            player.pause()
+                            pausePlayback()
                             restorePlayerVolume()
                         }
                     },
@@ -1222,7 +1638,7 @@ class PlaybackService :
                 if (pauseOnZeroVolume && persistentStorage.restorationState.isRestored) {
                     // don't handle volume changes until our player is fully restored
                     if (isPlaying && systemVolume.currentVolume <= 0f) {
-                        player.pause()
+                        pausePlayback()
                         pausedByZeroVolume = true
                     } else if (pausedByZeroVolume && systemVolume.currentVolume >= 0.1f) {
                         player.play()
@@ -1291,7 +1707,7 @@ class PlaybackService :
 
                             BluetoothA2dp.STATE_DISCONNECTED -> {
                                 if (Preferences.isPauseOnDisconnect(true)) {
-                                    player.pause()
+                                    pausePlayback()
                                 }
                             }
                         }
@@ -1305,7 +1721,7 @@ class PlaybackService :
 
                     BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
                         if (context.isBluetoothA2dpDisconnected() && Preferences.isPauseOnDisconnect(true)) {
-                            player.pause()
+                            pausePlayback()
                         }
                     }
                 }
@@ -1325,7 +1741,7 @@ class PlaybackService :
                     when (intent.getIntExtra("state", -1)) {
                         0 -> {
                             if (Preferences.isPauseOnDisconnect(false)) {
-                                player.pause()
+                                pausePlayback()
                             }
                         }
 
@@ -1345,7 +1761,16 @@ class PlaybackService :
         }
 
     companion object {
+        private const val TAG = "PlaybackService"
         private const val PACKAGE_NAME = "com.ssilencce"
+        private val APP_INTERNAL_COMMANDS =
+            setOf(
+                Playback.RESTORE_PLAYBACK,
+                Playback.CONFIRM_AUDIO_FOCUS,
+                Playback.CANCEL_AUDIO_FOCUS,
+                Playback.GET_AUDIO_FOCUS_STATE,
+                Playback.SWITCH_NAMED_QUEUE,
+            )
 
         const val ACTION_TOGGLE_SHUFFLE = "$PACKAGE_NAME.action.ACTION_TOGGLE_SHUFFLE"
         const val ACTION_CYCLE_REPEAT = "$PACKAGE_NAME.action.ACTION_CYCLE_REPEAT"
@@ -1359,5 +1784,12 @@ class PlaybackService :
         private const val REWIND_INSTEAD_PREVIOUS_MILLIS = 5000L
 
         private const val FOREGROUND_SERVICE_TIMEOUT = (60 * 1000) * 2L
+
+        private const val LONG_TRACK_THRESHOLD_MS = 10 * 60 * 1000L
+        private const val TRACK_POSITION_TICK_MS = 5000L
+        private const val TRACK_POSITION_PERSIST_INTERVAL_MS = 15000L
+        private const val TRACK_START_TOLERANCE_MS = 5000L
+        private const val TRACK_END_TOLERANCE_MS = 5000L
+        private const val MAX_REMEMBERED_TRACKS = 500
     }
 }

@@ -23,6 +23,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import androidx.activity.OnBackPressedCallback
+import androidx.core.os.bundleOf
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.navigation.fragment.NavHostFragment
@@ -58,6 +59,8 @@ class SettingsFragment :
             setNavigationOnClickListener {
                 getOnBackPressedDispatcher().onBackPressed()
             }
+            inflateMenu(R.menu.menu_settings)
+            setOnMenuItemClickListener { menuItem -> onMenuItemSelected(menuItem) }
         }
 
         materialSharedAxis(view)
@@ -69,6 +72,15 @@ class SettingsFragment :
             navHostFragment.navController.apply {
                 addOnDestinationChangedListener(this@SettingsFragment)
             }
+
+        childFragmentManager.setFragmentResultListener(SettingsSearchDialog.RESULT_KEY, viewLifecycleOwner) { _, result ->
+            val screen =
+                result
+                    .getString(SettingsSearchDialog.ARG_SCREEN)
+                    ?.let { name -> SettingsScreen.entries.firstOrNull { it.name == name } }
+                    ?: return@setFragmentResultListener
+            openSettingsSearchResult(screen, result.getString(SettingsSearchDialog.ARG_KEY))
+        }
     }
 
     override fun onDestinationChanged(
@@ -82,9 +94,35 @@ class SettingsFragment :
     override fun onCreateMenu(
         menu: Menu,
         menuInflater: MenuInflater,
-    ) {}
+    ) {
+        menuInflater.inflate(R.menu.menu_settings, menu)
+    }
 
-    override fun onMenuItemSelected(menuItem: MenuItem): Boolean = false
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
+        when (menuItem.itemId) {
+            R.id.action_search_settings -> {
+                SettingsSearchDialog().show(childFragmentManager, "SETTINGS_SEARCH")
+                true
+            }
+
+            else -> {
+                false
+            }
+        }
+
+    private fun openSettingsSearchResult(
+        screen: SettingsScreen,
+        preferenceKey: String?,
+    ) {
+        val navController = childNavController ?: return
+        if (navController.currentDestination?.id != R.id.nav_home_preferences) {
+            navController.popBackStack(R.id.nav_home_preferences, false)
+        }
+        navController.navigate(
+            screen.navAction,
+            preferenceKey?.let { bundleOf(PreferenceScreenFragment.ARG_SCROLL_TO_PREFERENCE to it) },
+        )
+    }
 
     override fun onResume() {
         super.onResume()

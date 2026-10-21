@@ -43,13 +43,19 @@ abstract class AbsMultiSelectAdapter<VH : RecyclerView.ViewHolder, I>(
     ): Boolean {
         val inflater = mode.menuInflater
         inflater?.inflate(menuRes, menu)
+        onPrepareActionModeMenu(menu)
         return true
     }
 
     override fun onPrepareActionMode(
         mode: ActionMode,
         menu: Menu,
-    ): Boolean = false
+    ): Boolean {
+        onPrepareActionModeMenu(menu)
+        return true
+    }
+
+    protected open fun onPrepareActionModeMenu(menu: Menu) = Unit
 
     override fun onActionItemClicked(
         mode: ActionMode,

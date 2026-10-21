@@ -33,14 +33,20 @@ import com.ssilencce.data.model.ReleaseYear
 import com.ssilencce.ui.IYearCallback
 import com.ssilencce.ui.adapters.YearAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
 
 class YearsListFragment :
     AbsRecyclerViewCustomGridSizeFragment<YearAdapter, GridLayoutManager>(),
-    IYearCallback {
+    IYearCallback,
+    QuickSearchable {
     override val titleRes: Int = R.string.release_years_label
     override val isShuffleVisible: Boolean = false
+
+    private var allYears: List<ReleaseYear> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,
@@ -48,8 +54,25 @@ class YearsListFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getYears().observe(viewLifecycleOwner) { releaseYears ->
-            adapter?.dataSet = releaseYears
+            allYears = releaseYears
+            applyQuickSearch()
         }
+    }
+
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        adapter?.dataSet =
+            if (quickSearchQuery.isBlank()) {
+                allYears
+            } else {
+                allYears.filter { year ->
+                    listOf(year.name).matchesQuickSearch(quickSearchQuery)
+                }
+            }
     }
 
     override fun onResume() {

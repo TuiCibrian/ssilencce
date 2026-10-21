@@ -104,7 +104,7 @@ abstract class AbsRecyclerViewCustomGridSizeFragment<Adt : RecyclerView.Adapter<
     ) {
         val miniPlayerHeight = libraryViewModel.getMiniPlayerMargin().value?.totalMargin ?: 0
         val padding = GridViewType.getMarginForLayout(itemLayoutRes)
-        recyclerView.setPadding(padding, padding, padding, padding + miniPlayerHeight)
+        recyclerView.setPadding(padding, padding, padding, padding + miniPlayerHeight + quickSearchBottomPadding)
     }
 
     override fun onViewCreated(

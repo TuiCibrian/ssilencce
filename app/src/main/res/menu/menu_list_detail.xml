@@ -24,6 +24,10 @@
         </menu>
     </item>
     <item
+        android:id="@+id/action_most_played_period"
+        android:title="@string/most_played_period"
+        app:showAsAction="never"/>
+    <item
         android:id="@+id/action_clear_history"
         android:title="@string/action_clear_history"
         app:showAsAction="never"/>

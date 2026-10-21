@@ -19,6 +19,7 @@ package com.ssilencce.ui.screen.settings
 
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
+import androidx.annotation.StringRes
 import com.ssilencce.R
 
 /**
@@ -27,12 +28,13 @@ import com.ssilencce.R
 enum class SettingsScreen(
     @LayoutRes val layoutRes: Int,
     @IdRes val navAction: Int,
+    @StringRes val titleRes: Int,
 ) {
-    Appearance(R.xml.preferences_screen_appearance, R.id.action_to_appearancePreferences),
-    NowPlaying(R.xml.preferences_screen_now_playing, R.id.action_to_nowPlayingPreferences),
-    Lyrics(R.xml.preferences_screen_lyrics, R.id.action_to_lyricsPreferences),
-    Playback(R.xml.preferences_screen_playback, R.id.action_to_playbackPreferences),
-    Library(R.xml.preferences_screen_library, R.id.action_to_libraryPreferences),
-    Network(R.xml.preferences_screen_network, R.id.action_to_networkPreferences),
-    Advanced(R.xml.preferences_screen_advanced, R.id.action_to_advancedPreferences),
+    Appearance(R.xml.preferences_screen_appearance, R.id.action_to_appearancePreferences, R.string.appearance_title),
+    NowPlaying(R.xml.preferences_screen_now_playing, R.id.action_to_nowPlayingPreferences, R.string.now_playing_title),
+    Lyrics(R.xml.preferences_screen_lyrics, R.id.action_to_lyricsPreferences, R.string.lyrics_preferences_title),
+    Playback(R.xml.preferences_screen_playback, R.id.action_to_playbackPreferences, R.string.playback_title),
+    Library(R.xml.preferences_screen_library, R.id.action_to_libraryPreferences, R.string.library_title),
+    Network(R.xml.preferences_screen_network, R.id.action_to_networkPreferences, R.string.network_title),
+    Advanced(R.xml.preferences_screen_advanced, R.id.action_to_advancedPreferences, R.string.advanced_title),
 }

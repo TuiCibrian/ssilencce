@@ -39,6 +39,13 @@
             app:layout="@layout/list_item_view"
             app:key="restore_data"/>
 
+        <com.ssilencce.ui.screen.settings.backup.ScheduledBackupPreference
+            app:title="@string/scheduled_backup_title"
+            app:summary="@string/scheduled_backup_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="scheduled_backup"/>
+
     </PreferenceCategory>
 
 </PreferenceScreen>

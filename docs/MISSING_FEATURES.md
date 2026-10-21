@@ -19,27 +19,23 @@ described. Items in the appendix are not applicable to an open-source app.
 - **Crossfade** between tracks (PRO).
 - **Fade-in on play / fade-out on pause** — configurable duration (0–4000 ms each).
 - **A-B repeat** loop within a track.
-- **Per-track remember last position** — resume each song from where it stopped.
 - **Per-song play speed** — speed/pitch per individual song (ssilencce has global tempo only).
 - **Mute handling** — don't play when muted, pause when muted, resume when unmuted.
 - **Previous-button behavior** — configure as restart / play previous; next/prev override to FF/Rewind (headsets, remotes); configurable FF/Rewind durations.
 - **Queue control actions** — "Load next song and pause", "Pause after this song", "Play after current song".
-- **Session survival** — `TaskSaviour` service restores playback after the app process is killed.
+- **Session survival beyond force-stop** — ssilencce now opts into restoring an active session after a system service/process restart; Android force-stop and an OS kill that never restarts the service remain outside app control.
 - **Preview a song** without adding it to any queue.
 - **Resume policies** — "only resume if paused by disconnect", "prevent unwanted autoplay" (strict mode for buggy devices/cars).
-- **Audio focus level "ask"** — 4 focus levels including ask-before-taking focus and resume-after-call (ssilencce only has an on/off ignore-focus toggle).
 - **"FF/Rewind only for long audio (audiobook/podcast)"** option.
 - **Extra format playback (WMA, APE, DSF, DFF, AIFF)** — ssilencce bundles the FFmpeg software decoder (`media3-ffmpeg-decoder`, auto-loaded by Media3's extension renderer for unknown codecs), so the codecs exist, but these formats still do not play: Media3 1.10.1 ships no container extractors for ASF/WMA, APE, DSF/DFF or AIFF (the demuxer fails before the decoder is fed), Android's MediaScanner cannot determine their duration (NULL `duration` is then dropped by the minimum-duration filter) and does not index `.ape` files at all. Verified on emulator (API 36) 2026-08-14. Also missing vs Musicolet's own decoder: system-decoder switch, decoder info UI and multi-threaded decode.
 
 ## 2. Queues
 
-- **Multiple numbered queues (3+)** with active-queue concept (ssilencce has a single queue).
 - **End-of-queue behaviors** — resume next/previous queue from its last position, re-shuffle the queue, jump to next/first queue.
-- **Playlist duplicate-name handling when saving a queue** — **replace / merge / keep both**; saving the active queue already exists.
+- **Playlist duplicate-name handling when saving a queue** — **replace / merge / keep both**; saving the active queue already exists as a named queue.
 - **Max queue limit** with auto-delete of oldest.
 - **Swipe-right-to-remove** in the queue tab (toggle).
 - **Confirm before removing queues**.
-- **Clear playback history** for one/many songs.
 
 ## 3. Shuffle & repeat
 
@@ -74,10 +70,9 @@ described. Items in the appendix are not applicable to an open-source app.
 - **Disc number** support.
 - **Multi-artist / multi-album-artist / multi-composer / multi-genre tags** with custom separators (PRO).
 - **"Use album-artist if artist missing"** fallback.
-- **Quick search box at the bottom of every list** (songs, queues, folders…).
+- **Quick search box at the bottom of every list** — implemented for the seven top-level lists (songs, albums, artists, playlists, genres, years, folders) and the queue; detail lists and other secondary lists do not have the inline bar.
 - **Filename-vs-title display** toggle and **extra list info** (date updated, etc.).
-- **Most Played periods** — this week / month / 12 months / year / all time; artist stats with play percentage.
-- **CSV export** of most-played songs/artists — manual and automatic (weekly/monthly/yearly, PRO).
+- **Most Played CSV export** of songs/artists (manual and automatic weekly/monthly/yearly); the in-app period views and artist percentages are implemented (ADR-040), but CSV export is not.
 - **"Not played in past N days"** filter.
 
 ## 6. Scanning & folder management
@@ -127,8 +122,7 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## 11. Quick access
 
-- **Quick Settings tile** with active state.
-- **Add album/artist/folder/playlist shortcut to launcher** (with ask-before-adding option and MIUI guide; ssilencce has only the 4 built-in app shortcuts).
+- **MIUI-specific launcher-shortcut permission guide** — dynamic album/artist/folder/playlist shortcuts and the Quick Settings tile are implemented; the OEM-specific permission walkthrough is still absent.
 
 ## 12. Notifications
 
@@ -151,19 +145,16 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## 15. Backup & restore
 
-- **Choose what to restore** (settings, playlists, favorites, play counts, queues, per-file settings).
-- **Automatic backup** with custom folder.
-- Backup **verification** and restore prompt/warnings. (ssilencce has a simple ZIP backup/restore.)
+- **Choose what to restore** (settings, playlists, favorites, play counts, queues, per-file settings) — ssilencce offers a selective-restore picker over its four content types (settings, playlists, lyrics cache, artist images; nothing preselected), but favorites, play counts, queues and per-file settings cannot be restored.
+- **Share the backup ZIP** directly from the app — not implemented; scheduled automatic backups, a custom SAF folder and structural restore verification are implemented (ADR-043).
 
 ## 16. Export / import
 
-- **M3U8 / PLS export** (ssilencce exports `.m3u` only).
-- **Conflict handling** on playlist import (replace / keep / rename).
+- **Conflict handling** on playlist import (replace / keep / rename); M3U, M3U8 and PLS export are implemented (ADR-044), so the remaining gap is import conflict handling.
 - **CSV export** of statistics.
 
 ## 17. Interface & theming
 
-- **Settings search**.
 - **Per-entity option/menu customization** — main menu, quick access, song/folder/album/artist/genre/playlist option lists.
 - **Show/hide unimportant settings** (SmartPrefCategory).
 - **Accent color** picker (ssilencce derives accent from theme modes/cover).
@@ -183,9 +174,8 @@ described. Items in the appendix are not applicable to an open-source app.
 - **ReplayGain** — Musicolet can calculate tags and convert to constant volume; ssilencce only reads them.
 - **Tag editor** — Musicolet batch-edits any field across formats; ssilencce's batch save is limited.
 - **Album art change/remove** — both support it; Musicolet adds fullscreen zoom, save to gallery, lock-screen wallpaper.
-- **Backup** — both ZIP-based; Musicolet adds selective restore, automatic backups and verification.
+- **Backup** — both ZIP-based and both restore selectively (ssilencce's picker preselects nothing); automatic scheduled backup and structural verification are now implemented (ADR-043). Remaining Musicolet advantages are sharing the ZIP directly and restoring favorites/play counts/queues/per-file settings.
 - **Widgets** — both have 3 widgets; Musicolet adds transparency, per-widget themes and empty-state layouts.
-- **App shortcuts** — Musicolet adds launcher shortcuts for specific albums/artists/folders/playlists.
 - **Last.fm/ListenBrainz scrobbling** — ssilencce-only (not listed as gap).
 - **Updater** — present in both (Musicolet via changelog checker, ssilencce via GitHub releases); no gap.
 
@@ -218,7 +208,7 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 ## 2. Audio focus handling
 
 - Musicolet: 4 levels — normal, ignore focus, ask before taking focus, resume after call.
-- ssilencce: optional ignore-audio-focus toggle only.
+- ssilencce: all four modes are wired through one controller (ADR-042, ADR-045), with a restorable request-bound Ask dialog; repeated play preserves consent, explicit/no-op pause and confirm/cancel/mode/release invalidate it. The remaining Musicolet-specific gap is strict autoplay policy on buggy car/device stacks.
 
 ## 3. Pause/resume on BT & USB
 
@@ -242,10 +232,9 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 ## 6. Session survival
 
-- Musicolet: `TaskSaviour` service restores playback after the app process is killed;
-  "start playback when app starts".
-- ssilencce: queue/position restored on app start.
-- See Part 1 §1 (survival after process kill).
+- Musicolet: `TaskSaviour` service restores playback after the app process is killed.
+- ssilencce: opt-in recovery restores an active queue/position after a system service restart
+  (ADR-042); Android force-stop and OS kills that never restart the service cannot be bypassed.
 
 ## 7. Equalizer
 
@@ -286,24 +275,24 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 - Musicolet: Most Played with periods (week/month/12 months/year/all time), artist stats
   with play percentage, manual and automatic CSV export.
-- ssilencce: per-song play/skip counters, time played, top-100 flows, top albums/artists.
-- See Part 1 §5 (periods, CSV).
+- ssilencce: period-aware Top Tracks/Top Artists with percentages (ADR-040); the remaining gap
+  is CSV export of statistics.
 
 ## 12. Playback history
 
 - Musicolet: per-song playback history with clear-history for one/many songs.
-- ssilencce: history tab with configurable cutoff interval, no per-song clearing.
-- See Part 1 §2 (clear history).
+- ssilencce: history tab with configurable cutoff and individual/multi-select removal; the
+  deletion gap is closed.
 
 ## 13. Queue screen
 
 - Musicolet: multiple queues with counter (position + total), scroll-to-current,
   swipe-right-to-remove, drag-reorder incl. multiple selected songs, album-art show/hide,
   quick search box.
-- ssilencce: one real Compose queue with highlighted current song, position/total counter,
-  scroll-to-current, single-item drag reordering and song actions; full-screen in Aurora and
-  a dialog otherwise. Queue-local search and filters are not implemented.
-- See Part 1 §2 (multi-queue, swipe-remove, duplicate-name choices).
+- ssilencce: named queues, queue-local search, highlighted current song, position/total
+  counter, scroll-to-current and single-item drag reordering (ADR-041); queue filtering keeps
+  original indices for actions. The remaining gaps are swipe-right-to-remove and
+  drag-reordering multiple selected songs.
 
 ## 14. Android Auto
 
@@ -341,14 +330,15 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 - Musicolet: single ZIP with choose-what-to-restore, automatic backup with custom folder,
   share the ZIP, verification, restore warnings.
-- ssilencce: ZIP backups of playlists, settings, lyrics cache and custom artist images.
-- See Part 1 §15 (selective restore, automatic backup, verification).
+- ssilencce: selective ZIP backup/restore with structural verification and warnings
+  (empty/non-backup/unrestorable), plus opt-in scheduled backups to a SAF folder (ADR-043);
+  the remaining gap is sharing the ZIP directly.
 
 ## 19. Playlist import/export
 
 - Musicolet: M3U/M3U8/PLS export and import with conflict handling (replace/keep/rename).
-- ssilencce: `.m3u` export, device playlist import.
-- See Part 1 §16 (M3U8/PLS, conflicts).
+- ssilencce: M3U/M3U8/PLS export and device playlist import; the remaining gap is conflict
+  handling on import.
 
 ## 20. Album art handling
 
@@ -363,16 +353,17 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 - Musicolet: play/search/shuffle plus launcher shortcuts for specific albums, artists,
   folders and playlists, ask-before-adding option.
-- ssilencce: 4 built-in dynamic shortcuts (last added, top tracks, favorites, shuffle all).
-- See Part 1 §11 (per-entity shortcuts).
+- ssilencce: four built-in dynamic shortcuts plus per-entity album/artist/folder/playlist
+  shortcuts with confirmation (ADR-044); the remaining gap is the MIUI-specific permission
+  guide.
 
 ## 22. Search integration
 
 - Musicolet: quick search box at the bottom of every list, search history, system search
   with `MEDIA_PLAY_FROM_SEARCH`.
-- ssilencce: global search with voice input, debounce, grouped results, filters, scoped
-  searches, `searchable.xml`.
-- See Part 1 §5 (per-list quick search).
+- ssilencce: quick search on all seven top-level lists, settings search, global search with
+  voice input, debounce, grouped results, filters, scoped searches and `searchable.xml`;
+  secondary/detail lists do not have the inline bar and search history is absent.
 
 ## Notes (Part 2)
 

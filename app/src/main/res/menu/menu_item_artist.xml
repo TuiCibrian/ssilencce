@@ -12,6 +12,9 @@
         android:id="@+id/action_add_to_playlist"
         android:title="@string/action_add_to_playlist" />
     <item
+        android:id="@+id/action_add_to_home"
+        android:title="@string/add_to_home" />
+    <item
         android:id="@+id/action_tag_editor"
         android:title="@string/action_tag_editor"/>
     <item

@@ -34,14 +34,20 @@ import com.ssilencce.extensions.navigation.genreDetailArgs
 import com.ssilencce.ui.IGenreCallback
 import com.ssilencce.ui.adapters.GenreAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.screen.library.ReloadType
 
 class GenresListFragment :
     AbsRecyclerViewCustomGridSizeFragment<GenreAdapter, GridLayoutManager>(),
-    IGenreCallback {
+    IGenreCallback,
+    QuickSearchable {
     override val titleRes: Int = R.string.genres_label
     override val isShuffleVisible: Boolean = false
     override val emptyMessageRes: Int = R.string.no_genres_label
+
+    private var allGenres: List<Genre> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,
@@ -49,8 +55,25 @@ class GenresListFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getGenres().observe(viewLifecycleOwner) { genres ->
-            adapter?.dataSet = genres
+            allGenres = genres
+            applyQuickSearch()
         }
+    }
+
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        adapter?.dataSet =
+            if (quickSearchQuery.isBlank()) {
+                allGenres
+            } else {
+                allGenres.filter { genre ->
+                    listOf(genre.name).matchesQuickSearch(quickSearchQuery)
+                }
+            }
     }
 
     override fun onResume() {

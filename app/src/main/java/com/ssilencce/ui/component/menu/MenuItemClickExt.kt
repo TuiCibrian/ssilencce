@@ -21,6 +21,7 @@ import android.content.Intent
 import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ssilencce.R
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.local.EditTarget
@@ -48,7 +49,10 @@ import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.tageditor.AlbumTagEditorActivity
 import com.ssilencce.ui.screen.tageditor.ArtistTagEditorActivity
 import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
+import com.ssilencce.util.ShortcutEntityType
+import com.ssilencce.util.ShortcutHelper
 import com.ssilencce.util.m3u.M3UWriter
+import com.ssilencce.util.m3u.PlaylistExportFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -230,6 +234,11 @@ fun Album.onAlbumMenu(
             true
         }
 
+        R.id.action_add_to_home -> {
+            showAddShortcutDialog(fragment, ShortcutEntityType.Album, id.toString(), name)
+            true
+        }
+
         else -> {
             songs.onSongsMenu(fragment, menuItem)
         }
@@ -257,6 +266,11 @@ fun Artist.onArtistMenu(
             val tagEditorIntent = Intent(fragment.requireContext(), ArtistTagEditorActivity::class.java)
             tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.artist(this))
             fragment.startActivity(tagEditorIntent)
+            true
+        }
+
+        R.id.action_add_to_home -> {
+            showAddShortcutDialog(fragment, ShortcutEntityType.Artist, id.toString(), name)
             true
         }
 
@@ -302,9 +316,21 @@ fun PlaylistWithSongs.onPlaylistMenu(
         }
 
         R.id.action_export_playlist -> {
-            fragment.lifecycleScope.launch {
-                M3UWriter.export(fragment.requireContext(), this@onPlaylistMenu)
+            showExportFormatDialog(fragment) { format ->
+                fragment.lifecycleScope.launch {
+                    M3UWriter.export(fragment.requireContext(), this@onPlaylistMenu, format)
+                }
             }
+            return true
+        }
+
+        R.id.action_add_to_home -> {
+            showAddShortcutDialog(
+                fragment,
+                ShortcutEntityType.Playlist,
+                playlistEntity.playListId.toString(),
+                playlistEntity.playlistName,
+            )
             return true
         }
     }
@@ -324,17 +350,47 @@ fun List<PlaylistWithSongs>.onPlaylistsMenu(
         }
 
         R.id.action_export_playlist -> {
-            if (this.size == 1) {
+            showExportFormatDialog(fragment) { format ->
+                val playlistsToExport = this@onPlaylistsMenu
                 fragment.lifecycleScope.launch {
-                    M3UWriter.export(fragment.requireContext(), first())
-                }
-            } else {
-                fragment.lifecycleScope.launch {
-                    M3UWriter.export(fragment.requireContext(), this@onPlaylistsMenu)
+                    if (playlistsToExport.size == 1) {
+                        M3UWriter.export(fragment.requireContext(), playlistsToExport.first(), format)
+                    } else {
+                        M3UWriter.export(fragment.requireContext(), playlistsToExport, format)
+                    }
                 }
             }
             return true
         }
     }
     return flatMap { it.songs.toSongs() }.onSongsMenu(fragment, menuItem)
+}
+
+private fun showExportFormatDialog(
+    fragment: Fragment,
+    onSelected: (PlaylistExportFormat) -> Unit,
+) {
+    val formats = PlaylistExportFormat.entries
+    MaterialAlertDialogBuilder(fragment.requireContext())
+        .setTitle(R.string.export_format_title)
+        .setItems(formats.map { fragment.getString(it.titleRes) }.toTypedArray()) { _, which ->
+            onSelected(formats[which])
+        }.show()
+}
+
+fun showAddShortcutDialog(
+    fragment: Fragment,
+    type: ShortcutEntityType,
+    id: String,
+    name: String,
+    path: String? = null,
+) {
+    MaterialAlertDialogBuilder(fragment.requireContext())
+        .setTitle(R.string.shortcut_confirm_title)
+        .setMessage(fragment.getString(R.string.shortcut_confirm_message, name))
+        .setPositiveButton(R.string.add_to_home) { _, _ ->
+            val added = ShortcutHelper.add(fragment.requireContext(), type, id, name, path)
+            fragment.showToast(if (added) R.string.shortcut_added else R.string.shortcut_limit_reached)
+        }.setNegativeButton(R.string.action_cancel, null)
+        .show()
 }

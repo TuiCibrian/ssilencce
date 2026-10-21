@@ -23,4 +23,8 @@
                 android:title="@string/playlist_label"/>
         </menu>
     </item>
+    <item
+        android:id="@+id/action_add_to_home"
+        android:title="@string/add_to_home"
+        app:showAsAction="never"/>
 </menu>

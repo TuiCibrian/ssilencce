@@ -45,12 +45,15 @@ import com.ssilencce.data.local.room.PlaylistEntity
 import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.local.room.SongEntity
 import com.ssilencce.data.mapper.toSongEntity
+import com.ssilencce.data.mapper.toSongs
 import com.ssilencce.data.mapper.toSongsEntity
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.Folder
 import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Playlist
 import com.ssilencce.data.model.ReleaseYear
 import com.ssilencce.data.model.Song
@@ -62,12 +65,15 @@ import com.ssilencce.ui.dialogs.playlists.AddToPlaylistUiState
 import com.ssilencce.ui.screen.library.home.SuggestedResult
 import com.ssilencce.util.Preferences
 import com.ssilencce.util.StorageUtil
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.resume
 
@@ -362,6 +368,86 @@ class LibraryViewModel(
         songHistory.value = emptyList()
     }
 
+    fun playCountSongs(period: ListeningPeriod): LiveData<List<Song>> =
+        liveData(IO) {
+            emit(repository.playCountSongs(period))
+        }
+
+    fun artistPlayStats(period: ListeningPeriod): LiveData<List<ArtistPlayStat>> =
+        liveData(IO) {
+            emit(repository.artistPlayStats(period))
+        }
+
+    fun playCountSongsFlow(period: ListeningPeriod): Flow<List<Song>> = repository.playCountSongsFlow(period)
+
+    fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> = repository.artistPlayStatsFlow(period)
+
+    fun deleteSongsFromHistory(songIds: List<Long>) {
+        if (songIds.isEmpty()) return
+        viewModelScope.launch(IO) {
+            repository.deleteSongsInHistory(songIds)
+        }
+    }
+
+    suspend fun shortcutTargetExists(
+        type: String,
+        id: String,
+        path: String?,
+    ): Boolean? =
+        withContext(IO) {
+            runCatching {
+                when (type) {
+                    "Album" -> {
+                        if (!isExternalStorageAvailable()) return@runCatching null
+                        id.toLongOrNull()?.let { repository.albumById(it).songs.isNotEmpty() } ?: false
+                    }
+
+                    "Artist" -> {
+                        if (!isExternalStorageAvailable()) return@runCatching null
+                        id.toLongOrNull()?.let { repository.artistById(it).songs.isNotEmpty() } ?: false
+                    }
+
+                    "Playlist" -> {
+                        id.toLongOrNull()?.let { playlistId ->
+                            repository.playlistsWithSongs().any { it.playlistEntity.playListId == playlistId }
+                        } ?: false
+                    }
+
+                    "Folder" -> {
+                        val folderPath = path ?: return@runCatching false
+                        val folder = File(folderPath)
+                        if (folder.exists()) {
+                            true
+                        } else {
+                            // A missing folder is only definitive while its volume is mounted and
+                            // its parent is still visible.
+                            val state = Environment.getExternalStorageState(folder)
+                            val parentVisible = folder.parentFile?.exists() == true
+                            if ((state == Environment.MEDIA_MOUNTED || state == Environment.MEDIA_MOUNTED_READ_ONLY) &&
+                                parentVisible
+                            ) {
+                                false
+                            } else {
+                                null
+                            }
+                        }
+                    }
+
+                    else -> {
+                        false
+                    }
+                }
+            }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                null
+            }
+        }
+
+    private fun isExternalStorageAvailable(): Boolean {
+        val state = Environment.getExternalStorageState()
+        return state == Environment.MEDIA_MOUNTED || state == Environment.MEDIA_MOUNTED_READ_ONLY
+    }
+
     fun lastAddedSongs(): LiveData<List<Song>> =
         liveData(IO) {
             emit(repository.recentSongs())
@@ -372,6 +458,26 @@ class LibraryViewModel(
     fun playCountSongsFlow() = repository.playCountSongsFlow()
 
     fun historySongsFlow() = repository.historySongsFlow()
+
+    suspend fun shortcutSongs(
+        type: String,
+        id: String,
+        path: String?,
+    ): List<Song> =
+        withContext(IO) {
+            runCatching {
+                when (type) {
+                    "Album" -> id.toLongOrNull()?.let { repository.albumById(it).songs } ?: emptyList()
+                    "Artist" -> id.toLongOrNull()?.let { repository.artistById(it).songs } ?: emptyList()
+                    "Playlist" -> id.toLongOrNull()?.let { repository.playlistSongs(it).toSongs() } ?: emptyList()
+                    "Folder" -> path?.let { repository.songsByFolder(it, includeSubfolders = true) } ?: emptyList()
+                    else -> emptyList()
+                }
+            }.getOrElse { error ->
+                if (error is CancellationException) throw error
+                emptyList()
+            }
+        }
 
     fun notRecentlyPlayedSongs(): LiveData<List<Song>> =
         liveData(IO) {

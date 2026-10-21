@@ -195,14 +195,40 @@
         app:title="@string/audio_focus_header"
         app:layout="@layout/preference_category_title">
 
-        <SwitchPreferenceCompat
+        <ListPreference
             app:icon="@drawable/ic_pause_24dp"
-            app:title="@string/ignore_audio_focus_title"
-            app:summary="@string/ignore_audio_focus_summary"
+            app:title="@string/audio_focus_mode_title"
+            app:summary="@string/audio_focus_mode_summary"
+            app:entries="@array/pref_audio_focus_entries"
+            app:entryValues="@array/pref_audio_focus_values"
+            app:defaultValue="Normal"
+            app:useSimpleSummaryProvider="true"
+            app:negativeButtonText="@null"
+            app:positiveButtonText="@null"
+            app:layout="@layout/list_item_view"
+            app:key="audio_focus_mode"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/playback_resilience_header"
+        app:layout="@layout/preference_category_title">
+
+        <SwitchPreferenceCompat
+            app:title="@string/remember_track_position_title"
+            app:summary="@string/remember_track_position_summary"
             app:defaultValue="false"
             app:layout="@layout/list_item_view"
             app:widgetLayout="@layout/preference_switch"
-            app:key="ignore_audio_focus"/>
+            app:key="remember_track_position"/>
+
+        <SwitchPreferenceCompat
+            app:title="@string/session_recovery_title"
+            app:summary="@string/session_recovery_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="session_recovery"/>
 
     </PreferenceCategory>
 

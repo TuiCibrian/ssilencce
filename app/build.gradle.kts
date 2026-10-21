@@ -153,17 +153,73 @@ android {
 
     val signingProperties = getProperties("keystore.properties")
 
+    // Silent debug-signing of Release artifacts is not allowed: without keystore.properties no
+    // Release artifact can be produced unless the debug-signed fallback is explicitly requested
+    // for local work. Debug builds, lint, IDE sync and configuration stay usable either way.
+    val allowDebugSigning =
+        (project.findProperty("allowDebugSigning") as? String)?.toBoolean() == true ||
+            System.getenv("SSILENCCE_ALLOW_DEBUG_SIGNING") == "true"
+
     val releaseSigning =
-        if (signingProperties != null) {
-            signingConfigs.create("release") {
-                keyAlias = signingProperties.property("keyAlias")
-                keyPassword = signingProperties.property("keyPassword")
-                storePassword = signingProperties.property("storePassword")
-                storeFile = file(signingProperties.property("storeFile"))
+        when {
+            signingProperties != null -> {
+                signingConfigs.create("release") {
+                    val configuredStoreFile = file(signingProperties.property("storeFile"))
+                    if (!configuredStoreFile.exists()) {
+                        throw GradleException(
+                            "keystore.properties 'storeFile' does not exist: ${configuredStoreFile.absolutePath}",
+                        )
+                    }
+                    keyAlias = signingProperties.property("keyAlias")
+                    keyPassword = signingProperties.property("keyPassword")
+                    storePassword = signingProperties.property("storePassword")
+                    storeFile = configuredStoreFile
+                }
             }
-        } else {
-            signingConfigs.getByName("debug")
+
+            allowDebugSigning -> {
+                project.logger.warn(
+                    "keystore.properties not found: building debug-signed Release artifacts because " +
+                        "-PallowDebugSigning=true / SSILENCCE_ALLOW_DEBUG_SIGNING=true was requested. " +
+                        "These artifacts are NON-PRODUCTION (signed with the Android debug certificate) " +
+                        "and must not be distributed.",
+                )
+                signingConfigs.getByName("debug")
+            }
+
+            else -> {
+                project.logger.warn(
+                    "keystore.properties not found. Release artifacts are refused unless " +
+                        "-PallowDebugSigning=true is passed for an explicitly debug-signed local build.",
+                )
+                // Mechanical backstop: every Release packaging path runs validateSigning before
+                // producing an artifact, so this missing-keystore reference fails the build even
+                // when the task-graph guard below cannot run.
+                signingConfigs.create("releaseUnconfigured") {
+                    storeFile = project.rootProject.file("keystore.properties")
+                }
+            }
         }
+
+    val releaseArtifactTaskPrefixes = listOf("assemble", "bundle", "install")
+    gradle.taskGraph.whenReady {
+        // The task graph holds resolved task names, so abbreviated and aggregated invocations
+        // (`assembleRelease`, `bundleRelease`, ...) still match. Direct internal packaging tasks
+        // are caught by the releaseUnconfigured signing backstop instead, and lint helpers
+        // (bundleGithubReleaseClassesToCompileJar etc.) are not artifact tasks.
+        val buildsReleaseArtifact =
+            allTasks.any { task ->
+                task.name.endsWith("Release") &&
+                    releaseArtifactTaskPrefixes.any { task.name.startsWith(it) }
+            }
+        if (signingProperties == null && !allowDebugSigning && buildsReleaseArtifact) {
+            throw GradleException(
+                "Refusing to build a Release artifact without release signing. " +
+                    "Create keystore.properties (keyAlias, keyPassword, storePassword, storeFile) " +
+                    "or pass -PallowDebugSigning=true for an explicitly debug-signed local build.",
+            )
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -348,6 +404,8 @@ dependencies {
 
     implementation(libs.room)
     ksp(libs.room.compiler)
+
+    implementation(libs.work.runtime)
 
     implementation(libs.m3color)
     implementation(libs.coil.transformations)

@@ -20,20 +20,30 @@ package com.ssilencce.data.local.repository
 import android.content.Context
 import android.database.Cursor
 import android.provider.MediaStore.Audio.AudioColumns
+import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.data.local.MediaQueryDispatcher
+import com.ssilencce.data.local.room.ArtistEventPlayCount
+import com.ssilencce.data.local.room.ArtistIdPlayCount
 import com.ssilencce.data.local.room.HistoryDao
 import com.ssilencce.data.local.room.HistoryEntity
 import com.ssilencce.data.local.room.PlayCountDao
 import com.ssilencce.data.local.room.PlayCountEntity
+import com.ssilencce.data.local.room.PlayEventDao
 import com.ssilencce.data.mapper.toHistoryEntity
 import com.ssilencce.data.mapper.toSong
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Song
 import com.ssilencce.util.Preferences
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -59,6 +69,14 @@ interface SmartRepository {
     suspend fun playCountSongs(): List<Song>
 
     fun playCountSongsFlow(): Flow<List<Song>>
+
+    fun playCountSongsFlow(period: ListeningPeriod): Flow<List<Song>>
+
+    suspend fun playCountSongs(period: ListeningPeriod): List<Song>
+
+    suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat>
+
+    fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>>
 
     suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity>
 
@@ -97,6 +115,7 @@ class RealSmartRepository(
     private val artistRepository: RealArtistRepository,
     private val historyDao: HistoryDao,
     private val playCountDao: PlayCountDao,
+    private val playEventDao: PlayEventDao,
 ) : SmartRepository {
     override suspend fun topAlbums(): List<Album> = albumRepository.splitIntoAlbums(playCountSongs(), sorted = false)
 
@@ -144,6 +163,42 @@ class RealSmartRepository(
             playCountEntities.fromPlayCountToSongs()
         }
 
+    override fun playCountSongsFlow(period: ListeningPeriod): Flow<List<Song>> {
+        if (period == ListeningPeriod.AllTime) return playCountSongsFlow()
+        val cutoff = period.cutoffMillis() ?: return playCountSongsFlow(ListeningPeriod.AllTime)
+        return playEventDao
+            .topSongsSinceFlow(cutoff, PLAY_STATS_LIMIT)
+            .map { playCountEntities -> playCountEntities.fromPlayCountToSongs() }
+    }
+
+    override suspend fun playCountSongs(period: ListeningPeriod): List<Song> {
+        if (period == ListeningPeriod.AllTime) return playCountSongs()
+        val cutoff = period.cutoffMillis() ?: return playCountSongs()
+        val topSongs = playEventDao.topSongsSince(cutoff, PLAY_STATS_LIMIT)
+        if (topSongs.isEmpty()) return emptyList()
+        val entities =
+            playCountDao
+                .findSongsExistInPlayCount(topSongs.map { it.songId })
+                .associateBy { it.id }
+        return topSongs
+            .mapNotNull { entities[it.songId] }
+            .fromPlayCountToSongs()
+    }
+
+    override suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat> = artistPlayStatsFlow(period).first()
+
+    override fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> {
+        if (period == ListeningPeriod.AllTime) {
+            return playCountDao.topArtistsByPlayCountFlow(PLAY_STATS_LIMIT).map { counts ->
+                counts.toAggregateArtistPlayStats()
+            }
+        }
+        val cutoff = period.cutoffMillis() ?: return artistPlayStatsFlow(ListeningPeriod.AllTime)
+        return playEventDao.topArtistsSinceFlow(cutoff, PLAY_STATS_LIMIT).map { counts ->
+            counts.toRecordedArtistPlayStats()
+        }
+    }
+
     override suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity> {
         if (songs.isEmpty()) return emptyList()
         return buildList {
@@ -167,7 +222,7 @@ class RealSmartRepository(
     override suspend fun insetOrIncrementPlayCount(
         song: Song,
         timePlayed: Long,
-    ) = playCountDao.insertOrIncrementPlayCount(song, timePlayed)
+    ) = playEventDao.recordPlay(song, timePlayed, playCountDao)
 
     override suspend fun insetOrIncrementSkipCount(song: Song) = playCountDao.insertOrIncrementSkipCount(song)
 
@@ -225,6 +280,76 @@ class RealSmartRepository(
         return songRepository.makeSongCursor(queryDispatcher)
     }
 
+    private suspend fun List<ArtistIdPlayCount>.toAggregateArtistPlayStats(): List<ArtistPlayStat> =
+        withContext(IO) {
+            map { count ->
+                currentCoroutineContext().ensureActive()
+                val artist =
+                    try {
+                        artistRepository.artist(count.artistId).takeIf {
+                            it.songs.isNotEmpty() && it.name == count.artistName
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        null
+                    }
+                ArtistPlayStat(
+                    key = ArtistPlayStat.Key.Aggregate(count.artistId),
+                    artistName = count.artistName,
+                    artist = artist,
+                    playCount = count.playCount,
+                    totalPlayCount = count.totalPlayCount,
+                )
+            }
+        }
+
+    private suspend fun List<ArtistEventPlayCount>.toRecordedArtistPlayStats(): List<ArtistPlayStat> =
+        withContext(IO) {
+            if (isEmpty()) return@withContext emptyList()
+            val artistsByName =
+                try {
+                    val names = map { it.artistName }
+                    val songs =
+                        songRepository.songs(
+                            songRepository.makeSongCursor(
+                                selection = "${AudioColumns.ARTIST} IN (${names.joinToString(",") { "?" }})",
+                                selectionValues = names.toTypedArray(),
+                            ),
+                        )
+                    songs
+                        .groupBy { it.artistName }
+                        .mapNotNull { (name, artistSongs) ->
+                            currentCoroutineContext().ensureActive()
+                            val artistIds = artistSongs.map { it.artistId }.distinct()
+                            if (artistIds.size != 1) {
+                                null
+                            } else {
+                                name to
+                                    Artist(
+                                        id = artistIds.single(),
+                                        albums = albumRepository.splitIntoAlbums(artistSongs, sortMode = AlbumSortMode.ArtistAlbums),
+                                        filterSingles = Preferences.ignoreSingles,
+                                    )
+                            }
+                        }.toMap()
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (_: Exception) {
+                    emptyMap()
+                }
+            // Missing or ambiguous current media must not erase the recorded artist's statistics.
+            map { count ->
+                ArtistPlayStat(
+                    key = ArtistPlayStat.Key.Recorded(count.artistName),
+                    artistName = count.artistName,
+                    artist = artistsByName[count.artistName],
+                    playCount = count.playCount,
+                    totalPlayCount = count.totalPlayCount,
+                )
+            }
+        }
+
     private suspend fun List<PlayCountEntity>.fromPlayCountToSongs(): List<Song> =
         withContext(IO) {
             val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
@@ -254,4 +379,8 @@ class RealSmartRepository(
 
             validTracks.map { it.toSong() }
         }
+
+    companion object {
+        private const val PLAY_STATS_LIMIT = 100
+    }
 }

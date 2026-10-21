@@ -14,6 +14,7 @@ class AdvancedForwardingPlayer(
 ) : ForwardingPlayer(player),
     KoinComponent {
     private val listeners = mutableListOf<Player.Listener>()
+    var onPlaybackIntent: ((Boolean) -> Boolean)? = null
 
     private var sequentialTimelineEnabled = false
 
@@ -45,6 +46,18 @@ class AdvancedForwardingPlayer(
         }
 
     val exoPlayer get() = wrappedPlayer as ExoPlayer
+
+    override fun play() {
+        if (onPlaybackIntent?.invoke(true) != false) super.play()
+    }
+
+    override fun pause() {
+        if (onPlaybackIntent?.invoke(false) != false) super.pause()
+    }
+
+    override fun setPlayWhenReady(playWhenReady: Boolean) {
+        if (onPlaybackIntent?.invoke(playWhenReady) != false) super.setPlayWhenReady(playWhenReady)
+    }
 
     init {
         wrappedPlayer.addListener(internalListener)

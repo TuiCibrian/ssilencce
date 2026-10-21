@@ -29,6 +29,7 @@ import com.ssilencce.data.local.repository.AlbumRepository
 import com.ssilencce.data.local.repository.ArtistRepository
 import com.ssilencce.data.local.repository.GenreRepository
 import com.ssilencce.data.local.repository.LyricsRepository
+import com.ssilencce.data.local.repository.NamedQueueRepository
 import com.ssilencce.data.local.repository.NetworkRepository
 import com.ssilencce.data.local.repository.NetworkRepositoryImpl
 import com.ssilencce.data.local.repository.PlaylistRepository
@@ -159,6 +160,8 @@ private val roomModule =
                     SsilencceDatabase.MIGRATION_3_4,
                     SsilencceDatabase.MIGRATION_4_5,
                     SsilencceDatabase.MIGRATION_5_6,
+                    SsilencceDatabase.MIGRATION_6_7,
+                    SsilencceDatabase.MIGRATION_7_8,
                 ).build()
         }
 
@@ -185,6 +188,18 @@ private val roomModule =
         factory {
             get<SsilencceDatabase>().lyricsDao()
         }
+
+        factory {
+            get<SsilencceDatabase>().playEventDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().trackPositionDao()
+        }
+
+        factory {
+            get<SsilencceDatabase>().namedQueueDao()
+        }
     }
 
 private val dataModule =
@@ -203,6 +218,10 @@ private val dataModule =
                 networkRepository = get(),
             )
         } bind Repository::class
+
+        single {
+            NamedQueueRepository(dao = get())
+        }
 
         single {
             RealSongRepository(context = get(), inclExclDao = get())
@@ -247,6 +266,7 @@ private val dataModule =
                 artistRepository = get(),
                 historyDao = get(),
                 playCountDao = get(),
+                playEventDao = get(),
             )
         } bind SmartRepository::class
 
@@ -282,7 +302,7 @@ private val viewModule =
         }
 
         viewModel {
-            PlayerViewModel(preferences = get(), repository = get())
+            PlayerViewModel(preferences = get(), repository = get(), namedQueueRepository = get())
         }
 
         viewModel {

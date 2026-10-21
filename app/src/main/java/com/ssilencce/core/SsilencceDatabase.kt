@@ -15,8 +15,12 @@ import com.ssilencce.data.local.room.*
         QueueEntity::class,
         InclExclEntity::class,
         LyricsEntity::class,
+        PlayEventEntity::class,
+        TrackPositionEntity::class,
+        NamedQueueEntity::class,
+        NamedQueueItemEntity::class,
     ],
-    version = 6,
+    version = 8,
     exportSchema = false,
 )
 abstract class SsilencceDatabase : RoomDatabase() {
@@ -31,6 +35,12 @@ abstract class SsilencceDatabase : RoomDatabase() {
     abstract fun inclExclDao(): InclExclDao
 
     abstract fun lyricsDao(): LyricsDao
+
+    abstract fun playEventDao(): PlayEventDao
+
+    abstract fun trackPositionDao(): TrackPositionDao
+
+    abstract fun namedQueueDao(): NamedQueueDao
 
     companion object {
         val MIGRATION_1_2 =
@@ -73,6 +83,79 @@ abstract class SsilencceDatabase : RoomDatabase() {
                             lyrics TEXT,
                             provider TEXT,
                             is_instrumental INTEGER NOT NULL DEFAULT 0
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        val MIGRATION_6_7 =
+            object : Migration(6, 7) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Queue identity moves from the media id to the queue position so the same
+                    // song can appear more than once in the saved queue.
+                    db.execSQL(
+                        "CREATE TABLE IF NOT EXISTS `QueueEntity_new` (`id` TEXT NOT NULL, `order` INTEGER NOT NULL, PRIMARY KEY(`order`))",
+                    )
+                    db.execSQL(
+                        "INSERT OR REPLACE INTO `QueueEntity_new` (`id`, `order`) SELECT `id`, `order` FROM `QueueEntity` ORDER BY `order`",
+                    )
+                    db.execSQL("DROP TABLE `QueueEntity`")
+                    db.execSQL("ALTER TABLE `QueueEntity_new` RENAME TO `QueueEntity`")
+                }
+            }
+
+        val MIGRATION_7_8 =
+            object : Migration(7, 8) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Period statistics start recording from this version; existing aggregate
+                    // play counts remain available for all-time queries.
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `PlayEventEntity` (
+                            `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                            `song_id` INTEGER NOT NULL,
+                            `artist_name` TEXT NOT NULL,
+                            `played_at` INTEGER NOT NULL
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_PlayEventEntity_song_id` ON `PlayEventEntity` (`song_id`)")
+                    db.execSQL("CREATE INDEX IF NOT EXISTS `index_PlayEventEntity_played_at` ON `PlayEventEntity` (`played_at`)")
+
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `TrackPositionEntity` (
+                            `media_id` TEXT NOT NULL,
+                            `position_ms` INTEGER NOT NULL,
+                            `updated_at` INTEGER NOT NULL,
+                            PRIMARY KEY(`media_id`)
+                        )
+                        """.trimIndent(),
+                    )
+
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `NamedQueueEntity` (
+                            `id` TEXT NOT NULL,
+                            `name` TEXT NOT NULL,
+                            `created_at` INTEGER NOT NULL,
+                            `updated_at` INTEGER NOT NULL,
+                            `resume_index` INTEGER NOT NULL,
+                            `resume_position_ms` INTEGER NOT NULL,
+                            `repeat_mode` INTEGER NOT NULL,
+                            `shuffle_enabled` INTEGER NOT NULL,
+                            PRIMARY KEY(`id`)
+                        )
+                        """.trimIndent(),
+                    )
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `NamedQueueItemEntity` (
+                            `queue_id` TEXT NOT NULL,
+                            `order` INTEGER NOT NULL,
+                            `media_id` TEXT NOT NULL,
+                            PRIMARY KEY(`queue_id`, `order`)
                         )
                         """.trimIndent(),
                     )

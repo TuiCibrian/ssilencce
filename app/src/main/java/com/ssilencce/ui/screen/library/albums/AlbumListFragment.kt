@@ -37,6 +37,8 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.IAlbumCallback
 import com.ssilencce.ui.adapters.album.AlbumAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onAlbumMenu
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.screen.library.ReloadType
@@ -44,11 +46,15 @@ import com.ssilencce.util.Preferences
 
 class AlbumListFragment :
     AbsRecyclerViewCustomGridSizeFragment<AlbumAdapter, GridLayoutManager>(),
-    IAlbumCallback {
+    IAlbumCallback,
+    QuickSearchable {
     override val titleRes: Int = R.string.albums_label
     override val isShuffleVisible: Boolean = true
     override val emptyMessageRes: Int
         get() = R.string.no_albums_label
+
+    private var allAlbums: List<Album> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,
@@ -56,8 +62,25 @@ class AlbumListFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getAlbums().observe(viewLifecycleOwner) { albums ->
-            adapter?.dataSet = albums
+            allAlbums = albums
+            applyQuickSearch()
         }
+    }
+
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        adapter?.dataSet =
+            if (quickSearchQuery.isBlank()) {
+                allAlbums
+            } else {
+                allAlbums.filter { album ->
+                    listOf(album.name, album.artistName, album.albumArtistName).matchesQuickSearch(quickSearchQuery)
+                }
+            }
     }
 
     override fun onShuffleClicked() {

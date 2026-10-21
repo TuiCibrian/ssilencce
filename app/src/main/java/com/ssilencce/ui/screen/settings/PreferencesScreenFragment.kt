@@ -27,6 +27,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode
+import androidx.core.content.edit
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.os.LocaleListCompat
 import androidx.core.view.updatePadding
@@ -74,7 +75,9 @@ import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import com.ssilencce.ui.theme.styleAuroraHierarchy
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
+import com.ssilencce.util.AUDIO_FOCUS_MODE
 import com.ssilencce.util.AURORA_APPEARANCE
+import com.ssilencce.util.AudioFocusMode
 import com.ssilencce.util.BACKUP_DATA
 import com.ssilencce.util.BLACKLIST_ENABLED
 import com.ssilencce.util.BLACK_THEME
@@ -87,6 +90,7 @@ import com.ssilencce.util.COVER_RIGHT_DOUBLE_TAP_ACTION
 import com.ssilencce.util.COVER_SINGLE_TAP_ACTION
 import com.ssilencce.util.ENABLE_ROTATION_LOCK
 import com.ssilencce.util.GENERAL_THEME
+import com.ssilencce.util.IGNORE_AUDIO_FOCUS
 import com.ssilencce.util.IGNORE_MEDIA_STORE
 import com.ssilencce.util.LANGUAGE_NAME
 import com.ssilencce.util.LASTFM_LOGIN
@@ -258,6 +262,11 @@ open class PreferenceScreenFragment :
         materialSharedAxis(view)
         preparePreferences()
         styleAuroraHierarchy(view)
+        arguments?.getString(ARG_SCROLL_TO_PREFERENCE)?.let { preferenceKey ->
+            listView.post {
+                findPreference<Preference>(preferenceKey)?.let { scrollToPreference(it) }
+            }
+        }
     }
 
     fun preparePreferences() {
@@ -415,6 +424,16 @@ open class PreferenceScreenFragment :
         }
 
         findPreference<Preference>(ENABLE_ROTATION_LOCK)?.isVisible = !resources.isTablet
+
+        findPreference<ListPreference>(AUDIO_FOCUS_MODE)?.apply {
+            if (Preferences.audioFocusMode != AudioFocusMode.fromPreference(value)) {
+                value = Preferences.audioFocusMode.name
+            }
+            setOnPreferenceChangeListener { _, _ ->
+                preferences.edit { putBoolean(IGNORE_AUDIO_FOCUS, false) }
+                true
+            }
+        }
 
         val updateSearchPreference = findPreference<ProgressIndicatorPreference>("search_for_update")
         if (updateSearchPreference != null) {
@@ -620,5 +639,9 @@ open class PreferenceScreenFragment :
     override fun onDestroyView() {
         super.onDestroyView()
         preferences.unregisterOnSharedPreferenceChangeListener(this)
+    }
+
+    companion object {
+        const val ARG_SCROLL_TO_PREFERENCE = "scroll_to_preference"
     }
 }

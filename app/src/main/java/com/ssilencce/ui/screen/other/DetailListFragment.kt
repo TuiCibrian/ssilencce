@@ -28,6 +28,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.ssilencce.R
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
@@ -36,6 +37,7 @@ import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
 import com.ssilencce.data.model.ContentType
+import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Song
 import com.ssilencce.databinding.FragmentDetailListBinding
 import com.ssilencce.extensions.*
@@ -59,6 +61,8 @@ import com.ssilencce.ui.component.menu.onArtistsMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.util.Preferences
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 
 class DetailListFragment :
     AbsMainActivityFragment(R.layout.fragment_detail_list),
@@ -74,12 +78,24 @@ class DetailListFragment :
 
     private var songList: List<Song> = arrayListOf()
 
+    private var selectedPeriod: ListeningPeriod = ListeningPeriod.AllTime
+    private val selectedPeriodFlow = MutableStateFlow(ListeningPeriod.AllTime)
+
+    private val isStatsContent: Boolean
+        get() = contentType == ContentType.TopTracks || contentType == ContentType.TopArtists
+
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
         contentType = args.type
+        selectedPeriod =
+            savedInstanceState
+                ?.getString(STATE_SELECTED_PERIOD)
+                ?.let { name -> ListeningPeriod.entries.firstOrNull { it.name == name } }
+                ?: ListeningPeriod.AllTime
+        selectedPeriodFlow.value = selectedPeriod
         _binding = FragmentDetailListBinding.bind(view)
         materialSharedAxis(view)
         view.applyHorizontalWindowInsets()
@@ -118,6 +134,11 @@ class DetailListFragment :
         emptyMessageRes: Int = 0,
     ) {
         this.songList = songs
+        binding.empty.setText(if (isStatsContent) R.string.no_play_stats_period else R.string.empty_label)
+        binding.description.isVisible = isStatsContent
+        if (isStatsContent) {
+            binding.description.setText(R.string.stats_history_note)
+        }
         binding.subtitle.text =
             when (contentType) {
                 ContentType.RecentSongs -> {
@@ -134,7 +155,13 @@ class DetailListFragment :
                     )
                 }
 
-                ContentType.TopTracks,
+                ContentType.TopTracks -> {
+                    buildInfoString(
+                        getString(selectedPeriod.titleRes()),
+                        songs.playlistInfo(requireContext()),
+                    )
+                }
+
                 ContentType.Favorites,
                 ContentType.NotRecentlyPlayed,
                 -> {
@@ -154,7 +181,7 @@ class DetailListFragment :
 
     private fun loadContent() {
         when (contentType) {
-            ContentType.TopArtists -> loadArtists(ContentType.TopArtists)
+            ContentType.TopArtists -> loadTopArtists()
             ContentType.RecentArtists -> loadArtists(ContentType.RecentArtists)
             ContentType.TopAlbums -> loadAlbums(ContentType.TopAlbums)
             ContentType.RecentAlbums -> loadAlbums(ContentType.RecentAlbums)
@@ -187,9 +214,11 @@ class DetailListFragment :
             createFastScroller(disablePopup = true)
         }
         launchAndRepeatWithViewLifecycle {
-            libraryViewModel.playCountSongsFlow().collect { songs ->
-                songAdapter.dataSet = songs
-                songs(songs, R.string.playlist_empty_text)
+            selectedPeriodFlow.collectLatest { period ->
+                libraryViewModel.playCountSongsFlow(period).collect { songs ->
+                    songAdapter.dataSet = songs
+                    songs(songs, R.string.no_play_stats_period)
+                }
             }
         }
     }
@@ -253,6 +282,32 @@ class DetailListFragment :
         }
     }
 
+    private fun loadTopArtists() {
+        val artistAdapter = artistAdapter()
+        val padding = dip(R.dimen.grid_item_margin)
+        binding.recyclerView.apply {
+            adapter = artistAdapter
+            layoutManager = gridLayoutManager()
+            updatePadding(left = padding, right = padding)
+        }
+        launchAndRepeatWithViewLifecycle {
+            selectedPeriodFlow.collectLatest { period ->
+                libraryViewModel.artistPlayStatsFlow(period).collect { stats ->
+                    val artists = stats.mapNotNull { it.artist }
+                    artistAdapter.submitPlayStats(stats)
+                    songs(artists.flatMap { it.songs }, R.string.no_play_stats_period)
+                    binding.empty.isVisible = stats.isEmpty()
+                    binding.playAction.isEnabled = artists.isNotEmpty()
+                    binding.subtitle.text =
+                        buildInfoString(
+                            getString(selectedPeriod.titleRes()),
+                            plurals(R.plurals.x_artists, stats.size),
+                        )
+                }
+            }
+        }
+    }
+
     private fun loadAlbums(type: ContentType) {
         val albumAdapter = albumAdapter()
         val padding = dip(R.dimen.grid_item_margin)
@@ -269,7 +324,14 @@ class DetailListFragment :
         }
     }
 
-    private fun songAdapter(songs: List<Song> = listOf()): SongAdapter = SongAdapter(requireActivity(), songs, R.layout.item_list, callback = this)
+    private fun songAdapter(songs: List<Song> = listOf()): SongAdapter =
+        SongAdapter(
+            requireActivity(),
+            songs,
+            R.layout.item_list,
+            callback = this,
+            historyMode = contentType.isHistoryContent,
+        )
 
     private fun artistAdapter(artists: List<Artist> = listOf()): ArtistAdapter = ArtistAdapter(requireActivity(), artists, R.layout.item_grid_circle_single_row, callback = this)
 
@@ -281,7 +343,7 @@ class DetailListFragment :
 
     override fun onMediaContentChanged() {
         super.onMediaContentChanged()
-        if (!contentType.isObservableContent) {
+        if (!contentType.isObservableContent && !isStatsContent) {
             loadContent()
         }
     }
@@ -300,6 +362,7 @@ class DetailListFragment :
             menu.removeItem(R.id.action_search)
         }
         menu.findItem(R.id.action_clear_history).isVisible = contentType.isHistoryContent
+        menu.findItem(R.id.action_most_played_period)?.isVisible = isStatsContent
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -326,6 +389,11 @@ class DetailListFragment :
                 true
             }
 
+            R.id.action_most_played_period -> {
+                showPeriodDialog()
+                true
+            }
+
             R.id.action_clear_history -> {
                 libraryViewModel.clearHistory()
                 val translationY = -(libraryViewModel.getMiniPlayerMargin().value?.getWithSpace() ?: 0)
@@ -339,6 +407,33 @@ class DetailListFragment :
             else -> {
                 songList.onSongsMenu(this, menuItem)
             }
+        }
+
+    private fun showPeriodDialog() {
+        val periods = ListeningPeriod.entries
+        val labels = Array<CharSequence>(periods.size) { index -> getString(periods[index].titleRes()) }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.most_played_period)
+            .setSingleChoiceItems(labels, periods.indexOf(selectedPeriod)) { dialog, which ->
+                dialog.dismiss()
+                applyPeriod(periods[which])
+            }.setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun applyPeriod(period: ListeningPeriod) {
+        if (period == selectedPeriod) return
+        selectedPeriod = period
+        selectedPeriodFlow.value = period
+    }
+
+    private fun ListeningPeriod.titleRes(): Int =
+        when (this) {
+            ListeningPeriod.ThisWeek -> R.string.period_this_week
+            ListeningPeriod.ThisMonth -> R.string.period_this_month
+            ListeningPeriod.Last12Months -> R.string.period_last_12_months
+            ListeningPeriod.ThisYear -> R.string.period_this_year
+            ListeningPeriod.AllTime -> R.string.period_all_time
         }
 
     override fun albumClick(
@@ -395,12 +490,60 @@ class DetailListFragment :
         song: Song,
         menuItem: MenuItem,
         sharedElements: Array<Pair<View, String>>?,
-    ): Boolean = song.onSongMenu(this, menuItem)
+    ): Boolean =
+        if (menuItem.itemId == R.id.action_remove_from_history) {
+            if (contentType.isHistoryContent) {
+                removeSongsFromHistory(listOf(song))
+                true
+            } else {
+                false
+            }
+        } else {
+            song.onSongMenu(this, menuItem)
+        }
 
     override fun songsMenuItemClick(
         songs: List<Song>,
         menuItem: MenuItem,
     ) {
+        if (menuItem.itemId == R.id.action_remove_from_history) {
+            if (contentType.isHistoryContent && songs.isNotEmpty()) {
+                if (songs.size == 1) {
+                    removeSongsFromHistory(songs)
+                } else {
+                    confirmRemoveSongsFromHistory(songs)
+                }
+            }
+            return
+        }
         songs.onSongsMenu(this, menuItem)
+    }
+
+    private fun confirmRemoveSongsFromHistory(songs: List<Song>) {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.remove_x_songs_from_history_title)
+            .setMessage(getString(R.string.remove_x_songs_from_history_message, songs.size))
+            .setPositiveButton(android.R.string.ok) { _, _ -> removeSongsFromHistory(songs) }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun removeSongsFromHistory(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        libraryViewModel.deleteSongsFromHistory(songs.map { it.id })
+        val translationY = -(libraryViewModel.getMiniPlayerMargin().value?.getWithSpace() ?: 0)
+        val message = getString(R.string.removed_x_songs_from_history, songs.size)
+        val snackBar = Snackbar.make(binding.root, message, Snackbar.LENGTH_LONG)
+        snackBar.view.translationY = translationY.toFloat()
+        snackBar.show()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_SELECTED_PERIOD, selectedPeriod.name)
+        super.onSaveInstanceState(outState)
+    }
+
+    companion object {
+        private const val STATE_SELECTED_PERIOD = "selected_listening_period"
     }
 }

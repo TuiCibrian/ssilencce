@@ -34,6 +34,8 @@ import com.ssilencce.extensions.navigation.playlistDetailArgs
 import com.ssilencce.ui.IPlaylistCallback
 import com.ssilencce.ui.adapters.PlaylistAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onPlaylistMenu
 import com.ssilencce.ui.component.menu.onPlaylistsMenu
 import com.ssilencce.ui.dialogs.playlists.CreatePlaylistDialog
@@ -45,11 +47,15 @@ import com.ssilencce.ui.screen.library.ReloadType
  */
 class PlaylistListFragment :
     AbsRecyclerViewCustomGridSizeFragment<PlaylistAdapter, GridLayoutManager>(),
-    IPlaylistCallback {
+    IPlaylistCallback,
+    QuickSearchable {
     override val titleRes: Int = R.string.playlists_label
     override val isShuffleVisible: Boolean = false
     override val emptyMessageRes: Int
         get() = R.string.no_device_playlists
+
+    private var allPlaylists: List<PlaylistWithSongs> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override val maxGridSize: Int
         get() =
@@ -73,8 +79,25 @@ class PlaylistListFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getPlaylists().observe(viewLifecycleOwner) { playlists ->
-            adapter?.dataSet = playlists
+            allPlaylists = playlists
+            applyQuickSearch()
         }
+    }
+
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        adapter?.dataSet =
+            if (quickSearchQuery.isBlank()) {
+                allPlaylists
+            } else {
+                allPlaylists.filter { playlist ->
+                    listOf(playlist.playlistEntity.playlistName).matchesQuickSearch(quickSearchQuery)
+                }
+            }
     }
 
     override fun onResume() {

@@ -28,9 +28,12 @@ import com.ssilencce.R
 import com.ssilencce.core.model.GridViewType
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
@@ -40,11 +43,15 @@ import com.ssilencce.ui.screen.library.ReloadType
  */
 class SongListFragment :
     AbsRecyclerViewCustomGridSizeFragment<SongAdapter, GridLayoutManager>(),
-    ISongCallback {
+    ISongCallback,
+    QuickSearchable {
     override val titleRes: Int = R.string.songs_label
     override val isShuffleVisible: Boolean = true
     override val emptyMessageRes: Int
         get() = R.string.no_songs_label
+
+    private var allSongs: List<Song> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override val defaultGridSize: Int
         get() =
@@ -60,8 +67,25 @@ class SongListFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         libraryViewModel.getSongs().observe(viewLifecycleOwner) { songs ->
-            adapter?.dataSet = songs
+            allSongs = songs
+            applyQuickSearch()
         }
+    }
+
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        adapter?.dataSet =
+            if (quickSearchQuery.isBlank()) {
+                allSongs
+            } else {
+                allSongs.filter { song ->
+                    listOf(song.title, song.albumName, song.displayArtistName()).matchesQuickSearch(quickSearchQuery)
+                }
+            }
     }
 
     override fun onShuffleClicked() {

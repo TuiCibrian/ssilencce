@@ -60,6 +60,7 @@ open class SongAdapter(
     @LayoutRes protected val itemLayoutRes: Int = R.layout.item_list,
     protected val sortMode: SongSortMode? = null,
     protected val callback: ISongCallback? = null,
+    protected val historyMode: Boolean = false,
 ) : AbsMultiSelectAdapter<SongAdapter.ViewHolder, Song>(activity, R.menu.menu_media_selection),
     PopupTextProvider {
     open var dataSet: List<Song> = dataSet
@@ -141,6 +142,10 @@ open class SongAdapter(
         callback?.songsMenuItemClick(selection, menuItem)
     }
 
+    override fun onPrepareActionModeMenu(menu: Menu) {
+        menu.findItem(R.id.action_remove_from_history)?.isVisible = historyMode
+    }
+
     override fun getPopupText(
         view: View,
         position: Int,
@@ -177,6 +182,7 @@ open class SongAdapter(
             menu
                 .findItem(R.id.action_play)
                 ?.isVisible = !songClickBehavior.isAbleToPlay || Preferences.playOptionAlwaysVisible
+            menu.findItem(R.id.action_remove_from_history)?.isVisible = historyMode
         }
 
         protected open fun onSongMenuItemClick(item: MenuItem): Boolean {

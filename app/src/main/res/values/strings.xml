@@ -667,6 +667,7 @@
     <string name="headphones_header">Headphones</string>
     <string name="bluetooth_header">Bluetooth</string>
     <string name="audio_focus_header">Audio focus</string>
+    <string name="playback_resilience_header">Playback resilience</string>
     <string name="shuffle_mode_header">Shuffle mode</string>
     <string name="display_header">Display</string>
     <string name="widgets_header">App widgets</string>
@@ -1066,4 +1067,111 @@
     <string name="aurora_empty_queue">Your queue is empty. Play a song from your library to get started.</string>
     <string name="aurora_saved_player_colors">Aurora uses white accents. Your saved player colors return when Aurora is off.</string>
     <string name="aurora_collapse_player">Collapse player</string>
+
+    <!-- Named queues -->
+    <string name="named_queue_saved">Queue saved.</string>
+    <string name="named_queue_loaded">Queue loaded.</string>
+    <string name="named_queue_empty">This queue has no playable songs.</string>
+    <string name="named_queue_unavailable">This queue\'s songs are no longer available.</string>
+    <string name="named_queue_no_playback">Start playback before saving a queue.</string>
+    <string name="named_queue_save_title">Save current queue</string>
+    <string name="named_queue_name_hint">Queue name</string>
+    <string name="named_queue_rename_title">Rename queue</string>
+    <string name="named_queue_delete_title">Delete queue</string>
+    <string name="named_queue_delete_message">Delete the queue %s? Its songs remain in your library.</string>
+    <string name="named_queue_remove_others_title">Remove other queues</string>
+    <string name="named_queue_remove_others_message">Remove %1$d other saved queues? The active queue is kept.</string>
+    <string name="named_queue_active">Active</string>
+    <string name="named_queue_items">%1$d songs</string>
+    <string name="named_queue_none">No saved queues yet.</string>
+    <string name="named_queue_current">Playing queue</string>
+    <string name="named_queue_search_empty">No matching songs.</string>
+    <string name="named_queue_save_current">Save this queue as…</string>
+    <string name="named_queue_rename">Rename</string>
+    <string name="named_queue_remove">Delete</string>
+
+    <!-- Playback resilience -->
+    <string name="remember_track_position_title">Remember position per track</string>
+    <string name="remember_track_position_summary">Resume audiobooks and podcasts where you stopped. Applies to tracks longer than 10 minutes.</string>
+    <string name="audio_focus_mode_title">Audio focus</string>
+    <string name="audio_focus_mode_summary">Choose how playback reacts when another app wants audio focus.</string>
+    <string name="audio_focus_normal">Normal</string>
+    <string name="audio_focus_ignore">Ignore focus</string>
+    <string name="audio_focus_ask">Ask before taking focus</string>
+    <string name="audio_focus_resume_after_call">Resume after call</string>
+    <string name="audio_focus_ask_title">Another app is playing audio</string>
+    <string name="audio_focus_ask_message">Take audio focus and start playback?</string>
+    <string name="audio_focus_ask_positive">Take focus</string>
+    <string name="session_recovery_title">Restore playback after restart</string>
+    <string name="session_recovery_summary">Resume the saved queue when Android recreates the playback service. This cannot survive force-stop.</string>
+    <string name="playback_tile_label">Playback</string>
+    <string name="playback_tile_unavailable">No queue</string>
+    <string name="playback_tile_paused">Paused</string>
+    <string name="playback_tile_playing">Playing</string>
+
+    <!-- Listening statistics -->
+    <string name="most_played_period">Period</string>
+    <string name="period_this_week">This week</string>
+    <string name="period_this_month">This month</string>
+    <string name="period_last_12_months">Last 12 months</string>
+    <string name="period_this_year">This year</string>
+    <string name="period_all_time">All time</string>
+    <string name="artist_play_stats_x">%1$d plays · %2$d%%</string>
+    <string name="stats_history_note">Period statistics start when this version records plays. All time includes earlier play counts.</string>
+    <string name="no_play_stats_period">No plays recorded in this period.</string>
+
+    <!-- Library UX -->
+    <string name="remove_from_history">Remove from history</string>
+    <string name="action_remove_from_history">Remove from history</string>
+    <string name="x_songs_removed_from_history">%1$d songs removed from history</string>
+    <string name="remove_x_songs_from_history_title">Remove from history</string>
+    <string name="remove_x_songs_from_history_message">Remove %1$d songs from playback history? Queues and play counts are unchanged.</string>
+    <string name="removed_x_songs_from_history">Removed %1$d songs from history.</string>
+    <string name="settings_search">Search settings</string>
+    <string name="settings_search_hint">Search settings…</string>
+    <string name="settings_search_empty">No settings match your search.</string>
+    <string name="search_settings">Search settings</string>
+    <string name="search_settings_hint">Search settings…</string>
+    <string name="no_settings_found">No settings match your search.</string>
+    <string name="quick_search_hint">Search this list…</string>
+    <string name="quick_search_empty">No matches in this list.</string>
+    <string name="export_format_title">Export format</string>
+    <string name="export_format_m3u">M3U</string>
+    <string name="export_format_m3u8">M3U8</string>
+    <string name="export_format_pls">PLS</string>
+    <string name="add_to_home">Add to home screen</string>
+    <string name="shortcut_confirm_title">Add launcher shortcut</string>
+    <string name="shortcut_confirm_message">Add a shortcut for %s to your launcher?</string>
+    <string name="shortcut_added">Shortcut added.</string>
+    <string name="shortcut_limit_reached">Your launcher cannot accept another shortcut. Remove one first.</string>
+    <string name="shortcut_unavailable">This shortcut\'s item is no longer available.</string>
+    <string name="shortcut_target_empty">This shortcut\'s item has no playable songs.</string>
+
+    <!-- Scheduled backups -->
+    <string name="scheduled_backup_title">Scheduled backups</string>
+    <string name="scheduled_backup_summary">Automatically write a backup archive to a folder you choose.</string>
+    <string name="scheduled_backup_frequency_title">Backup frequency</string>
+    <string name="scheduled_backup_folder_title">Backup folder</string>
+    <string name="scheduled_backup_folder_none">No folder selected</string>
+    <string name="scheduled_backup_choose_folder">Choose folder</string>
+    <string name="scheduled_backup_charging_title">Only while charging</string>
+    <string name="scheduled_backup_charging_summary">Require the device to be charging before an automatic backup runs.</string>
+    <string name="scheduled_backup_last_run">Last automatic backup: %s</string>
+    <string name="scheduled_backup_never_run">No automatic backup has run yet.</string>
+    <string name="scheduled_backup_success">Automatic backup completed.</string>
+    <string name="scheduled_backup_failure">Automatic backup failed.</string>
+    <string name="scheduled_backup_error_no_folder">No backup folder is configured.</string>
+    <string name="scheduled_backup_error_permission">Backup folder permission is no longer available.</string>
+    <string name="scheduled_backup_error_folder">Backup folder is not writable.</string>
+    <string name="scheduled_backup_error_create_file">Could not create a backup file in the selected folder.</string>
+    <string name="scheduled_backup_error_backup">Backup creation failed.</string>
+    <string name="scheduled_backup_folder_required">Choose a backup folder before enabling scheduled backups.</string>
+    <string name="every_30_days">Every 30 days</string>
+    <string name="daily">Daily</string>
+    <string name="choose_folder">Choose folder</string>
+
+    <!-- Restore verification -->
+    <string name="restore_nothing_selected">No content types were selected. Nothing was restored.</string>
+    <string name="restore_no_recognized_content">This file does not contain recognized backup content. Nothing was restored.</string>
+    <string name="restore_nothing_restored">The archive was readable, but none of the selected content could be restored.</string>
 </resources>

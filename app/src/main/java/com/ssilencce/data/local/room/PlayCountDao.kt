@@ -75,6 +75,32 @@ interface PlayCountDao {
     @Query("SELECT * FROM PlayCountEntity WHERE play_count > 0 ORDER BY play_count DESC LIMIT :limit")
     fun playCountSongsFlow(limit: Int = PLAY_COUNT_LIMIT): Flow<List<PlayCountEntity>>
 
+    @Query(
+        """
+        SELECT artist_id AS artistId, MAX(artist_name) AS artistName, SUM(play_count) AS playCount,
+            (SELECT COALESCE(SUM(play_count), 0) FROM PlayCountEntity WHERE play_count > 0) AS totalPlayCount
+        FROM PlayCountEntity
+        WHERE play_count > 0
+        GROUP BY artist_id
+        ORDER BY playCount DESC, artist_id ASC
+        LIMIT :limit
+        """,
+    )
+    suspend fun topArtistsByPlayCount(limit: Int = PLAY_COUNT_LIMIT): List<ArtistIdPlayCount>
+
+    @Query(
+        """
+        SELECT artist_id AS artistId, MAX(artist_name) AS artistName, SUM(play_count) AS playCount,
+            (SELECT COALESCE(SUM(play_count), 0) FROM PlayCountEntity WHERE play_count > 0) AS totalPlayCount
+        FROM PlayCountEntity
+        WHERE play_count > 0
+        GROUP BY artist_id
+        ORDER BY playCount DESC, artist_id ASC
+        LIMIT :limit
+        """,
+    )
+    fun topArtistsByPlayCountFlow(limit: Int = PLAY_COUNT_LIMIT): Flow<List<ArtistIdPlayCount>>
+
     @Query("DELETE FROM PlayCountEntity")
     suspend fun clearPlayCount()
 }

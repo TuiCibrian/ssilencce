@@ -30,6 +30,8 @@ import com.ssilencce.extensions.extraNotNull
 import com.ssilencce.extensions.toHtml
 import com.ssilencce.extensions.withArgs
 import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.util.ShortcutEntityType
+import com.ssilencce.util.ShortcutHelper
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 class DeletePlaylistDialog : DialogFragment() {
@@ -51,6 +53,13 @@ class DeletePlaylistDialog : DialogFragment() {
             .setTitle(titleRes)
             .setMessage(content)
             .setPositiveButton(R.string.delete_action) { _: DialogInterface, _: Int ->
+                playlists.forEach { playlist ->
+                    ShortcutHelper.remove(
+                        requireContext(),
+                        ShortcutEntityType.Playlist,
+                        playlist.playListId.toString(),
+                    )
+                }
                 libraryViewModel.deletePlaylists(playlists)
             }.setNegativeButton(android.R.string.cancel, null)
             .create()

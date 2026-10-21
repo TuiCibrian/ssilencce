@@ -33,6 +33,10 @@
         android:id="@+id/action_share"
         android:title="@string/action_share"/>
     <item
+        android:id="@+id/action_remove_from_history"
+        android:title="@string/remove_from_history"
+        android:visible="false"/>
+    <item
         android:id="@+id/action_delete_from_device"
         android:title="@string/action_delete_from_device"/>
     <item

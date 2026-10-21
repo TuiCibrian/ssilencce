@@ -87,22 +87,24 @@ object Preferences : KoinComponent {
     fun getDayNightMode(themeName: String = generalTheme) =
         if (isAuroraAppearance) {
             AppCompatDelegate.MODE_NIGHT_YES
-        } else when (themeName) {
-            GeneralTheme.LIGHT -> {
-                AppCompatDelegate.MODE_NIGHT_NO
-            }
+        } else {
+            when (themeName) {
+                GeneralTheme.LIGHT -> {
+                    AppCompatDelegate.MODE_NIGHT_NO
+                }
 
-            GeneralTheme.DARK,
-            GeneralTheme.BLACK,
-            -> {
-                AppCompatDelegate.MODE_NIGHT_YES
-            }
+                GeneralTheme.DARK,
+                GeneralTheme.BLACK,
+                -> {
+                    AppCompatDelegate.MODE_NIGHT_YES
+                }
 
-            else -> {
-                if (hasQ()) {
-                    AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                } else {
-                    AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY
+                else -> {
+                    if (hasQ()) {
+                        AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                    } else {
+                        AppCompatDelegate.MODE_NIGHT_AUTO_BATTERY
+                    }
                 }
             }
         }
@@ -219,6 +221,14 @@ object Preferences : KoinComponent {
         set(value) = preferences.edit { putBoolean(LOCKED_QUEUE, value) }
 
     fun getNowPlayingColorSchemeKey(nps: NowPlayingScreen) = "player_${nps.name.lowercase()}_color_scheme"
+
+    val audioFocusMode: AudioFocusMode
+        get() =
+            if (preferences.getBoolean(IGNORE_AUDIO_FOCUS, false)) {
+                AudioFocusMode.Ignore
+            } else {
+                AudioFocusMode.fromPreference(preferences.nullString(AUDIO_FOCUS_MODE))
+            }
 
     fun getNowPlayingColorSchemeMode(nps: NowPlayingScreen): PlayerColorSchemeMode {
         val defaultScheme = nps.defaultColorScheme
@@ -696,5 +706,9 @@ const val DISPLAY_NEXT_SONG = "display_next_song"
 const val LOCKED_QUEUE = "locked_queue"
 const val LOCKED_PLAYLISTS = "locked_playlists"
 const val QUEUE_HEIGHT = "queue_height"
+const val ACTIVE_NAMED_QUEUE_ID = "active_named_queue_id"
+const val REMEMBER_TRACK_POSITION = "remember_track_position"
+const val AUDIO_FOCUS_MODE = "audio_focus_mode"
+const val SESSION_RECOVERY = "session_recovery"
 const val LASTFM_LOGIN = "lastfm_login"
 const val LISTENBRAINZ_LOGIN = "listenbrainz_login"

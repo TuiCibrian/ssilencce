@@ -29,9 +29,11 @@ import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.local.room.SongEntity
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.Folder
 import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Playlist
 import com.ssilencce.data.model.ReleaseYear
 import com.ssilencce.data.model.Song
@@ -212,6 +214,14 @@ interface Repository {
 
     fun playCountSongsFlow(): Flow<List<Song>>
 
+    fun playCountSongsFlow(period: ListeningPeriod): Flow<List<Song>>
+
+    suspend fun playCountSongs(period: ListeningPeriod): List<Song>
+
+    suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat>
+
+    fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>>
+
     suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity>
 
     suspend fun findSongInPlayCount(songId: Long): PlayCountEntity?
@@ -228,6 +238,8 @@ interface Repository {
     suspend fun upsertSongInHistory(currentSong: Song)
 
     suspend fun deleteSongInHistory(songId: Long)
+
+    suspend fun deleteSongsInHistory(songIds: List<Long>)
 
     suspend fun clearSongHistory()
 
@@ -525,6 +537,14 @@ class RealRepository(
 
     override fun playCountSongsFlow(): Flow<List<Song>> = smartRepository.playCountSongsFlow()
 
+    override fun playCountSongsFlow(period: ListeningPeriod): Flow<List<Song>> = smartRepository.playCountSongsFlow(period)
+
+    override suspend fun playCountSongs(period: ListeningPeriod): List<Song> = smartRepository.playCountSongs(period)
+
+    override suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat> = smartRepository.artistPlayStats(period)
+
+    override fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> = smartRepository.artistPlayStatsFlow(period)
+
     override suspend fun findSongsInPlayCount(songs: List<Song>): List<PlayCountEntity> = smartRepository.findSongsInPlayCount(songs)
 
     override suspend fun findSongInPlayCount(songId: Long): PlayCountEntity? = smartRepository.findSongInPlayCount(songId)
@@ -541,6 +561,8 @@ class RealRepository(
     override suspend fun upsertSongInHistory(currentSong: Song) = smartRepository.upsertSongInHistory(currentSong)
 
     override suspend fun deleteSongInHistory(songId: Long) = smartRepository.deleteSongInHistory(songId)
+
+    override suspend fun deleteSongsInHistory(songIds: List<Long>) = smartRepository.deleteSongsInHistory(songIds)
 
     override suspend fun clearSongHistory() = smartRepository.clearSongHistory()
 

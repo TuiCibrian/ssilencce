@@ -35,12 +35,15 @@ import com.ssilencce.core.sort.FileSortMode
 import com.ssilencce.data.model.Folder
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.files.getCanonicalPathSafe
+import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.navigation.folderDetailArgs
 import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.IBackConsumer
 import com.ssilencce.ui.IFileCallback
 import com.ssilencce.ui.adapters.FileAdapter
 import com.ssilencce.ui.component.base.AbsRecyclerViewCustomGridSizeFragment
+import com.ssilencce.ui.component.base.QuickSearchable
+import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
@@ -50,9 +53,13 @@ import java.io.File
 class FoldersListFragment :
     AbsRecyclerViewCustomGridSizeFragment<FileAdapter, GridLayoutManager>(),
     IFileCallback,
-    IBackConsumer {
+    IBackConsumer,
+    QuickSearchable {
     override val titleRes: Int = R.string.folders_label
     override val isShuffleVisible: Boolean = false
+
+    private var allFiles: List<FileSystemItem> = emptyList()
+    private var quickSearchQuery: String = ""
 
     override val defaultGridSize: Int
         get() =
@@ -310,6 +317,27 @@ class FoldersListFragment :
         libraryViewModel.forceReload(ReloadType.Folders)
     }
 
+    override fun onQuickSearch(query: String) {
+        quickSearchQuery = query
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        val files =
+            if (quickSearchQuery.isBlank()) {
+                allFiles
+            } else {
+                allFiles.filter { file -> file.matchesQuickSearch(quickSearchQuery) }
+            }
+        adapter?.submitList(files, sortMode)
+    }
+
+    private fun FileSystemItem.matchesQuickSearch(query: String): Boolean =
+        when (this) {
+            is Song -> listOf(title, albumName, displayArtistName(), fileName).matchesQuickSearch(query)
+            else -> listOf(fileName).matchesQuickSearch(query)
+        }
+
     private fun showFolders(fileSystem: FileSystemQuery) {
         toolbar.menu.let {
             it.findItem(R.id.action_set_as_start_directory)?.isVisible =
@@ -317,7 +345,8 @@ class FoldersListFragment :
             it.findItem(R.id.action_go_to_start_directory)?.isVisible =
                 !fileSystem.isFlatView
         }
-        adapter?.submitList(fileSystem.getNavigableChildren(sortMode), sortMode)
+        allFiles = fileSystem.getNavigableChildren(sortMode)
+        applyQuickSearch()
     }
 
     override fun getSavedViewType(): GridViewType = GridViewType.Normal

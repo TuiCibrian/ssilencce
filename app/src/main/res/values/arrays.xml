@@ -1,6 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string-array name="pref_audio_focus_entries">
+        <item>@string/audio_focus_normal</item>
+        <item>@string/audio_focus_ignore</item>
+        <item>@string/audio_focus_ask</item>
+        <item>@string/audio_focus_resume_after_call</item>
+    </string-array>
+
+    <string-array name="pref_audio_focus_values">
+        <item>Normal</item>
+        <item>Ignore</item>
+        <item>Ask</item>
+        <item>ResumeAfterCall</item>
+    </string-array>
+
+    <string-array name="pref_backup_frequency_entries">
+        <item>@string/daily</item>
+        <item>@string/weekly</item>
+        <item>@string/monthly</item>
+    </string-array>
+
+    <string-array name="pref_backup_frequency_values">
+        <item>daily</item>
+        <item>weekly</item>
+        <item>monthly</item>
+    </string-array>
+
     <string-array name="pref_appbar_mode_entries">
         <item>@string/compact</item>
         <item>@string/expanded</item>

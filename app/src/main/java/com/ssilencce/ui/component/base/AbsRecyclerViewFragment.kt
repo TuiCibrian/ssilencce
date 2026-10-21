@@ -26,6 +26,10 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
@@ -47,8 +51,10 @@ import com.ssilencce.extensions.setSupportActionBar
 import com.ssilencce.extensions.topLevelTransition
 import com.ssilencce.extensions.whichFragment
 import com.ssilencce.ui.IScrollHelper
+import com.ssilencce.ui.component.compose.QuickSearchBar
 import com.ssilencce.ui.dialogs.playlists.ImportPlaylistDialog
 import com.ssilencce.ui.screen.other.ShuffleModeFragment
+import com.ssilencce.ui.theme.SsilencceTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import me.zhanghai.android.fastscroll.FastScroller
@@ -87,6 +93,7 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         initAdapter()
         checkForMargins()
         setUpRecyclerView()
+        setupQuickSearch()
         setupToolbar()
 
         // Add listeners when shuffle is visible
@@ -109,11 +116,16 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         }
 
         libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.totalMargin)
+            binding.recyclerView.updatePadding(bottom = it.totalMargin + quickSearchBottomPadding)
+            if (this is QuickSearchable) {
+                binding.quickSearchBar.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                    bottomMargin = it.totalMarginWithNavigation
+                }
+            }
         }
         libraryViewModel.getFabMargin().observe(viewLifecycleOwner) {
             binding.shuffleButton.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = it.totalMargin
+                bottomMargin = it.totalMargin + quickSearchBottomPadding
             }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
@@ -172,6 +184,29 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
             createFastScroller(this)
         }
     }
+
+    private fun setupQuickSearch() {
+        val quickSearchable = this as? QuickSearchable ?: return
+        binding.quickSearchBar.isVisible = true
+        binding.quickSearchBar.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            bottomMargin = libraryViewModel.getMiniPlayerMargin().value?.totalMarginWithNavigation ?: 0
+        }
+        binding.quickSearchBar.setContent {
+            SsilencceTheme {
+                var query by rememberSaveable { mutableStateOf("") }
+                QuickSearchBar(
+                    query = query,
+                    onQueryChange = {
+                        query = it
+                        quickSearchable.onQuickSearch(it)
+                    },
+                )
+            }
+        }
+    }
+
+    protected val quickSearchBottomPadding: Int
+        get() = if (this is QuickSearchable) QUICK_SEARCH_EXTRA_PADDING.dp(resources) else 0
 
     protected open fun createFastScroller(recyclerView: RecyclerView): FastScroller = recyclerView.createFastScroller()
 
@@ -264,5 +299,9 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
     override fun onPause() {
         super.onPause()
         (adapter as? AbsMultiSelectAdapter<*, *>)?.actionMode?.finish()
+    }
+
+    companion object {
+        private const val QUICK_SEARCH_EXTRA_PADDING = 72
     }
 }

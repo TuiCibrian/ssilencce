@@ -28,11 +28,14 @@ import com.ssilencce.coil.DEFAULT_ARTIST_IMAGE
 import com.ssilencce.core.sort.ArtistSortMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.extensions.isActivated
 import com.ssilencce.extensions.loadPaletteImage
 import com.ssilencce.extensions.media.artistInfo
 import com.ssilencce.extensions.media.asSectionName
+import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.displayName
+import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.ui.IArtistCallback
 import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
 import com.ssilencce.ui.component.base.MediaEntryViewHolder
@@ -58,6 +61,17 @@ class ArtistAdapter constructor(
         notifyDataSetChanged()
     }
 
+    private var playStats: List<ArtistPlayStat>? = null
+    private val playStatIds = mutableMapOf<ArtistPlayStat.Key, Long>()
+    private var nextPlayStatId = 0L
+
+    fun submitPlayStats(stats: List<ArtistPlayStat>) {
+        // Allocate by the full snapshot key, not a name hash or a possibly missing current artist id.
+        stats.forEach { stat -> playStatIds.getOrPut(stat.key) { nextPlayStatId++ } }
+        playStats = stats
+        notifyDataSetChanged()
+    }
+
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int,
@@ -70,33 +84,49 @@ class ArtistAdapter constructor(
         holder: ViewHolder,
         position: Int,
     ) {
-        val artist: Artist = dataSet[position]
-        val isChecked = isChecked(artist)
+        val artist = getIdentifier(position)
+        val stats = playStats?.get(position)
+        val isChecked = artist?.let { isChecked(it) } ?: false
         holder.isActivated = isChecked
-        holder.menu?.isGone = isChecked
-        holder.title?.text = getArtistTitle(artist)
-        holder.text?.text = getArtistText(holder, artist)
-        val transitionName = if (albumArtistsOnly) artist.name else artist.id.toString()
+        holder.menu?.isGone = isChecked || artist == null
+        holder.itemView.isClickable = artist != null
+        holder.itemView.isLongClickable = artist != null
+        if (stats != null) holder.play?.isGone = artist == null
+        holder.title?.text = stats?.artistName?.displayArtistName() ?: artist?.displayName()
+        holder.text?.text = getArtistText(holder, artist, stats)
+        val transitionName =
+            when {
+                artist == null -> "artist-stat-${getItemId(position)}"
+                stats == null && albumArtistsOnly -> artist.name
+                else -> artist.id.toString()
+            }
         if (holder.imageContainer != null) {
             holder.imageContainer.transitionName = transitionName
         } else {
             holder.image?.transitionName = transitionName
         }
-        holder.loadPaletteImage(artist, DEFAULT_ARTIST_IMAGE)
+        holder.loadPaletteImage(artist ?: Artist.empty, DEFAULT_ARTIST_IMAGE)
     }
-
-    private fun getArtistTitle(artist: Artist): String = artist.displayName()
 
     private fun getArtistText(
         holder: ViewHolder,
-        artist: Artist,
-    ): String = artist.artistInfo(holder.itemView.context)
+        artist: Artist?,
+        stats: ArtistPlayStat?,
+    ): String =
+        if (stats != null) {
+            buildInfoString(
+                artist?.artistInfo(holder.itemView.context),
+                holder.itemView.context.getString(R.string.artist_play_stats_x, stats.playCount, stats.percentage),
+            )
+        } else {
+            artist?.artistInfo(holder.itemView.context).orEmpty()
+        }
 
-    override fun getItemCount(): Int = dataSet.size
+    override fun getItemCount(): Int = playStats?.size ?: dataSet.size
 
-    override fun getItemId(position: Int): Long = dataSet[position].id
+    override fun getItemId(position: Int): Long = playStats?.let { playStatIds.getValue(it[position].key) } ?: dataSet[position].id
 
-    override fun getIdentifier(position: Int): Artist? = dataSet[position]
+    override fun getIdentifier(position: Int): Artist? = if (playStats != null) playStats?.getOrNull(position)?.artist else dataSet.getOrNull(position)
 
     override fun getName(item: Artist): String? = item.displayName()
 
@@ -110,13 +140,15 @@ class ArtistAdapter constructor(
     override fun getPopupText(
         view: View,
         position: Int,
-    ): CharSequence = dataSet.getOrNull(position)?.displayName()?.asSectionName(sortMode) ?: ""
+    ): CharSequence =
+        (playStats?.getOrNull(position)?.artistName?.displayArtistName() ?: dataSet.getOrNull(position)?.displayName())
+            ?.asSectionName(sortMode) ?: ""
 
     open inner class ViewHolder(
         itemView: View,
     ) : MediaEntryViewHolder(itemView) {
-        protected val artist: Artist
-            get() = dataSet[bindingAdapterPosition]
+        protected val artist: Artist?
+            get() = getIdentifier(bindingAdapterPosition)
 
         protected val sharedElements: Array<Pair<View, String>>?
             get() =
@@ -128,9 +160,13 @@ class ArtistAdapter constructor(
                     null
                 }
 
-        protected open fun onArtistMenuItemClick(item: MenuItem): Boolean = callback?.artistMenuItemClick(artist, item, sharedElements) ?: false
+        protected open fun onArtistMenuItemClick(item: MenuItem): Boolean {
+            val artist = artist ?: return false
+            return callback?.artistMenuItemClick(artist, item, sharedElements) ?: false
+        }
 
         override fun onClick(view: View) {
+            val artist = artist ?: return
             if (isInQuickSelectMode) {
                 toggleChecked(bindingAdapterPosition)
             } else {
@@ -138,7 +174,7 @@ class ArtistAdapter constructor(
             }
         }
 
-        override fun onLongClick(view: View): Boolean = toggleChecked(bindingAdapterPosition)
+        override fun onLongClick(view: View): Boolean = artist != null && toggleChecked(bindingAdapterPosition)
 
         init {
             menu?.setOnClickListener(
@@ -150,6 +186,7 @@ class ArtistAdapter constructor(
                 },
             )
             play?.setOnClickListener {
+                val artist = artist ?: return@setOnClickListener
                 val artistSongs =
                     with(SongSortMode.ArtistSongs) {
                         artist.songs.sorted()

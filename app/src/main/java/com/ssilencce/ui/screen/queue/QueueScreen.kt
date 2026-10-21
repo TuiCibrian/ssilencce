@@ -40,6 +40,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
@@ -49,10 +50,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -66,6 +69,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -109,6 +113,7 @@ import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import com.ssilencce.R
 import com.ssilencce.core.model.LibraryMargin
+import com.ssilencce.data.local.room.NamedQueueSummary
 import com.ssilencce.data.model.QueueSong
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.media.asReadableDuration
@@ -130,6 +135,7 @@ import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.player.QUEUE_DEBOUNCE
 import com.ssilencce.ui.theme.AuroraDesign
+import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
 import com.ssilencce.util.LOCKED_QUEUE
 import com.ssilencce.util.Preferences
 import kotlinx.coroutines.delay
@@ -177,6 +183,8 @@ fun QueueScreen(
     val nextSong by playerViewModel.nextSongFlow.collectAsStateWithLifecycle()
     val position by playerViewModel.positionFlow.collectAsStateWithLifecycle()
     val playQueue by playerViewModel.queueFlow.collectAsStateWithLifecycle()
+    val namedQueues by playerViewModel.namedQueuesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val activeNamedQueueId by playerViewModel.activeNamedQueueIdFlow.collectAsStateWithLifecycle()
     val repeatMode by playerViewModel.repeatModeFlow.collectAsStateWithLifecycle()
     val shuffleMode by playerViewModel.shuffleModeFlow.collectAsStateWithLifecycle()
     val queueDuration = remember(playQueue) { playQueue.songsDurationStr().toString() }
@@ -186,6 +194,7 @@ fun QueueScreen(
     var shouldLocateCurrentTrackOnUpdate by remember { mutableStateOf(false) }
     var showLocateCurrentTrack by remember { mutableStateOf(false) }
     var showQueuesManager by remember { mutableStateOf(false) }
+    var queueQuery by remember { mutableStateOf("") }
 
     var reorderInfo by remember { mutableStateOf<Pair<Int, Int>?>(null) }
     var reorderingQueue by remember { mutableStateOf<List<QueueSong>?>(null) }
@@ -195,10 +204,27 @@ fun QueueScreen(
         animationSpec = tween(200),
     )
 
+    val visibleQueue =
+        remember(playQueue, reorderingQueue, queueQuery) {
+            val source = reorderingQueue ?: playQueue
+            val indexed = source.withIndex()
+            if (queueQuery.isBlank()) {
+                indexed.toList()
+            } else {
+                indexed
+                    .filter { (_, song) ->
+                        song.title.contains(queueQuery, ignoreCase = true) ||
+                            song.displayArtistName().contains(queueQuery, ignoreCase = true) ||
+                            song.albumName.contains(queueQuery, ignoreCase = true)
+                    }.toList()
+            }
+        }
+
     val queueContentOffset = if (aurora) 1 else 0
     val listState = rememberLazyListState(if (aurora) 0 else position.current.coerceAtLeast(0))
     val reorderableListState =
         rememberReorderableLazyListState(listState) { from, to ->
+            if (queueQuery.isNotBlank()) return@rememberReorderableLazyListState
             val fromSong = from.index - queueContentOffset
             val toSong = to.index - queueContentOffset
             if (fromSong !in playQueue.indices || toSong !in playQueue.indices) return@rememberReorderableLazyListState
@@ -240,9 +266,9 @@ fun QueueScreen(
         reorderingQueue = null
     }
 
-    LaunchedEffect(position, playQueue) {
+    LaunchedEffect(position, playQueue, queueQuery) {
         delay(QUEUE_DEBOUNCE.milliseconds)
-        if (position.current in playQueue.indices && (
+        if (queueQuery.isBlank() && position.current in playQueue.indices && (
                 shouldLocateCurrentTrackOnUpdate ||
                     (position.previous in playQueue.indices && listState.firstVisibleItemIndex == position.previous + queueContentOffset)
             )
@@ -391,6 +417,11 @@ fun QueueScreen(
                 items =
                     listOf(
                         MenuItem.Button.DropDown(
+                            icon = painterResource(R.drawable.ic_queue_music_24dp),
+                            text = stringResource(R.string.aurora_queues_title),
+                            onClick = { showQueuesManager = true },
+                        ),
+                        MenuItem.Button.DropDown(
                             icon = painterResource(R.drawable.ic_playlist_add_24dp),
                             text = stringResource(R.string.action_add_to_playlist),
                             onClick = { onAddToPlaylistClick(playQueue) },
@@ -442,7 +473,7 @@ fun QueueScreen(
             ) {
                 LazyColumn(
                     state = listState,
-                    contentPadding = PaddingValues(8.dp) + PaddingValues(bottom = listBottomPadding + if (aurora) 54.dp else 0.dp),
+                    contentPadding = PaddingValues(8.dp) + PaddingValues(bottom = listBottomPadding + 52.dp + if (aurora) 54.dp else 0.dp),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (aurora) {
@@ -483,9 +514,11 @@ fun QueueScreen(
                         }
                     }
                     itemsIndexed(
-                        items = reorderingQueue ?: playQueue,
-                        key = { _, item -> item.key },
-                    ) { index, song ->
+                        items = visibleQueue,
+                        key = { _, item -> item.value.key },
+                    ) { _, item ->
+                        val song = item.value
+                        val index = item.index
                         ReorderableItem(reorderableListState, key = song.key) {
                             val isCurrentSong = index == position.current
 
@@ -590,7 +623,7 @@ fun QueueScreen(
                                         ) {
                                             Box(
                                                 modifier =
-                                                    if (queueLocked) {
+                                                    if (queueLocked || queueQuery.isNotBlank()) {
                                                         Modifier.size(48.dp).semantics { disabled() }
                                                     } else {
                                                         dragHandleModifier
@@ -758,7 +791,7 @@ fun QueueScreen(
 
                                             Spacer(Modifier.width(8.dp))
 
-                                            if (!queueLocked) {
+                                            if (!queueLocked && queueQuery.isBlank()) {
                                                 Icon(
                                                     painter = painterResource(R.drawable.ic_drag_handle_24dp),
                                                     contentDescription = stringResource(R.string.reorder_action),
@@ -802,15 +835,28 @@ fun QueueScreen(
                             }
                         }
                     }
+                    if (visibleQueue.isEmpty() && playQueue.isNotEmpty()) {
+                        item(key = "queue_search_empty") {
+                            Text(
+                                text = stringResource(R.string.named_queue_search_empty),
+                                modifier = Modifier.fillMaxWidth().padding(24.dp),
+                                color = themeColors.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
 
-            if (aurora) {
-                AuroraQueueSearchBar(Modifier.align(Alignment.BottomCenter))
+            if (playQueue.isNotEmpty()) {
+                QueueSearchBar(
+                    query = queueQuery,
+                    onQueryChange = { queueQuery = it },
+                    modifier = Modifier.align(Alignment.BottomCenter),
+                )
             }
 
             androidx.compose.animation.AnimatedVisibility(
-                visible = showLocateCurrentTrack && position.current in playQueue.indices,
+                visible = showLocateCurrentTrack && queueQuery.isBlank() && position.current in playQueue.indices,
                 enter = slideInVertically { it },
                 exit = slideOutVertically { it },
                 modifier =
@@ -837,8 +883,21 @@ fun QueueScreen(
         }
     }
 
-    if (aurora && showQueuesManager) {
-        AuroraQueuesManagerDialog(onDismiss = { showQueuesManager = false })
+    if (showQueuesManager) {
+        AuroraQueuesManagerDialog(
+            queues = namedQueues,
+            activeQueueId = activeNamedQueueId,
+            onDismiss = { showQueuesManager = false },
+            onSwitch = playerViewModel::switchToNamedQueue,
+            onSaveCurrent = playerViewModel::saveCurrentQueueAs,
+            onRename = playerViewModel::renameNamedQueue,
+            onDelete = playerViewModel::deleteNamedQueue,
+            onRemoveOthers = playerViewModel::deleteOtherNamedQueues,
+        )
+    }
+
+    ObserveAsEvent(playerViewModel.namedQueueMessage) { messageRes ->
+        context.showToast(context.getString(messageRes))
     }
 }
 
@@ -996,8 +1055,7 @@ private fun AuroraQueueHeader(
                 }
             }
 
-            // Saving the queue as a new playlist has no engine support yet.
-            IconButton(onClick = {}, enabled = false) {
+            IconButton(onClick = onOpenQueuesManager, enabled = queueSize > 0) {
                 Icon(
                     painter = painterResource(R.drawable.ic_save_24dp),
                     contentDescription = stringResource(R.string.aurora_queue_save),
@@ -1046,45 +1104,73 @@ private fun AuroraQueueHeader(
     }
 }
 
-// Reference .q-search pinned at the bottom. Queue search has no engine support
-// (ADR-036), so this bar stays explicitly disabled and never filters.
+// Pinned queue search. Filters the visible queue by title, artist and album while leaving the
+// playback queue and its original item indices untouched.
 @Composable
-private fun AuroraQueueSearchBar(modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .fillMaxWidth()
-            .background(AuroraDesign.background)
-            .semantics { disabled() },
+private fun QueueSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val aurora = Preferences.isAuroraAppearance
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = if (aurora) AuroraDesign.background else MaterialTheme.colorScheme.surface,
     ) {
-        HorizontalDivider(color = AuroraDesign.border)
-        Row(
-            modifier = Modifier.fillMaxWidth().height(45.dp).padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_search_24dp),
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = AuroraDesign.muted,
+        Column {
+            HorizontalDivider(
+                color = if (aurora) AuroraDesign.border else MaterialTheme.colorScheme.outlineVariant,
+                thickness = if (aurora) 2.dp else 1.dp,
             )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = stringResource(R.string.aurora_queue_search) + " \u00b7 " + stringResource(R.string.aurora_future_title),
-                fontSize = 13.5.sp,
-                color = AuroraDesign.muted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+            OutlinedTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+                placeholder = { Text(stringResource(R.string.aurora_queue_search)) },
+                leadingIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_search_24dp),
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                },
+                trailingIcon = {
+                    if (query.isNotEmpty()) {
+                        IconButton(onClick = { onQueryChange("") }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_close_24dp),
+                                contentDescription = stringResource(R.string.action_cancel),
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                },
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium,
+                shape = RoundedCornerShape(12.dp),
             )
         }
-        HorizontalDivider(color = Color.White.copy(alpha = .3f), thickness = 2.dp)
     }
 }
 
-// Reference queues manager with the single real playback queue. Named queues,
-// renaming and removing other queues are reference-only (ADR-036), so those
-// controls are disabled instead of simulating success.
+// Real queues manager: saved queues are loaded from Room, the active one is marked, and
+// save/rename/delete/switch are all backed by the named-queue repository.
 @Composable
-private fun AuroraQueuesManagerDialog(onDismiss: () -> Unit) {
+private fun AuroraQueuesManagerDialog(
+    queues: List<NamedQueueSummary>,
+    activeQueueId: String?,
+    onDismiss: () -> Unit,
+    onSwitch: (String) -> Unit,
+    onSaveCurrent: (String) -> Unit,
+    onRename: (String, String) -> Unit,
+    onDelete: (String) -> Unit,
+    onRemoveOthers: () -> Unit,
+) {
+    var showSaveDialog by remember { mutableStateOf(false) }
+    var renameTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
+    var deleteTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
+    var showRemoveOthers by remember { mutableStateOf(false) }
+
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Box(
             modifier =
@@ -1101,7 +1187,7 @@ private fun AuroraQueuesManagerDialog(onDismiss: () -> Unit) {
                 modifier =
                     Modifier
                         .fillMaxWidth(.92f)
-                        .widthIn(max = 352.dp)
+                        .widthIn(max = 380.dp)
                         .padding(top = 64.dp)
                         .clickable(
                             interactionSource = remember { MutableInteractionSource() },
@@ -1131,84 +1217,234 @@ private fun AuroraQueuesManagerDialog(onDismiss: () -> Unit) {
                         )
                     }
 
-                    Row(
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
-                                .semantics { selected = true },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_drag_handle_24dp),
-                            contentDescription = null,
-                            modifier = Modifier.size(17.dp),
-                            tint = AuroraDesign.muted,
-                        )
-                        Spacer(Modifier.width(12.dp))
-                        Box(
-                            modifier = Modifier.size(22.dp).clip(CircleShape).border(2.dp, Color.White, CircleShape),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Text(text = (1).toString(), fontSize = 13.5.sp, color = AuroraDesign.muted)
-                        Spacer(Modifier.width(8.dp))
-                        Icon(
-                            painter = painterResource(R.drawable.ic_play_24dp),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = Color.White,
-                        )
-                        Spacer(Modifier.width(8.dp))
+                    if (queues.isEmpty()) {
                         Text(
-                            text = stringResource(R.string.playing_queue_label),
-                            modifier = Modifier.weight(1f),
-                            fontSize = 15.5.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            text = stringResource(R.string.named_queue_none),
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+                            fontSize = 13.5.sp,
+                            color = AuroraDesign.muted,
                         )
-                        IconButton(onClick = {}, enabled = false) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_edit_24dp),
-                                contentDescription = stringResource(R.string.aurora_queue_rename),
-                                modifier = Modifier.size(19.dp),
-                            )
-                        }
-                        IconButton(onClick = {}, enabled = false) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_close_24dp),
-                                contentDescription = stringResource(R.string.aurora_queue_remove),
-                                modifier = Modifier.size(19.dp),
-                            )
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxWidth().heightIn(max = 340.dp)) {
+                            items(queues, key = { it.id }) { queue ->
+                                NamedQueueRow(
+                                    queue = queue,
+                                    active = queue.id == activeQueueId,
+                                    onSwitch = { onSwitch(queue.id) },
+                                    onRename = { renameTarget = queue },
+                                    onDelete = { deleteTarget = queue },
+                                )
+                            }
                         }
                     }
 
-                    Text(
-                        text = stringResource(R.string.aurora_multiple_queues) + " \u00b7 " + stringResource(R.string.aurora_future_title),
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 4.dp),
-                        fontSize = 12.sp,
-                        color = AuroraDesign.muted,
-                    )
+                    HorizontalDivider(color = AuroraDesign.border)
 
                     TextButton(
-                        onClick = {},
-                        enabled = false,
-                        colors = ButtonDefaults.textButtonColors(disabledContentColor = AuroraDesign.muted),
-                        modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 6.dp),
+                        onClick = { showSaveDialog = true },
+                        modifier = Modifier.padding(start = 10.dp, end = 10.dp, top = 4.dp),
                     ) {
-                        Text(
-                            text = stringResource(R.string.aurora_queue_remove_others),
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = .04.em,
+                        Icon(
+                            painter = painterResource(R.drawable.ic_save_24dp),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
                         )
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.named_queue_save_current), fontWeight = FontWeight.SemiBold)
+                    }
+
+                    if (queues.size > 1) {
+                        TextButton(
+                            onClick = { showRemoveOthers = true },
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                            modifier = Modifier.padding(start = 10.dp, end = 10.dp, bottom = 6.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.named_queue_remove_others_title),
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = .04.em,
+                            )
+                        }
                     }
                 }
             }
         }
     }
+
+    if (showSaveDialog) {
+        QueueNameDialog(
+            title = stringResource(R.string.named_queue_save_title),
+            initialName = "",
+            onConfirm = {
+                onSaveCurrent(it)
+                showSaveDialog = false
+            },
+            onDismiss = { showSaveDialog = false },
+        )
+    }
+
+    renameTarget?.let { queue ->
+        QueueNameDialog(
+            title = stringResource(R.string.named_queue_rename_title),
+            initialName = queue.name,
+            onConfirm = { name ->
+                onRename(queue.id, name)
+                renameTarget = null
+            },
+            onDismiss = { renameTarget = null },
+        )
+    }
+
+    deleteTarget?.let { queue ->
+        AlertDialog(
+            onDismissRequest = { deleteTarget = null },
+            title = { Text(stringResource(R.string.named_queue_delete_title)) },
+            text = { Text(stringResource(R.string.named_queue_delete_message, queue.name)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onDelete(queue.id)
+                        deleteTarget = null
+                    },
+                ) {
+                    Text(stringResource(R.string.delete_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteTarget = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+
+    if (showRemoveOthers) {
+        AlertDialog(
+            onDismissRequest = { showRemoveOthers = false },
+            title = { Text(stringResource(R.string.named_queue_remove_others_title)) },
+            text = { Text(stringResource(R.string.named_queue_remove_others_message, (queues.size - 1).coerceAtLeast(0))) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onRemoveOthers()
+                        showRemoveOthers = false
+                    },
+                ) {
+                    Text(stringResource(R.string.remove_action))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showRemoveOthers = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            },
+        )
+    }
+}
+
+@Composable
+private fun NamedQueueRow(
+    queue: NamedQueueSummary,
+    active: Boolean,
+    onSwitch: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clickable(role = Role.Button, onClick = onSwitch)
+                .padding(start = 18.dp, end = 6.dp, top = 8.dp, bottom = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(22.dp)
+                    .clip(CircleShape)
+                    .border(2.dp, if (active) Color.White else AuroraDesign.muted, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (active) {
+                Box(Modifier.size(10.dp).clip(CircleShape).background(Color.White))
+            }
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = queue.name,
+                fontSize = 15.5.sp,
+                fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text =
+                    buildString {
+                        append(stringResource(R.string.named_queue_items, queue.itemCount))
+                        if (active) {
+                            append(" · ")
+                            append(stringResource(R.string.named_queue_active))
+                        }
+                    },
+                fontSize = 12.sp,
+                color = AuroraDesign.muted,
+            )
+        }
+        IconButton(onClick = onRename) {
+            Icon(
+                painter = painterResource(R.drawable.ic_edit_24dp),
+                contentDescription = stringResource(R.string.named_queue_rename),
+                modifier = Modifier.size(19.dp),
+                tint = AuroraDesign.muted,
+            )
+        }
+        IconButton(onClick = onDelete) {
+            Icon(
+                painter = painterResource(R.drawable.ic_close_24dp),
+                contentDescription = stringResource(R.string.named_queue_remove),
+                modifier = Modifier.size(19.dp),
+                tint = AuroraDesign.muted,
+            )
+        }
+    }
+}
+
+@Composable
+private fun QueueNameDialog(
+    title: String,
+    initialName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by remember(initialName) { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = value,
+                onValueChange = { value = it },
+                singleLine = true,
+                label = { Text(stringResource(R.string.named_queue_name_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = { onConfirm(value.trim()) },
+                enabled = value.isNotBlank(),
+            ) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        },
+    )
 }
 
 // Compact reference overflow trigger (30 dp visual inside a 48 dp target); the

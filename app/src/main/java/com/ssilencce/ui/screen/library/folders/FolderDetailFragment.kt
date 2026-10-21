@@ -45,6 +45,8 @@ import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.component.menu.showAddShortcutDialog
+import com.ssilencce.util.ShortcutEntityType
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
@@ -157,6 +159,21 @@ class FolderDetailFragment :
                     searchArgs(folder.searchFilter(requireContext())),
                 )
                 true
+            }
+
+            item.itemId == R.id.action_add_to_home -> {
+                if (folder == Folder.empty) {
+                    false
+                } else {
+                    showAddShortcutDialog(
+                        fragment = this,
+                        type = ShortcutEntityType.Folder,
+                        id = folder.filePath.hashCode().toString(),
+                        name = folder.fileName,
+                        path = folder.filePath,
+                    )
+                    true
+                }
             }
 
             item.itemId == android.R.id.home -> {

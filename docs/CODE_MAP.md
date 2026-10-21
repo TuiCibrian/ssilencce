@@ -30,13 +30,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `app/build.gradle.kts` — Module build: 3 flavors (github/fdroid/playstore), semantic version classes (Alpha/Beta/RC/Stable), signing, ABI splits, Last.fm key injection, CI APK naming with git hash.
   - **Purpose:** Android application module configuration for `com.ssilencce`.
-  - **Responsibilities:** Flavors, sealed `Version` classes, signing config, ABI splits, BuildConfig/ResValue injection, lint, dependencies.
+  - **Responsibilities:** Flavors, sealed `Version` classes, release-signing guard (no silent debug fallback, ADR-039), ABI splits, BuildConfig/ResValue injection, lint, dependencies.
   - **Inputs:** `keystore.properties`, `local.properties`, `public.properties`, `RELEASE_TYPE` env, git hash, flavor names.
   - **Outputs:** `ssilencce-<version>-<flavor>-<abi>.apk`; BuildConfig `IS_CI_BUILD`, `LASTFM_API_KEY`, `LASTFM_SECRET`, flavor props.
   - **Dependencies:** AGP 9.3.1, KSP, Kotlin 2.3.21, `jvmToolchain(21)`, version catalog bundles.
   - **Consumed by:** Gradle wrapper, `.github/workflows/android.yml` and `release.yml`.
   - **Related files:** `gradle/libs.versions.toml`, `public.properties`, `AndroidManifest.xml`.
-  - **Notes:** `check(versionCode == currentVersionCode)`; current `Version.Beta(1,4,0,3)` maps to 1400103; `github`/`fdroid` add `src/shared/java`.
+  - **Notes:** `check(versionCode == currentVersionCode)`; current `Version.Beta(1,4,0,3)` maps to 1400103; release packaging tasks are refused without `keystore.properties` unless `-PallowDebugSigning=true`/`SSILENCCE_ALLOW_DEBUG_SIGNING=true` is passed, and a configured `storeFile` must exist; `github`/`fdroid` add `src/shared/java`.
 
 
 - `gradle/libs.versions.toml` — Version catalog for all dependencies (Media3, Compose, Koin, Ktor, Coil, Room, TagLib, etc.).
@@ -69,7 +69,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** `app/build.gradle.kts` property loading.
   - **Consumed by:** Built-in updater, lyrics provider, about/donation screens.
   - **Related files:** `app/build.gradle.kts`.
-  - **Notes:** Fork still points `GITHUB_API_URL` at upstream `mardous/BoomingMusic`.
+  - **Notes:** Fork `DOWNLOAD_URL` and the updater defaults target the fork (`TuiCibrian/ssilencce`).
 
 
 - `app/src/main/AndroidManifest.xml` — Permissions, activities, PlaybackService (MediaLibraryService), widget receivers, FileProvider, CoverProvider, Android Auto, searchable config.
@@ -129,15 +129,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### core/
 
-- `core/SsilencceDatabase.kt` — Room database (v6) with all entities and migrations.
-  - **Purpose:** Room database v6 for persistent app data.
-  - **Responsibilities:** Declares 7 entities, 6 DAOs, 5 migrations (1_2 to 5_6).
+- `core/SsilencceDatabase.kt` - Room database (v8) with all entities and migrations.
+  - **Purpose:** Room database v8 for persistent app data.
+  - **Responsibilities:** Declares 11 entities (plus the PlaylistWithSongs relation), 9 DAOs and 7 migrations (1_2 through 7_8).
   - **Inputs:** Entity class declarations, migration SQL statements.
   - **Outputs:** DAO instances, migrated SQLite schema.
   - **Dependencies:** androidx.room (Database, RoomDatabase, Migration), data/local/room package.
   - **Consumed by:** MainModule.kt (Room.databaseBuilder, DAO singletons), repository implementations.
-  - **Related files:** PlaylistEntity, SongEntity, HistoryEntity, PlayCountEntity, QueueEntity, InclExclEntity, LyricsEntity.
-  - **Notes:** exportSchema=false; 3_4 creates CanvasEntity, dropped again in 4_5; 5_6 recreates LyricsEntity.
+  - **Related files:** PlaylistEntity, SongEntity, HistoryEntity, PlayCountEntity, QueueEntity, InclExclEntity, LyricsEntity, PlayEventEntity, TrackPositionEntity, NamedQueueEntity, NamedQueueItemEntity.
+  - **Notes:** exportSchema=false; 3_4 creates CanvasEntity, dropped again in 4_5; 5_6 recreates LyricsEntity; 6_7 recreates QueueEntity with `order` as primary key (ADR-038); 7_8 adds PlayEventEntity, TrackPositionEntity and the two named-queue tables additively (ADR-040, ADR-041, ADR-042).
 
 
 - `core/appwidgets/SsilencceGlanceWidget.kt` — Responsive Glance widget with 5 layouts showing cover, title, artist and controls.
@@ -962,7 +962,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** Song.
   - **Consumed by:** PlayerViewModel (_queueFlow), QueueScreen, PersistentStorage, QueueEntity.
   - **Related files:** Song.kt, QueueEntity.kt, QueueDao.kt.
-  - **Notes:** Key matches QueueEntity (id + order) composite.
+  - **Notes:** Key mirrors the (mediaId, order) pair written into a QueueEntity row.
 
 
 - `data/model/ReleaseYear.kt` — Release year with its songs (SongProvider), parcelable.
@@ -1186,13 +1186,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 - `data/local/MediaStoreWriter.kt` — Writes files (images/playlists) to MediaStore on Android 10+ with Request/Result.
   - **Purpose:** Write images and playlists into scoped MediaStore storage.
-  - **Responsibilities:** Insert ContentValues; stream output; notifyChange; plain-file fallback; Request/Result helpers.
+  - **Responsibilities:** UUID pending-row staging; complete/close/publish output; checked name/path/volume lookup; backup/final renames with pre-commit restoration; post-commit old-URI cleanup; Request/Result and plain-file helpers.
   - **Inputs:** contentUri, Request (name/path/mime), streamConsumer, optional File.
   - **Outputs:** Result code (SUCCESS/NO_SCOPED_STORAGE/ERROR) with destination Uri.
   - **Dependencies:** ContentResolver, MediaStore, FileUtil.PLAYLISTS_DIRECTORY_NAME.
   - **Consumed by:** M3UWriter, EqualizerViewModel; registered in MainModule.
   - **Related files:** M3UWriter.kt, EqualizerViewModel.kt, MainModule.kt.
-  - **Notes:** Requires API 29+ (hasQ); deletes inserted rows on failure.
+  - **Notes:** API 29+; same-instance exports are serialized. Q+ playlist callers pass `MediaStore.Files` with the format's concrete MIME, avoiding legacy `Audio.Playlists` publication name rewriting; this writer itself remains collection-agnostic. Old bytes are never opened for output or pre-deleted. Pre-commit errors remove only the new URI and attempt name restoration; provider refusal can retain old bytes under a backup name. After verified commit, cleanup failure leaves the new exact-name output successful and may leave a backup. No public-API atomic swap, cross-process locking or power-loss guarantee (ADR-044).
 
 
 - `data/local/MetadataReader.kt` — Reads audio metadata with TagLib (properties, tags, images, bitrate, sample rate, channel mode).
@@ -1327,26 +1327,26 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** song_key is auto-generated primary key.
 
 
-- `data/local/room/QueueEntity.kt` — Room entity for a saved queue item (id + order).
+- `data/local/room/QueueEntity.kt` — Room entity for a saved queue item keyed by queue position.
   - **Purpose:** Room entity for a persisted queue item.
-  - **Responsibilities:** Store media id and its order position.
-  - **Inputs:** id (mediaId), order.
+  - **Responsibilities:** Store media id and its order position; allow the same media id on several rows (duplicates).
+  - **Inputs:** id (mediaId), order (primary key).
   - **Outputs:** QueueEntity row.
   - **Dependencies:** Room.
   - **Consumed by:** QueueDao, PersistentStorage.
   - **Related files:** QueueDao.kt, PersistentStorage.kt.
-  - **Notes:** Simple key-value pair, no relations.
+  - **Notes:** Primary key is `order`, not the media id, so repeated songs survive persistence (ADR-038).
 
 
-- `data/local/room/QueueDao.kt` — Queue DAO: save, list ordered, prune missing and transactional replace.
+- `data/local/room/QueueDao.kt` — Queue DAO: save, list ordered and transactional replace-all.
   - **Purpose:** Persist and restore the playback queue.
-  - **Responsibilities:** Replace queue transactionally; save; list ordered; prune absent ids.
+  - **Responsibilities:** Replace the queue transactionally (clear + save); save; list ordered.
   - **Inputs:** List<QueueEntity>.
   - **Outputs:** Ordered QueueEntity list.
   - **Dependencies:** Room (@Dao, @Transaction).
   - **Consumed by:** PersistentStorage.
   - **Related files:** QueueEntity.kt, PersistentStorage.kt.
-  - **Notes:** removeNotIn keeps stored rows in sync.
+  - **Notes:** `replaceQueue` clears and re-inserts inside one transaction; the old `removeNotIn` prune was removed (full rewrite keeps rows in sync).
 
 
 - `data/local/room/PlaylistWithSongs.kt` — Room @Embedded+@Relation between playlist and its songs.
@@ -1393,26 +1393,26 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** id is the MediaStore song id.
 
 
-- `data/local/room/PlayCountDao.kt` — Play-count DAO: upsert, transactional play/skip increments, top 100 in Flow.
-  - **Purpose:** Room DAO for play/skip counting.
-  - **Responsibilities:** Upsert; transactional increments; top-100 queries (list/Flow); delete/clear.
+- `data/local/room/PlayCountDao.kt` - Play-count DAO: upsert, transactional play/skip increments, top 100 in Flow, stable-id artist aggregates.
+  - **Purpose:** Room DAO for play/skip counting and all-time artist aggregates.
+  - **Responsibilities:** Upsert; transactional increments; top-100 list/Flow queries; all-time artist-ID counts with unbounded positive-play total in the same query snapshot; delete/clear.
   - **Inputs:** Song, timePlayed, song ids.
-  - **Outputs:** PlayCountEntity lists and Flows.
-  - **Dependencies:** Room (@Dao, @Upsert, @Transaction), SongMapper.toPlayCount.
-  - **Consumed by:** RealSmartRepository.
-  - **Related files:** PlayCountEntity.kt, SmartRepository.kt.
-  - **Notes:** PLAY_COUNT_LIMIT constant is 100.
+  - **Outputs:** PlayCountEntity lists and Flows; ArtistIdPlayCount lists/Flows.
+  - **Dependencies:** Room (@Dao, @Upsert, @Transaction, Flow), SongMapper.toPlayCount.
+  - **Consumed by:** RealSmartRepository; LibraryViewModel stats flows.
+  - **Related files:** PlayCountEntity.kt, PlayEventDao.kt, SmartRepository.kt, data/model/ArtistPlayStat.kt.
+  - **Notes:** Only the outer artist list is limited to 100; its denominator includes all positive aggregate plays. Same-display-name artists retain separate aggregate IDs. All-time preserves pre-event counts (ADR-040).
 
 
-- `data/local/room/LyricsEntity.kt` — Room cached-lyrics entity (song id, lyrics, provider, isInstrumental).
-  - **Purpose:** Room entity caching lyrics per song.
-  - **Responsibilities:** Store lyrics text, provider, instrumental flag.
+- `data/local/room/LyricsEntity.kt` — Room cached-lyrics entity (song id, lyrics, provider, isInstrumental), serializable for backups.
+  - **Purpose:** Room entity caching lyrics per song and carrying it through backup/restore.
+  - **Responsibilities:** Store lyrics text, provider, instrumental flag; expose a kotlinx serializer.
   - **Inputs:** id, lyrics, provider, instrumental.
-  - **Outputs:** LyricsEntity row.
-  - **Dependencies:** Room.
+  - **Outputs:** LyricsEntity row; `LyricsEntity$$serializer` for the backup JSON round-trip.
+  - **Dependencies:** Room, kotlinx.serialization (@Serializable).
   - **Consumed by:** LyricsDao, RealLyricsRepository, BackupHelper.
   - **Related files:** LyricsDao.kt, LyricsRepository.kt.
-  - **Notes:** Instrumental songs stored without lyrics text.
+  - **Notes:** Instrumental songs stored without lyrics text; without @Serializable the lyrics cache could not be encoded/decoded and silently broke backup/restore.
 
 
 - `data/local/room/LyricsDao.kt` — Lyrics DAO: upsert, deletion by song/total, get individual/all.
@@ -1502,15 +1502,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Related files:** FilterSelection.kt, SearchFilterMapper.kt.
   - **Notes:** Parcelable with Koin-injected repository.
 
-- `data/local/repository/Repository.kt` — Main Repository interface: songs/albums/artists/genres/years/folders/playlists, searches, favorites, scrobbling.
+- `data/local/repository/Repository.kt` - Main Repository interface: songs/albums/artists/genres/years/folders/playlists, searches, favorites, scrobbling and play statistics.
   - **Purpose:** Single facade over all local and network data.
-  - **Responsibilities:** Delegate to sub-repositories; delete cleanup; home suggestions; search; scrobbling.
-  - **Inputs:** Queries, ids, uris, MediaItems, SearchFilter.
-  - **Outputs:** Songs, albums, artists, playlists, suggestions, scrobble results.
+  - **Responsibilities:** Delegate to sub-repositories; delete cleanup; home suggestions; search; scrobbling; period/all-time play stats (suspend + Flow).
+  - **Inputs:** Queries, ids, uris, MediaItems, SearchFilter, ListeningPeriod.
+  - **Outputs:** Songs, albums, artists, playlists, suggestions, scrobble results, ArtistPlayStat rows.
   - **Dependencies:** RealSongRepository, RealAlbumRepository, RealArtistRepository, RealGenreRepository, RealSmartRepository, RealSpecialRepository, RealPlaylistRepository, RealSearchRepository, NetworkRepositoryImpl.
   - **Consumed by:** LibraryViewModel, PlayerViewModel, PlaybackService, LibraryProvider.
-  - **Related files:** All repository implementations, MainModule.kt.
-  - **Notes:** MAX_ITEMS_PER_CHUNK (900) batching.
+  - **Related files:** All repository implementations, MainModule.kt, NamedQueueRepository.kt.
+  - **Notes:** MAX_ITEMS_PER_CHUNK (900) batching. Statistics expose suspend methods for one-shot reads and Flow methods for live period/all-time updates (ADR-040); named queues are a separate repository injected into PlayerViewModel (ADR-041).
 
 
 - `data/local/repository/SongRepository.kt` — Song queries from MediaStore (cursors, uris, MediaItems, blacklist) + RealSongRepository.
@@ -1601,15 +1601,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** addTitled inserts localized headers between groups.
 
 
-- `data/local/repository/SmartRepository.kt` — Smart content (top albums/artists, recent, never played), play counts and history.
+- `data/local/repository/SmartRepository.kt` - Smart content (top albums/artists, recent, never played), play counts, period statistics and history.
   - **Purpose:** Computed "smart" content and playback stats.
-  - **Responsibilities:** Top/recent albums-artists; recent songs by cutoff; not-recently-played; play counts and history.
-  - **Inputs:** ContentType, queries, cutoffs from Preferences.
-  - **Outputs:** Song/Album/Artist lists, Flows, counts.
-  - **Dependencies:** RealSongRepository, RealAlbumRepository, RealArtistRepository, HistoryDao, PlayCountDao, MediaQueryDispatcher.
-  - **Consumed by:** RealRepository, LastAddedSearchFilter, HomeFragment.
-  - **Related files:** HistoryDao.kt, PlayCountDao.kt, Repository.kt.
-  - **Notes:** Prunes entities whose files were deleted.
+  - **Responsibilities:** Top/recent albums-artists; recent songs by cutoff; not-recently-played; play counts and history; period/all-time top songs and artist percentages via PlayEventDao/PlayCountDao; Flow and suspend variants.
+  - **Inputs:** ContentType, queries, cutoffs from Preferences, ListeningPeriod.
+  - **Outputs:** Song/Album/Artist lists, Flows, counts, ArtistPlayStat rows.
+  - **Dependencies:** RealSongRepository, RealAlbumRepository, RealArtistRepository, HistoryDao, PlayCountDao, PlayEventDao, MediaQueryDispatcher.
+  - **Consumed by:** RealRepository, LastAddedSearchFilter, HomeFragment, LibraryViewModel.
+  - **Related files:** HistoryDao.kt, PlayCountDao.kt, PlayEventDao.kt, ListeningPeriod.kt, ArtistPlayStat.kt, Repository.kt.
+  - **Notes:** Artist stats retain recorded-name/aggregate-ID snapshots even when current media is missing. One bound-parameter query resolves optional current artists; ambiguous/exact-case-mismatched results do not supply actions. Percentages use same-query full totals, including denominator-only Flow emissions outside the top 100. Resolution stays off Main and propagates cancellation; all-time retains legacy aggregate counts (ADR-040).
 
 
 - `data/local/repository/SpecialRepository.kt` — Release years and filesystem folders/files with navigation.
@@ -1681,7 +1681,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - `data/remote/github/GitHubService.kt` — GitHub releases query (stable/prerelease, optional token) with latest downloadable selection.
   - **Purpose:** Resolve newest downloadable GitHub release for updater.
   - **Responsibilities:** Fetch latest stable release; fetch paginated releases; filter prereleases by publishedAt.
-  - **Inputs:** user, repo (default mardous/BoomingMusic), authToken, allowExperimental.
+  - **Inputs:** user, repo (default TuiCibrian/ssilencce), authToken, allowExperimental.
   - **Outputs:** GitHubRelease via latestRelease().
   - **Dependencies:** Ktor HttpClient, BuildConfig.GITHUB_API_URL, GitHubRelease.
   - **Consumed by:** UpdateViewModel, MainModule.
@@ -1932,59 +1932,59 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### playback/
 
-- `playback/PlaybackService.kt` — MediaLibraryService owning the ExoPlayer, MediaSession, equalizer, notifications, Bluetooth and widgets (playback core).
+- `playback/PlaybackService.kt` - MediaLibraryService owning the ExoPlayer, MediaSession, equalizer, notifications, Bluetooth, widgets, audio focus, per-track resume and bounded session recovery (playback core).
   - **Purpose:** Central service hosting ExoPlayer, MediaLibrarySession, notifications and widget state.
-  - **Responsibilities:** ExoPlayer/MediaSession setup, library browsing callbacks, custom commands, scrobbling, play counts, widget updates, receivers.
+  - **Responsibilities:** ExoPlayer/MediaSession setup, library browsing callbacks, custom commands, scrobbling, play counts, widget updates, receivers; AudioFocusController ownership; remembered track-position observer; serialized TrackPositionWriter enqueueing; seek-generation/manual-seek protection; session-recovery autoplay; named-queue switch command.
   - **Inputs:** MediaSession commands, SharedPreferences, MediaStoreObserver, AudioOutputObserver, Bluetooth/headset broadcasts.
-  - **Outputs:** PlaybackState for Glance widgets, notifications, custom commands/events, persisted state, scrobbles.
-  - **Dependencies:** AdvancedForwardingPlayer, EqualizerManager, SleepTimer, AudioOutputObserver, Repository, LibraryProvider, SsilencceRenderersFactory, processors.
-  - **Consumed by:** MediaControllerOwner, WidgetExtension, MainActivity (custom events), AndroidManifest service.
-  - **Related files:** Playback.kt, MediaIDs.kt, PersistentStorage.kt, MainModule.kt.
-  - **Notes:** Player runs on dedicated HandlerThread "Ssilencce-ExoPlayer"; foreground service timeout set.
+  - **Outputs:** PlaybackState for Glance widgets, notifications, custom commands/events, persisted state, scrobbles, focus-ask event.
+  - **Dependencies:** AdvancedForwardingPlayer, EqualizerManager, SleepTimer, AudioOutputObserver, AudioFocusController, TrackPositionDao, TrackPositionWriter, Repository, LibraryProvider, SsilencceRenderersFactory, processors.
+  - **Consumed by:** MediaControllerOwner, WidgetExtension, PlaybackTileService, MainActivity (custom events), AndroidManifest service.
+  - **Related files:** Playback.kt, MediaIDs.kt, PersistentStorage.kt, AudioFocusController.kt, TrackPositionDao.kt, TrackPositionWriter.kt, PlaybackTileService.kt, MainModule.kt.
+  - **Notes:** Player runs on dedicated HandlerThread "Ssilencce-ExoPlayer"; foreground service timeout set. ExoPlayer's built-in focus handling is disabled because AudioFocusController owns it. Per-track writes are throttled for tracks ≥10 minutes and serialized through TrackPositionWriter; seek generations reject stale bookmark lookups. Pending Ask consent is request-bound, preserved by repeated play and synchronously cleared by explicit/no-op pause. Restore, saved-queue switch and focus state/consent commands require the app UID at advertisement and dispatch. Session recovery is opt-in via SESSION_RECOVERY and one-shot per process. PersistentStorage finishes its ordered queue snapshot before player release (ADR-041, ADR-042, ADR-045).
 
 
 - `playback/AdvancedForwardingPlayer.kt` — ForwardingPlayer wrapper adding sequential timeline handling and upcoming-range realignment.
   - **Purpose:** Wrap ExoPlayer with upcoming-range queue semantics.
-  - **Responsibilities:** Track listeners, mark upcoming MediaItems via extras, realign/clear ranges on discontinuities and moves.
+  - **Responsibilities:** Track listeners, mark upcoming MediaItems via extras, realign/clear ranges on discontinuities and moves; route explicit play/pause/setPlayWhenReady intent through the focus consent gate.
   - **Inputs:** Wrapped Player, addMediaItem(s)/moveMediaItem calls, sequentialTimelineEnabled flag.
   - **Outputs:** MediaItems tagged `__is_upcoming__`/`__normal_index__`; adjusted queue mutations.
   - **Dependencies:** ForwardingPlayer, ExoPlayer, MediaItem, KoinComponent.
   - **Consumed by:** PlaybackService, PersistentStorage.
   - **Related files:** PlaybackExtension.kt, PlaybackService.kt.
-  - **Notes:** QUEUE_NEXT_MODE preference drives sequential timeline; internal listener on position discontinuity.
+  - **Notes:** QUEUE_NEXT_MODE preference drives sequential timeline; internal listener on position discontinuity. Focus-internal pauses bypass the intent gate through the wrapped ExoPlayer (ADR-045).
 
 
 - `playback/ImprovedShuffleOrder.kt` — Custom Media3 ShuffleOrder with random seed, atomic index and kotlinx-serialization persistence.
   - **Purpose:** Deterministic shuffle order with JSON persistence.
-  - **Responsibilities:** Shuffled IntArray + inverse index, cloneAndInsert/Remove/Move/Clear, playerIndex AtomicInt, SerializedOrder.
+  - **Responsibilities:** Shuffled IntArray + inverse index, cloneAndInsert/Remove/Move/Clear, playerIndex AtomicInt, SerializedOrder, and `SerializedOrder.remap` for compacting a saved permutation onto a shrunk restored queue.
   - **Inputs:** firstIndex, length, randomSeed; ShuffleOrder mutation operations.
   - **Outputs:** ShuffleOrder instances; serialized JSON strings.
   - **Dependencies:** ShuffleOrder, Random, AtomicInt, kotlinx-serialization Json.
   - **Consumed by:** PlaybackService, PersistentStorage.
   - **Related files:** PlaybackService.kt, PersistentStorage.kt.
-  - **Notes:** @UnstableApi; persisted via "shuffle_order" SharedPreferences key.
+  - **Notes:** @UnstableApi; persisted via "shuffle_order" SharedPreferences key. `remap(savedToRestored)` filters the saved permutation by survivor positions, renumbers them, and returns null unless both the payload and mapping are valid permutations.
 
 
-- `playback/PersistentStorage.kt` — Persists queue, position and shuffle order in Room/SharedPreferences and restores asynchronously.
+- `playback/PersistentStorage.kt` - Persists queue, position, shuffle order, WAS_PLAYING and active named-queue state in Room/SharedPreferences and restores asynchronously.
   - **Purpose:** Restore and save playback state across sessions.
-  - **Responsibilities:** restoreState via QueueDao/Repository, debounced saveState, waitForRestoration/waitForMediaItems, RestorationState machine.
-  - **Inputs:** AdvancedForwardingPlayer state, QueueDao, Repository, "playback_state" SharedPreferences.
-  - **Outputs:** MediaItemsWithStartPosition + ShuffleOrder; QueueEntity rows and prefs.
-  - **Dependencies:** QueueDao, Repository, AdvancedForwardingPlayer, SerializedOrder, CoroutineScope.
+  - **Responsibilities:** restoreState via QueueDao/Repository, debounced saveState, waitForRestoration/waitForMediaItems, RestorationState machine, occurrence-aware saved-to-restored mapping, shuffle-order remap/validation/fallback, active named-queue item/resume-state updates.
+  - **Inputs:** AdvancedForwardingPlayer state, QueueDao, NamedQueueDao, Repository, "playback_state" SharedPreferences.
+  - **Outputs:** MediaItemsWithStartPosition + ShuffleOrder; QueueEntity rows, named-queue rows and prefs.
+  - **Dependencies:** QueueDao, NamedQueueDao, PlaybackStateWriter, Repository, AdvancedForwardingPlayer, SerializedOrder, CoroutineScope.
   - **Consumed by:** PlaybackService, playback resumption flow.
-  - **Related files:** ImprovedShuffleOrder.kt, QueueEntity.kt, Repository.kt.
-  - **Notes:** 500 ms debounce; skips saves while Restoring; validates saved shuffle order length.
+  - **Related files:** ImprovedShuffleOrder.kt, QueueEntity.kt, NamedQueueDao.kt, Repository.kt.
+  - **Notes:** 500 ms debounce; skips saves while Restoring. Playlist intent survives cancellation: pause enqueues it immediately, and finish captures a final full snapshot before service-scope cancellation. All snapshots are captured on Main and written FIFO through PlaybackStateWriter; restoration awaits earlier writes. Occurrence-aware remapping preserves repeated ids and surviving shuffle positions; missing-current-item fallback resets position to 0. Invalid non-empty shuffle payloads are cleared and disable shuffle without emptying the restored queue; valid empty order preserves the setting. Named playlist saves atomically replace items and resume state; ordinary saves update resume metadata only. Binding/expected-media guards prevent old-timeline attribution (ADR-012, ADR-041, ADR-045).
 
 
-- `playback/Playback.kt` — Constants for custom MediaSession commands/events (shuffle toggle, repeat cycle, favorite, playback restore).
+- `playback/Playback.kt` - Constants for custom MediaSession commands/events (shuffle, repeat, favorite, playback restore, audio-focus ask/confirm/cancel, named-queue switch, stop position).
   - **Purpose:** Single source of custom command/event names.
-  - **Responsibilities:** Defines six commands and four event constants.
+  - **Responsibilities:** Defines playback/session custom commands and event constants, including audio-focus and named-queue flow.
   - **Inputs:** —.
   - **Outputs:** Identifiers used in SessionCommand and broadcastCustomCommand.
   - **Dependencies:** None.
-  - **Consumed by:** PlaybackService, PlayerViewModel, MainActivity.
+  - **Consumed by:** PlaybackService, PlayerViewModel, MainActivity, QueueScreen.
   - **Related files:** PlaybackService.kt, PlayerViewModel.kt, MainActivity.kt.
-  - **Notes:** Includes SET_UNSHUFFLED_ORDER and SET_STOP_POSITION commands.
+  - **Notes:** Includes SET_UNSHUFFLED_ORDER, SET_STOP_POSITION, SWITCH_NAMED_QUEUE and token-bound CONFIRM/CANCEL/GET_AUDIO_FOCUS_STATE. Restore, named-queue switch and focus state/consent are advertised and dispatched only to the app UID (ADR-045).
 
 
 - `playback/PlaybackExtension.kt` — Extensions for MediaSession/Player/MediaItem: queue extraction, MediaItem↔Song conversion, extras.
@@ -2352,15 +2352,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### util/ and extensions/
 
-- `util/BackupHelper.kt` — Creates/restores ZIP backups with playlists (M3U), settings, lyrics and custom artist images.
+- `util/BackupHelper.kt` - Creates/restores ZIP backups with playlists (M3U), settings, lyrics and custom artist images; returns strict creation results, preserves empty playlist snapshots and drives restore accounting.
   - **Purpose:** ZIP backup and restore of app data (playlists, settings, lyrics, artist images).
-  - **Responsibilities:** Zip playlist M3Us, settings XML, lyrics JSON, custom artist images; restore each entry type; show success/failure toasts; clean cached playlist dir.
+  - **Responsibilities:** Zip playlist M3Us (including a valid `#EXTM3U` entry for legitimate empty playlists), settings XML, lyrics JSON (`LyricsEntity` list), custom artist images; propagate unexpected playlist write failures; restore each entry type selected via `BackupContent`; enforce entry/size limits while streaming; show success/failure toasts for the manual path; expose `createBackupFile`/`BackupCreationResult` for WorkManager; drive `RestoreSummary`/`RestoreOutcome`; clean cached playlist dir.
   - **Inputs:** Context, backup Uri, `BackupContent` selection, injected `Repository` and `LyricsDao`.
-  - **Outputs:** `.bmgbak` ZIP via `ZipOutputStream`; restored playlists, prefs, lyrics, images; toast messages.
-  - **Dependencies:** Repository, LyricsDao, M3UWriter, FileUtil, kotlinx Json, `zipOutputStream` extension, KoinComponent.
-  - **Consumed by:** `PreferencesScreenFragment` (createBackup/restoreBackup, BACKUP_EXTENSION).
-  - **Related files:** `util/m3u/M3UWriter.kt`, `util/FileUtil.kt`, `data/local/room/LyricsDao.kt`, `data/mapper/SongMapper.kt`.
-  - **Notes:** Backup extension "bmgbak"; zip paths `Playlists/`, `prefs/`, `lyrics/`, `artistImages/`.
+  - **Outputs:** `.bmgbak` ZIP via `ZipOutputStream`; restored playlists, prefs, lyrics, images; toast messages or `BackupCreationResult`; restore summary.
+  - **Dependencies:** Repository, LyricsDao, M3UWriter, M3UConstants, PlaylistExportFormat, FileUtil, RestoreSummary, kotlinx Json, `zipOutputStream` extension, KoinComponent.
+  - **Consumed by:** `PreferencesScreenFragment` (createBackup/restoreBackup, BACKUP_EXTENSION), `ScheduledBackupWorker`, `RestoreSummary` consumers.
+  - **Related files:** `util/m3u/M3UWriter.kt`, `util/m3u/M3UConstants.kt`, `util/RestoreSummary.kt`, `util/backup/ScheduledBackupWorker.kt`, `util/FileUtil.kt`, `data/local/room/LyricsDao.kt`, `data/mapper/SongMapper.kt`.
+  - **Notes:** Backup extension "bmgbak"; zip paths `Playlists/`, `prefs/`, `lyrics/`, `artistImages/`; `createBackup` catches failures (rethrows `CancellationException`, logs with `Log.e`, toasts `backup_failed`); `createBackupFile` does not toast and returns Success/Failure so the worker can record status. Playlist write failures are no longer swallowed: a missing/failed file aborts the backup with `BackupCreationResult.Failure`; empty playlists are emitted as valid `#EXTM3U` entries so restore can recreate their entities. ZIP entries are written as direct bytes (no writer, so the archive is never closed early) with `closeEntry()` per entry and per-entry cancellation checks; restore streams through `BoundedEntryInputStream`, which counts actual bytes (10 MB for lyrics entries, 100 MB per other entry, 100 MB total, 1000-entry cap), rejects unsafe entry file names via `requireSafeFileName()` and copies with `copyToWithCancellation()` (8 KB chunks); restore helpers are suspend; unselected/unrecognized entries are drained through the same counter (`drain()`), so skipped entries still count towards the limits and stay cancellable; entry classification requires a path-segment boundary (`hasPrefix`), directory entries are skipped, and lyrics decoding tolerates unknown JSON fields (`Json { ignoreUnknownKeys = true }`).
 
 
 - `util/Constants.kt` — App constants: support email, GitHub/community/legal URLs, user agent.
@@ -2407,15 +2407,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Batching avoids SQLite 10^6-byte query limit; SecurityException swallowed per batch.
 
 
-- `util/Preferences.kt` — Central typed SharedPreferences access for all app settings.
+- `util/Preferences.kt` - Central typed SharedPreferences access for all app settings, including audio-focus mode, per-track resume, session recovery and active named-queue binding.
   - **Purpose:** Single typed access point for all app settings and preference keys.
-  - **Responsibilities:** Typed getters/setters (theme, player, queue, shuffle, cutoffs, folder actions, updates, independent Aurora appearance/motion); listener registration; enum helpers; preference keys.
-  - **Inputs:** Injected SharedPreferences, model enums (NowPlayingAction, SongClickBehavior...), `Cutoff`/`CategoryInfo`, string resources.
+  - **Responsibilities:** Typed getters/setters (theme, player, queue, shuffle, cutoffs, audio focus, per-track resume, session recovery, active named queue, folder actions, updates, independent Aurora appearance/motion); listener registration; enum helpers; preference keys.
+  - **Inputs:** Injected SharedPreferences, model enums (NowPlayingAction, SongClickBehavior, AudioFocusMode...), `Cutoff`/`CategoryInfo`, string resources.
   - **Outputs:** Typed settings values; SharedPreferences writes via `edit`; constant keys.
   - **Dependencies:** SharedPreferences, AppCompatDelegate, CategoryInfo, Cutoff, FileUtil, Calendar/JSON helpers.
-  - **Consumed by:** PlaybackService, MainActivity, AbsThemeActivity, AbsPlayerFragment, EqualizerViewModel, ViewExt, NavigationExt, nearly all UI.
-  - **Related files:** `App.kt` (defaults), `extensions/SharedPreferencesExt.kt`, `extensions/utilities/Utilities.kt`, `extensions/utilities/CalendarExt.kt`.
-  - **Notes:** `LASTFM_LOGIN`/`LISTENBRAINZ_LOGIN` keys; lists serialized via kotlinx JSON; enums by name or ordinal. Aurora does not overwrite saved alternative theme/player choices.
+  - **Consumed by:** PlaybackService, AudioFocusController, MainActivity, AbsThemeActivity, AbsPlayerFragment, EqualizerViewModel, ViewExt, NavigationExt, nearly all UI.
+  - **Related files:** `App.kt` (defaults), `extensions/SharedPreferencesExt.kt`, `extensions/utilities/Utilities.kt`, `extensions/utilities/CalendarExt.kt`, `util/AudioFocusMode.kt`.
+  - **Notes:** `LASTFM_LOGIN`/`LISTENBRAINZ_LOGIN` keys; lists serialized via kotlinx JSON; enums by name or ordinal. Audio-focus mode falls back to Ignore when the legacy IGNORE_AUDIO_FOCUS flag is set. Aurora does not overwrite saved alternative theme/player choices.
 
 
 - `util/AuroraPreferences.kt` — Independent Aurora appearance and ribbon-motion preference keys.
@@ -2517,15 +2517,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Minimal object, no logic.
 
 
-- `util/m3u/M3UWriter.kt` — Exports playlists as .m3u files (plain file pre-Q, MediaStore on Q+).
-  - **Purpose:** Export Room playlists to `.m3u` files.
-  - **Responsibilities:** Export single/multiple with toasts; MediaStoreWriter on Q+, `FileUtil.playlistsDirectory` pre-Q; `writeToDirectory`; `writeImpl` sorted by songPrimaryKey with EXTINF lines.
-  - **Inputs:** Context, `PlaylistWithSongs` (SongEntity list).
-  - **Outputs:** `.m3u` files in MediaStore or app dir; boolean success.
-  - **Dependencies:** MediaStoreWriter, FileUtil, M3UConstants, `hasQ`, `toSongs` mapper, KoinComponent.
-  - **Consumed by:** BackupHelper (writeToDirectory), MenuItemClickExt (export).
-  - **Related files:** `util/m3u/M3UConstants.kt`, `util/BackupHelper.kt`, `data/local/MediaStoreWriter.kt`, `data/local/room/PlaylistWithSongs.kt`.
-  - **Notes:** EXTINF line format "duration,artist - title"; MediaStore.Audio.Playlists content URI on Q+.
+- `util/m3u/M3UWriter.kt` - Exports playlists as M3U, M3U8 or PLS (plain file pre-Q, MediaStore on Q+) with staged replacement.
+  - **Purpose:** Export Room playlists to M3U/M3U8/PLS files without destroying an existing export on failure.
+  - **Responsibilities:** Export single/multiple with toasts; on Q+ use `MediaStore.Files` plus `MediaStoreWriter` with the selected format MIME, `FileUtil.playlistsDirectory` pre-Q; stage directory writes to a sibling temp, refuse empty playlists, and replace the target only after a complete UTF-8 write; `writeImpl` sorted by songPrimaryKey; extended-M3U body for M3U/M3U8 and numbered PLS entries.
+  - **Inputs:** Context, `PlaylistWithSongs` (SongEntity list), `PlaylistExportFormat`.
+  - **Outputs:** `.m3u`/`.m3u8`/`.pls` files in MediaStore or app dir; boolean success or `IOException`.
+  - **Dependencies:** MediaStoreWriter, FileUtil, M3UConstants, PlaylistExportFormat, `hasQ`, `toSongs` mapper, KoinComponent, java.nio.file.Files.
+  - **Consumed by:** BackupHelper (writeToDirectory for non-empty playlists), MenuItemClickExt (single/batch export).
+  - **Related files:** `util/m3u/M3UConstants.kt`, `util/m3u/PlaylistExportFormat.kt`, `util/BackupHelper.kt`, `data/local/MediaStoreWriter.kt`, `data/local/room/PlaylistWithSongs.kt`.
+  - **Notes:** EXTINF line format "duration,artist - title"; PLS writes numbered entries and `Version=2`; all formats use UTF-8. Directory exports use a hidden sibling and `Files.move(REPLACE_EXISTING)`. The Q+ `MediaStore.Files` route avoids the legacy provider appending `.m3u` during `Audio.Playlists` publication; MediaStore stages complete published content, then checks backup/final renames before old cleanup. Pre-commit failure preserves old bytes but provider-refused restoration may leave the backup name; post-commit cleanup may leave an extra backup. No atomic-swap/power-loss claim (ADR-044).
 
 
 - `util/oem/MiPlayAudioSupport.kt` — Detects the Xiaomi Mi Play service availability on Chinese MIUI builds.
@@ -2793,15 +2793,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Helpers `isFDroidBuild()`, `isPlayStoreBuild()`, `isExperimentalBuild()` (alpha/beta/rc regex).
 
 
-- `MainModule.kt` — Koin DI modules: network services, Room database, repositories, playback components, media writers, image managers, ViewModels.
+- `MainModule.kt` - Koin DI modules: network services, Room database, repositories, playback components, media writers, image managers, ViewModels.
   - **Purpose:** Defines the complete Koin dependency graph.
-  - **Responsibilities:** `networkModule`, `mainModule`, `roomModule`, `dataModule`, `viewModule` definitions.
+  - **Responsibilities:** `networkModule`, `mainModule`, `roomModule`, `dataModule`, `viewModule` definitions, including PlayEvent/TrackPosition/NamedQueue DAOs and NamedQueueRepository.
   - **Inputs:** Ktor client, OkHttp, Room DAOs, audio processors, repositories, ViewModels.
   - **Outputs:** `appModules` list with `single`/`factory`/`viewModel` providers.
-  - **Dependencies:** Koin, Room (v6 migrations 1→6), Ktor, Media3 processors, Koin viewModel DSL.
+  - **Dependencies:** Koin, Room (v8 migrations 1→8), Ktor, Media3 processors, Koin viewModel DSL.
   - **Consumed by:** `App.startKoin`.
-  - **Related files:** `App.kt`, `SsilencceDatabase`, repository implementations.
-  - **Notes:** `Real*` implementations bound to interfaces; `github`/`playstore` Last.fm access via injected services.
+  - **Related files:** `App.kt`, `SsilencceDatabase`, repository implementations, `NamedQueueRepository.kt`.
+  - **Notes:** `Real*` implementations bound to interfaces; `github`/`playstore` Last.fm access via injected services; PlayerViewModel receives NamedQueueRepository. WorkManager scheduled backups are constructed from `util/backup/` directly and need no Koin binding.
 
 
 - `MediaControllerOwner.kt` — Lifecycle-aware owner of the MediaController connected to the PlaybackService MediaSession.
@@ -2937,15 +2937,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Wiki text toggles between 4 and unlimited maxLines on click.
 
 
-- `ui/adapters/song/SongAdapter.kt` — Open base adapter for songs with multi-select, palette image, selection menu and section popup text.
+- `ui/adapters/song/SongAdapter.kt` - Open base adapter for songs with multi-select, palette image, selection menu, section popup text and optional history-only removal action.
   - **Purpose:** Reusable base song adapter for all song lists.
-  - **Responsibilities:** Palette cover loading, sort-mode-aware titles/texts, FastScroller popup, click plays via PlayerViewModel.openSongs, popup menu, multi-select.
-  - **Inputs:** List<Song>, SongSortMode, ISongCallback, item layout, menu_media_selection.
+  - **Responsibilities:** Palette cover loading, sort-mode-aware titles/texts, FastScroller popup, click plays via PlayerViewModel.openSongs, popup menu, multi-select, historyMode visibility for `action_remove_from_history`.
+  - **Inputs:** List<Song>, SongSortMode, ISongCallback, item layout, menu_media_selection, historyMode flag.
   - **Outputs:** songsMenuItemClick; openSongs honoring SongClickBehavior/playOptionClickBehavior.
   - **Dependencies:** AbsMultiSelectAdapter, MediaEntryViewHolder, OnClickMenu, PlayerViewModel, Preferences.
   - **Consumed by:** SongListFragment, GenreDetailFragment, YearDetailFragment, FolderDetailFragment, DetailListFragment, HomeFragment.
-  - **Related files:** `ui/adapters/song/SimpleSongAdapter.kt`, `ui/adapters/song/PlaylistSongAdapter.kt`, `ui/screen/player/PlayerViewModel.kt`.
-  - **Notes:** Open ViewHolder/songMenuRes/onPrepareSongMenu for subclass customization; hides play button.
+  - **Related files:** `ui/adapters/song/SimpleSongAdapter.kt`, `ui/adapters/song/PlaylistSongAdapter.kt`, `ui/screen/player/PlayerViewModel.kt`, `ui/screen/other/DetailListFragment.kt`.
+  - **Notes:** Open ViewHolder/songMenuRes/onPrepareSongMenu/onPrepareActionModeMenu for subclass customization; hides play button and only exposes history removal when historyMode is true (ADR-044).
 
 
 - `ui/adapters/song/SimpleSongAdapter.kt` — SongAdapter subclass showing track number, duration and info text per sort key.
@@ -2992,15 +2992,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Blocks unchecking last visible category; warns over five selections.
 
 
-- `ui/adapters/artist/ArtistAdapter.kt` — Multi-select artist adapter with palette image and album-artists-only support.
+- `ui/adapters/artist/ArtistAdapter.kt` - Artist adapter with palette image, album-artists-only support and typed statistics rows.
   - **Purpose:** Bind Artist rows in artist lists and similar-artist rows.
-  - **Responsibilities:** Palette cover, transition names (album-artist aware), popup menu, play button opening sorted artist queue, FastScroller popup, multi-select.
-  - **Inputs:** List<Artist>, ArtistSortMode, IArtistCallback.
-  - **Outputs:** artistClick/artistMenuItemClick/artistsMenuItemClick; openQueue of sorted songs.
-  - **Dependencies:** AbsMultiSelectAdapter, MediaEntryViewHolder, OnClickMenu, PlayerViewModel, Preferences.onlyAlbumArtists.
+  - **Responsibilities:** Artist covers/menus/play/selection; atomic statistics-list submission; typed-key collision-safe stable row IDs; snapshot labels/count/percentage and unavailable-action suppression.
+  - **Inputs:** List<Artist> or complete ArtistPlayStat rows, ArtistSortMode, IArtistCallback.
+  - **Outputs:** artistClick/artistMenuItemClick/artistsMenuItemClick; openQueue of sorted songs; stats-aware secondary text.
+  - **Dependencies:** AbsMultiSelectAdapter, MediaEntryViewHolder, OnClickMenu, PlayerViewModel, Preferences.onlyAlbumArtists, ArtistPlayStat.
   - **Consumed by:** ArtistListFragment, ArtistDetailFragment (similar), DetailListFragment, HomeFragment.
-  - **Related files:** `ui/screen/library/artists/ArtistListFragment.kt`, `ui/adapters/album/AlbumAdapter.kt`.
-  - **Notes:** Transition name is artist name when album-artists-only mode is active.
+  - **Related files:** `ui/screen/library/artists/ArtistListFragment.kt`, `ui/adapters/album/AlbumAdapter.kt`, `data/model/ArtistPlayStat.kt`.
+  - **Notes:** Recorded-name and aggregate-ID keys never collide or overwrite one another. Stable row IDs survive reorder/period changes/temporary absence; actions use only real current Artist IDs. Snapshot-only rows remain visible but cannot navigate/play/select. Normal artist-list identity is unchanged (ADR-040).
 
 
 - `ui/adapters/album/AlbumAdapter.kt` — Open multi-select album adapter with cover, sort text, transition and selection menu.
@@ -3058,26 +3058,26 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** expandPanel triggered when playback starts or restores per preferences. The former configurable category strip is intentionally no longer injected anywhere (user decision recorded in ADR-037); category navigation lives in the drawer.
 
 
-- `ui/component/base/AbsRecyclerViewFragment.kt` — Base fragment with RecyclerView, toolbar, shuffle button, fast-scroller, mini-player margins.
-  - **Purpose:** Standard library list scaffolding with toolbar, shuffle FAB, empty view.
-  - **Responsibilities:** Create adapter/layout manager, FastScroller, shuffle click/long-press (ShuffleModeFragment), mini-player/FAB margins, library menu, scroll-to-top.
-  - **Inputs:** Abstract createAdapter/createLayoutManager, isShuffleVisible, titleRes.
-  - **Outputs:** Shuffle/scan/equalizer/import actions; empty-state visibility.
-  - **Dependencies:** AbsMainActivityFragment, FragmentMainRecyclerBinding, FastScroller, ImportPlaylistDialog, ShuffleModeFragment, NavController.
+- `ui/component/base/AbsRecyclerViewFragment.kt` - Base fragment with RecyclerView, toolbar, shuffle button, fast-scroller, mini-player margins and optional inline quick-search bar.
+  - **Purpose:** Standard library list scaffolding with toolbar, shuffle FAB, empty view and quick search.
+  - **Responsibilities:** Create adapter/layout manager, FastScroller, shuffle click/long-press (ShuffleModeFragment), mini-player/FAB margins, library menu, scroll-to-top; hosts `QuickSearchBar` in a ComposeView when the fragment implements `QuickSearchable`, adds bottom padding/offset and forwards queries.
+  - **Inputs:** Abstract createAdapter/createLayoutManager, isShuffleVisible, titleRes, QuickSearchable implementation.
+  - **Outputs:** Shuffle/scan/equalizer/import actions; empty-state visibility; filtered list callbacks.
+  - **Dependencies:** AbsMainActivityFragment, FragmentMainRecyclerBinding, FastScroller, ImportPlaylistDialog, ShuffleModeFragment, NavController, QuickSearchable, QuickSearchBar, SsilencceTheme.
   - **Consumed by:** AbsRecyclerViewCustomGridSizeFragment and all library list fragments.
-  - **Related files:** `ui/component/base/AbsRecyclerViewCustomGridSizeFragment.kt`, `ui/component/views/TopAppBarLayout.kt`.
-  - **Notes:** Finishes CAB action mode on pause; dismisses shuffle dialog on PlaybackStarted.
+  - **Related files:** `ui/component/base/AbsRecyclerViewCustomGridSizeFragment.kt`, `ui/component/base/QuickSearchable.kt`, `ui/component/compose/QuickSearchBar.kt`, `ui/component/views/TopAppBarLayout.kt`.
+  - **Notes:** Finishes CAB action mode on pause; dismisses shuffle dialog on PlaybackStarted. The quick-search bar only appears for QuickSearchable fragments; list padding and FAB offset are adjusted while it is visible (ADR-044).
 
 
-- `ui/component/base/AbsRecyclerViewCustomGridSizeFragment.kt` — Extends AbsRecyclerViewFragment with list/grid modes and configurable grid size/view type.
+- `ui/component/base/AbsRecyclerViewCustomGridSizeFragment.kt` - Extends AbsRecyclerViewFragment with list/grid modes, configurable grid size/view type and quick-search-aware bottom padding.
   - **Purpose:** Add list/grid switching, grid-size and view-type menus to library lists.
-  - **Responsibilities:** Persist grid size/view type, rebuild adapter/layout on change, item layout per GridViewType, menu setup with max columns.
+  - **Responsibilities:** Persist grid size/view type, rebuild adapter/layout on change, item layout per GridViewType, menu setup with max columns, include quick-search padding in recycler padding.
   - **Inputs:** Preferences-backed getSaved*/save* overrides, maxGridSize per orientation.
   - **Outputs:** viewType/gridSize changes triggering invalidateAdapter/invalidateLayoutManager.
   - **Dependencies:** AbsRecyclerViewFragment, GridViewType, R.integer column resources.
   - **Consumed by:** SongListFragment, AlbumListFragment, ArtistListFragment, GenresListFragment, PlaylistListFragment, YearsListFragment, FoldersListFragment.
-  - **Related files:** `ui/component/base/AbsRecyclerViewFragment.kt`, `core/model/GridViewType.kt`.
-  - **Notes:** Grid mode when gridSize exceeds maxGridSizeForList; recycler padding per layout.
+  - **Related files:** `ui/component/base/AbsRecyclerViewFragment.kt`, `core/model/GridViewType.kt`, `ui/component/base/QuickSearchable.kt`.
+  - **Notes:** Grid mode when gridSize exceeds maxGridSizeForList; recycler padding per layout plus the quick-search bottom offset.
 
 
 - `ui/component/base/AbsPlayerFragment.kt` — Player screen base fragment (toolbar, song menu, animated background, gestures, player colors, dialogs).
@@ -3366,15 +3366,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Subclasses override popupMenuRes and onPreparePopup.
 
 
-- `ui/component/menu/MenuItemClickExt.kt` — Extensions resolving menu item actions (play next, add to queue/playlist, share, delete, edit tags, navigate).
+- `ui/component/menu/MenuItemClickExt.kt` - Extensions resolving menu item actions (play next, add to queue/playlist, share, delete, edit tags, navigate, export formats, entity shortcuts).
   - **Purpose:** Central song/album/artist/playlist menu action handling.
-  - **Responsibilities:** onSongMenu/onSongsMenu/onAlbumMenu/onAlbumsMenu/onArtistMenu/onArtistsMenu/onPlaylistMenu/onPlaylistsMenu routing to PlayerViewModel, dialogs, tag editors, navigation, M3U export.
+  - **Responsibilities:** onSongMenu/onSongsMenu/onAlbumMenu/onAlbumsMenu/onArtistMenu/onArtistsMenu/onPlaylistMenu/onPlaylistsMenu routing to PlayerViewModel, dialogs, tag editors, navigation, M3U/M3U8/PLS export chooser, and entity shortcut add dialog.
   - **Inputs:** Fragment, MenuItem, entity models.
-  - **Outputs:** Queue/play commands, toast feedback, dialog/navigation side effects.
-  - **Dependencies:** PlayerViewModel, LibraryViewModel, AddToPlaylistDialog, DeleteSongsDialog, DeletePlaylistDialog, EditPlaylistDialog, M3UWriter, NavigationExt args.
+  - **Outputs:** Queue/play commands, toast feedback, dialog/navigation side effects, export/shortcut actions.
+  - **Dependencies:** PlayerViewModel, LibraryViewModel, AddToPlaylistDialog, DeleteSongsDialog, DeletePlaylistDialog, EditPlaylistDialog, M3UWriter, PlaylistExportFormat, ShortcutHelper, NavigationExt args.
   - **Consumed by:** AbsPlayerFragment, AbsRecyclerViewFragment menus, library fragments, SearchFragment.
-  - **Related files:** `ui/component/menu/MenuClick.kt`, `extensions/navigation/NavigationExt.kt`, `util/m3u/M3UWriter.kt`.
-  - **Notes:** Playlist actions guard PlaylistWithSongs.Empty; list actions flatten songs on IO.
+  - **Related files:** `ui/component/menu/MenuClick.kt`, `extensions/navigation/NavigationExt.kt`, `util/m3u/M3UWriter.kt`, `util/ShortcutHelper.kt`.
+  - **Notes:** Playlist actions guard PlaylistWithSongs.Empty; list actions flatten songs on IO. Format selection is shared by single and batch export; shortcut confirmation reports launcher capacity failures (ADR-044).
 
 
 - `ui/component/preferences/ThemePreference.kt` — Preference with a MaterialButtonToggleGroup for light/dark/system theme.
@@ -3883,15 +3883,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Favorites playlist name field disabled; validates non-empty name.
 
 
-- `ui/dialogs/playlists/DeletePlaylistDialog.kt` — Confirmation dialog to delete one or more playlists.
+- `ui/dialogs/playlists/DeletePlaylistDialog.kt` - Confirmation dialog to delete one or more playlists and remove their dynamic shortcuts.
   - **Purpose:** Confirm playlist deletion.
-  - **Responsibilities:** Singular/plural title and message; calls LibraryViewModel.deletePlaylists.
+  - **Responsibilities:** Singular/plural title and message; removes each playlist's entity shortcut; calls LibraryViewModel.deletePlaylists.
   - **Inputs:** List<PlaylistEntity> via EXTRA_PLAYLISTS.
-  - **Outputs:** ViewModel deletion.
-  - **Dependencies:** MaterialAlertDialogBuilder, LibraryViewModel, toHtml.
+  - **Outputs:** ViewModel deletion; ShortcutHelper removal.
+  - **Dependencies:** MaterialAlertDialogBuilder, LibraryViewModel, toHtml, ShortcutHelper, ShortcutEntityType.
   - **Consumed by:** MenuItemClickExt.
-  - **Related files:** MenuItemClickExt.kt, PlaylistDetailFragment.kt.
-  - **Notes:** create() accepts PlaylistWithSongs and maps entities.
+  - **Related files:** MenuItemClickExt.kt, PlaylistDetailFragment.kt, util/ShortcutHelper.kt.
+  - **Notes:** create() accepts PlaylistWithSongs and maps entities; removal runs for single and multi-selection confirmation (ADR-044).
 
 
 - `ui/dialogs/playlists/CreatePlaylistDialog.kt` — Creates a new playlist with name, description, cover and optional initial songs.
@@ -4115,15 +4115,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### ui/screen/
 
-- `ui/screen/MainActivity.kt` — Main activity extending AbsSlidingMusicPanelActivity; NavHost, playback intents, MediaController commands, dynamic shortcuts, update search.
+- `ui/screen/MainActivity.kt` — Main activity extending AbsSlidingMusicPanelActivity; NavHost, playback intents, MediaController commands, dynamic/entity shortcuts, audio-focus ask dialog, update search.
   - **Purpose:** App entry activity hosting navigation, playback intents, MediaController custom events.
-  - **Responsibilities:** NavHost graph setup, last-page start destination, custom command handling, playback shortcuts, bottom-nav visibility, update search, scan dialog.
+  - **Responsibilities:** NavHost graph setup, last-page start destination, custom command handling, playback shortcuts, entity-shortcut intent resolution/queue opening, audio-focus ask dialog, bottom-nav visibility, update search, scan dialog.
   - **Inputs:** Intents/actions (shortcuts, media URIs), MediaController custom commands, Preferences.
-  - **Outputs:** PlayerViewModel commands (playMediaId, openQueue, restorePlayback), UpdateDialog, toasts.
-  - **Dependencies:** AbsSlidingMusicPanelActivity, PlayerViewModel, LibraryViewModel, UpdateViewModel, MediaController.Listener, Playback, MediaIDs.
+  - **Outputs:** PlayerViewModel commands (playMediaId, openQueue, restorePlayback, confirm/cancel audio focus), UpdateDialog, toasts.
+  - **Dependencies:** AbsSlidingMusicPanelActivity, PlayerViewModel, LibraryViewModel, UpdateViewModel, MediaController.Listener, Playback, MediaIDs, ShortcutHelper.
   - **Consumed by:** Launcher activity (AndroidManifest); AbsRecyclerViewFragment calls scanAllPaths().
-  - **Related files:** navigation/graph_main.xml, UpdateDialog, IScrollHelper.
-  - **Notes:** Custom commands relay MediaEvent to PlayerViewModel; implements MediaController.Listener.
+  - **Related files:** navigation/graph_main.xml, UpdateDialog, IScrollHelper, util/ShortcutHelper.kt.
+  - **Notes:** Custom commands relay MediaEvent to PlayerViewModel; implements MediaController.Listener. `com.ssilencce.shortcut.ENTITY` resolves album/artist/folder/playlist targets and reports unavailable ones. Focus-state queries on connection/resume reconcile a stable-tag AudioFocusAskDialog; stale query responses cannot replace a newer focus event (ADR-042, ADR-044, ADR-045).
 
 
 - `ui/screen/about/AboutFragment.kt` — Fragment inflating a ComposeView with AboutScreen, handling back and transitions.
@@ -4588,15 +4588,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** File source is read-only; SnapshotMapSaver persists edits across config changes. Aurora uses shell-owned navigation clearance and explanatory disabled manual-sync/QR actions.
 
 
-- `ui/screen/other/DetailListFragment.kt` — Generic content list fragment (albums/artists/songs per ContentType) for "last added" with menus.
-  - **Purpose:** Reusable screen for home "see all" content lists.
-  - **Responsibilities:** ContentType switch loading (top/recent artists/albums, top tracks, history, recent songs, favorites, not-recently-played), per-type adapters, subtitle info, clear history, search navigation.
-  - **Inputs:** DetailListFragmentArgs (type), LibraryViewModel flows/LiveData, Preferences cutoffs.
-  - **Outputs:** Navigation to album/artist details, nav_search, clearHistory(), openQueue/openAndShuffleQueue.
-  - **Dependencies:** AbsMainActivityFragment, SongAdapter/ArtistAdapter/AlbumAdapter, ContentType, fast scroller.
+- `ui/screen/other/DetailListFragment.kt` - Generic content list fragment (albums/artists/songs per ContentType) with history removal, period statistics and quick content actions.
+  - **Purpose:** Reusable screen for home "see all" content lists and history/statistics destinations.
+  - **Responsibilities:** ContentType switch loading (top/recent artists/albums, top tracks, history, recent songs, favorites, not-recently-played), per-type adapters, period selector for Top Tracks/Top Artists, reactive Room-Flow statistics, subtitle period labels, history deletion (single + confirmed multi-select), stats-history note/empty message, clear history, search navigation.
+  - **Inputs:** DetailListFragmentArgs (type), LibraryViewModel flows/LiveData, Preferences cutoffs, ListeningPeriod selection.
+  - **Outputs:** Navigation to album/artist details, nav_search, clearHistory(), deleteSongsFromHistory(), openQueue/openAndShuffleQueue.
+  - **Dependencies:** AbsMainActivityFragment, SongAdapter/ArtistAdapter/AlbumAdapter, ContentType, ListeningPeriod, ArtistPlayStat, MaterialAlertDialogBuilder, fast scroller.
   - **Consumed by:** Navigation nav_detail_list (from HomeFragment detailArgs).
-  - **Related files:** HomeFragment, LibraryViewModel, ContentType.
-  - **Notes:** Shuffle hidden for non-song content types.
+  - **Related files:** HomeFragment, LibraryViewModel, ContentType, ListeningPeriod, ArtistPlayStat, SongAdapter.
+  - **Notes:** Shuffle hidden for non-song content types. Selected-period StateFlow drives reactive statistics; complete artist rows include unavailable historical snapshots and denominator-only updates. Toolbar play requires actionable current artists. Empty stats keep `no_play_stats_period`; audio/session behavior is outside this fragment (ADR-040, ADR-044).
 
 
 - `ui/screen/other/MiniPlayerFragment.kt` — Bottom mini-player: cover, title, play/next/prev buttons (with long-press gestures), progress, panel expansion.
@@ -4663,15 +4663,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Double-tap edges at 0.30/0.70 width thresholds; fling picks dominant axis.
 
 
-- `ui/screen/player/PlayerViewModel.kt` — Central player ViewModel: MediaController subscription, progress, events, shuffle/queue, session commands, palette colors.
+- `ui/screen/player/PlayerViewModel.kt` - Central player ViewModel: MediaController subscription, progress, events, shuffle/queue, named queues, session commands, palette colors.
   - **Purpose:** Bind MediaController playback state to UI flows and dispatch session commands.
-  - **Responsibilities:** queue/position/currentSong flows, ProgressObserver polling, Player.Listener events, color scheme generation, queue mutations, shuffle openers.
-  - **Inputs:** MediaController via setMediaController, SharedPreferences, Repository, MediaEvent.
-  - **Outputs:** StateFlows (queueFlow, currentSongFlow, colorSchemeFlow), mediaEvent, stopAfterPosition.
-  - **Dependencies:** MediaController, ProgressObserver, ShuffleManager, Repository, Preferences, Playback constants.
-  - **Consumed by:** AbsPlayerFragment, AbsPlayerControlsFragment, AbsSlidingMusicPanelActivity, MainActivity.
-  - **Related files:** PlaybackService, MediaEvent, QueuePosition, QueueSong.
-  - **Notes:** Koin-injected; debounced queue rebuild (QUEUE_DEBOUNCE=100ms); removes missing MediaItems.
+  - **Responsibilities:** queue/position/currentSong flows, ProgressObserver polling, Player.Listener events, color scheme generation, queue mutations, timeline-index removal of unavailable MediaItems, shuffle openers, named-queue CRUD/switch events, audio-focus confirm/cancel commands.
+  - **Inputs:** MediaController via setMediaController, SharedPreferences, Repository, NamedQueueRepository, MediaEvent.
+  - **Outputs:** StateFlows (queueFlow, currentSongFlow, colorSchemeFlow, namedQueuesFlow, activeNamedQueueIdFlow), mediaEvent, stopAfterPosition, namedQueueMessage.
+  - **Dependencies:** MediaController, ProgressObserver, ShuffleManager, Repository, NamedQueueRepository, Preferences, Playback constants.
+  - **Consumed by:** AbsPlayerFragment, AbsPlayerControlsFragment, AbsSlidingMusicPanelActivity, MainActivity, QueueScreen.
+  - **Related files:** PlaybackService, MediaEvent, QueuePosition, QueueSong, NamedQueueRepository.
+  - **Notes:** Koin-injected; debounced queue rebuild (QUEUE_DEBOUNCE=100ms); removes missing MediaItems by `QueueItem.second` timeline indices, grouping consecutive ranges and removing them descending (never by shuffle-list positions). The removal pass captures one `queueTimeline` snapshot before reading the queue, then revalidates timeline identity and `mediaItemCount == windowCount` on Main; a stale pass removes nothing and returns before publishing queue/position flows. Named-queue switching and audio-focus commands are session commands; queue-search actions retain original indices (ADR-041, ADR-042).
 
 
 - `ui/screen/player/cover/CoverPagerFragment.kt` — ViewPager of covers (carousel effect) with player gestures and palette color capture.
@@ -4871,15 +4871,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** MainActivity replaces only Aurora's nav_queue destination with the full-screen Fragment; non-Aurora retains the dialog. The Aurora host renders QueueScreen's header, so the queue selector opens the queues-manager dialog from the same surface.
 
 
-- `ui/screen/queue/QueueScreen.kt` — Compose real-queue UI and reference queues manager: highlighted current song, drag reordering, playback/actions and honest unavailable states.
-  - **Purpose:** Interactive queue list with playback control and the reference queue chrome.
-  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, up-next summary, locate-current button, per-item menu, stop-after events, auto-scroll to current; Aurora header with the queue selector that opens the queues-manager dialog, play/pause state, in-queue badge with the next title, save control, reference-only queue actions (rename/remove/remove-others) exposed as disabled controls, and a disabled queue-search row that states the unavailable state; one scrolling Aurora surface for the header, songs, empty state and footer.
-  - **Inputs:** PlayerViewModel flows, SharedPreferences LOCKED_QUEUE.
-  - **Outputs:** PlayerViewModel commands (playSongAt, moveSong, stopAt, clearQueue).
-  - **Dependencies:** PlayerViewModel, reorderable (sh.calvin), LazyColumnScrollbar, AnimatedEqBars, MediaImage.
+- `ui/screen/queue/QueueScreen.kt` - Compose real-queue UI with named-queue manager and queue-local search.
+  - **Purpose:** Interactive queue list with playback control, persistent named queues and filtering.
+  - **Responsibilities:** Reorderable drag list, shuffle/repeat/lock toggles, up-next summary, locate-current button, per-item menu, stop-after events, auto-scroll to current; Aurora header with queue selector, play/pause state, in-queue badge, save control, named-queue rename/delete/remove-others; queue-local search filtering by title/artist/album; one scrolling Aurora surface for header, songs, empty state and footer.
+  - **Inputs:** PlayerViewModel flows (queue, named queues, active id), SharedPreferences LOCKED_QUEUE, queue query.
+  - **Outputs:** PlayerViewModel commands (playSongAt, moveSong, stopAt, clearQueue, saveCurrentQueueAs, switchToNamedQueue, rename/delete named queues).
+  - **Dependencies:** PlayerViewModel, NamedQueueSummary, reorderable (sh.calvin), LazyColumnScrollbar, AnimatedEqBars, MediaImage.
   - **Consumed by:** QueueFragment, AuroraQueueFragment.
-  - **Related files:** QueueFragment.kt, PlayerViewModel.kt.
-  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed. Aurora translates list indices past the header and rejects header/footer reorder targets. There is no queue-local search or filter engine; the single playback queue is real while the reference's named-queue manager, renaming and removing other queues stay unavailable (ADR-036) and never simulate success.
+  - **Related files:** QueueFragment.kt, PlayerViewModel.kt, NamedQueueRepository.kt.
+  - **Notes:** QUEUE_DEBOUNCE delays reorder commits; stop-after toasts observed. Aurora translates list indices past the header and rejects header/footer reorder targets. Queue-local search filters indexed `(originalIndex, song)` pairs, so play/remove/stop/move actions keep the original queue index; named-queue save/binding ordering is coordinated by PlayerViewModel and PlaybackService (ADR-041).
 
 
 - `ui/screen/scrobbling/ScrobblingServiceLoginFragment.kt` — Compose bottom sheet for scrobbling login (Last.fm/Libre.fm): user/token or API key form.
@@ -4893,37 +4893,37 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Logs out failed logins on dispose.
 
 
-- `ui/screen/settings/SettingsFragment.kt` — Settings container with nested NavHostFragment, toolbar and destination listener.
+- `ui/screen/settings/SettingsFragment.kt` - Settings container with nested NavHostFragment, toolbar, destination listener and settings search entry point.
   - **Purpose:** Host settings categories in nested navigation.
-  - **Responsibilities:** Toolbar title per destination, back-press handling (dismiss Aurora overlays, collapse panel, pop child stack), child NavController listener.
+  - **Responsibilities:** Toolbar title per destination, back-press handling (dismiss Aurora overlays, collapse panel, pop child stack), child NavController listener, inflate `menu_settings` search action, open the Compose settings-search sheet, navigate to the selected SettingsScreen and pop to root when needed.
   - **Inputs:** Layout fragment_settings, child NavHostFragment.
-  - **Outputs:** Title updates, navigation pops.
-  - **Dependencies:** AbsMainActivityFragment, NavController.OnDestinationChangedListener, BottomSheetBehavior.
+  - **Outputs:** Title updates, navigation pops, SettingsSearchDialog launch/navigation result.
+  - **Dependencies:** AbsMainActivityFragment, NavController.OnDestinationChangedListener, BottomSheetBehavior, SettingsSearchDialog, menu_settings.
   - **Consumed by:** Main navigation graph.
-  - **Related files:** SettingsScreen.kt, PreferencesScreenFragment.kt.
-  - **Notes:** onBackPressedCallback removed when child stack empty.
+  - **Related files:** SettingsScreen.kt, PreferencesScreenFragment.kt, SettingsSearchDialog.kt, SettingsSearchIndex.kt.
+  - **Notes:** onBackPressedCallback removed when child stack empty; search scroll target is passed to PreferencesScreenFragment (ADR-044).
 
 
-- `ui/screen/settings/SettingsScreen.kt` — Enum mapping each settings category to its XML preference layout and navigation action.
+- `ui/screen/settings/SettingsScreen.kt` - Enum mapping each settings category to its XML preference layout, navigation action and display title.
   - **Purpose:** Declarative mapping of settings categories.
-  - **Responsibilities:** Enumerate Appearance/NowPlaying/Lyrics/Playback/Library/Network/Advanced with layoutRes and navAction.
+  - **Responsibilities:** Enumerate Appearance/NowPlaying/Lyrics/Playback/Library/Network/Advanced with layoutRes, navAction and titleRes.
   - **Inputs:** None.
-  - **Outputs:** Lookup used by PreferencesScreenFragment navigation.
-  - **Dependencies:** R.xml.preferences_screen_*, navigation actions.
-  - **Consumed by:** PreferencesScreenFragment (toEnum), App.kt.
-  - **Related files:** PreferencesScreenFragment.kt, App.kt.
-  - **Notes:** Pure declaration, no logic.
+  - **Outputs:** Lookup used by PreferencesScreenFragment navigation and SettingsSearchDialog grouping.
+  - **Dependencies:** R.xml.preferences_screen_*, navigation actions, title strings.
+  - **Consumed by:** PreferencesScreenFragment (toEnum), SettingsSearchIndex/Dialog, App.kt.
+  - **Related files:** PreferencesScreenFragment.kt, SettingsSearchIndex.kt, App.kt.
+  - **Notes:** Pure declaration, no logic; titleRes supplies grouped search headers (ADR-044).
 
 
-- `ui/screen/settings/PreferencesScreenFragment.kt` — PreferenceFragmentCompat with all preference screens and change handlers.
+- `ui/screen/settings/PreferencesScreenFragment.kt` - PreferenceFragmentCompat with all preference screens, change handlers, audio-focus mode, scheduled-backup row and search scroll targets.
   - **Purpose:** Render and handle all XML preference screens.
-  - **Responsibilities:** Bind change listeners (theme, language, font, backup/restore, update search), custom dialogs via onDisplayPreferenceDialog, cache clearing, summaries.
-  - **Inputs:** SharedPreferences, LibraryViewModel, LyricsViewModel, UpdateViewModel.
-  - **Outputs:** Preference changes, BackupHelper create/restore, ScrobblingServiceLoginFragment, font import.
-  - **Dependencies:** ThemePreference, ProgressIndicatorPreference, SwitchWithButtonPreference, BackupHelper, CoverProvider, AppCompatDelegate.
+  - **Responsibilities:** Bind change listeners (theme, language, font, backup/restore, update search, audio-focus mode), custom dialogs via onDisplayPreferenceDialog, cache clearing, summaries; handle ARG_SCROLL_TO_PREFERENCE; host the ScheduledBackupPreference entry.
+  - **Inputs:** SharedPreferences, LibraryViewModel, LyricsViewModel, UpdateViewModel, fragment arguments.
+  - **Outputs:** Preference changes, BackupHelper create/restore, ScheduledBackupController/Preference interactions, ScrobblingServiceLoginFragment, font import, preference scroll.
+  - **Dependencies:** ThemePreference, ProgressIndicatorPreference, SwitchWithButtonPreference, BackupHelper, CoverProvider, AppCompatDelegate, AudioFocusMode, ScheduledBackup.
   - **Consumed by:** SettingsFragment nested graph.
-  - **Related files:** SettingsFragment.kt, SettingsScreen.kt, util/BackupHelper.kt.
-  - **Notes:** Seven subclasses per category screen; DynamicColors applied for Material You. Aurora switches recreate the activity, saved theme selectors are disabled, and list clearance comes from LibraryMargin rather than a fixed navigation height.
+  - **Related files:** SettingsFragment.kt, SettingsScreen.kt, util/BackupHelper.kt, util/backup/, ui/screen/settings/backup/.
+  - **Notes:** Seven subclasses per category screen; DynamicColors applied for Material You. Aurora switches recreate the activity, saved theme selectors are disabled, and list clearance comes from LibraryMargin rather than a fixed navigation height. The audio-focus preference maps to AudioFocusMode and clears the legacy IGNORE_AUDIO_FOCUS flag; scheduled backups are opened from Advanced settings (ADR-042, ADR-043, ADR-044).
 
 
 - `ui/screen/sleeptimer/SleepTimerFragment.kt` — Expanded BottomSheetDialogFragment showing SleepTimerBottomSheet with SleepTimerViewModel.
@@ -5112,7 +5112,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** AndroidX View/ViewBinding, Material Components, custom views (MusicSlider, BaselineGridTextView, WidthFitSquareLayout).
   - **Consumed by:** All legacy fragments/adapters/activities (Abs*Fragment, adapters, dialog bindings).
   - **Related files:** res/values/, ui/component/views/, ui/adapters/.
-  - **Notes:** layout-land/ variants; Compose migration in progress (rule 12: new UI in Compose).
+  - **Notes:** layout-land/ variants; Compose migration in progress (rule 12: new UI in Compose). `fragment_main_recycler.xml` hosts the optional `QuickSearchBar` ComposeView (`quick_search_bar`) and `fragment_detail_list.xml` keeps the period/statistics description slot.
 
 
 - `res/values/` — Strings (main file plus ~40 locale translations), colors (night/v31), dimens (land/large/sw600dp/xlarge), styles/themes, arrays, attrs, bools, ids, integers.
@@ -5137,15 +5137,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Notes:** Destinations match the "nav_*" ids referenced in Kotlin navigation code.
 
 
-- `res/menu/` — ~25 XML menus (song/album/artist/playlist/detail/selection/now-playing).
+- `res/menu/` - 23 XML menus (song/album/artist/playlist/detail/selection/now-playing/settings).
   - **Purpose:** Menu definitions for popups, toolbars and contextual action bars.
-  - **Responsibilities:** item_* row popups, library screens menus, selection (CAB) menus, now-playing menus.
+  - **Responsibilities:** item_* row popups, library screens menus, selection (CAB) menus, now-playing menus, settings search action, history period/removal actions.
   - **Inputs:** Referenced via R.menu in adapters (OnClickMenu) and fragments.
   - **Outputs:** Menu items resolved in MenuItemClickExt/onSongMenu handlers.
   - **Dependencies:** Android Menu API, PopupMenu.
-  - **Consumed by:** All adapters, AbsPlayerFragment, AbsRecyclerViewFragment, SearchAdapter.
-  - **Related files:** ui/component/menu/, ui/adapters/, AbsMultiSelectAdapter.
-  - **Notes:** Selection menus share ids like action_multi_select_adapter_check_all.
+  - **Consumed by:** All adapters, AbsPlayerFragment, AbsRecyclerViewFragment, SettingsFragment, SearchAdapter.
+  - **Related files:** ui/component/menu/, ui/adapters/, AbsMultiSelectAdapter, menu_settings.xml.
+  - **Notes:** Selection menus share ids like action_multi_select_adapter_check_all; history removal items are hidden by default and enabled by SongAdapter.historyMode (ADR-044).
 
 
 - `res/xml/` — Preference screens per category, widget info files, shortcuts, searchable, backup descriptors, provider paths, automotive app descriptor.
@@ -5156,7 +5156,7 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Dependencies:** AndroidX Preference, App Widget metadata, FileProvider paths.
   - **Consumed by:** PreferencesScreenFragment, manifest components, Glance widget receivers.
   - **Related files:** ui/screen/settings/, app/src/main/AndroidManifest.xml.
-  - **Notes:** Preference keys must match util/Preferences.kt constants.
+  - **Notes:** Preference keys must match util/Preferences.kt constants. `preferences_screen_playback.xml` adds the audio-focus mode and per-track/session-recovery keys; `preferences_screen_advanced.xml` hosts the custom `ScheduledBackupPreference` row (ADR-042, ADR-043).
 
 
 - `res/font/`, `res/anim/`, `res/raw/` — Google Sans Flex font, fragment/item animations, keep.xml.
@@ -5168,3 +5168,334 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
   - **Consumed by:** ui/theme/Type.kt, FragmentExt transitions, item animations.
   - **Related files:** ui/theme/Type.kt, extensions/FragmentExt.kt.
   - **Notes:** Font is the sole bundled family; custom fonts importable via settings.
+
+### 2026-10 additions (A-L)
+
+- `data/local/room/PlayEventEntity.kt` — Append-only playback event for period statistics.
+  - **Purpose:** Record each counted play with song id, artist name and timestamp.
+  - **Responsibilities:** Store songId, artistName and playedAt; index played_at and song_id.
+  - **Inputs:** Written by PlayEventDao.recordPlay with the aggregate play-count increment.
+  - **Outputs:** Event rows used for this-week/month/12-month/year queries.
+  - **Dependencies:** Room, PlayCountEntity.
+  - **Consumed by:** PlayEventDao, RealSmartRepository.
+  - **Related files:** PlayEventDao.kt, PlayCountEntity.kt, ListeningPeriod.kt.
+  - **Notes:** Added in Room v8; period data starts at introduction, while all-time includes earlier aggregate counts (ADR-040). No retention policy yet.
+
+
+- `data/local/room/PlayEventDao.kt` — DAO for playback events and period/artist aggregates.
+  - **Purpose:** Query period statistics from the append-only event log.
+  - **Responsibilities:** Insert events; `recordPlay` transaction; cutoff song counts; recorded-name artist grouping with unbounded period total in the same SQL; Flow/suspend queries; delete-older/clear; ArtistEventPlayCount/ArtistIdPlayCount DTOs.
+  - **Inputs:** Song/timePlayed, cutoff, limit.
+  - **Outputs:** Event rows, SongPlayCount, ArtistEventPlayCount with full total, shared ArtistIdPlayCount DTO, song/artist Flows.
+  - **Dependencies:** Room, Flow, PlayCountDao, PlayCountEntity, Song.
+  - **Consumed by:** RealSmartRepository, LibraryViewModel stats flows, DetailListFragment.
+  - **Related files:** PlayEventEntity.kt, PlayCountDao.kt, ListeningPeriod.kt, ArtistPlayStat.kt.
+  - **Notes:** Period attribution uses exact event `artist_name`, independent of aggregate rename/deletion. Only outer rows are limited; total and counts share one snapshot and Flow invalidation. All-time aggregate IDs/counts remain in PlayCountDao (ADR-040).
+
+
+- `data/local/room/TrackPositionEntity.kt` — Remembered playback position for one media item.
+  - **Purpose:** Persist long-form per-track resume positions.
+  - **Responsibilities:** Store mediaId as primary key, positionMs and updatedAt.
+  - **Inputs:** PlaybackService position observer and transition/pause logic.
+  - **Outputs:** TrackPositionEntity rows.
+  - **Dependencies:** Room.
+  - **Consumed by:** TrackPositionDao, PlaybackService.
+  - **Related files:** TrackPositionDao.kt, PlaybackService.kt.
+  - **Notes:** Added in Room v8; short tracks and positions near start/end are discarded by service policy (ADR-042).
+
+
+- `data/local/room/TrackPositionDao.kt` — DAO for remembered track positions.
+  - **Purpose:** Upsert/read/delete/prune per-track resume positions.
+  - **Responsibilities:** Upsert position; get by mediaId; delete one/all; prune to newest N entries.
+  - **Inputs:** TrackPositionEntity, mediaId, keep count.
+  - **Outputs:** TrackPositionEntity? and mutation effects.
+  - **Dependencies:** Room.
+  - **Consumed by:** TrackPositionWriter, PlaybackService.
+  - **Related files:** TrackPositionEntity.kt, TrackPositionWriter.kt, PlaybackService.kt.
+  - **Notes:** Prune keeps the most recently updated rows; long-form resume is opt-in (ADR-042).
+
+
+- `playback/TrackPositionWriter.kt` — Serial nonblocking writer for per-track resume positions.
+  - **Purpose:** Order TrackPosition DAO writes off the main thread and preserve the final snapshot during service destruction.
+  - **Responsibilities:** Channel-backed upsert/delete/prune queue on a SupervisorJob + IO scope; `persistFinalSnapshot` deletes near-end positions; write failures are contained.
+  - **Inputs:** TrackPositionDao, media id, position/duration, keep count.
+  - **Outputs:** Ordered DAO upsert/delete/prune operations.
+  - **Dependencies:** TrackPositionDao, TrackPositionEntity, coroutines Channel/Dispatchers/SupervisorJob.
+  - **Consumed by:** PlaybackService (position observer, transitions, pause, destroy).
+  - **Related files:** TrackPositionDao.kt, TrackPositionEntity.kt, PlaybackService.kt.
+  - **Notes:** Application-owned serial writer; service callbacks enqueue before destruction so an older in-flight write cannot overtake the final snapshot. Non-blocking by design; pending writes can still be lost if Android kills the whole process. Near-end final snapshots delete instead of persisting (ADR-042).
+
+
+- `playback/PlaybackStateWriter.kt` — Serial application-owned persistence of immutable queue snapshots.
+  - **Purpose:** Preserve queue edits through pause/service destruction and order earlier writes before restoration.
+  - **Responsibilities:** Channel-backed named/global transactional replacements; resume-only updates; awaitable outgoing-queue saves and restoration barriers; contain/log write failures.
+  - **Inputs:** QueueDao, NamedQueueDao, Main-captured QueueStateSnapshot with media ids, binding, index/position and modes.
+  - **Outputs:** Ordered QueueEntity/NamedQueueItemEntity/resume writes; completion barriers.
+  - **Dependencies:** Room DAOs, Channel, CompletableDeferred, SupervisorJob, Dispatchers.IO.
+  - **Consumed by:** PersistentStorage normal/pause/final saves, named-queue switching and restore.
+  - **Related files:** PersistentStorage.kt, QueueDao.kt, NamedQueueDao.kt, PlaybackService.kt.
+  - **Notes:** Never reads or retains a player. FIFO is shared across service instances; queued IO is not a whole-process-kill durability guarantee (ADR-045).
+
+
+- `ui/dialogs/AudioFocusAskDialog.kt` — Restorable Compose focus-consent DialogFragment.
+  - **Purpose:** Keep the pending Ask visible across activity recreation without granting stale consent.
+  - **Responsibilities:** Stable fragment tag; request-id arguments; Compose title/message/buttons; FragmentResult confirmation/cancellation; explicit cancellation only.
+  - **Inputs:** Request id and strings from values/strings.xml.
+  - **Outputs:** Token-bound confirm/cancel fragment results to MainActivity.
+  - **Dependencies:** DialogFragment, ComposeView, Material 3, SsilencceTheme.
+  - **Consumed by:** MainActivity focus-state reconciliation.
+  - **Related files:** MainActivity.kt, PlayerViewModel.kt, AudioFocusController.kt, Playback.kt.
+  - **Notes:** No constructor callbacks or transient visible flag; onDestroy does not cancel the service request (ADR-045).
+
+
+- `data/local/room/NamedQueueEntity.kt` — Persistent named-queue header.
+  - **Purpose:** Store user-named queue metadata separate from the active QueueEntity.
+  - **Responsibilities:** id/name, created/updated timestamps, resume index/position, repeat mode and shuffle-enabled state.
+  - **Inputs:** NamedQueueRepository create/update/rename.
+  - **Outputs:** NamedQueueEntity rows.
+  - **Dependencies:** Room.
+  - **Consumed by:** NamedQueueDao, NamedQueueRepository, PersistentStorage.
+  - **Related files:** NamedQueueItemEntity.kt, NamedQueueDao.kt, QueueEntity.kt.
+  - **Notes:** Room v8 additive table; a named queue is a snapshot loaded into the active queue, not a second live timeline (ADR-041).
+
+
+- `data/local/room/NamedQueueItemEntity.kt` — Ordered media ids for a named queue.
+  - **Purpose:** Persist each named queue's ordered media-id list.
+  - **Responsibilities:** Composite key `(queue_id, order)` with mediaId.
+  - **Inputs:** NamedQueueRepository snapshot conversion.
+  - **Outputs:** Ordered item rows.
+  - **Dependencies:** Room.
+  - **Consumed by:** NamedQueueDao, NamedQueueRepository.
+  - **Related files:** NamedQueueEntity.kt, NamedQueueDao.kt.
+  - **Notes:** Deleting a queue deletes its items explicitly through the DAO; no foreign key/cascade (ADR-041).
+
+
+- `data/local/room/NamedQueueDao.kt` — DAO for named queues, summaries and ordered items.
+  - **Purpose:** Transactional persistence for named-queue snapshots.
+  - **Responsibilities:** Entity/items reads; summary list/Flow with counts; upsert queue; insert/delete items; transactional saveQueue/deleteQueueWithItems; rename; update resume state.
+  - **Inputs:** NamedQueueEntity, item list, ids, resume values.
+  - **Outputs:** NamedQueueSummary/WithItems, entities, summaries Flow.
+  - **Dependencies:** Room (@Dao, @Transaction, @Relation, Flow).
+  - **Consumed by:** NamedQueueRepository, PersistentStorage.
+  - **Related files:** NamedQueueEntity.kt, NamedQueueItemEntity.kt, NamedQueueRepository.kt.
+  - **Notes:** `saveQueue` replaces items inside one transaction; summaries are ordered by updated_at DESC (ADR-041).
+
+
+- `data/local/repository/NamedQueueRepository.kt` — Single writer for named queues.
+  - **Purpose:** Create/update/rename/delete named-queue snapshots with unique names.
+  - **Responsibilities:** Map NamedQueueSnapshot to entity/items; UUID ids; unique-name suffixing; transactional save; delete/delete-others; expose summary and queue reads.
+  - **Inputs:** Requested name, NamedQueueSnapshot, queue id.
+  - **Outputs:** NamedQueueEntity, NamedQueueWithItems, summary Flow.
+  - **Dependencies:** NamedQueueDao, UUID.
+  - **Consumed by:** PlayerViewModel (save/switch/rename/delete).
+  - **Related files:** NamedQueueDao.kt, NamedQueueEntity.kt, PlayerViewModel.kt.
+  - **Notes:** Active playback state remains in QueueEntity; exact shuffle permutation is not stored, only shuffle-enabled mode (ADR-041). Uniqueness is best-effort and not DB-constrained. PersistentStorage also updates the active named queue through NamedQueueDao, so the repository is the creation/management writer but not the only runtime writer despite the source comment's “single writer” wording.
+
+
+- `data/model/ListeningPeriod.kt` — Periods available for play statistics.
+  - **Purpose:** Identify this-week/month/12-month/year/all-time windows.
+  - **Responsibilities:** Enum entries; `cutoffMillis(now)` using device-local calendar boundaries; AllTime returns null.
+  - **Inputs:** Optional ZonedDateTime.
+  - **Outputs:** Cutoff epoch millis or null.
+  - **Dependencies:** java.time (ZonedDateTime, DayOfWeek, TemporalAdjusters).
+  - **Consumed by:** RealSmartRepository, DetailListFragment, period selector.
+  - **Related files:** ArtistPlayStat.kt, PlayEventDao.kt, DetailListFragment.kt.
+  - **Notes:** Period data begins when PlayEventEntity starts recording; AllTime uses aggregate PlayCountEntity (ADR-040).
+
+
+- `data/model/ArtistPlayStat.kt` — Artist row with play count and percentage.
+  - **Purpose:** Carry one artist's period/all-time statistics to the UI.
+  - **Responsibilities:** Typed recorded-name/aggregate-ID identity; snapshot artistName; optional actionable Artist; playCount/full total; overflow-safe integer percentage.
+  - **Inputs:** RealSmartRepository aggregation.
+  - **Outputs:** ArtistPlayStat rows.
+  - **Dependencies:** Artist.
+  - **Consumed by:** SmartRepository Flow/suspend results, DetailListFragment, ArtistAdapter.
+  - **Related files:** ListeningPeriod.kt, ArtistAdapter.kt, SmartRepository.kt.
+  - **Notes:** Recorded periods use exact-name keys; all-time uses aggregate IDs. Full denominator participates in model equality, so outside-top-100 changes remain observable even if rounded percentage is unchanged (ADR-040).
+
+
+- `playback/AudioFocusController.kt` — Single owner of audio focus for playback.
+  - **Purpose:** Implement Normal/Ignore/Ask/ResumeAfterCall focus behavior outside ExoPlayer.
+  - **Responsibilities:** Request/abandon focus; uniquely identified Ask state; explicit intent gate and token-validated confirm/cancel; transient loss/resume; ducking/volume restore; mode/release cleanup.
+  - **Inputs:** Context/AudioManager, raw ExoPlayer, SharedPreferences, onPendingAskChanged callback.
+  - **Outputs:** Focus requests, player pause/play/volume changes, ask event.
+  - **Dependencies:** AudioManager, AudioFocusRequest, Player, AudioFocusMode, Preferences.
+  - **Consumed by:** PlaybackService, MainActivity (ask dialog), PlayerViewModel (confirm/cancel commands).
+  - **Related files:** AudioFocusMode.kt, PlaybackService.kt, MainActivity.kt.
+  - **Notes:** ExoPlayer's built-in focus handling is disabled. Repeated play preserves a pending Ask; explicit/no-op pause clears it synchronously. Internal focus pauses bypass user-intent interception. A synchronous GRANTED result normalizes stale transient-loss state without waiting for a GAIN callback. Confirm/cancel must match the live request id; no automatic timeout (ADR-042, ADR-045).
+
+
+- `playback/PlaybackTileService.kt` — Quick Settings playback tile.
+  - **Purpose:** Toggle playback and mirror session state from Quick Settings.
+  - **Responsibilities:** Connect a MediaController only while listening; handle pending toggles; mirror active/inactive/unavailable state; release controller on stop/destroy; update label/subtitle/state description.
+  - **Inputs:** TileService lifecycle, MediaController/Player events.
+  - **Outputs:** QS Tile state and play/pause commands.
+  - **Dependencies:** TileService, MediaController, SessionToken, PlaybackService, Media3 Player.
+  - **Consumed by:** AndroidManifest QS tile declaration.
+  - **Related files:** PlaybackService.kt, AndroidManifest.xml.
+  - **Notes:** No polling or persistent controller; manifest exports the QS_TILE action (ADR-042).
+
+
+- `util/AudioFocusMode.kt` — Persisted audio-focus mode enum.
+  - **Purpose:** Define the four user-selectable focus policies.
+  - **Responsibilities:** Normal, Ignore, Ask, ResumeAfterCall; parse by enum name with Normal fallback.
+  - **Inputs:** Stored string.
+  - **Outputs:** AudioFocusMode value.
+  - **Dependencies:** None.
+  - **Consumed by:** Preferences.audioFocusMode, AudioFocusController, PreferencesScreenFragment.
+  - **Related files:** AudioFocusController.kt, util/Preferences.kt.
+  - **Notes:** Legacy IGNORE_AUDIO_FOCUS still forces Ignore (ADR-042).
+
+
+- `util/RestoreSummary.kt` — Pure restore accounting and honest outcome selection.
+  - **Purpose:** Track what a backup restore actually recognized, selected and imported.
+  - **Responsibilities:** Count total/recognized/selected entries; record imported items; classify playlist creation/song additions; produce RestoreOutcome (NothingSelected/NoRecognizedContent/NothingImported/Success/SuccessWithCount).
+  - **Inputs:** RestoreEntryKind, selected flag, import counts.
+  - **Outputs:** Counters and RestoreOutcome.
+  - **Dependencies:** None (Android-free).
+  - **Consumed by:** BackupHelper.restoreBackup.
+  - **Related files:** BackupHelper.kt, RestoreOutcome.
+  - **Notes:** Keeps restore warnings factual without Android dependencies; a created empty playlist still counts as an import (ADR-039 change set).
+
+
+- `util/ShortcutHelper.kt` — Dynamic per-entity launcher shortcuts.
+  - **Purpose:** Add/remove album/artist/folder/playlist launcher shortcuts.
+  - **Responsibilities:** Build ShortcutInfoCompat with entity type/id/path/name extras; push dynamic shortcut; remove by typed id; stable shortcutId.
+  - **Inputs:** Context, ShortcutEntityType, id, name, optional path.
+  - **Outputs:** Boolean push result; removed shortcuts.
+  - **Dependencies:** ShortcutManagerCompat, ShortcutInfoCompat, IconCompat, MainActivity.
+  - **Consumed by:** MenuItemClickExt (add dialog), MainActivity (resolve intent), DeletePlaylistDialog (remove).
+  - **Related files:** MainActivity.kt, MenuItemClickExt.kt, DeletePlaylistDialog.kt.
+  - **Notes:** Launcher capacity failures are reported by the caller; shortcuts carry `com.ssilencce.shortcut.ENTITY` (ADR-044).
+
+
+- `util/m3u/PlaylistExportFormat.kt` - Playlist export format enum.
+  - **Purpose:** Single source of export extensions, MediaStore MIME types and labels.
+  - **Responsibilities:** M3U/M3U8/PLS with extension, concrete playlist MIME and string resource.
+  - **Inputs:** None.
+  - **Outputs:** Format selection used by writer/UI.
+  - **Dependencies:** R.string export labels.
+  - **Consumed by:** M3UWriter, MenuItemClickExt format chooser.
+  - **Related files:** M3UWriter.kt, MenuItemClickExt.kt.
+  - **Notes:** Single and batch export share the same chooser; each entry carries the exact extension, concrete MediaStore MIME and label (ADR-044).
+
+
+- `ui/component/base/QuickSearchable.kt` — Shared inline quick-search contract.
+  - **Purpose:** Let list fragments accept a query without owning the search UI.
+  - **Responsibilities:** `onQuickSearch(query)` callback; case-insensitive string matching helper.
+  - **Inputs:** Query string.
+  - **Outputs:** Filtered adapter data in implementers.
+  - **Dependencies:** None.
+  - **Consumed by:** SongListFragment, AlbumListFragment, ArtistListFragment, PlaylistListFragment, GenresListFragment, YearsListFragment, FoldersListFragment.
+  - **Related files:** AbsRecyclerViewFragment.kt, QuickSearchBar.kt.
+  - **Notes:** Only the seven top-level lists implement it; detail lists do not (ADR-044).
+
+
+- `ui/component/compose/QuickSearchBar.kt` — Compose inline quick-search field.
+  - **Purpose:** Reusable pill search field for library lists.
+  - **Responsibilities:** Query field, search icon, clear action, Material3 styling.
+  - **Inputs:** Query and onQueryChange callback.
+  - **Outputs:** Query updates/clear.
+  - **Dependencies:** Compose Material3, R.drawable search/close.
+  - **Consumed by:** AbsRecyclerViewFragment ComposeView.
+  - **Related files:** QuickSearchable.kt, AbsRecyclerViewFragment.kt.
+  - **Notes:** No filtering logic; the fragment/adapter owns data (ADR-044).
+
+
+- `ui/screen/settings/SettingsSearchIndex.kt` — Public settings index and filter.
+  - **Purpose:** Index preference titles/summaries across all SettingsScreen XML files.
+  - **Responsibilities:** Parse preference XML with Resources.getXml; resolve title/summary string resources and key attributes; filter case-insensitively; group/order by SettingsScreen.
+  - **Inputs:** Context, query.
+  - **Outputs:** SettingsSearchResult list.
+  - **Dependencies:** Android Resources/XmlResourceParser, SettingsScreen.
+  - **Consumed by:** SettingsSearchDialog.
+  - **Related files:** SettingsSearchDialog.kt, SettingsScreen.kt, res/xml/preferences_screen_*.
+  - **Notes:** Public API only; does not use private PreferenceInflater (ADR-044).
+
+
+- `ui/screen/settings/SettingsSearchDialog.kt` — Compose settings-search sheet.
+  - **Purpose:** Search settings and navigate to a matching section.
+  - **Responsibilities:** Query field, grouped results by section title, empty message, fragment-result selection, legacy-key-compatible result keys.
+  - **Inputs:** SettingsSearchIndex, user query.
+  - **Outputs:** Fragment result (screen name + preference key) to SettingsFragment.
+  - **Dependencies:** Compose Material3, SsilencceTheme, BottomSheetDialogFragment, SettingsSearchIndex.
+  - **Consumed by:** SettingsFragment menu action.
+  - **Related files:** SettingsSearchIndex.kt, SettingsFragment.kt, PreferencesScreenFragment.kt.
+  - **Notes:** Selecting a result navigates to the section; scrolling is best-effort (ADR-044).
+
+
+- `util/backup/ScheduledBackupPreferences.kt` — Scheduled-backup settings model and store.
+  - **Purpose:** Persist opt-in schedule, destination and last-run status.
+  - **Responsibilities:** Frequency enum (daily/weekly/30-day); last-result enum; state data class; dedicated SharedPreferences store; write settings, record success/failure.
+  - **Inputs:** Settings values, destination Uri/name, result timestamps/errors.
+  - **Outputs:** ScheduledBackupState, persisted preferences.
+  - **Dependencies:** SharedPreferences, Uri, string labels.
+  - **Consumed by:** ScheduledBackupController, Worker, Preference, Dialog.
+  - **Related files:** ScheduledBackupScheduler.kt, ScheduledBackupController.kt, ScheduledBackupPreference.kt.
+  - **Notes:** The 30-day option is labeled “Every 30 days”; it is a fixed cadence, not a calendar month (ADR-043).
+
+
+- `util/backup/ScheduledBackupScheduler.kt` — WorkManager scheduling for automatic backups.
+  - **Purpose:** Enqueue/cancel the single unique periodic backup.
+  - **Responsibilities:** battery-not-low + storage-not-low constraints; optional charging; ExistingPeriodicWorkPolicy.UPDATE; unique name `scheduled_backup`; fixed-duration epoch window keys matching the daily/weekly/30-day WorkManager intervals so DST cannot suppress a due run.
+  - **Inputs:** Context, frequency, chargingOnly.
+  - **Outputs:** Unique PeriodicWorkRequest; window key strings.
+  - **Dependencies:** WorkManager, ScheduledBackupWorker/Frequency.
+  - **Consumed by:** ScheduledBackupController.
+  - **Related files:** ScheduledBackupWorker.kt, ScheduledBackupPreferences.kt, ScheduledBackupController.kt.
+  - **Notes:** First run is eligible immediately after enable; timing is inexact by platform design (ADR-043).
+
+
+- `util/backup/ScheduledBackupWorker.kt` — CoroutineWorker writing one scheduled backup.
+  - **Purpose:** Create a timestamped `.bmgbak` in the persisted SAF tree.
+  - **Responsibilities:** Check enabled/window/permission; create DocumentFile; call BackupHelper.createBackupFile; delete partial document on failure/cancel; record success/error; return success to avoid retry storms.
+  - **Inputs:** Worker parameters, ScheduledBackupStore, persisted tree Uri.
+  - **Outputs:** Backup document, last-run preferences, Result.
+  - **Dependencies:** WorkManager, DocumentFile, BackupHelper, ScheduledBackupStore.
+  - **Consumed by:** WorkManager.
+  - **Related files:** ScheduledBackupScheduler.kt, ScheduledBackupPreferences.kt, BackupHelper.kt.
+  - **Notes:** One backup per schedule window; no fallback destination; destination-volume free space is not reliably queryable, so write failures are reported (ADR-043).
+
+
+- `util/backup/ScheduledBackupController.kt` — Settings/WorkManager facade for scheduled backups.
+  - **Purpose:** Save configuration, persist SAF permission and reconcile the unique work.
+  - **Responsibilities:** StateFlow of store state; rememberDestination/takePersistableUriPermission; configure with MissingFolder/PermissionDenied results; schedule/cancel; destination-name resolution.
+  - **Inputs:** Context, enabled/frequency/chargingOnly/destination.
+  - **Outputs:** ConfigureResult, ScheduledBackupState.
+  - **Dependencies:** ScheduledBackupStore, Scheduler, DocumentFile.
+  - **Consumed by:** ScheduledBackupDialogFragment.
+  - **Related files:** ScheduledBackupPreferences.kt, ScheduledBackupScheduler.kt, ScheduledBackupDialogFragment.kt.
+  - **Notes:** Enabling without a usable destination is rejected; disabling always cancels work (ADR-043).
+
+
+- `ui/screen/settings/backup/ScheduledBackupPreference.kt` — Advanced-settings row for scheduled backups.
+  - **Purpose:** Expose scheduled-backup configuration in settings.
+  - **Responsibilities:** Open the Compose dialog; refresh summary on shared-preference changes; show enabled/frequency/folder/last failure.
+  - **Inputs:** ScheduledBackupStore state, preference context.
+  - **Outputs:** Dialog launch; dynamic summary.
+  - **Dependencies:** Preference, SharedPreferences listener, ScheduledBackupStore.
+  - **Consumed by:** preferences_screen_advanced.xml.
+  - **Related files:** ScheduledBackupDialogFragment.kt, ScheduledBackupPreferences.kt.
+  - **Notes:** Uses the custom preference directly, so no fragment code is required (ADR-043).
+
+
+- `ui/screen/settings/backup/ScheduledBackupDialogFragment.kt` — Compose scheduled-backup configuration sheet.
+  - **Purpose:** Let users enable, choose frequency/folder/charging and see last status.
+  - **Responsibilities:** SAF OpenDocumentTree picker; persist permission; switches/radio rows; last-run/error display; save via Controller; validation messages.
+  - **Inputs:** ScheduledBackupController, user selections.
+  - **Outputs:** Configure call; dismiss/error state.
+  - **Dependencies:** Compose Material3, SsilencceTheme, BottomSheetDialogFragment, ScheduledBackupController, DocumentFile.
+  - **Consumed by:** ScheduledBackupPreference.
+  - **Related files:** ScheduledBackupController.kt, ScheduledBackupPreference.kt.
+  - **Notes:** Compose UI; controller calls remain context-scoped, no Koin binding (ADR-043).
+
+
+- `ui/screen/settings/backup/ScheduledBackupSettingsIntegration.kt` — Optional one-call binding for a plain scheduled-backup preference.
+  - **Purpose:** Fallback integration for XML that uses a plain `<Preference key="scheduled_backup">`.
+  - **Responsibilities:** `PreferenceFragmentCompat.bindScheduledBackupPreference` finds the key and opens ScheduledBackupDialogFragment.
+  - **Inputs:** PreferenceFragmentCompat, optional key.
+  - **Outputs:** Click listener/dialog launch.
+  - **Dependencies:** PreferenceFragmentCompat, ScheduledBackupDialogFragment.
+  - **Consumed by:** Not wired in the current XML (the custom ScheduledBackupPreference is used instead).
+  - **Related files:** ScheduledBackupPreference.kt, preferences_screen_advanced.xml.
+  - **Notes:** Unused fallback; keep as integration option for a plain preference row (ADR-043).

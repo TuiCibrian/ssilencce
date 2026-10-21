@@ -171,6 +171,35 @@ class ImprovedShuffleOrder private constructor(
             }
         }
 
+        /**
+         * Compacts the saved permutation to a restored queue that may have lost positions.
+         * [savedToRestored] maps every saved position to its restored position, or -1 when
+         * the item is gone. Returns null unless the payload and mapping are valid permutations.
+         */
+        fun remap(savedToRestored: IntArray): SerializedOrder? {
+            val savedOrder = data ?: return null
+            if (savedOrder.size != savedToRestored.size) return null
+
+            val restoredSize = savedToRestored.count { it >= 0 }
+            val seenSaved = BooleanArray(savedOrder.size)
+            val seenRestored = BooleanArray(restoredSize)
+            val remapped = IntArray(restoredSize)
+            var writeIndex = 0
+
+            for (savedIndex in savedOrder) {
+                if (savedIndex !in seenSaved.indices || seenSaved[savedIndex]) return null
+                seenSaved[savedIndex] = true
+
+                val restoredIndex = savedToRestored[savedIndex]
+                if (restoredIndex < 0) continue
+                if (restoredIndex >= restoredSize || seenRestored[restoredIndex]) return null
+                seenRestored[restoredIndex] = true
+                remapped[writeIndex++] = restoredIndex
+            }
+
+            return if (writeIndex == restoredSize) SerializedOrder(remapped, seed) else null
+        }
+
         companion object {
             fun serializedFromOrder(order: ImprovedShuffleOrder): SerializedOrder = SerializedOrder(order.shuffled, order.random.nextLong())
 

@@ -20,8 +20,10 @@ package com.ssilencce.data.local.room
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 @Entity
+@Serializable
 class LyricsEntity(
     @PrimaryKey
     val id: Long,

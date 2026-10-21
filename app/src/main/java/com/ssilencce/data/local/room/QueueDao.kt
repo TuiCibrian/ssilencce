@@ -10,12 +10,12 @@ interface QueueDao {
     @Query("SELECT * FROM QueueEntity ORDER BY `order`")
     suspend fun savedItems(): List<QueueEntity>
 
-    @Query("DELETE FROM QueueEntity WHERE id NOT IN (:currentIds)")
-    suspend fun removeNotIn(currentIds: List<String>)
+    @Query("DELETE FROM QueueEntity")
+    suspend fun clearQueue()
 
     @Transaction
     suspend fun replaceQueue(newQueue: List<QueueEntity>) {
-        removeNotIn(newQueue.map { it.id })
+        clearQueue()
         saveQueue(newQueue)
     }
 }

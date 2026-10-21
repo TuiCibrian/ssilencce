@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.util.Log
+import androidx.core.content.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
@@ -12,12 +13,12 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.common.Player.REPEAT_MODE_OFF
-import androidx.media3.common.Timeline
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
+import com.ssilencce.R
 import com.ssilencce.core.model.MediaEvent
 import com.ssilencce.core.model.PaletteColor
 import com.ssilencce.core.model.action.QueueClearingBehavior
@@ -31,6 +32,8 @@ import com.ssilencce.core.model.shuffle.ShuffleOperationState
 import com.ssilencce.core.model.shuffle.SpecialShuffleMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.SongProvider
+import com.ssilencce.data.local.repository.NamedQueueRepository
+import com.ssilencce.data.local.repository.NamedQueueSnapshot
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.local.room.PlaylistEntity
 import com.ssilencce.data.mapper.toSongs
@@ -42,9 +45,11 @@ import com.ssilencce.playback.ProgressObserver
 import com.ssilencce.playback.getQueueItems
 import com.ssilencce.playback.shuffle.ShuffleManager
 import com.ssilencce.playback.toMediaItems
+import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
 import com.ssilencce.util.Preferences
 import com.ssilencce.util.REMEMBER_SHUFFLE_MODE
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.FlowPreview
@@ -76,6 +81,7 @@ const val QUEUE_DEBOUNCE = 100L
 class PlayerViewModel(
     private val preferences: SharedPreferences,
     private val repository: Repository,
+    private val namedQueueRepository: NamedQueueRepository,
 ) : ViewModel(),
     Player.Listener {
     private val queueMutex = Mutex()
@@ -142,6 +148,14 @@ class PlayerViewModel(
 
     private val _stopAfterPosition = Channel<Pair<String?, Boolean>>(Channel.BUFFERED)
     val stopAfterPosition = _stopAfterPosition.receiveAsFlow()
+
+    private val _namedQueueMessage = MutableSharedFlow<Int>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val namedQueueMessage = _namedQueueMessage.asSharedFlow()
+
+    val namedQueuesFlow = namedQueueRepository.summariesFlow()
+
+    private val _activeNamedQueueId = MutableStateFlow(preferences.getString(ACTIVE_NAMED_QUEUE_ID, null))
+    val activeNamedQueueIdFlow = _activeNamedQueueId.asStateFlow()
 
     private val internalJobs = mutableListOf<Job>()
 
@@ -222,12 +236,13 @@ class PlayerViewModel(
 
     private fun onGenerateQueue(
         player: Player,
-        timeline: Timeline = player.currentTimeline,
         mediaContentChanged: Boolean = false,
     ) = viewModelScope.launch {
         queueMutex.withLock {
-            // If the timeline is empty, reset the queue and exit early.
-            if (timeline.isEmpty) {
+            // Capture one timeline snapshot for this pass, immediately before reading
+            // the queue, so removals and published flows refer to the same timeline.
+            val queueTimeline = player.currentTimeline
+            if (queueTimeline.isEmpty) {
                 _queueFlow.value = emptyList()
                 return@launch
             }
@@ -276,37 +291,58 @@ class PlayerViewModel(
                     queueSongs to result.second
                 }
 
+            var stalePass = false
             if (mediaContentChanged && missingMediaItems.isNotEmpty()) {
                 withContext(Dispatchers.Default) {
                     // Build a set of IDs representing missing (deleted) MediaItems.
                     val missingIds = missingMediaItems.mapTo(HashSet()) { it.mediaId }
 
-                    // Identify contiguous ranges of missing items to remove them in grouped batches.
+                    // queueItems follows shuffle order when shuffle is enabled, so group
+                    // missing items by their timeline index instead of their list position.
+                    val missingTimelineIndices = BooleanArray(queueTimeline.windowCount)
+                    for ((item, timelineIndex) in queueItems) {
+                        if (item.mediaId in missingIds && timelineIndex in missingTimelineIndices.indices) {
+                            missingTimelineIndices[timelineIndex] = true
+                        }
+                    }
+
+                    // Identify contiguous ranges of missing timeline indices to remove them in batches.
                     val ranges = mutableListOf<IntRange>()
                     var start = -1
 
-                    for (i in queueItems.indices) {
-                        val isMissing = queueItems[i].first.mediaId in missingIds
-                        if (isMissing && start == -1) {
-                            // Beginning of a new missing range.
-                            start = i
-                        } else if (!isMissing && start != -1) {
+                    for (index in missingTimelineIndices.indices) {
+                        if (missingTimelineIndices[index]) {
+                            if (start == -1) {
+                                // Beginning of a new missing range.
+                                start = index
+                            }
+                        } else if (start != -1) {
                             // End of the current missing range.
-                            ranges += (start until i)
+                            ranges += (start until index)
                             start = -1
                         }
                     }
-                    // If the last range extends to the end of the list, close it.
-                    if (start != -1) ranges += (start until queueItems.size)
+                    // If the last range extends to the end of the timeline, close it.
+                    if (start != -1) ranges += (start until missingTimelineIndices.size)
 
                     withContext(Dispatchers.Main) {
-                        // Remove ranges in reverse order to avoid index shifting issues.
-                        for (range in ranges.asReversed()) {
-                            player.removeMediaItems(range.first, range.last + 1)
+                        if (player.currentTimeline !== queueTimeline ||
+                            player.mediaItemCount != queueTimeline.windowCount
+                        ) {
+                            stalePass = true
+                        } else {
+                            // Remove ranges in reverse order to avoid index shifting issues.
+                            for (range in ranges.asReversed()) {
+                                player.removeMediaItems(range.first, range.last + 1)
+                            }
                         }
                     }
                 }
             }
+
+            // A timeline change during the IO lookup invalidated this pass; the queued
+            // timeline-event pass retries without publishing stale queue/position data.
+            if (stalePass) return@withLock
 
             // Update the queue with the valid songs and current positions.
             _queueFlow.value = songs
@@ -404,6 +440,22 @@ class PlayerViewModel(
         mediaController?.play()
     }
 
+    fun confirmAudioFocus(requestId: String) =
+        viewModelScope.launch {
+            mediaController?.sendCustomCommand(
+                SessionCommand(Playback.CONFIRM_AUDIO_FOCUS, Bundle.EMPTY),
+                Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) },
+            )
+        }
+
+    fun cancelAudioFocus(requestId: String) =
+        viewModelScope.launch {
+            mediaController?.sendCustomCommand(
+                SessionCommand(Playback.CANCEL_AUDIO_FOCUS, Bundle.EMPTY),
+                Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) },
+            )
+        }
+
     fun seekToNext() {
         mediaController?.seekToNext()
     }
@@ -495,6 +547,107 @@ class PlayerViewModel(
                 }
             }
         }
+
+    fun saveCurrentQueueAs(name: String) =
+        viewModelScope.launch {
+            val controller = mediaController
+            if (controller == null) {
+                _namedQueueMessage.tryEmit(R.string.named_queue_no_playback)
+                return@launch
+            }
+            val snapshot = controller.namedQueueSnapshot()
+            if (snapshot.isEmpty) {
+                _namedQueueMessage.tryEmit(R.string.named_queue_empty)
+                return@launch
+            }
+            val entity = withContext(IO) { namedQueueRepository.create(name, snapshot) }
+            preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, entity.id) }
+            _activeNamedQueueId.value = entity.id
+            _namedQueueMessage.tryEmit(R.string.named_queue_saved)
+        }
+
+    fun switchToNamedQueue(queueId: String) =
+        viewModelScope.launch {
+            val controller = mediaController
+            if (controller == null) {
+                _namedQueueMessage.tryEmit(R.string.named_queue_no_playback)
+                return@launch
+            }
+            val target = withContext(IO) { namedQueueRepository.queue(queueId) }
+            if (target == null) {
+                _namedQueueMessage.tryEmit(R.string.named_queue_unavailable)
+                return@launch
+            }
+            val targetItems = target.orderedItems()
+            if (targetItems.isEmpty()) {
+                _namedQueueMessage.tryEmit(R.string.named_queue_empty)
+                return@launch
+            }
+
+            // The service performs the save/switch atomically against the live player timeline.
+            val resultFuture =
+                controller.sendCustomCommand(
+                    SessionCommand(
+                        Playback.SWITCH_NAMED_QUEUE,
+                        Bundle().apply {
+                            putString("queueId", queueId)
+                            putStringArrayList("mediaIds", ArrayList(targetItems.map { it.mediaId }))
+                            putInt("startIndex", target.queue.resumeIndex)
+                            putLong("startPositionMs", target.queue.resumePositionMs)
+                            putInt("repeatMode", target.queue.repeatMode)
+                            putBoolean("shuffleEnabled", target.queue.shuffleEnabled)
+                        },
+                    ),
+                    Bundle.EMPTY,
+                )
+            val result =
+                try {
+                    resultFuture.await()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    SessionResult(SessionError.ERROR_UNKNOWN)
+                }
+            if (result.resultCode == SessionResult.RESULT_SUCCESS &&
+                result.extras.getBoolean("switched", false)
+            ) {
+                _activeNamedQueueId.value = queueId
+                _namedQueueMessage.tryEmit(R.string.named_queue_loaded)
+            } else {
+                _namedQueueMessage.tryEmit(R.string.named_queue_unavailable)
+            }
+        }
+
+    fun renameNamedQueue(
+        queueId: String,
+        name: String,
+    ) = viewModelScope.launch {
+        withContext(IO) { namedQueueRepository.rename(queueId, name) }
+    }
+
+    fun deleteNamedQueue(queueId: String) =
+        viewModelScope.launch {
+            withContext(IO) { namedQueueRepository.delete(queueId) }
+            if (preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) == queueId) {
+                preferences.edit { remove(ACTIVE_NAMED_QUEUE_ID) }
+                _activeNamedQueueId.value = null
+            }
+        }
+
+    fun deleteOtherNamedQueues() =
+        viewModelScope.launch {
+            val activeQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) ?: return@launch
+            withContext(IO) { namedQueueRepository.deleteOthers(activeQueueId) }
+        }
+
+    private fun MediaController.namedQueueSnapshot(): NamedQueueSnapshot =
+        NamedQueueSnapshot(
+            mediaIds = (0 until mediaItemCount).map { getMediaItemAt(it).mediaId },
+            resumeIndex = currentMediaItemIndex,
+            resumePositionMs = currentPosition.coerceAtLeast(0L),
+            repeatMode = repeatMode,
+            shuffleEnabled = shuffleModeEnabled,
+        )
 
     fun openShuffle(
         providers: List<SongProvider>,

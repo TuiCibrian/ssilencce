@@ -14,9 +14,9 @@ system download manager for reliability (downloads survive process death).
 ## Decision
 
 - Query GitHub releases through `GitHubService` (Ktor, ADR-020) using the flavor-provided
-  `GITHUB_API_URL` from `public.properties` (currently pointing at upstream
-  `mardous/BoomingMusic` — fork debt, see ADR-001); support an optional auth token for private
-  rate-limit headroom.
+  `GITHUB_API_URL` from `public.properties`; the service defaults target the fork repository
+  (`TuiCibrian/ssilencce`, previously upstream `mardous/BoomingMusic` — fork debt, see
+  ADR-001); support an optional auth token for private rate-limit headroom.
 - Resolve the newest downloadable release (`GitHubRelease.latestRelease`): stable release
   first, then paginated prereleases filtered by `publishedAt`, with fallback to stable when no
   newer APK exists.
@@ -38,5 +38,6 @@ system download manager for reliability (downloads survive process death).
   (ADR-005) and the updater can never drift silently.
 - The updater depends on GitHub API availability and rate limits; the dedupe/ignore logic
   keeps it polite.
-- The fork must re-point `GITHUB_API_URL` to its own repository before publishing, otherwise
-  users are offered upstream-signed APKs that fail installation.
+- The updater targets the fork repository (`TuiCibrian/ssilencce`); releases must be signed
+  with the fork's release keystore (ADR-039), otherwise installs fail over the existing
+  signature.

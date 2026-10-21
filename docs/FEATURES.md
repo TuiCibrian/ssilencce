@@ -7,15 +7,18 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 ## 1. Playback & Audio
 
 - **Media3/ExoPlayer engine** — `PlaybackService` (MediaLibraryService) owns the player, MediaSession, equalizer, notifications, Bluetooth handling and widgets.
-- **State persistence** — Queue, position and shuffle order are persisted in Room/SharedPreferences and restored on app start (`PersistentStorage`).
+- **State persistence** — Queue, position and shuffle order are persisted in Room/SharedPreferences and restored on app start (`PersistentStorage`); queue rows are keyed by position (Room v8), preserving repeated songs. Pending queue edits are retained through pause, and an ordered application-owned writer flushes the final service snapshot without blocking Main. Named queues add snapshots with their own resume position (ADR-041, ADR-045). Pending IO cannot be guaranteed after an immediate whole-process kill.
 - **Playback modes** — Repeat, shuffle (normal), play on startup (never / last position / first song), clear queue on completion.
+- **Per-track resume** — Optional opt-in remembers the last position of long-form tracks (10 minutes or more), resumes them later and clears the position on completion. Positions are written through the ordered non-blocking `TrackPositionWriter`; seek-generation guards prevent stale bookmark seeks after manual seeks (ADR-042).
+- **Session recovery** — Optional opt-in resumes the saved queue and position after Android recreates the playback service; it does not claim to survive force-stop (ADR-042).
+- **Quick Settings tile** — Playback tile mirrors playing/paused/unavailable state from the live session and toggles play/pause with a lifecycle-bounded controller (ADR-042).
 - **Smart shuffle modes** (`ShuffleManager`) — Pure random, most played, favorites, forgotten songs, recently added, combined, by-group shuffle; album/artist shuffle strategies; per-open shuffle behavior (on/off/remember).
 - **Queue behavior** — Configurable tap-on-song action (play single song / play whole list / play next / queue at end) and queue-clearing behavior (remove all vs. keep current).
 - **Controls** — Rewind with back button, configurable seek interval (5–60 s), mini-player swipe-to-skip, extra controls, adaptive/circle/animated buttons.
 - **Audio processing** (`renderer` + `processor`) — Per-channel balance, ReplayGain (album/track mode, preamp, peak limiting on 16/24-bit PCM) injected into `DefaultAudioSink`; ALAC hardware-decoder workaround for broken high-bitrate M4A.
 - **Software decoding fallback** — Jellyfin FFmpeg decoder (`media3-ffmpeg-decoder`) auto-loaded by the Media3 extension renderer for codecs MediaCodec cannot handle (e.g. ALAC, and rare codecs inside containers Media3 demuxes); Media3 1.10.1 provides no demuxers for ASF/WMA, APE, DSF/DFF or AIFF, so those containers are not playable.
 - **Audio device integration** (`AudioOutputObserver`) — Resume on headphone/Bluetooth connect, pause on disconnect, pause at zero volume, system media output switcher (incl. MIUI/Samsung OEM intents), Xiaomi Mi Play detection, bit-perfect state.
-- **Audio focus** — Optional ignore-audio-focus mode.
+- **Audio focus** — Four modes: Normal, Ignore focus, Ask before taking focus (with confirmation when another app is audible) and Resume after call. Ask uses a restorable Compose dialog tied to the live request; repeated play preserves it, while explicit/no-op pause, cancel, mode change/abandon/release invalidate it. Stale confirmations cannot start playback. Transient loss and ducking remain owned by `AudioFocusController`; there is no automatic timeout (ADR-042, ADR-045).
 - **Advanced** — MP3 index seeking, stop when closed from recents, play option always visible / whole list, play all songs when searching.
 
 ## 2. Equalizer & Sound
@@ -41,8 +44,9 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 - **Media collections** — Songs, albums, artists (with album-artist support), genres, release years, folders (filesystem explorer with SAF), playlists.
 - **Home screen** — Greeting header, last added, top tracks, history, shuffle button and suggestions.
-- **Content types** — Favorites, history (configurable cutoff interval), last added (configurable interval), not-recently-played, top tracks, top albums/artists, never played.
+- **Content types** — Favorites, history (configurable cutoff interval, individual and multi-select removal), last added (configurable interval), not-recently-played, top tracks, top albums/artists, never played.
 - **Play counts** — Per-song play/skip counters and time played (incremented at 50 % of duration), top-100 flows.
+- **Play statistics periods** — Top Tracks and Top Artists support this week, this month, last 12 months, this year and all time. Period artist attribution uses recorded event names; later metadata changes do not rewrite it. Artist percentages use all plays in the selected period, not just the displayed top 100, and denominator-only changes remain reactive. Snapshot-only artists remain visible with unavailable media actions disabled. All time retains earlier aggregate counts and artist-ID identity (ADR-040).
 - **Sorting** — Locale-aware collator, article-ignoring sort (The/A/El…), per-entity sort keys with persistence.
 - **Views** — List/grid modes, 5 grid view types (normal, card, colored card, circle, image), configurable grid size, larger header image, fast scroller.
 - **Library filtering** — Whitelist/blacklist folders (`InclExclDao`), minimum song duration, minimum songs per artist/album.
@@ -53,13 +57,15 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 
 - **CRUD** — Create, rename, edit (name, description, custom cover via Photo Picker), delete playlists; favorites playlist.
 - **Playlist management** — Drag & drop reordering, internal search, song counts, multi-select.
-- **Import/export** — Import device playlists (M3U and others), export as `.m3u` (MediaStore on Android 10+).
+- **Import/export** — Import device playlists (M3U and others), export as `.m3u`, `.m3u8` or `.pls` (MediaStore on Android 10+). Single and batch export share a format chooser. Directory writes stage beside the target. On Q+, exports use `MediaStore.Files` with the format's concrete playlist MIME (not the legacy `Audio.Playlists` name-rewriting path); the writer stages and publishes complete content before a checked rename replaces the same-name target. Pre-commit failure preserves old bytes and attempts to restore its name. A provider refusing rollback can leave old bytes under a backup name; failed post-commit cleanup can leave an extra backup. Public MediaStore APIs provide no atomic-swap or power-loss guarantee (ADR-044).
 - **Add-to-playlist** — Compose bottom sheet with search and multi-select.
 
 ## 6. Search
 
 - **Global search** — Text field, voice input, 300 ms debounce, grouped results (albums, artists, songs, playlists, genres).
 - **Search filters** — Smart, basic and last-added filters; scoped searches within genre, playlist, year and folder.
+- **Settings search** — A search action in Settings indexes every preference section, groups matches by section and opens the selected section (scrolling to the key when present).
+- **Quick list search** — A bottom search field on the songs, albums, artists, playlists, genres, years and folders lists filters the loaded list in place and restores it when cleared.
 - **System integration** — Android searchable config, search action, hold-tab-to-search.
 
 ## 7. Now Playing Screen
@@ -70,7 +76,7 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 - **Color schemes** — 5 modes (App theme, simple color, vibrant color, Material You, blur) with palette extraction from the cover.
 - **Display options** — Small image, corner radius, player blur intensity, squiggly seek bar, scrolling text, remaining-time preference, album-artist name, album title, next song preview, extra metadata fields (bitrate, genre, year…) with draggable configuration.
 - **Buttons** — Circle play button, adaptive controls, animated controls, extra controls, button style (Normal/M3/Expressive).
-- **Queue screen** — Compose UI with highlighted current song, repeat/shuffle, lock, drag reordering, locate-current-track, song actions and stop-after-song. One active queue; no queue-local search or filters. Aurora hosts it as a full-screen reference queue (queue selector opening the queues manager, play/pause state, next-title badge, disabled named-queue actions and an explicit unavailable search row); other appearances retain the dialog.
+- **Queue screen** — Compose UI with highlighted current song, repeat/shuffle, lock, drag reordering, locate-current-track, queue-local search, song actions and stop-after-song. One active playback queue, plus persistent named queues that can be saved, renamed, deleted and switched with their own resume position and repeat/shuffle mode (ADR-041). Queue filtering preserves original indices for playback/edit actions. Aurora hosts the same full screen; other appearances retain the dialog.
 
 ## 8. Network & Integrations
 
@@ -90,21 +96,21 @@ Related: `docs/CODE_MAP.md` (per-file code analysis).
 - **Aurora player preferences** — Scrolling metadata and extra-info changes remain live; scrolling respects visibility, reduced motion and battery saver. Sound and EQ transport actions open the actual native controls.
 - **Aurora lyrics legibility** — inactive lyrics use a higher `.92` alpha; the Player/background-effects lyrics plate is fixed black (`.72`) with explicit white foreground (full-screen Player mode included) so media-derived tints cannot darken text; legacy/default inactive alpha remains `.4`.
 - **Aurora equalizer layout** — Output-device header, actual engine band-count/profile chips, accessible vertical sliders and Bands/Sound pages reuse existing profile/effect commands.
-- **Capability-aware reference controls** — Prototype-only multiple queues, queue search, tags/composers, manual lyrics timing, QR sharing, crossfade, mono and song-count timer remain visibly unavailable, not simulated features. See `docs/AURORA_REFERENCE.md`.
+- **Capability-aware reference controls** — Tags/composers, manual lyrics timing, QR sharing, crossfade, mono and song-count timer remain visibly unavailable, not simulated features. Named queues and queue search are implemented and no longer listed as unavailable (ADR-041). See `docs/AURORA_REFERENCE.md`.
 - **App language** — ~40 locale translations, per-app language override.
 - **Library UI** — Configurable visible categories (max 5, draggable), tab titles mode, remember last page, appbar mode (compact/simple/collapsing), rotation lock.
 - **Widgets** — 3 Glance widgets (responsive, card, full) with cover, title, artist, progress and controls; dynamic colors, widget layout style, third-line content, corner radius.
 - **Android Auto** — Hierarchical media browsing via media IDs and Automotive app descriptor.
-- **App shortcuts** — 4 dynamic shortcuts: last added, top tracks, favorites, shuffle all.
+- **App shortcuts** — Four built-in dynamic shortcuts (last added, top tracks, favorites, shuffle all) plus per-entity launcher shortcuts for albums, artists, folders and playlists; adding asks for confirmation and unavailable targets are reported (ADR-044).
 - **System search** — `searchable.xml` integration.
 - **Crash handler** — Error activity saving `.log` reports with copy/share/report/restart actions.
-- **Backup/restore** — ZIP backups of playlists (M3U), settings, lyrics cache and custom artist images.
+- **Backup/restore** — ZIP backups of playlists (M3U), settings, lyrics cache and custom artist images; restore is selective (a picker over those four content types, nothing preselected), validates empty/non-backup/unrestorable archives with honest warnings, and lyrics/artist-image entries round-trip reliably (serializable lyrics cache, no premature ZIP closure, bounded streaming restore). Playlist write failures abort creation with a failure result; legitimate empty playlists are stored as valid `#EXTM3U` entries so their entities round-trip. Opt-in scheduled backups write the same archive to a user-chosen SAF folder with battery/storage-aware WorkManager scheduling; daily, weekly and fixed “every 30 days” cadences are supported (ADR-043).
 
 ## 10. Metadata & Info
 
 - **Tag editors** — Song, album and artist editors using TagLib/Jaudiotagger: full field editing, covers via Photo Picker, lyrics, MusicBrainz search dialog, batch save with MediaStoreWriter, album-artist/conductor fields.
 - **Song info** — Bitrate, format, sample rate, channel mode, metadata completeness check with refresh.
-- **Play statistics** — Plays/skips counts, last played date, top tracks per album/artist.
+- **Play statistics** — Plays/skips counts, last played date, top tracks per album/artist, and period-aware top songs/artists with percentages (ADR-040).
 - **Web search** — Song web search dialog (Google, Last.fm, Wikipedia, YouTube) with localized URLs.
 
 ## 11. Utilities

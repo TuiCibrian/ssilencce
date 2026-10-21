@@ -28,7 +28,7 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 - **Lint:** `./gradlew :app:lintGithubDebug` — `lint { abortOnError = true }`, lint errors fail the build.
 - **Code quality hooks:** `.opencode/plugin/check.ts` auto-formats each edited `*.kt`/`*.kts` (via `scripts/ktlint.ps1`, project ktlint 1.8.0) and runs `:app:lintGithubDebug` in the background. Run `/codecheck` after each change for the full skill-based review pass (security, performance, accessibility, code-review) plus the lint gate.
 - **Tests:** No test source sets are configured; do not add test configurations (rule 10).
-- **Signing:** Release reads `keystore.properties` (keyAlias/keyPassword/storePassword/storeFile); if missing it silently falls back to the debug keystore.
+- **Signing:** Release reads `keystore.properties` (keyAlias/keyPassword/storePassword/storeFile); a configured `storeFile` must exist or the build fails. Without it, Release packaging tasks (`assemble*Release`, `bundle*Release`, `install*Release`) are refused unless the explicit local opt-in `-PallowDebugSigning=true` (or `SSILENCCE_ALLOW_DEBUG_SIGNING=true`) is passed; opt-in artifacts are debug-signed, NON-PRODUCTION and must not be distributed. Debug, lint and IDE sync work without a keystore (ADR-039).
 - **Last.fm keys:** Injected via `LASTFM_API_KEY`/`LASTFM_SECRET` from `local.properties` or environment; only for `github`/`playstore` flavors (`fdroid` gets none).
 - **Flavor source sets:** `github` and `fdroid` add `src/shared/java`; `playstore` uses its own stub (`PaxsenixSearchHelper` always returns null, no Lyrically API access).
 - **Versioning:** `versionCode`/`versionName` derive from the `Version` classes in `app/build.gradle.kts`; `check(versionCode == currentVersionCode)` fails the build if they diverge. Never change the version (rule 8).
@@ -38,7 +38,7 @@ ssilencce is a modern, feature-rich music player for Android, designed to provid
 
 - This repository is **ssilencce**, a fork of Booming Music; `applicationId` and `namespace` are now `com.ssilencce`.
 - Changing the `applicationId` lets the app install alongside the upstream app, but the ID is permanent once published on a store (e.g. Play Store). Changing the `namespace` additionally requires updating all `com.ssilencce.R` imports and manifest component references.
-- **Built-in updater (github flavor):** `public.properties` → `github.GITHUB_API_URL` points at the upstream repo `mardous/BoomingMusic`. Before publishing the fork, point it at the fork repository; otherwise the updater offers upstream APKs signed with a different key (install failure).
+- **Built-in updater (github flavor):** `GitHubService.kt` defaults and `public.properties` now target the fork (`TuiCibrian/ssilencce`; `DOWNLOAD_URL` points at the fork's releases), so the old upstream `mardous/BoomingMusic` warning is stale — keep both pointed at the fork so the updater never offers mismatched (differently signed) APKs.
 - Use your own release keystore; do not touch `metadata/`, README, or contributor info without explicit request (rule 9).
 
 ## Repository Code Map
@@ -48,14 +48,14 @@ Package-level map (condensed). Full per-file analysis: see `docs/CODE_MAP.md`.
 All paths are relative to `app/src/main/java/com/ssilencce/` unless stated otherwise.
 
 ### Root & Build Configuration
-- `app/build.gradle.kts` — Flavors (github/fdroid/playstore), semantic `Version` classes, signing, ABI splits, Last.fm key injection, CI APK naming with git hash.
+- `app/build.gradle.kts` — Flavors (github/fdroid/playstore), semantic `Version` classes, signing, ABI splits, Last.fm key injection, CI APK naming with git hash, WorkManager runtime for scheduled backups.
 - `build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml` — Plugin declarations, repository/module setup, version catalog.
 - `public.properties` — Per-flavor public config (download/donation URLs, lyrics API endpoints).
-- `app/src/main/AndroidManifest.xml` — Permissions, activities, `PlaybackService` (MediaLibraryService), widget receivers, FileProvider/CoverProvider, Android Auto.
+- `app/src/main/AndroidManifest.xml` — Permissions, activities, `PlaybackService` (MediaLibraryService), `PlaybackTileService` (Quick Settings), widget receivers, FileProvider/CoverProvider, Android Auto.
 - `metadata/`, `assets/`, `.github/workflows/` — Store listings (37 locales), store badges, CI/release pipelines.
 
 ### core/ — Base, models & widgets
-- `core/SsilencceDatabase.kt` — Room database (v6) with entities and migrations.
+- `core/SsilencceDatabase.kt` — Room database (v8) with 11 entities, 9 DAOs and migrations through 7→8.
 - `core/appwidgets/` — 3 Glance widgets (SsilencceGlanceWidget/CardWidget/FullWidget) + receivers + serialized `PlaybackState` in DataStore.
 - `core/audio/` — `AudioOutputObserver` (audio device/volume/bit-perfect flows), `AutoEqTxtParser`.
 - `core/model/` — Domain models: action/, audiodevice/, equalizer/ (incl. AutoEq), filesystem/, lyrics/, player/, shuffle/, sort/, task/, theme/, plus CategoryInfo, MediaEvent, PaletteColor, GridViewType.
@@ -63,17 +63,18 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - `core/sort/` — Locale-aware sorting (SortCollator, SortMode).
 
 ### data/ — Data, repositories & network
-- `data/model/` — Song/Album/Artist/Genre/Playlist/Folder/ReleaseYear + lyrics/, network/, replaygain/, search/ models.
+- `data/model/` — Song/Album/Artist/Genre/Playlist/Folder/ReleaseYear, ListeningPeriod/ArtistPlayStat + lyrics/, network/, replaygain/, search/ models.
 - `data/local/` — MediaStore layer (MediaQueryDispatcher, MediaStoreObserver/Writer), MetadataReader/Writer (TagLib), ReplayGainTagExtractor; lyrics parsers (LRC + TTML) and InstrumentalDetector.
-- `data/local/room/` — 8 entities + DAOs (playlists, queue, play counts, history, lyrics cache, include/exclude).
-- `data/local/repository/` — `Repository` interface + implementations (Song/Album/Artist/Genre/Playlist/Search/Smart/Special/Lyrics/Network).
+- `data/local/room/` — 11 entities + 9 DAOs (playlists, queue, play counts, history, lyrics cache, include/exclude, play events, track positions, named queues) and the PlaylistWithSongs relation.
+- `data/local/repository/` — `Repository` interface + implementations (Song/Album/Artist/Genre/Playlist/Search/Smart/Special/Lyrics/Network) + `NamedQueueRepository` for named-queue snapshots.
 - `data/local/search/` — Search filters (Smart/Basic/LastAdded) + mappers.
 - `data/remote/` — KtorClient (10 MB cache), Deezer, GitHub (updater), Last.fm, ListenBrainz, MusicBrainz, lyrics APIs (Lyrically/BetterLyrics/LRCLib).
 - `src/shared/` vs `src/playstore/` — `PaxsenixSearchHelper`: real iTunes Search client (github/fdroid) vs null stub (playstore).
 
 ### playback/ — Playback engine
-- `playback/PlaybackService.kt` — Core: MediaLibraryService owning ExoPlayer, MediaSession, equalizer, notifications, Bluetooth, widgets.
-- Queue/persistence: AdvancedForwardingPlayer, ImprovedShuffleOrder, PersistentStorage, ProgressObserver, SleepTimer, Playback(+Extension).
+- `playback/PlaybackService.kt` — Core: MediaLibraryService owning ExoPlayer, MediaSession, equalizer, notifications, Bluetooth, widgets, audio focus and session recovery.
+- `playback/` resilience — `AudioFocusController` (Normal/Ignore/Ask/ResumeAfterCall, pending-ask cleanup, ducking), `PlaybackTileService` (Quick Settings), ordered non-blocking `TrackPositionWriter`, bounded `SESSION_RECOVERY`.
+- Queue/persistence: AdvancedForwardingPlayer (explicit playback-intent gate), ImprovedShuffleOrder, PersistentStorage + application-owned PlaybackStateWriter (ordered active/named snapshots and restore barrier), ProgressObserver, SleepTimer, Playback(+Extension).
 - `playback/equalizer/` — EqualizerManager + engines (BasicEQEngine, DynamicsProcessingEngine).
 - `playback/processor/` + `playback/renderer/` — Balance/ReplayGain audio processors injected into DefaultAudioSink; ALAC codec workaround.
 - `playback/library/` + `playback/shuffle/` — MediaItem resolution (incl. AAOS), smart shuffle modes.
@@ -83,8 +84,8 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 - CoverProvider (content:// URIs), CustomArtistImageManager, CustomPlaylistImageManager, KeyerStore/MapperStore, bitmap loader for notifications.
 
 ### util/ and extensions/
-- `util/Preferences.kt` — Central typed access to all app settings.
-- BackupHelper (ZIP backup), MusicUtil (batch delete), CryptoUtil (Keystore AES), StorageUtil, m3u/ (M3U export), cursor/, oem/ (MIUI/Samsung output switcher).
+- `util/Preferences.kt` — Central typed access to all app settings (incl. audio-focus mode, per-track resume, session recovery, active named queue).
+- BackupHelper (ZIP backup/restore, strict playlist-write failures, valid empty-playlist entries, structured `createBackupFile` results, RestoreSummary), `util/backup/` (WorkManager scheduled backups), MusicUtil (batch delete), CryptoUtil (Keystore AES), StorageUtil, ShortcutHelper (dynamic entity shortcuts), m3u/ (staged M3U/M3U8/PLS export), cursor/, oem/ (MIUI/Samsung output switcher).
 - `extensions/` — Activity, Fragment, Context, files/ (File, SAF), media/, navigation/, resources/ (Color/Drawable/View), utilities/.
 
 ### App entry points
@@ -94,8 +95,8 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### ui/ — Components, adapters & theme
 - `ui/adapters/` — Adapter per entity (song/album/artist/genre/playlist/year/file/search/home) with multi-select (CAB).
-- `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment, AbsPlayerFragment, AbsTagEditorActivity...).
-- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences.
+- `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment with quick-search host, AbsPlayerFragment, AbsTagEditorActivity...) and the QuickSearchable contract.
+- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences, QuickSearchBar.
 - `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress...).
 - `ui/component/compose/aurora/` — Optional Aurora ribbon, six-destination navigation, grouped vector-mark drawer (Library/Discover/Sound & system), home actions and explicit unavailable states; `ui/theme/AuroraDesign.kt`, `AuroraLegacyStyling.kt` and `AuroraHeaderScroll.kt` bridge monochrome styling and the floating header treatment to both UI stacks (ADR-036, ADR-037).
 - `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
@@ -105,13 +106,13 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### ui/screen/ — Screens
 - `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
-- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`.
-- player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment.
+- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`; seven top-level lists implement inline quick search.
+- player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment; named-queue CRUD and audio-focus session commands.
 - player/aurora/ — Compose Aurora chrome for the same seven saved styles, reusing the native cover pager, gestures, ViewModel and inherited song actions; non-Aurora players remain available.
-- lyrics/, queue/, settings/, equalizer/, tageditor/, sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes), error/ (crash handler).
+- lyrics/, queue/ (named queues + queue-local search), settings/ (settings search, scheduled-backup sheet), equalizer/, tageditor/, sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes, detail lists with period stats/history removal), error/ (crash handler).
 
 ### res/ (resources)
-- drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (~25), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
+- drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (23), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
 
 ## Agent Skills
 
@@ -143,7 +144,7 @@ Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/ag
 
 ### Domain docs
 
-Single-context; ADRs under `docs/architecture/` plus feature docs: `docs/FEATURES.md` (what
+Single-context; ADRs under `docs/architecture/` (ADR-001 through ADR-045) plus feature docs: `docs/FEATURES.md` (what
 exists), `docs/MISSING_FEATURES.md` (gaps vs Musicolet) and `docs/MUSICOLET_FEATURES.md`
 (reference snapshot of the other app). See `docs/agents/domain.md` and the
 [Documentation Maintenance](#documentation-maintenance) section.
