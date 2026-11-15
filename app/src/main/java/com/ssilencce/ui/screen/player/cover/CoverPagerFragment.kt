@@ -25,6 +25,8 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import androidx.annotation.ColorInt
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.animation.doOnEnd
 import androidx.core.animation.doOnStart
 import androidx.core.view.doOnPreDraw
@@ -33,6 +35,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination
 import androidx.viewpager.widget.ViewPager
@@ -48,6 +51,7 @@ import com.ssilencce.extensions.navigation.findActivityNavController
 import com.ssilencce.extensions.resources.SSILENCCE_ANIM_TIME
 import com.ssilencce.ui.adapters.pager.CustomFragmentStatePagerAdapter
 import com.ssilencce.ui.component.base.AbsPlayerFragment
+import com.ssilencce.ui.component.compose.player.AbRepeatChip
 import com.ssilencce.ui.component.transform.CarouselPagerTransformer
 import com.ssilencce.ui.screen.player.PlayerGesturesController
 import com.ssilencce.ui.screen.player.PlayerGesturesController.GestureType
@@ -101,6 +105,18 @@ class CoverPagerFragment :
     ) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentPlayerAlbumCoverBinding.bind(view)
+        binding.abRepeatChip.setViewCompositionStrategy(
+            ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
+        )
+        binding.abRepeatChip.setContent {
+            val abRepeat by playerViewModel.abRepeat.collectAsStateWithLifecycle()
+            val abRepeatStart by playerViewModel.abRepeatStart.collectAsStateWithLifecycle()
+            AbRepeatChip(
+                abRepeat = abRepeat,
+                abRepeatStart = abRepeatStart,
+                onClear = playerViewModel::clearAbRepeat,
+            )
+        }
         coverLyricsFragment =
             childFragmentManager.findFragmentById(R.id.coverLyricsFragment) as? CoverLyricsFragment
         navController = findActivityNavController(R.id.fragment_container)
@@ -116,9 +132,12 @@ class CoverPagerFragment :
         arguments: androidx.savedstate.SavedState?,
     ) {
         if (isLyricsViewVisible && isShowLyricsOnCover) {
-            // If the user opens any of queue, sound settings or song details dialogs
-            // we must ensure that we don't keep the screen on unnecessarily.
-            activity?.keepScreenOn(destination.navigatorName != "dialog" && playerViewModel.isPlaying)
+            // Keep cover lyrics awake only while the player is visible and not behind a dialog,
+            // unless the user explicitly enabled Keep screen on for the whole player.
+            activity?.keepScreenOn(
+                Preferences.keepScreenOnForNowPlaying ||
+                    (destination.navigatorName != "dialog" && playerViewModel.isPlaying),
+            )
         }
     }
 
@@ -191,11 +210,6 @@ class CoverPagerFragment :
                         pager.setCurrentItem(position.current, true)
                     }
                 }
-            }
-        }
-        viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
-            playerViewModel.isPlayingFlow.collect {
-                activity?.keepScreenOn(isShowLyricsOnCover && isLyricsViewVisible)
             }
         }
     }
@@ -280,7 +294,6 @@ class CoverPagerFragment :
         }
         animatorSet.doOnStart {
             coverLyricsFragment?.let { fragment ->
-                activity?.keepScreenOn(playerViewModel.isPlaying)
                 if (isVisible) {
                     childFragmentManager
                         .beginTransaction()
@@ -311,7 +324,6 @@ class CoverPagerFragment :
         }
         animatorSet.doOnEnd {
             coverLyricsFragment?.let { fragment ->
-                activity?.keepScreenOn(false)
                 if (isVisible) {
                     childFragmentManager
                         .beginTransaction()

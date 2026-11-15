@@ -171,6 +171,22 @@ class AudioOutputObserver(
         }
     }
 
+    /**
+     * Reads the current media-stream mute state directly instead of waiting for the next
+     * broadcast, so a play request can be rejected on the same call that asks for it.
+     */
+    fun isMutedNow(): Boolean {
+        val manager = audioManager ?: return false
+        if (manager.isVolumeFixed) return false
+        return try {
+            manager.isStreamMute(AudioManager.STREAM_MUSIC) ||
+                manager.getStreamVolume(AudioManager.STREAM_MUSIC) <= 0
+        } catch (e: Exception) {
+            Log.e(TAG, "Unable to read media stream mute state", e)
+            systemVolumeState.value.isMuted
+        }
+    }
+
     fun updatePlaybackFormat(
         sampleRate: Int,
         channelCount: Int,

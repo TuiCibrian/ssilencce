@@ -68,15 +68,15 @@ import com.ssilencce.ui.component.compose.IconifiedSliderTrack
 import com.ssilencce.ui.component.compose.ShapedText
 import com.ssilencce.ui.component.compose.TitledCard
 import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.theme.SliderTokens
-import com.ssilencce.ui.component.compose.aurora.AuroraUnavailableRow
-import com.ssilencce.util.Preferences
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SoundSettingsSheet(
     viewModel: EqualizerViewModel,
+    playerViewModel: PlayerViewModel,
 ) {
     val context = LocalContext.current
     val hapticFeedback = LocalHapticFeedback.current
@@ -84,6 +84,8 @@ fun SoundSettingsSheet(
     val outputDevice by viewModel.audioDevice.collectAsState()
     val volume by viewModel.volumeState.collectAsState()
     val bitPerfectState by viewModel.bitPerfectState.collectAsState()
+    val currentSong by playerViewModel.currentSongFlow.collectAsState()
+    val songPlaybackParams by playerViewModel.songPlaybackParams.collectAsState()
 
     val bitPerfect by viewModel.bitPerfectAudio.collectAsState()
     val audioOffload by viewModel.audioOffload.collectAsState()
@@ -99,6 +101,7 @@ fun SoundSettingsSheet(
 
     val balance by viewModel.balanceState.collectAsState()
     val tempo by viewModel.tempoState.collectAsState()
+    val monoOutput by viewModel.monoOutput.collectAsState()
 
     var centerBalance by remember(balance.center) { mutableFloatStateOf(balance.center) }
     var tempoSpeed by remember(tempo.speed) { mutableFloatStateOf(tempo.speed) }
@@ -462,14 +465,34 @@ fun SoundSettingsSheet(
                                         )
                                     }
                                 }
+
+                                SongTempoOverrideControls(
+                                    songTitle = currentSong.takeIf { it.id != -1L }?.title,
+                                    overrideSpeed = songPlaybackParams?.speed,
+                                    overridePitch = songPlaybackParams?.pitch,
+                                    onApply = {
+                                        hapticFeedback.performHapticFeedback(
+                                            HapticFeedbackType.Confirm,
+                                        )
+                                        playerViewModel.setSongPlaybackParams(
+                                            speed = tempo.speed,
+                                            pitch = tempo.actualPitch,
+                                        )
+                                    },
+                                    onReset = {
+                                        hapticFeedback.performHapticFeedback(
+                                            HapticFeedbackType.Confirm,
+                                        )
+                                        playerViewModel.resetSongPlaybackParams()
+                                    },
+                                )
                             }
                         }
                     }
                 }
 
-                if (Preferences.isAuroraAppearance) item {
-                    AuroraUnavailableRow(R.string.aurora_crossfade)
-                    AuroraUnavailableRow(R.string.aurora_mono)
+                item {
+                    CrossfadeSettingsCard()
                 }
 
                 item {
@@ -523,6 +546,15 @@ fun SoundSettingsSheet(
                                 description = stringResource(R.string.skip_silence_description),
                             ) { checked ->
                                 viewModel.setEnableSkipSilences(checked)
+                            }
+
+                            LabeledSwitch(
+                                checked = monoOutput,
+                                enabled = enableAudioEffects,
+                                title = stringResource(R.string.mono_output_title),
+                                description = stringResource(R.string.mono_output_description),
+                            ) { checked ->
+                                viewModel.setMonoOutput(checked)
                             }
                         }
                     }
@@ -612,7 +644,7 @@ private fun AudioDeviceInfo(
 }
 
 @Composable
-private fun LabeledSwitch(
+internal fun LabeledSwitch(
     checked: Boolean,
     title: String,
     description: String,

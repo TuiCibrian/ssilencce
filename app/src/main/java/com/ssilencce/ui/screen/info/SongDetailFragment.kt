@@ -442,6 +442,26 @@ class SongDetailFragment : BottomSheetDialogFragment() {
                     title = stringResource(R.string.label_channels),
                     content = headerInfo.channels,
                 )
+
+                InfoView(
+                    title = stringResource(R.string.label_bit_depth),
+                    content = headerInfo.bitDepth,
+                )
+
+                InfoView(
+                    title = stringResource(R.string.label_container),
+                    content = headerInfo.container,
+                )
+
+                InfoView(
+                    title = stringResource(R.string.label_codec),
+                    content = headerInfo.codec,
+                )
+
+                InfoView(
+                    title = stringResource(R.string.label_decoder),
+                    content = headerInfo.decoder,
+                )
             }
 
             InfoView(

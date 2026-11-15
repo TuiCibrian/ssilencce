@@ -127,6 +127,7 @@ private fun QueuesScreen(
     var showSaveDialog by remember { mutableStateOf(false) }
     var renameTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
     var deleteTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
+    var mergeSource by remember { mutableStateOf<NamedQueueSummary?>(null) }
     var switchingQueueId by remember { mutableStateOf<String?>(null) }
 
     ObserveAsEvent(playerViewModel.namedQueueMessage) { message ->
@@ -211,6 +212,8 @@ private fun QueuesScreen(
                     },
                     onRename = { renameTarget = queue },
                     onDelete = { deleteTarget = queue },
+                    onMerge = { mergeSource = queue },
+                    mergeEnabled = queues.size > 1,
                 )
             }
         }
@@ -264,6 +267,17 @@ private fun QueuesScreen(
             },
         )
     }
+    mergeSource?.let { source ->
+        NamedQueueMergeDialog(
+            source = source,
+            targets = queues.filterNot { it.id == source.id },
+            onDismiss = { mergeSource = null },
+            onMerge = { targetQueueId, skipDuplicates ->
+                mergeSource = null
+                playerViewModel.mergeNamedQueues(source.id, targetQueueId, skipDuplicates)
+            },
+        )
+    }
 }
 
 @Composable
@@ -275,6 +289,8 @@ private fun SavedQueueRow(
     onSwitch: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
+    onMerge: () -> Unit,
+    mergeEnabled: Boolean,
 ) {
     ListItem(
         headlineContent = {
@@ -307,6 +323,12 @@ private fun SavedQueueRow(
                 )
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onMerge, enabled = enabled && mergeEnabled) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_playlist_add_24dp),
+                            contentDescription = stringResource(R.string.named_queue_merge),
+                        )
+                    }
                     IconButton(onClick = onRename, enabled = enabled) {
                         Icon(
                             painter = painterResource(R.drawable.ic_edit_24dp),

@@ -32,9 +32,11 @@ enum class SettingsScreen(
 ) {
     Appearance(R.xml.preferences_screen_appearance, R.id.action_to_appearancePreferences, R.string.appearance_title),
     NowPlaying(R.xml.preferences_screen_now_playing, R.id.action_to_nowPlayingPreferences, R.string.now_playing_title),
+    LockScreen(R.xml.preferences_screen_lock_screen, R.id.action_to_lockScreenPreferences, R.string.lock_screen_player_title),
     Lyrics(R.xml.preferences_screen_lyrics, R.id.action_to_lyricsPreferences, R.string.lyrics_preferences_title),
     Playback(R.xml.preferences_screen_playback, R.id.action_to_playbackPreferences, R.string.playback_title),
     Library(R.xml.preferences_screen_library, R.id.action_to_libraryPreferences, R.string.library_title),
     Network(R.xml.preferences_screen_network, R.id.action_to_networkPreferences, R.string.network_title),
     Advanced(R.xml.preferences_screen_advanced, R.id.action_to_advancedPreferences, R.string.advanced_title),
+    Battery(R.xml.preferences_screen_battery, R.id.action_to_batteryPreferences, R.string.battery_guide_title),
 }

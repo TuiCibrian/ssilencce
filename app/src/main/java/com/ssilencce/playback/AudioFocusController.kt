@@ -38,7 +38,9 @@ class AudioFocusController(
     context: Context,
     private val player: Player,
     private val preferences: SharedPreferences,
+    private val volumeController: PlaybackVolumeController,
     private val onPendingAskChanged: (String?) -> Unit,
+    private val onPlaybackStart: () -> Unit = {},
 ) {
     private val audioManager = requireNotNull(context.getSystemService<AudioManager>())
     private val audioAttributes =
@@ -108,6 +110,7 @@ class AudioFocusController(
         if (requestId != pendingAskId) return false
         clearPendingAsk()
         if (requestFocus()) {
+            onPlaybackStart()
             player.play()
             return true
         }
@@ -204,6 +207,7 @@ class AudioFocusController(
                 restoreVolume()
                 if (resumeOnGain) {
                     resumeOnGain = false
+                    onPlaybackStart()
                     player.play()
                 }
             }
@@ -234,7 +238,7 @@ class AudioFocusController(
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                 if (!ducked) {
                     ducked = true
-                    player.volume = DUCK_VOLUME
+                    volumeController.setDucked(true)
                 }
             }
         }
@@ -243,13 +247,11 @@ class AudioFocusController(
     private fun restoreVolume() {
         if (ducked) {
             ducked = false
-            player.volume = 1f
+            volumeController.setDucked(false)
         }
     }
 
     companion object {
-        private const val DUCK_VOLUME = 0.2f
-
         fun isIgnored(preferences: SharedPreferences): Boolean =
             preferences.getBoolean(IGNORE_AUDIO_FOCUS, false) ||
                 Preferences.audioFocusMode == AudioFocusMode.Ignore

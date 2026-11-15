@@ -15,6 +15,7 @@ import com.ssilencce.coil.model.ArtistImage
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.model.Artist
 import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.util.DISABLE_ALBUM_ART
 import com.ssilencce.util.ImageSize
 import com.ssilencce.util.PREFERRED_IMAGE_SIZE
 import com.ssilencce.util.Preferences.requireString
@@ -30,6 +31,7 @@ class ArtistImageFetcher(
     private val repository: Repository,
     private val image: ArtistImage,
     private val imageSize: String,
+    private val artworkEnabled: Boolean,
 ) : Fetcher {
     companion object {
         // Maximum 4 queries per artist
@@ -41,6 +43,7 @@ class ArtistImageFetcher(
         get() = options.context.contentResolver
 
     override suspend fun fetch(): FetchResult? {
+        if (!artworkEnabled) return null
         if (customImageManager.hasCustomImage(image)) {
             val imageFile = customImageManager.getCustomImageFile(image)
             if (imageFile?.isFile == true) {
@@ -109,6 +112,7 @@ class ArtistImageFetcher(
                 repository = repository,
                 image = data,
                 imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM),
+                artworkEnabled = !preferences.getBoolean(DISABLE_ALBUM_ART, false),
             )
     }
 }

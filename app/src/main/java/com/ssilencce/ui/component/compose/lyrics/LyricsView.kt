@@ -13,7 +13,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -88,8 +91,12 @@ fun LyricsView(
     isPowerSaveMode: Boolean,
     hasBackgroundEffects: Boolean,
     inactiveTextAlpha: Float = .4f,
+    selectionMode: Boolean = false,
+    selectedLineIds: Set<Long> = emptySet(),
     modifier: Modifier = Modifier,
     onSeekTo: (Long) -> Unit,
+    onLineLongPress: ((SyncedLyrics.Line) -> Unit)? = null,
+    onLineSelectionToggle: (SyncedLyrics.Line) -> Unit = {},
 ) {
     val density = LocalDensity.current
     val textStyle = settings.syncedStyle
@@ -106,7 +113,10 @@ fun LyricsView(
         disableBlurEffect = true
     }
 
-    LaunchedEffect(state.currentLineIndex) {
+    LaunchedEffect(state.currentLineIndex, selectionMode) {
+        if (selectionMode) {
+            return@LaunchedEffect
+        }
         if (state.currentLineIndex >= 0) {
             if (!isInDragGesture && !isScrollInProgress) {
                 val layoutInfo = listState.layoutInfo
@@ -193,10 +203,25 @@ fun LyricsView(
                 line = line,
                 textStyle = textStyle,
                 lineSpacing = lineSpacing,
+                selectionMode = selectionMode,
+                selectionSelected = selectionMode && line.id in selectedLineIds,
                 modifier =
                     Modifier
                         .animateItem(placementSpec = tween(durationMillis = 500)),
-                onClick = { onSeekTo(line.start - (state.lyrics?.offset ?: 0)) },
+                onClick = {
+                    if (selectionMode) {
+                        onLineSelectionToggle(line)
+                    } else {
+                        onSeekTo(line.start - (state.lyrics?.offset ?: 0))
+                    }
+                },
+                onLongClick = {
+                    if (selectionMode) {
+                        onLineSelectionToggle(line)
+                    } else {
+                        onLineLongPress?.invoke(line)
+                    }
+                },
             )
         }
 
@@ -240,8 +265,11 @@ private fun LyricsLineView(
     line: SyncedLyrics.Line,
     textStyle: TextStyle,
     lineSpacing: Dp,
+    selectionMode: Boolean = false,
+    selectionSelected: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
+    onLongClick: () -> Unit = {},
 ) {
     val scale by animateFloatAsState(
         targetValue = if (selectedLine) 1.1f else 1f,
@@ -289,10 +317,26 @@ private fun LyricsLineView(
             modifier =
                 modifier
                     .fillMaxWidth()
-                    .clickable(
+                    .background(
+                        color =
+                            if (selectionSelected) {
+                                MaterialTheme.colorScheme.primary.copy(alpha = .14f)
+                            } else {
+                                Color.Transparent
+                            },
+                        shape = MaterialTheme.shapes.small,
+                    ).combinedClickable(
                         indication = null,
                         interactionSource = null,
                         onClick = onClick,
+                        onLongClickLabel = if (selectionMode) null else stringResource(R.string.ab_repeat),
+                        onLongClick = onLongClick,
+                    ).then(
+                        if (selectionMode) {
+                            Modifier.semantics { selected = selectionSelected }
+                        } else {
+                            Modifier
+                        },
                     ).padding(paddingValues),
         ) {
             if (line.isEmpty) {

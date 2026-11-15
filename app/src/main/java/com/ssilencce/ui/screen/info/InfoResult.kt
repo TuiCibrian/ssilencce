@@ -16,6 +16,10 @@ data class AudioHeaderInfo(
     val channels: String? = null,
     val variableBitrate: Boolean,
     val lossless: Boolean,
+    val container: String? = null,
+    val codec: String? = null,
+    val decoder: String? = null,
+    val bitDepth: String? = null,
 )
 
 data class SongInfo(

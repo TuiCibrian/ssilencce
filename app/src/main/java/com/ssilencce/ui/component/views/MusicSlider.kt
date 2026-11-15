@@ -5,6 +5,7 @@ import android.content.res.TypedArray
 import android.graphics.Color
 import android.util.AttributeSet
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.SeekBar
@@ -13,6 +14,7 @@ import com.google.android.material.slider.Slider
 import com.ssilencce.R
 import com.ssilencce.extensions.resources.applyColor
 import com.ssilencce.util.Preferences
+import kotlin.math.abs
 
 /**
  * @author Christians M.A. (mardous)
@@ -34,6 +36,14 @@ class MusicSlider
         private var thumbHeight = -1
         private var trackHeight = -1
         private var useSquiggly: Boolean = false
+        private var blockGesture = false
+
+        var touchOnlyOnThumb: Boolean = false
+            set(value) {
+                if (field == value) return
+                field = value
+                updateTouchOnlyListener()
+            }
 
         var isTrackingTouch: Boolean = false
             private set
@@ -144,6 +154,7 @@ class MusicSlider
             }
             addView(internalView)
             setupInternalListener()
+            updateTouchOnlyListener()
         }
 
         private fun setupInternalListener() {
@@ -186,6 +197,50 @@ class MusicSlider
             )
         }
 
+        private fun updateTouchOnlyListener() {
+            val view = internalView ?: return
+            view.setOnTouchListener(
+                if (touchOnlyOnThumb) {
+                    View.OnTouchListener { target, event -> handleThumbOnlyTouch(target, event) }
+                } else {
+                    null
+                },
+            )
+        }
+
+        private fun handleThumbOnlyTouch(
+            view: View,
+            event: MotionEvent,
+        ): Boolean {
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    blockGesture = !isThumbHit(view, event.x)
+                }
+
+                MotionEvent.ACTION_UP,
+                MotionEvent.ACTION_CANCEL,
+                -> {
+                    val blocked = blockGesture
+                    blockGesture = false
+                    return blocked
+                }
+            }
+            return blockGesture
+        }
+
+        private fun isThumbHit(
+            view: View,
+            x: Float,
+        ): Boolean {
+            val range = (valueTo - valueFrom).coerceAtLeast(1)
+            val fraction = ((value - valueFrom).toFloat() / range).coerceIn(0f, 1f)
+            val thumbWidth = seekBar?.thumb?.intrinsicWidth?.toFloat() ?: 0f
+            val available = (view.width - view.paddingLeft - view.paddingRight - thumbWidth).coerceAtLeast(1f)
+            val center = view.paddingLeft + available * fraction + thumbWidth / 2f
+            val hitRadius = HIT_RADIUS_DP * resources.displayMetrics.density
+            return abs(x - center) <= hitRadius
+        }
+
         interface Listener {
             fun onProgressChanged(
                 slider: MusicSlider,
@@ -220,5 +275,9 @@ class MusicSlider
                         progress = a.getInt(R.styleable.MusicSlider_android_progress, 0),
                     )
             }
+        }
+
+        private companion object {
+            const val HIT_RADIUS_DP = 24f
         }
     }

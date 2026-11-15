@@ -32,12 +32,21 @@ import com.ssilencce.core.model.action.FolderAction
 import com.ssilencce.core.model.action.HeadsetButtonAction
 import com.ssilencce.core.model.action.NowPlayingAction
 import com.ssilencce.core.model.action.QueueClearingBehavior
+import com.ssilencce.core.model.action.QuickAccessAction
 import com.ssilencce.core.model.action.SongClickBehavior
 import com.ssilencce.core.model.list.SongTitleMode
+import com.ssilencce.core.model.lockscreen.LockScreenWallpaper
+import com.ssilencce.core.model.menu.MenuCustomizationGroup
+import com.ssilencce.core.model.menu.MenuCustomizationState
 import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.core.model.player.NotificationBackgroundMode
+import com.ssilencce.core.model.player.NotificationButtonLayout
+import com.ssilencce.core.model.player.NotificationButtonLayoutPolicy
+import com.ssilencce.core.model.player.NotificationStyle
 import com.ssilencce.core.model.player.PlayerColorSchemeMode
 import com.ssilencce.core.model.player.PlayerTransition
 import com.ssilencce.core.model.shuffle.GroupShuffleMode
+import com.ssilencce.core.model.shuffle.ShuffleBehavior
 import com.ssilencce.core.model.theme.AppTheme
 import com.ssilencce.core.model.theme.NowPlayingScreen
 import com.ssilencce.core.sort.IgnoreKeywordPolicy
@@ -128,6 +137,29 @@ object Preferences : KoinComponent {
 
     val isCustomFont: Boolean
         get() = preferences.getBoolean(USE_CUSTOM_FONT, true)
+
+    /**
+     * Custom accent color as an ARGB int, or 0 when the theme-derived accent should be used.
+     */
+    var accentColor: Int
+        get() = preferences.getInt(ACCENT_COLOR, 0)
+        set(value) =
+            preferences.edit {
+                if (value == 0) remove(ACCENT_COLOR) else putInt(ACCENT_COLOR, value)
+            }
+
+    /**
+     * Whether rarely used preferences are shown. Defaults to true so the settings layout is
+     * unchanged until the user opts into a simpler list.
+     */
+    val showUnimportantSettings: Boolean
+        get() = preferences.getBoolean(SHOW_UNIMPORTANT_SETTINGS, true)
+
+    /**
+     * When true, artwork fetchers skip decoding and the UI falls back to placeholders.
+     */
+    val disableAlbumArt: Boolean
+        get() = preferences.getBoolean(DISABLE_ALBUM_ART, false)
 
     val appBarMode: TopAppBarLayout.AppBarMode
         get() =
@@ -329,6 +361,60 @@ object Preferences : KoinComponent {
     val coverLongPressAction: NowPlayingAction
         get() = preferences.enumValue(COVER_LONG_PRESS_ACTION, NowPlayingAction.SleepTimer)
 
+    val keepScreenOnForNowPlaying: Boolean
+        get() = preferences.getBoolean(KEEP_SCREEN_ON_NOW_PLAYING, false)
+
+    var lockScreenPlayerEnabled: Boolean
+        get() = preferences.getBoolean(LOCK_SCREEN_PLAYER_ENABLED, false)
+        set(value) = preferences.edit { putBoolean(LOCK_SCREEN_PLAYER_ENABLED, value) }
+
+    var lockScreenWallpaper: LockScreenWallpaper
+        get() = preferences.enumValue(LOCK_SCREEN_WALLPAPER, LockScreenWallpaper.Cover)
+        set(value) = preferences.edit { putString(LOCK_SCREEN_WALLPAPER, value.name) }
+
+    var lockScreenWallpaperUri: String?
+        get() = preferences.nullString(LOCK_SCREEN_WALLPAPER_URI)
+        set(value) = preferences.edit { putString(LOCK_SCREEN_WALLPAPER_URI, value) }
+
+    var lockScreenSkipWhenUnlocked: Boolean
+        get() = preferences.getBoolean(LOCK_SCREEN_SKIP_WHEN_UNLOCKED, true)
+        set(value) = preferences.edit { putBoolean(LOCK_SCREEN_SKIP_WHEN_UNLOCKED, value) }
+
+    var lockScreenSkipWhenPaused: Boolean
+        get() = preferences.getBoolean(LOCK_SCREEN_SKIP_WHEN_PAUSED, true)
+        set(value) = preferences.edit { putBoolean(LOCK_SCREEN_SKIP_WHEN_PAUSED, value) }
+
+    var lockScreenGesturesEnabled: Boolean
+        get() = preferences.getBoolean(LOCK_SCREEN_GESTURES, true)
+        set(value) = preferences.edit { putBoolean(LOCK_SCREEN_GESTURES, value) }
+
+    var lockScreenShortcutsEnabled: Boolean
+        get() = preferences.getBoolean(LOCK_SCREEN_SHORTCUTS, true)
+        set(value) = preferences.edit { putBoolean(LOCK_SCREEN_SHORTCUTS, value) }
+
+    val seekBarTouchOnlyOnThumb: Boolean
+        get() = preferences.getBoolean(SEEK_BAR_TOUCH_ONLY_ON_THUMB, false)
+
+    var quickAccessActions: List<QuickAccessAction>
+        get() = QuickAccessAction.fromPreference(preferences.getString(NOW_PLAYING_QUICK_ACCESS, null))
+        set(value) = preferences.edit { putString(NOW_PLAYING_QUICK_ACCESS, QuickAccessAction.toPreference(value)) }
+
+    val quickAccessActionsRaw: String
+        get() = preferences.getString(NOW_PLAYING_QUICK_ACCESS, "").orEmpty()
+
+    fun menuCustomization(group: MenuCustomizationGroup): MenuCustomizationState =
+        MenuCustomizationState.fromPreference(
+            group,
+            preferences.getString(group.preferenceKey, null),
+        )
+
+    fun setMenuCustomization(
+        group: MenuCustomizationGroup,
+        state: MenuCustomizationState,
+    ) {
+        preferences.edit { putString(group.preferenceKey, state.toPreference()) }
+    }
+
     val animateControls: Boolean
         get() = preferences.getBoolean(ANIMATE_PLAYER_CONTROL, true)
 
@@ -386,9 +472,28 @@ object Preferences : KoinComponent {
         get() = preferences.getBoolean(PREFER_ALBUM_ARTIST_NAME, false)
         set(value) = preferences.edit { putBoolean(PREFER_ALBUM_ARTIST_NAME, value) }
 
+    var useAlbumArtistIfArtistMissing: Boolean
+        get() = preferences.getBoolean(USE_ALBUM_ARTIST_IF_ARTIST_MISSING, false)
+        set(value) = preferences.edit { putBoolean(USE_ALBUM_ARTIST_IF_ARTIST_MISSING, value) }
+
     var clearQueueAction: QueueClearingBehavior
         get() = preferences.enumValueByOrdinal(ON_CLEAR_QUEUE_ACTION, QueueClearingBehavior.RemoveAllSongs)
         set(value) = preferences.edit { putInt(ON_CLEAR_QUEUE_ACTION, value.ordinal) }
+
+    /**
+     * Shows the fourth repeat state in the repeat-button cycle. Off by default so the existing
+     * three-state button behavior is unchanged.
+     */
+    val repeatLoadNextAndPauseAvailable: Boolean
+        get() = preferences.getBoolean(REPEAT_LOAD_NEXT_AND_PAUSE_AVAILABLE, false)
+
+    /** The player-level "load next and pause" policy is independent from Media3 repeat mode. */
+    var repeatLoadNextAndPauseActive: Boolean
+        get() = preferences.getBoolean(REPEAT_LOAD_NEXT_AND_PAUSE_ACTIVE, false)
+        set(value) = preferences.edit { putBoolean(REPEAT_LOAD_NEXT_AND_PAUSE_ACTIVE, value) }
+
+    val autoDeleteOldestNamedQueue: Boolean
+        get() = preferences.getBoolean(AUTO_DELETE_OLDEST_NAMED_QUEUE, false)
 
     var songClickAction: SongClickBehavior
         get() = preferences.enumValueByOrdinal(ON_SONG_CLICK_ACTION, SongClickBehavior.PlayWholeList)
@@ -407,6 +512,35 @@ object Preferences : KoinComponent {
 
     val playAllSongsWhenSearching: Boolean
         get() = preferences.getBoolean(PLAY_ALL_SONGS_WHEN_SEARCHING, false)
+
+    fun searchHistory(): List<String> =
+        preferences
+            .getString(SEARCH_HISTORY, null)
+            ?.split(SEARCH_HISTORY_SEPARATOR)
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+
+    fun addSearchHistory(query: String) {
+        val normalized = query.trim()
+        if (normalized.isEmpty()) return
+        val updated =
+            (listOf(normalized) + searchHistory().filterNot { it.equals(normalized, ignoreCase = true) })
+                .take(MAX_SEARCH_HISTORY)
+        preferences.edit { putString(SEARCH_HISTORY, updated.joinToString(SEARCH_HISTORY_SEPARATOR)) }
+    }
+
+    fun removeSearchHistory(query: String) {
+        val updated = searchHistory().filterNot { it == query }
+        if (updated.isEmpty()) {
+            preferences.edit { remove(SEARCH_HISTORY) }
+        } else {
+            preferences.edit { putString(SEARCH_HISTORY, updated.joinToString(SEARCH_HISTORY_SEPARATOR)) }
+        }
+    }
+
+    fun clearSearchHistory() {
+        preferences.edit { remove(SEARCH_HISTORY) }
+    }
 
     val albumShuffleMode: GroupShuffleMode
         get() = getGroupShuffleMode(ALBUM_SHUFFLE_MODE, SelectedShuffleMode.SHUFFLE_ALBUMS)
@@ -438,6 +572,98 @@ object Preferences : KoinComponent {
             bluetooth -> preferences.getBoolean(PAUSE_ON_BLUETOOTH_DISCONNECT, false)
             else -> preferences.getBoolean(PAUSE_ON_DISCONNECT, false)
         }
+
+    fun isResumeOnlyIfPausedByDisconnect(): Boolean = preferences.getBoolean(RESUME_ONLY_IF_PAUSED_BY_DISCONNECT, false)
+
+    val preventUnwantedAutoplay: Boolean
+        get() = preferences.getBoolean(PREVENT_UNWANTED_AUTOPLAY, false)
+
+    val preventUnwantedAutoplayStrict: Boolean
+        get() = preventUnwantedAutoplay && preferences.getBoolean(PREVENT_UNWANTED_AUTOPLAY_STRICT, false)
+
+    val preventPlaybackWhenMuted: Boolean
+        get() = preferences.getBoolean(PREVENT_PLAYBACK_WHEN_MUTED, false)
+
+    val fadeInDurationMs: Int
+        get() = preferences.getInt(FADE_IN_DURATION, 0).coerceIn(0, MAX_FADE_DURATION_MS)
+
+    val fadeOutDurationMs: Int
+        get() = preferences.getInt(FADE_OUT_DURATION, 0).coerceIn(0, MAX_FADE_DURATION_MS)
+
+    val crossfadeDurationMs: Int
+        get() = preferences.getInt(CROSSFADE_DURATION, 0).coerceIn(0, MAX_CROSSFADE_DURATION_MS)
+
+    val crossfadeOnManualSkip: Boolean
+        get() = preferences.getBoolean(CROSSFADE_ON_MANUAL_SKIP, false)
+
+    val crossfadeRespectsGaplessAlbums: Boolean
+        get() = preferences.getBoolean(CROSSFADE_GAPLESS_ALBUMS, true)
+
+    val seekForwardIntervalSeconds: Int
+        get() = preferences.getInt(SEEK_FORWARD_INTERVAL, preferences.getInt(SEEK_INTERVAL, 10)).coerceIn(5, 60)
+
+    val seekBackIntervalSeconds: Int
+        get() = preferences.getInt(SEEK_BACK_INTERVAL, preferences.getInt(SEEK_INTERVAL, 10)).coerceIn(5, 60)
+
+    /**
+     * Minimum current-track duration (ms) required to keep the fast-forward/rewind controls.
+     * Zero means the controls are always available.
+     */
+    val seekControlsMinDurationMs: Long
+        get() = (preferences.nullString(SEEK_CONTROLS_MIN_DURATION)?.toIntOrNull() ?: 0).coerceAtLeast(0) * 60_000L
+
+    fun isSeekControlsAvailable(currentDurationMs: Long): Boolean {
+        val minDurationMs = seekControlsMinDurationMs
+        return minDurationMs <= 0L || currentDurationMs <= 0L || currentDurationMs >= minDurationMs
+    }
+
+    fun previousButtonRestartsTrack(): Boolean {
+        val configured = preferences.nullString(PREVIOUS_BUTTON_ACTION)
+        if (configured != null) {
+            return configured != PREVIOUS_BUTTON_ALWAYS_PREVIOUS
+        }
+        return preferences.getBoolean(REWIND_WITH_BACK, true)
+    }
+
+    val shuffleBehavior: ShuffleBehavior
+        get() = ShuffleBehavior.fromValue(preferences.nullString(SHUFFLE_BEHAVIOR))
+
+    val shuffleStandardEnabled: Boolean
+        get() = preferences.getBoolean(SHUFFLE_STANDARD_ENABLED, true)
+
+    val shuffleRandomizeEnabled: Boolean
+        get() = preferences.getBoolean(SHUFFLE_RANDOMIZE_ENABLED, true)
+
+    val isGaplessPlaybackEnabled: Boolean
+        get() = preferences.getBoolean(GAPLESS_PLAYBACK, true)
+
+    /**
+     * Copies legacy transport preferences into their replacements once, so the settings
+     * screens show the value the player is actually using.
+     */
+    fun migrateLegacyPlaybackPreferences() {
+        val legacySeekInterval = preferences.getInt(SEEK_INTERVAL, DEFAULT_SEEK_INTERVAL_SECONDS)
+        preferences.edit {
+            if (!preferences.contains(SEEK_FORWARD_INTERVAL)) {
+                putInt(SEEK_FORWARD_INTERVAL, legacySeekInterval)
+            }
+            if (!preferences.contains(SEEK_BACK_INTERVAL)) {
+                putInt(SEEK_BACK_INTERVAL, legacySeekInterval)
+            }
+            if (!preferences.contains(PREVIOUS_BUTTON_ACTION) &&
+                preferences.contains(REWIND_WITH_BACK)
+            ) {
+                putString(
+                    PREVIOUS_BUTTON_ACTION,
+                    if (preferences.getBoolean(REWIND_WITH_BACK, true)) {
+                        PREVIOUS_BUTTON_RESTART
+                    } else {
+                        PREVIOUS_BUTTON_ALWAYS_PREVIOUS
+                    },
+                )
+            }
+        }
+    }
 
     var headsetSingleClickAction: HeadsetButtonAction
         get() = preferences.enumValue(HEADSET_SINGLE_CLICK_ACTION, HeadsetButtonAction.PlayPause)
@@ -479,6 +705,67 @@ object Preferences : KoinComponent {
             putString(HEADSET_CLICK_DELAY_MS, HeadsetButtonPolicy.DEFAULT_DELAY_MS.toString())
         }
     }
+
+    var notificationButtonLayout: NotificationButtonLayout
+        get() =
+            NotificationButtonLayoutPolicy.fromPreferences(
+                expandedValue = preferences.nullString(NOTIFICATION_EXPANDED_BUTTONS),
+                compactValue = preferences.nullString(NOTIFICATION_COMPACT_BUTTONS),
+            )
+        set(value) {
+            val normalized = NotificationButtonLayoutPolicy.normalize(value)
+            preferences.edit {
+                putString(
+                    NOTIFICATION_COMPACT_BUTTONS,
+                    normalized.compact.joinToString(",") { it.storedValue },
+                )
+                putString(
+                    NOTIFICATION_EXPANDED_BUTTONS,
+                    normalized.expanded.joinToString(",") { it.storedValue },
+                )
+            }
+        }
+
+    fun resetNotificationButtonLayout() {
+        preferences.edit {
+            remove(NOTIFICATION_COMPACT_BUTTONS)
+            remove(NOTIFICATION_EXPANDED_BUTTONS)
+        }
+    }
+
+    /** Replaces the close notification action with an add-to-playlist action. */
+    var notificationReplaceCloseWithAddToPlaylist: Boolean
+        get() = preferences.getBoolean(NOTIFICATION_REPLACE_CLOSE_WITH_ADD_TO_PLAYLIST, false)
+        set(value) = preferences.edit { putBoolean(NOTIFICATION_REPLACE_CLOSE_WITH_ADD_TO_PLAYLIST, value) }
+
+    /** Includes artwork in the session metadata used by the system lock screen. */
+    var notificationBroadcastAlbumArt: Boolean
+        get() = preferences.getBoolean(NOTIFICATION_BROADCAST_ALBUM_ART, true)
+        set(value) = preferences.edit { putBoolean(NOTIFICATION_BROADCAST_ALBUM_ART, value) }
+
+    /** Notification presentation; [NotificationStyle.System] keeps the Media3 layout. */
+    var notificationStyle: NotificationStyle
+        get() =
+            NotificationStyle.fromStoredValue(preferences.nullString(NOTIFICATION_STYLE))
+                ?: NotificationStyle.System
+        set(value) = preferences.edit { putString(NOTIFICATION_STYLE, value.storedValue) }
+
+    /** Background used by the custom notification layouts. */
+    var notificationBackgroundMode: NotificationBackgroundMode
+        get() =
+            NotificationBackgroundMode.fromStoredValue(preferences.nullString(NOTIFICATION_BACKGROUND_MODE))
+                ?: NotificationBackgroundMode.Theme
+        set(value) = preferences.edit { putString(NOTIFICATION_BACKGROUND_MODE, value.storedValue) }
+
+    /** User-picked custom notification background, or 0 when it was never set. */
+    var notificationCustomBackgroundColor: Int
+        get() = preferences.getInt(NOTIFICATION_CUSTOM_BACKGROUND_COLOR, 0)
+        set(value) = preferences.edit { putInt(NOTIFICATION_CUSTOM_BACKGROUND_COLOR, value) }
+
+    /** Uses the big custom layout even while the notification is collapsed. */
+    var notificationAlwaysExpanded: Boolean
+        get() = preferences.getBoolean(NOTIFICATION_ALWAYS_EXPANDED, false)
+        set(value) = preferences.edit { putBoolean(NOTIFICATION_ALWAYS_EXPANDED, value) }
 
     var onlyAlbumArtists: Boolean
         get() = preferences.getBoolean(ONLY_ALBUM_ARTISTS, true)
@@ -552,12 +839,37 @@ object Preferences : KoinComponent {
         get() = preferences.getBoolean(SHOW_TOTAL_DURATION, false)
         set(value) = preferences.edit { putBoolean(SHOW_TOTAL_DURATION, value) }
 
-    val whitelistEnabled: Boolean
+    var whitelistEnabled: Boolean
         get() = preferences.getBoolean(WHITELIST_ENABLED, true)
+        set(value) = preferences.edit { putBoolean(WHITELIST_ENABLED, value) }
 
     var blacklistEnabled: Boolean
         get() = preferences.getBoolean(BLACKLIST_ENABLED, true)
         set(value) = preferences.edit { putBoolean(BLACKLIST_ENABLED, value) }
+
+    var ghostModeEnabled: Boolean
+        get() = preferences.getBoolean(GHOST_MODE_ENABLED, false)
+        set(value) = preferences.edit { putBoolean(GHOST_MODE_ENABLED, value) }
+
+    var ghostFolders: List<String>
+        get() = preferences.nullString(GHOST_FOLDERS).deserialize(emptyList())
+        set(value) = preferences.edit { putString(GHOST_FOLDERS, value.serialize()) }
+
+    var ghostPinHash: String?
+        get() = preferences.nullString(GHOST_PIN_HASH)
+        set(value) = preferences.edit { putString(GHOST_PIN_HASH, value) }
+
+    var ghostPinSalt: String?
+        get() = preferences.nullString(GHOST_PIN_SALT)
+        set(value) = preferences.edit { putString(GHOST_PIN_SALT, value) }
+
+    var autoRescanOnMediaMount: Boolean
+        get() = preferences.getBoolean(AUTO_RESCAN_ON_MEDIA_MOUNT, false)
+        set(value) = preferences.edit { putBoolean(AUTO_RESCAN_ON_MEDIA_MOUNT, value) }
+
+    var setupWizardCompleted: Boolean
+        get() = preferences.getBoolean(SETUP_WIZARD_COMPLETED, true)
+        set(value) = preferences.edit { putBoolean(SETUP_WIZARD_COMPLETED, value) }
 
     val minimumSongCountForArtist: Int
         get() = preferences.getInt(ARTIST_MINIMUM_SONGS, 1)
@@ -570,6 +882,10 @@ object Preferences : KoinComponent {
 
     val maximumSongDuration: Int
         get() = preferences.getInt(MAXIMUM_SONG_DURATION, 0)
+
+    var extraFormatsScanEnabled: Boolean
+        get() = preferences.getBoolean(EXTRA_FORMATS_SCAN, false)
+        set(value) = preferences.edit { putBoolean(EXTRA_FORMATS_SCAN, value) }
 
     val rotationLockEnabled: Boolean
         get() = preferences.getBoolean(ENABLE_ROTATION_LOCK, false)
@@ -615,6 +931,10 @@ object Preferences : KoinComponent {
     var isShowNextSong: Boolean
         get() = preferences.getBoolean(DISPLAY_NEXT_SONG, true)
         set(value) = preferences.edit { putBoolean(DISPLAY_NEXT_SONG, value) }
+
+    var sleepTimerStopMusicOnlyInForeground: Boolean
+        get() = preferences.getBoolean(SLEEP_TIMER_STOP_MUSIC_ONLY_IN_FOREGROUND, false)
+        set(value) = preferences.edit { putBoolean(SLEEP_TIMER_STOP_MUSIC_ONLY_IN_FOREGROUND, value) }
 
     fun SharedPreferences.nullString(key: String): String? = getString(key, null)
 
@@ -706,6 +1026,7 @@ interface UpdateSearchMode {
 
 const val BLACK_THEME = "black_theme"
 const val MATERIAL_YOU = "material_you"
+const val ACCENT_COLOR = "accent_color"
 const val USE_CUSTOM_FONT = "use_custom_font"
 const val APPBAR_MODE = "appbar_mode"
 const val GENERAL_THEME = "general_theme"
@@ -738,6 +1059,16 @@ const val COVER_DOUBLE_TAP_ACTION = "cover_double_tap_action"
 const val COVER_LEFT_DOUBLE_TAP_ACTION = "cover_left_double_tap_action"
 const val COVER_RIGHT_DOUBLE_TAP_ACTION = "cover_right_double_tap_action"
 const val COVER_LONG_PRESS_ACTION = "cover_long_press_action"
+const val KEEP_SCREEN_ON_NOW_PLAYING = "keep_screen_on_now_playing"
+const val LOCK_SCREEN_PLAYER_ENABLED = "lock_screen_player_enabled"
+const val LOCK_SCREEN_WALLPAPER = "lock_screen_wallpaper"
+const val LOCK_SCREEN_WALLPAPER_URI = "lock_screen_wallpaper_uri"
+const val LOCK_SCREEN_SKIP_WHEN_UNLOCKED = "lock_screen_skip_when_unlocked"
+const val LOCK_SCREEN_SKIP_WHEN_PAUSED = "lock_screen_skip_when_paused"
+const val LOCK_SCREEN_GESTURES = "lock_screen_gestures"
+const val LOCK_SCREEN_SHORTCUTS = "lock_screen_shortcuts"
+const val SEEK_BAR_TOUCH_ONLY_ON_THUMB = "seek_bar_touch_only_on_thumb"
+const val NOW_PLAYING_QUICK_ACCESS = "now_playing_quick_access"
 const val ANIMATE_PLAYER_CONTROL = "animate_player_control"
 const val CIRCLE_PLAY_BUTTON = "circle_play_button"
 const val ENABLE_SCROLLING_TEXT = "enable_scrolling_text"
@@ -752,8 +1083,29 @@ const val WIDGET_IMAGE_CORNER_RADIUS = "widget_image_corner_radius"
 const val WIDGET_THIRD_LINE_CONTENT = "widget_third_line_content"
 const val PREFER_REMAINING_TIME = "prefer_remaining_time"
 const val PREFER_ALBUM_ARTIST_NAME = "prefer_album_artist_name_on_np"
+const val USE_ALBUM_ARTIST_IF_ARTIST_MISSING = "use_album_artist_if_artist_missing"
+
+const val SEARCH_HISTORY = "search_history"
+private const val SEARCH_HISTORY_SEPARATOR = "\u001F"
+private const val MAX_SEARCH_HISTORY = 20
 const val REWIND_WITH_BACK = "rewind_with_back"
 const val SEEK_INTERVAL = "seek_interval"
+const val SEEK_FORWARD_INTERVAL = "seek_forward_interval"
+const val SEEK_BACK_INTERVAL = "seek_back_interval"
+const val SEEK_CONTROLS_MIN_DURATION = "seek_controls_min_duration"
+const val PREVIOUS_BUTTON_ACTION = "previous_button_action"
+const val FADE_IN_DURATION = "playback_fade_in_duration"
+const val FADE_OUT_DURATION = "playback_fade_out_duration"
+const val CROSSFADE_DURATION = "playback_crossfade_duration"
+const val CROSSFADE_ON_MANUAL_SKIP = "playback_crossfade_on_manual_skip"
+const val CROSSFADE_GAPLESS_ALBUMS = "playback_crossfade_gapless_albums"
+const val GAPLESS_PLAYBACK = "gapless_playback"
+const val PREVIOUS_BUTTON_RESTART = "restart"
+const val PREVIOUS_BUTTON_ALWAYS_PREVIOUS = "previous"
+const val MAX_FADE_DURATION_MS = 4000
+const val MAX_CROSSFADE_DURATION_MS = 12_000
+
+const val DEFAULT_SEEK_INTERVAL_SECONDS = 10
 const val QUEUE_NEXT_MODE = "queue_next_mode"
 const val PLAY_ON_STARTUP_MODE = "play_on_startup_mode"
 const val ON_SONG_CLICK_ACTION = "on_song_click_action"
@@ -762,11 +1114,20 @@ const val PLAY_OPTION_ALWAYS_VISIBLE = "play_option_always_visible"
 const val PLAY_OPTION_PLAYS_WHOLE_LIST = "play_option_whole_list"
 const val PLAY_ALL_SONGS_WHEN_SEARCHING = "play_all_songs_when_searching"
 const val CLEAR_QUEUE_ON_COMPLETION = "clear_queue_on_completion"
+const val REPEAT_LOAD_NEXT_AND_PAUSE_AVAILABLE = "repeat_load_next_and_pause_available"
+const val REPEAT_LOAD_NEXT_AND_PAUSE_ACTIVE = "repeat_load_next_and_pause_active"
+const val AUTO_DELETE_OLDEST_NAMED_QUEUE = "auto_delete_oldest_named_queue"
 const val REMEMBER_SHUFFLE_MODE = "remember_shuffle_mode"
+const val SHUFFLE_BEHAVIOR = "shuffle_behavior"
+const val SHUFFLE_STANDARD_ENABLED = "shuffle_standard_enabled"
+const val SHUFFLE_RANDOMIZE_ENABLED = "shuffle_randomize_enabled"
 const val ALBUM_SHUFFLE_MODE = "album_shuffle_mode"
 const val ARTIST_SHUFFLE_MODE = "artist_shuffle_mode"
 const val RESUME_ON_CONNECT = "resume_on_connect"
 const val PAUSE_ON_DISCONNECT = "pause_on_disconnect"
+const val RESUME_ONLY_IF_PAUSED_BY_DISCONNECT = "resume_only_if_paused_by_disconnect"
+const val PREVENT_UNWANTED_AUTOPLAY = "prevent_unwanted_autoplay"
+const val PREVENT_UNWANTED_AUTOPLAY_STRICT = "prevent_unwanted_autoplay_strict"
 const val RESUME_ON_BLUETOOTH_CONNECT = "resume_on_bluetooth_connect"
 const val PAUSE_ON_BLUETOOTH_DISCONNECT = "pause_on_bluetooth_disconnect"
 const val HEADSET_SINGLE_CLICK_ACTION = "headset_single_click_action"
@@ -776,11 +1137,22 @@ const val HEADSET_LONG_PRESS_ACTION = "headset_long_press_action"
 const val HEADSET_FOUR_PLUS_SEEK_FORWARD = "headset_four_plus_seek_forward"
 const val HEADSET_CLICK_DELAY_MS = "headset_click_delay_ms"
 const val HEADSET_BUTTON_MAPPING = "headset_button_mapping"
+const val NOTIFICATION_BUTTON_LAYOUT = "notification_button_layout"
+const val NOTIFICATION_COMPACT_BUTTONS = "notification_compact_buttons"
+const val NOTIFICATION_EXPANDED_BUTTONS = "notification_expanded_buttons"
+const val NOTIFICATION_REPLACE_CLOSE_WITH_ADD_TO_PLAYLIST = "notification_replace_close_with_add_to_playlist"
+const val NOTIFICATION_BROADCAST_ALBUM_ART = "notification_broadcast_album_art"
+const val NOTIFICATION_STYLE = "notification_style"
+const val NOTIFICATION_BACKGROUND_MODE = "notification_background"
+const val NOTIFICATION_CUSTOM_BACKGROUND_COLOR = "notification_background_color"
+const val NOTIFICATION_ALWAYS_EXPANDED = "notification_always_expanded"
 const val IGNORE_AUDIO_FOCUS = "ignore_audio_focus"
 const val PAUSE_ON_ZERO_VOLUME = "pause_on_zero_volume"
+const val PREVENT_PLAYBACK_WHEN_MUTED = "prevent_playback_when_muted"
 const val MP3_INDEX_SEEKING = "mp3_index_seeking"
 const val IGNORE_MEDIA_STORE = "ignore_media_store"
 const val USE_FOLDER_ART = "use_folder_art"
+const val DISABLE_ALBUM_ART = "disable_album_art"
 const val PREFERRED_IMAGE_SIZE = "preferred_image_size"
 const val ONLY_ALBUM_ARTISTS = "only_album_artists"
 const val TRASH_MUSIC_FILES = "trash_music_files"
@@ -793,15 +1165,28 @@ const val IGNORE_SINGLES = "ignore_singles"
 const val SHOW_TOTAL_DURATION = "show_total_duration"
 const val WHITELIST_ENABLED = "whitelist_enabled"
 const val BLACKLIST_ENABLED = "blacklist_enabled"
+const val GHOST_MODE = "ghost_mode"
+const val GHOST_MODE_ENABLED = "ghost_mode_enabled"
+const val GHOST_FOLDERS = "ghost_folders"
+const val GHOST_PIN_HASH = "ghost_pin_hash"
+const val GHOST_PIN_SALT = "ghost_pin_salt"
+const val AUTO_RESCAN_ON_MEDIA_MOUNT = "auto_rescan_on_media_mount"
+const val SETUP_WIZARD_COMPLETED = "setup_wizard_completed"
+const val LIBRARY_RESCAN = "library_rescan"
+const val SETUP_WIZARD = "setup_wizard"
 const val ARTIST_MINIMUM_SONGS = "artist_minimum_songs"
 const val ALBUM_MINIMUM_SONGS = "album_minimum_songs"
 const val MINIMUM_SONG_DURATION = "minimum_song_duration"
 const val MAXIMUM_SONG_DURATION = "maximum_song_duration"
+const val EXTRA_FORMATS_SCAN = "extra_formats_scan"
 const val ENABLE_ROTATION_LOCK = "enable_rotation_lock"
+const val SHOW_UNIMPORTANT_SETTINGS = "show_unimportant_settings"
 const val STOP_WHEN_CLOSED_FROM_RECENTS = "stop_when_closed_from_recents"
+const val SLEEP_TIMER_STOP_MUSIC_ONLY_IN_FOREGROUND = "sleep_timer_stop_music_only_in_foreground"
 const val LANGUAGE_NAME = "language_name"
 const val BACKUP_DATA = "backup_data"
 const val RESTORE_DATA = "restore_data"
+const val REMOVE_MISSING_SONGS = "remove_missing_songs"
 const val UPDATE_SEARCH_MODE = "update_search_mode"
 const val ONLY_WIFI = "update_only_wifi"
 const val LAST_UPDATE_SEARCH = "last_update_search"

@@ -38,6 +38,7 @@ import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.SongPlayStat
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.Preferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
@@ -98,6 +99,12 @@ interface SmartRepository {
     suspend fun deleteSongInPlayCount(songId: Long)
 
     suspend fun deleteSongsInPlayCount(songIds: List<Long>)
+
+    suspend fun deleteSongsInPlayEvents(songIds: List<Long>)
+
+    suspend fun countSongsInPlayEvents(songIds: List<Long>): Int
+
+    suspend fun countSongsInHistory(songIds: List<Long>): Int
 
     suspend fun insetOrIncrementPlayCount(
         song: Song,
@@ -247,17 +254,18 @@ class RealSmartRepository(
             playEventDao
                 .topArtistsBetween(startMillis, endMillis, PLAY_STATS_LIMIT)
                 .toRecordedArtistPlayStats()
+                .filterVisibleArtists()
         }
 
     override fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> {
         if (period == ListeningPeriod.AllTime) {
             return playCountDao.topArtistsByPlayCountFlow(PLAY_STATS_LIMIT).map { counts ->
-                counts.toAggregateArtistPlayStats()
+                counts.toAggregateArtistPlayStats().filterVisibleArtists()
             }
         }
         val cutoff = period.cutoffMillis() ?: return artistPlayStatsFlow(ListeningPeriod.AllTime)
         return playEventDao.topArtistsSinceFlow(cutoff, PLAY_STATS_LIMIT).map { counts ->
-            counts.toRecordedArtistPlayStats()
+            counts.toRecordedArtistPlayStats().filterVisibleArtists()
         }
     }
 
@@ -278,6 +286,27 @@ class RealSmartRepository(
         if (songIds.isEmpty()) return
         songIds.chunked(MAX_ITEMS_PER_CHUNK).forEach { chunkIds ->
             playCountDao.deleteSongsInPlayCount(chunkIds)
+        }
+    }
+
+    override suspend fun deleteSongsInPlayEvents(songIds: List<Long>) {
+        if (songIds.isEmpty()) return
+        songIds.chunked(MAX_ITEMS_PER_CHUNK).forEach { chunkIds ->
+            playEventDao.deleteSongsInPlayEvents(chunkIds)
+        }
+    }
+
+    override suspend fun countSongsInPlayEvents(songIds: List<Long>): Int {
+        if (songIds.isEmpty()) return 0
+        return songIds.chunked(MAX_ITEMS_PER_CHUNK).sumOf { chunkIds ->
+            playEventDao.countSongsInPlayEvents(chunkIds)
+        }
+    }
+
+    override suspend fun countSongsInHistory(songIds: List<Long>): Int {
+        if (songIds.isEmpty()) return 0
+        return songIds.chunked(MAX_ITEMS_PER_CHUNK).sumOf { chunkIds ->
+            historyDao.countSongsInHistory(chunkIds)
         }
     }
 
@@ -341,6 +370,8 @@ class RealSmartRepository(
         }
         return songRepository.makeSongCursor(queryDispatcher)
     }
+
+    private fun List<ArtistPlayStat>.filterVisibleArtists(): List<ArtistPlayStat> = if (GhostMode.isFilteringActive) filterNot { it.artist == null } else this
 
     private suspend fun List<ArtistIdPlayCount>.toAggregateArtistPlayStats(): List<ArtistPlayStat> =
         withContext(IO) {
@@ -414,17 +445,17 @@ class RealSmartRepository(
 
     private suspend fun List<PlayCountEntity>.fromPlayCountToSongs(): List<Song> =
         withContext(IO) {
-            filterNot { it.id == -1L || !File(it.data).exists() }
+            filterNot { it.id == -1L || !File(it.data).exists() || GhostMode.isGhostPath(it.data) }
                 .map { it.toSong() }
         }
 
     private fun List<Pair<PlayCountEntity, Long>>.toSongPlayStats(): List<SongPlayStat> =
-        filterNot { (entity, _) -> entity.id == -1L || !File(entity.data).exists() }
+        filterNot { (entity, _) -> entity.id == -1L || !File(entity.data).exists() || GhostMode.isGhostPath(entity.data) }
             .map { (entity, playCount) -> SongPlayStat(entity.toSong(), playCount) }
 
     private suspend fun List<HistoryEntity>.fromHistoryToSongs(): List<Song> =
         withContext(IO) {
-            filterNot { it.id == -1L || !File(it.data).exists() }
+            filterNot { it.id == -1L || !File(it.data).exists() || GhostMode.isGhostPath(it.data) }
                 .map { it.toSong() }
         }
 

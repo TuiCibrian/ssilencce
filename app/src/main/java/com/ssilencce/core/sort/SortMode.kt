@@ -12,6 +12,7 @@ import com.ssilencce.core.model.sort.KeySortItem
 import com.ssilencce.core.model.sort.SortItem
 import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.data.local.room.PlaylistWithSongs
+import com.ssilencce.data.local.room.SongPlayStatistics
 import com.ssilencce.data.model.*
 import com.ssilencce.extensions.media.albumArtistName
 import com.ssilencce.extensions.media.asReadableTrackNumber
@@ -161,6 +162,9 @@ sealed class SongSortMode(
                 KeySortItem.Year,
                 KeySortItem.DateAdded,
                 KeySortItem.DateModified,
+                KeySortItem.DateLastPlayed,
+                KeySortItem.MostPlayed,
+                KeySortItem.LeastPlayed,
                 KeySortItem.FileName,
                 KeySortItem.Path,
                 DescendingItem,
@@ -202,6 +206,9 @@ sealed class SongSortMode(
                 KeySortItem.Artist,
                 KeySortItem.Album,
                 KeySortItem.Duration,
+                KeySortItem.DateLastPlayed,
+                KeySortItem.MostPlayed,
+                KeySortItem.LeastPlayed,
                 DescendingItem,
             ),
     )
@@ -215,6 +222,9 @@ sealed class SongSortMode(
                 KeySortItem.Artist,
                 KeySortItem.Album,
                 KeySortItem.Duration,
+                KeySortItem.DateLastPlayed,
+                KeySortItem.MostPlayed,
+                KeySortItem.LeastPlayed,
                 DescendingItem,
             ),
     )
@@ -231,6 +241,9 @@ sealed class SongSortMode(
                 KeySortItem.Duration,
                 KeySortItem.DateAdded,
                 KeySortItem.DateModified,
+                KeySortItem.DateLastPlayed,
+                KeySortItem.MostPlayed,
+                KeySortItem.LeastPlayed,
                 KeySortItem.FileName,
                 KeySortItem.Path,
                 DescendingItem,
@@ -246,6 +259,9 @@ sealed class SongSortMode(
     fun List<Song>.sorted(): List<Song> {
         val normalize = normalizer()
         val byTitle: Comparator<Song> = compareBy(collator) { normalize(it.title) }
+        val playStatistics: Map<Long, SongPlayStatistics> by lazy {
+            SongPlayStatisticsCache.snapshot()
+        }
         val songs =
             when (selectedKey) {
                 SortKey.Name -> {
@@ -266,7 +282,15 @@ sealed class SongSortMode(
                 }
 
                 SortKey.Track -> {
-                    sortedWithTiebreak(byTitle) { it.trackNumber }
+                    if (this@SongSortMode == AlbumSongs) {
+                        sortedWith(
+                            compareBy<Song> { it.discNumber.coerceAtLeast(0) }
+                                .thenBy { if (it.trackNumber > 0) it.trackNumber else Int.MAX_VALUE }
+                                .then(byTitle),
+                        )
+                    } else {
+                        sortedWithTiebreak(byTitle) { it.trackNumber }
+                    }
                 }
 
                 SortKey.Duration -> {
@@ -283,6 +307,20 @@ sealed class SongSortMode(
 
                 SortKey.DateModified -> {
                     sortedWithTiebreak(byTitle) { it.rawDateModified }
+                }
+
+                SortKey.DateLastPlayed -> {
+                    sortedWithTiebreak(byTitle) { playStatistics[it.id]?.timePlayed ?: 0L }
+                }
+
+                SortKey.MostPlayed -> {
+                    // Negated counts keep the default order (most played first) ascending,
+                    // while the user's descending toggle reverses it.
+                    sortedWithTiebreak(byTitle) { -(playStatistics[it.id]?.playCount ?: 0) }
+                }
+
+                SortKey.LeastPlayed -> {
+                    sortedWithTiebreak(byTitle) { playStatistics[it.id]?.playCount ?: 0 }
                 }
 
                 SortKey.FileName -> {

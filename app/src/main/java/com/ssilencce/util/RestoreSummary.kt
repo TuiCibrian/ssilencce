@@ -30,6 +30,8 @@ enum class RestoreEntryKind {
     PlayCounts,
     Queues,
     PerFileSettings,
+    SongPlaybackParams,
+    Notes,
     Unrecognized,
 }
 

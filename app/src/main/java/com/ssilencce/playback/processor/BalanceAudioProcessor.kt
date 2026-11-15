@@ -22,6 +22,9 @@ class BalanceAudioProcessor(
         rightGain = right
     }
 
+    @Synchronized
+    fun balanceSnapshot(): Pair<Float, Float> = leftGain to rightGain
+
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT) {
             throw AudioProcessor.UnhandledAudioFormatException(inputAudioFormat)

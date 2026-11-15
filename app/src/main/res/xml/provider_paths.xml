@@ -16,6 +16,10 @@
         name="backup_share"
         path="backup_share/"/>
 
+    <cache-path
+        name="now_playing_share"
+        path="now_playing_share/"/>
+
     <root-path
         name="root"
         path="/storage/"/>

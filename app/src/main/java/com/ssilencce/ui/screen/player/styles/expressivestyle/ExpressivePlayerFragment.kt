@@ -21,6 +21,7 @@ import com.ssilencce.core.model.player.PlayerColorSchemeMode
 import com.ssilencce.core.model.player.PlayerTintTarget
 import com.ssilencce.core.model.player.surfaceTintTarget
 import com.ssilencce.core.model.player.tintTarget
+import com.ssilencce.core.model.shuffle.ShuffleModeState
 import com.ssilencce.core.model.theme.NowPlayingScreen
 import com.ssilencce.databinding.FragmentExpressivePlayerBinding
 import com.ssilencce.extensions.getOnBackPressedDispatcher
@@ -32,6 +33,7 @@ import com.ssilencce.ui.component.base.AbsPlayerControlsFragment
 import com.ssilencce.ui.component.base.AbsPlayerFragment
 import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
 import com.ssilencce.util.Preferences
+import kotlinx.coroutines.flow.combine
 
 class ExpressivePlayerFragment :
     AbsPlayerFragment(R.layout.fragment_expressive_player),
@@ -67,37 +69,38 @@ class ExpressivePlayerFragment :
         setupActions()
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.repeatModeFlow.collect { repeatMode ->
-                binding.repeatButton.apply {
-                    val iconResource =
-                        when (repeatMode) {
-                            Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
-                            else -> R.drawable.ic_repeat_24dp
-                        }
-                    setIconResource(iconResource)
-                    applyColor(
-                        color =
-                            if (repeatMode != Player.REPEAT_MODE_OFF) {
-                                playerViewModel.colorScheme.primaryColor
-                            } else {
-                                playerViewModel.colorScheme.secondaryContainerColor
-                            },
-                    )
-                }
+                updateRepeatButton(repeatMode)
             }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
-            playerViewModel.shuffleModeFlow.collect { shuffleModeEnabled ->
-                binding.shuffleButton.apply {
-                    applyColor(
-                        color =
-                            if (shuffleModeEnabled) {
-                                playerViewModel.colorScheme.primaryColor
-                            } else {
-                                playerViewModel.colorScheme.secondaryContainerColor
-                            },
-                    )
-                }
+            playerViewModel.repeatLoadNextPauseFlow.collect {
+                updateRepeatButton(playerViewModel.repeatMode)
             }
+        }
+        viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
+            combine(
+                playerViewModel.shuffleModeFlow,
+                playerViewModel.shuffleStateFlow,
+            ) { shuffleModeEnabled, shuffleState -> Pair(shuffleModeEnabled, shuffleState) }
+                .collect { (shuffleModeEnabled, shuffleState) ->
+                    binding.shuffleButton.apply {
+                        setIconResource(
+                            if (shuffleState == ShuffleModeState.Randomize) {
+                                R.drawable.ic_randomize_24dp
+                            } else {
+                                R.drawable.ic_shuffle_24dp
+                            },
+                        )
+                        applyColor(
+                            color =
+                                if (shuffleModeEnabled) {
+                                    playerViewModel.colorScheme.primaryColor
+                                } else {
+                                    playerViewModel.colorScheme.secondaryContainerColor
+                                },
+                        )
+                    }
+                }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.currentSongFlow.collect { currentSong ->
@@ -126,6 +129,28 @@ class ExpressivePlayerFragment :
             val displayCutout = insets.getInsets(Type.displayCutout())
             v.updatePadding(left = displayCutout.left, right = displayCutout.right)
             WindowInsetsCompat.CONSUMED
+        }
+    }
+
+    private fun updateRepeatButton(repeatMode: Int) {
+        if (_binding == null) return
+        binding.repeatButton.apply {
+            val loadNextPause = playerViewModel.isRepeatLoadNextPauseActive
+            val iconResource =
+                when {
+                    loadNextPause -> R.drawable.ic_repeat_pause_24dp
+                    repeatMode == Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
+                    else -> R.drawable.ic_repeat_24dp
+                }
+            setIconResource(iconResource)
+            applyColor(
+                color =
+                    if (repeatMode != Player.REPEAT_MODE_OFF || loadNextPause) {
+                        playerViewModel.colorScheme.primaryColor
+                    } else {
+                        playerViewModel.colorScheme.secondaryContainerColor
+                    },
+            )
         }
     }
 
@@ -192,7 +217,7 @@ class ExpressivePlayerFragment :
             binding.repeatButton.backgroundTintList?.defaultColor
                 ?: oldPrimaryTextColor
         val newRepeatColor =
-            if (playerViewModel.repeatMode != Player.REPEAT_MODE_OFF) {
+            if (playerViewModel.repeatMode != Player.REPEAT_MODE_OFF || playerViewModel.isRepeatLoadNextPauseActive) {
                 scheme.primaryColor
             } else {
                 scheme.secondaryContainerColor

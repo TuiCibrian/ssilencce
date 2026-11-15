@@ -1,6 +1,7 @@
 package com.ssilencce.playback.library
 
 import android.content.Context
+import android.os.Build
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.ssilencce.R
@@ -11,8 +12,11 @@ import com.ssilencce.coil.CoverProvider.Companion.GENRE_COVER_PATH
 import com.ssilencce.coil.CoverProvider.Companion.PLAYLIST_COVER_PATH
 import com.ssilencce.coil.CoverProvider.Companion.getImageUri
 import com.ssilencce.core.model.CategoryInfo
+import com.ssilencce.core.model.filesystem.FileSystemItem
+import com.ssilencce.core.sort.FileSortMode
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.model.Folder
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.media.albumInfo
 import com.ssilencce.extensions.media.artistInfo
@@ -71,6 +75,7 @@ class LibraryProvider(
 
     suspend fun getMediaItemsForAAOSPlayback(
         mediaItems: List<MediaItem>,
+        currentQueue: List<MediaItem> = emptyList(),
     ): Pair<List<MediaItem>, Int>? {
         val single = mediaItems.singleOrNull()
         return if (single != null) {
@@ -125,6 +130,46 @@ class LibraryProvider(
                     )
                 }
 
+                MediaIDs.COMPOSERS -> {
+                    val songId = path.getOrNull(2)?.toLongOrNull() ?: return null
+                    val composerId = path.getOrNull(1)?.toLongOrNull() ?: return null
+                    val composerSongs =
+                        repository
+                            .allComposers()
+                            .firstOrNull { it.id == composerId }
+                            ?.sortedSongs
+                            .orEmpty()
+                    Pair(
+                        composerSongs.map { it.toAutoMediaItem() },
+                        composerSongs.indexOfFirst { it.id == songId }.coerceAtLeast(0),
+                    )
+                }
+
+                MediaIDs.FOLDERS -> {
+                    val songId = path.getOrNull(2)?.toLongOrNull() ?: return null
+                    val folderPath =
+                        path
+                            .getOrNull(1)
+                            ?.let(MediaPathCodec::decode)
+                            ?: return null
+                    val folderSongs = repository.songsByFolder(folderPath, includeSubfolders = false)
+                    Pair(
+                        folderSongs.map { it.toAutoMediaItem() },
+                        folderSongs.indexOfFirst { it.id == songId }.coerceAtLeast(0),
+                    )
+                }
+
+                MediaIDs.CURRENT_QUEUE -> {
+                    val originalMediaId =
+                        path
+                            .getOrNull(1)
+                            ?.let(MediaPathCodec::decode)
+                            ?: return null
+                    val startIndex = currentQueue.indexOfFirst { it.mediaId == originalMediaId }
+                    if (startIndex < 0) return null
+                    Pair(currentQueue, startIndex)
+                }
+
                 MediaIDs.PLAYLISTS -> {
                     val songId = path.getOrNull(2)?.toLongOrNull() ?: return null
                     val playlistId = path.getOrNull(1)?.toLongOrNull() ?: return null
@@ -175,13 +220,28 @@ class LibraryProvider(
     suspend fun getChildren(
         context: Context,
         parentId: String,
+        currentQueue: List<MediaItem> = emptyList(),
     ): List<MediaItem> =
         if (MediaIDs.isPath(parentId)) {
             val parts = MediaIDs.splitPath(parentId)
-            if (parts.size < 2) {
-                listOf(MediaItem.EMPTY)
-            } else {
-                getPlayableMediaItems(parts[0], parts[1])
+            when {
+                parts.firstOrNull() == MediaIDs.FOLDERS -> {
+                    val path =
+                        if (parts.size == 2) {
+                            parts[1].let(MediaPathCodec::decode)
+                        } else {
+                            null
+                        }
+                    if (path == null) emptyList() else getFolderChildren(context, parentId, path)
+                }
+
+                parts.size < 2 -> {
+                    listOf(MediaItem.EMPTY)
+                }
+
+                else -> {
+                    getPlayableMediaItems(parts[0], parts[1])
+                }
             }
         } else {
             when (parentId) {
@@ -246,6 +306,25 @@ class LibraryProvider(
                     }
                 }
 
+                MediaIDs.COMPOSERS -> {
+                    repository.allComposers().map { composer ->
+                        MediaItem
+                            .Builder()
+                            .setMediaId(MediaIDs.getPathId(parentId, composer.id))
+                            .setMediaMetadata(
+                                MediaMetadata
+                                    .Builder()
+                                    .setMediaType(MediaMetadata.MEDIA_TYPE_ARTIST)
+                                    .setArtworkUri(getImageUri(ARTIST_COVER_PATH, composer.id))
+                                    .setIsBrowsable(true)
+                                    .setIsPlayable(false)
+                                    .setTitle(composer.name)
+                                    .setSubtitle(composer.songCount.asNumberOfSongs(context))
+                                    .build(),
+                            ).build()
+                    }
+                }
+
                 MediaIDs.PLAYLISTS -> {
                     repository.playlistsWithSongs(sorted = true).map { playlistWithSongs ->
                         MediaItem
@@ -280,6 +359,23 @@ class LibraryProvider(
                                     .setTitle(genre.name)
                                     .setSubtitle(genre.songCount.asNumberOfSongs(context))
                                     .build(),
+                            ).build()
+                    }
+                }
+
+                MediaIDs.FOLDERS -> {
+                    getFolderRootChildren(context)
+                }
+
+                MediaIDs.CURRENT_QUEUE -> {
+                    currentQueue.map { mediaItem ->
+                        mediaItem
+                            .buildUpon()
+                            .setMediaId(
+                                MediaIDs.getPathId(
+                                    MediaIDs.CURRENT_QUEUE,
+                                    MediaPathCodec.encode(mediaItem.mediaId),
+                                ),
                             ).build()
                     }
                 }
@@ -411,10 +507,93 @@ class LibraryProvider(
                         )
                     }
 
+                    CategoryInfo.Category.AlbumArtists -> {
+                        mediaItems.add(
+                            rootMediaItem(
+                                context = context,
+                                mediaId = MediaIDs.ALBUM_ARTISTS,
+                                titleRes = R.string.album_artists_label,
+                                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                            ),
+                        )
+                    }
+
+                    CategoryInfo.Category.Folders -> {
+                        mediaItems.add(
+                            rootMediaItem(
+                                context = context,
+                                mediaId = MediaIDs.FOLDERS,
+                                titleRes = R.string.folders_label,
+                                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                            ),
+                        )
+                    }
+
+                    CategoryInfo.Category.Composers -> {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            mediaItems.add(
+                                rootMediaItem(
+                                    context = context,
+                                    mediaId = MediaIDs.COMPOSERS,
+                                    titleRes = R.string.composers_label,
+                                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                                ),
+                            )
+                        }
+                    }
+
+                    CategoryInfo.Category.Queues -> {
+                        mediaItems.add(
+                            rootMediaItem(
+                                context = context,
+                                mediaId = MediaIDs.CURRENT_QUEUE,
+                                titleRes = R.string.playing_queue_label,
+                                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+                            ),
+                        )
+                    }
+
                     else -> { /*no-op*/ }
                 }
             }
         }
+
+        // Auto is a separate browsing surface: keep these roots available even when the
+        // matching phone library category is hidden. Playlists already had a root above.
+        mediaItems.addRootIfMissing(
+            rootMediaItem(
+                context = context,
+                mediaId = MediaIDs.FOLDERS,
+                titleRes = R.string.folders_label,
+                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+            ),
+        )
+        mediaItems.addRootIfMissing(
+            rootMediaItem(
+                context = context,
+                mediaId = MediaIDs.ALBUM_ARTISTS,
+                titleRes = R.string.album_artists_label,
+                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+            ),
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            mediaItems.addRootIfMissing(
+                rootMediaItem(
+                    context = context,
+                    mediaId = MediaIDs.COMPOSERS,
+                    titleRes = R.string.composers_label,
+                    mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_ARTISTS,
+                ),
+            )
+        }
+        mediaItems.addRootIfMissing(
+            rootMediaItem(
+                context = context,
+                mediaId = MediaIDs.CURRENT_QUEUE,
+                titleRes = R.string.playing_queue_label,
+                mediaType = MediaMetadata.MEDIA_TYPE_FOLDER_MIXED,
+            ),
+        )
 
         mediaItems.add(
             MediaItem
@@ -433,6 +612,85 @@ class LibraryProvider(
         )
 
         return mediaItems
+    }
+
+    private suspend fun getFolderRootChildren(context: Context): List<MediaItem> {
+        if (Preferences.hierarchyFolderView) {
+            val storageRoots = repository.filesInPath("").children
+            if (storageRoots.isNotEmpty()) {
+                return storageRoots.map { item -> item.toFolderMediaItem(context) }
+            }
+        }
+        return repository
+            .allFolders()
+            .getSortedChildren(FileSortMode.AllFolders)
+            .filterIsInstance<Folder>()
+            .map { folder -> folder.toFolderMediaItem(context) }
+    }
+
+    private suspend fun getFolderChildren(
+        context: Context,
+        parentMediaId: String,
+        path: String,
+    ): List<MediaItem> =
+        if (Preferences.hierarchyFolderView) {
+            repository
+                .filesInPath(path)
+                .getSortedChildren(FileSortMode.AllFiles)
+                .map { item ->
+                    when (item) {
+                        is Song -> item.toAutoMediaItem(parentMediaId)
+                        else -> item.toFolderMediaItem(context)
+                    }
+                }
+        } else {
+            repository
+                .folderByPath(path)
+                .songs
+                .map { song -> song.toAutoMediaItem(parentMediaId) }
+        }
+
+    private fun FileSystemItem.toFolderMediaItem(context: Context): MediaItem {
+        val metadataBuilder =
+            MediaMetadata
+                .Builder()
+                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                .setIsBrowsable(true)
+                .setIsPlayable(false)
+                .setTitle(fileName)
+        (this as? Folder)?.songCount?.let { songCount ->
+            metadataBuilder.setSubtitle(songCount.asNumberOfSongs(context))
+        }
+        return MediaItem
+            .Builder()
+            .setMediaId(MediaIDs.getPathId(MediaIDs.FOLDERS, MediaPathCodec.encode(filePath)))
+            .setMediaMetadata(metadataBuilder.build())
+            .build()
+    }
+
+    private fun rootMediaItem(
+        context: Context,
+        mediaId: String,
+        titleRes: Int,
+        mediaType: Int,
+    ): MediaItem =
+        MediaItem
+            .Builder()
+            .setMediaId(mediaId)
+            .setMediaMetadata(
+                MediaMetadata
+                    .Builder()
+                    .setMediaType(mediaType)
+                    .setIsBrowsable(true)
+                    .setIsPlayable(false)
+                    .setTitle(context.getString(titleRes))
+                    .build(),
+            ).build()
+
+    private fun MutableList<MediaItem>.addRootIfMissing(item: MediaItem) {
+        if (none { existing -> existing.mediaId == item.mediaId }) {
+            add(item)
+        }
     }
 
     private suspend fun getPlayableSongs(
@@ -458,11 +716,33 @@ class LibraryProvider(
                 }
             } else {
                 when (parentId) {
-                    MediaIDs.ALBUMS -> repository.albumById(childIdLong).songs
-                    MediaIDs.ARTISTS -> repository.artistById(childIdLong).sortedSongs
-                    MediaIDs.PLAYLISTS -> repository.playlistWithSongs(childIdLong).songs.toSongs()
-                    MediaIDs.GENRES -> repository.songsByGenre(childIdLong)
-                    else -> emptyList()
+                    MediaIDs.ALBUMS -> {
+                        repository.albumById(childIdLong).songs
+                    }
+
+                    MediaIDs.ARTISTS -> {
+                        repository.artistById(childIdLong).sortedSongs
+                    }
+
+                    MediaIDs.COMPOSERS -> {
+                        repository
+                            .allComposers()
+                            .firstOrNull { it.id == childIdLong }
+                            ?.sortedSongs
+                            .orEmpty()
+                    }
+
+                    MediaIDs.PLAYLISTS -> {
+                        repository.playlistWithSongs(childIdLong).songs.toSongs()
+                    }
+
+                    MediaIDs.GENRES -> {
+                        repository.songsByGenre(childIdLong)
+                    }
+
+                    else -> {
+                        emptyList()
+                    }
                 }
             }
         }

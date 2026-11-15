@@ -32,14 +32,16 @@ was written.
 
 **Non-Goals:**
 
-- cover replacement/deletion for batches;
 - per-file distinct values beyond the sparse per-song override dialog added in the 2026-11-08 follow-up;
-- album/artist legacy-editor guard or routing;
 - semantic remap of the legacy `PRODUCER`/`COPYRIGHT` fields;
 - standard `n/total` rewrite for track/disc totals;
-- undo/rollback, batch covers, single-entity routing to the batch editor, background/WorkManager execution;
+- background/WorkManager execution;
 - MusicBrainz/online autofill for batches;
 - changing the single-song editor.
+
+The original milestone excluded batch covers, undo/rollback and single-entity routing. Those are now
+implemented by the 2026-11-14 follow-up (`openspec/changes/tag-editor-finish`); see
+[Follow-up 2026-11-14](#follow-up-2026-11-14-batch-covers-session-undo-and-routing).
 
 ## Decisions
 
@@ -65,8 +67,9 @@ and the editor both enforce the cap; an empty or oversized selection is rejected
 and no writes. The batch editor accepts 1 to `MAX_BATCH_SONGS` selected songs; a one-song selection
 does not replace the single-song editor.
 
-Only the multi-select path is new. The single-song, album and artist single-entity menu handlers
-keep launching their existing activities in this milestone.
+Only the multi-select path was new in the first milestone. The single-song editor keeps launching
+its existing activity. Since the 2026-11-14 follow-up, the album and artist single-entity tag
+actions also launch the batch editor with the entity's song IDs.
 
 ### Field model and plan
 
@@ -168,6 +171,9 @@ suspend fun writeBatch(
     context: Context,
     contents: List<EditTarget.Content>,
     plan: BatchTagEditPlan,
+    cover: CoverOperation = CoverOperation.Keep,
+    journal: BatchWriteJournal? = null,
+    albumIdBySongId: Map<Long, Long> = emptyMap(),
     onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
     shouldContinue: () -> Boolean = { true },
 ): BatchWriteReport
@@ -178,8 +184,12 @@ suspend fun writeBatch(
 - validates that every `Set` value is non-blank;
 - builds one override map from the plan and applies it to every file (one common value per field);
 - loops sequentially, opens each URI with `"rw"`, and calls `writePropertyMap(fd, overrides)`;
-- never calls `picture`, `pictureDeleted`, `createPicture` or `createPictureThumbFile`; batch cover
-  editing is out of scope, so no cover is written or deleted;
+- since the 2026-11-14 follow-up, optionally embeds the picked front cover or deletes every
+  embedded picture (`CoverOperation`), verifies it by reading pictures back and folds the cover
+  status into the file status; `Keep` still writes no cover;
+- since the 2026-11-14 follow-up, optionally copies the original bytes to a `BatchWriteJournal`
+  before the destructive open, restores the current file on hard failures and refreshes the
+  album-art rows of the affected albums;
 - notifies each changed URI and scans successful paths after the write loop, mapping scan callbacks
   back to files by path; a file whose scan callback never arrives is reported as a scan failure,
   not silently ignored;
@@ -187,7 +197,7 @@ suspend fun writeBatch(
 
 `write(context, target)` remains as a compatibility wrapper for the single-song/album/artist
 activities. It preserves the current all-fields behavior (blank means clear) and does not gain the
-new `Keep` semantics. No existing activity changes behavior in this milestone.
+new `Keep` semantics. No existing activity changes behavior.
 
 `EditTarget` is not given a new `Type.MultipleSongs`; `writeBatch` accepts the content list directly,
 so no exhaustive `when` over `EditTarget.Type` is disturbed.
@@ -244,13 +254,18 @@ has:
 - `Clear` is visually destructive; choosing it is the only way to remove a value;
 - a save bar showing "N fields on M files"; disabled when no `Set`/`Clear` exists or any `Set` is
   blank;
+- since the 2026-11-14 follow-up, a cover card with the current cover preview and
+  `Keep`/`Replace`/`Remove` chips (Photo Picker for `Replace`), plus a cover row in the save
+  summary and the result report;
 - a saving state with progress; back navigation is blocked while saving so the user cannot
   intentionally cancel mid-batch;
 - a result state with the report; the screen does not auto-finish, so the user can inspect failures.
+  Since the follow-up it also offers "Undo changes" when the session journal still holds the
+  originals, with an undoing progress state and a restored/failed summary.
 
-No cover picker, cover preview, MusicBrainz action or per-file value editor appears in this screen.
-The existing field labels are reused; only new English strings for `Keep`/`Set`/`Clear`, `Varies`,
-report labels and limit messages are added to `values/strings.xml`.
+The MusicBrainz action and the online cover download stay out of this screen. The existing field
+labels are reused; only new English strings for `Keep`/`Set`/`Clear`, `Varies`, the cover actions,
+undo and report labels are added to `values/strings.xml`.
 
 ### Permission and write request
 
@@ -275,9 +290,10 @@ permission is added to the manifest.
   through the dirty map.
 - Untouched fields are no longer sent in the map.
 
-This is a guard, not the full W6 routing: single-entity actions still launch the legacy activities,
-they still broadcast one dirty map to every song, and per-file values in the legacy entity editors,
-covers, undo and runtime legacy tests remain open. AA-07 remains partially open.
+The guard stays in the legacy sources, but since the 2026-11-14 follow-up the album/artist
+single-entity tag actions launch the batch editor instead, so the legacy editors are no longer
+reachable from menus. They are still declared until runtime parity evidence allows removal. AA-07
+remains partially open only for the runtime format matrix.
 
 ## Risks / Trade-offs
 
@@ -288,10 +304,12 @@ covers, undo and runtime legacy tests remain open. AA-07 remains partially open.
 - **`Keep` preservation depends on TagLib's current-map merge.** `Keep` omits the key, so the
   existing merge path preserves it; `KeptChanged` catches formats that still drop it. Unknown or
   custom frames outside the 17 fields are not verified in this milestone.
-- **No rollback.** A partial failure leaves already-written files changed; the report is per file.
-  Process death loses the report, but the files reflect what was written. Stop is not rollback:
-  it takes effect at the next file boundary and completed files remain changed. The proposed
-  in-place backup/restore design (ADR-051) is not implemented.
+- **Rollback and undo (since 2026-11-14).** Each file is copied to
+  `cacheDir/tag-write-backup/<session>/` before the destructive open; a hard failure restores the
+  current file, and the result screen can undo every file written in the session. Backups are
+  session-scoped and deleted when the editor closes; `Mismatch`/`KeptChanged` stay `Partial`.
+  Process death still loses the report and the undo, and a cache clear removes the backups. The
+  full ADR-051 contract (sidecars, hashes, process-death recovery) is not implemented.
 - **Cooperative stop, not in-file cancellation.** Back is blocked while saving; stop is observed at
   the next file boundary and remaining files are reported cancelled. Process death is still
   possible.
@@ -306,18 +324,18 @@ covers, undo and runtime legacy tests remain open. AA-07 remains partially open.
 
 These are resolved for this draft but need product confirmation before implementation:
 
-- **Field scope:** all 17 text fields, cover excluded. A smaller first set is possible but would
-  make the batch editor less than the single-song editor.
+- **Field scope:** all 17 text fields plus the batch cover replace/delete added in the
+  2026-11-14 follow-up. A smaller first set is possible but would make the batch editor less than
+  the single-song editor.
 - **`Keep` verification:** `KeptChanged` is a warning and makes the file `Partial`, not a hard
   failure of the requested change. If untouched values must be guaranteed, treat it as a failure.
 - **Batch limit:** `MAX_BATCH_SONGS = 500` is a safety bound, not a product requirement; confirm the
   number or replace it with chunked permission requests later.
 - **Equality:** trim plus the existing `MetadataReader.merge` multi-value semantics, no case
   folding. Format normalisation may still surface as `Mismatch`/`KeptChanged`.
-- **Legacy guard:** the aggregation/dirty-map/destructive-confirmation guard is applied. AA-07
-  remains partially open until album/artist single-entity actions are routed to the batch editor
-  and per-file values in the legacy entity editors, covers, undo and in-place write backup/restore
-  are available.
+- **Legacy guard:** the aggregation/dirty-map/destructive-confirmation guard is applied and the
+  single-entity actions now route to the batch editor (2026-11-14). The legacy editors remain
+  declared but unreachable; only the runtime format matrix keeps AA-07 partially open.
 - **Reuse:** reuse the `MetadataReader`/`MetadataWriter` data path and field semantics. The
   single-target `TagEditorViewModel`/`AbsTagEditorActivity` XML form is not reused as-is.
 - **Blank semantics:** blank text never means clear; `Clear` is the only removal operation.
@@ -348,6 +366,35 @@ Source acceptance is bounded and does not imply an app build or runtime PASS.
   `MetadataWriter` live `6531A98D...`; no Gradle/ktlint/build/device action; HEAD unchanged.
 - **Still open:** app-wide Android compile/build/APK and lint; runtime format matrix
   (MP3/FLAC/M4A/OGG/Opus/WAV/AIFF/WMA/MKA/WV; APE/DSF/DFF limits); read-only/corrupt/process-death/
-  100+ tests; legacy aggregation runtime tests; batch covers; session undo/rollback; single-entity
-  routing; in-place write backup/restore (proposal `7B1B7FB7...` only; ADR-051 proposed, not
-  implemented).
+  100+ tests; legacy aggregation runtime tests.
+
+## Follow-up 2026-11-14: batch covers, session undo and routing
+
+Implemented by `openspec/changes/tag-editor-finish`; the parent `tasks.md` items 7.6, 7.7a, 8.6 and
+9.6 are closed at source, while device gates 6.5, 8.7 and 9.5 stay deferred.
+
+- **Cover model.** `CoverOperation` (`Keep`/`Replace(bitmap)`/`Delete`) lives in
+  `core/model/tag/TagEditCover.kt`. `MetadataWriter.writeBatch` embeds the JPEG cover, deletes all
+  pictures or leaves them untouched, verifies the result by reading pictures back
+  (`CoverWriteStatus`), and folds the cover into the per-file status (`Unchanged` + cover change =
+  `Succeeded`; text success + cover mismatch = `Partial`; cover-only mismatch = `Failed`). Affected
+  albums get their MediaStore album-art row refreshed.
+- **UI.** The Compose editor adds a cover card with the first readable file's cover preview,
+  Photo Picker replace, remove and keep, a cover row in the save summary, a cover line in the report
+  and a per-file cover status row. Only main English strings are added.
+- **Journal.** `BatchWriteJournal` copies each file's original bytes to
+  `cacheDir/tag-write-backup/<uuid>/<songId>.bak` before the destructive `"rw"` open (2 GiB per file,
+  4 GiB per session; stale sessions pruned after seven days). A copy failure aborts that file
+  (`backup_failed`) without modifying it. A hard failure (exception, rejected save, failed read-back)
+  restores the current file; partial/mismatch results keep the fields that persisted.
+- **Undo.** The result screen offers "Undo changes" while the session backups exist. Undo restores
+  every changed file with `"rwt"`, verifies the restored size, notifies/scans, drops the restored
+  albums' art rows and reports restored/failed counts. API 30+ re-requests
+  `MediaStore.createWriteRequest` for the undo URI set. Backups are deleted when the editor closes.
+- **Routing.** `Album.onAlbumMenu` and `Artist.onArtistMenu` launch
+  `BatchTagEditorActivity` with the entity's song IDs through the shared `launchBatchTagEditor`
+  helper; composer-artist entries stay unavailable. The legacy album/artist editors remain declared
+  but are no longer reachable from menus.
+- **Not covered.** Hash/sidecar validation, `noBackupFilesDir`, free-space reserve, process-death
+  `RECOVERY_NEEDED`, fail-closed pre-open identity checks (ADR-051 remainder), cross-file
+  common/varies cover detection, Deezer cover download, artist images and the runtime format matrix.

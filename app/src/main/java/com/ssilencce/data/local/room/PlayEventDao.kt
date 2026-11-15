@@ -169,6 +169,12 @@ interface PlayEventDao {
     @Query("DELETE FROM PlayEventEntity WHERE played_at < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)
 
+    @Query("DELETE FROM PlayEventEntity WHERE song_id IN (:songIds)")
+    suspend fun deleteSongsInPlayEvents(songIds: List<Long>)
+
+    @Query("SELECT COUNT(*) FROM PlayEventEntity WHERE song_id IN (:songIds)")
+    suspend fun countSongsInPlayEvents(songIds: List<Long>): Int
+
     @Query("DELETE FROM PlayEventEntity")
     suspend fun clear()
 }

@@ -70,6 +70,15 @@
         app:title="@string/folders_label"
         app:layout="@layout/preference_category_title">
 
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_folder_24dp"
+            app:title="@string/action_hierarchy_view"
+            app:summary="@string/hierarchy_folder_view_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="hierarchy_folder_view"/>
+
         <MultiSelectListPreference
             app:icon="@drawable/ic_folder_24dp"
             app:title="@string/recursive_folder_actions_title"
@@ -128,6 +137,15 @@
             app:widgetLayout="@layout/preference_seekbar"
             app:key="maximum_song_duration"/>
 
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/use_album_artist_if_artist_missing_title"
+            app:summary="@string/use_album_artist_if_artist_missing_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="use_album_artist_if_artist_missing"/>
+
         <SeekBarPreference
             app:iconSpaceReserved="true"
             app:title="@string/artist_min_songs_title"
@@ -155,8 +173,55 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        app:title="@string/library_maintenance_title"
+        app:layout="@layout/preference_category_title">
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_audio_file_24dp"
+            app:title="@string/extra_formats_scan_title"
+            app:summary="@string/extra_formats_scan_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="extra_formats_scan"/>
+
+        <Preference
+            app:icon="@drawable/ic_restart_alt_24dp"
+            app:title="@string/rescan_library_title"
+            app:summary="@string/rescan_library_summary"
+            app:layout="@layout/list_item_view"
+            app:key="library_rescan"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_sd_card_24dp"
+            app:title="@string/auto_rescan_on_media_mount_title"
+            app:summary="@string/auto_rescan_on_media_mount_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="auto_rescan_on_media_mount"/>
+
+        <Preference
+            app:icon="@drawable/ic_settings_applications_24dp"
+            app:title="@string/setup_wizard_preference_title"
+            app:summary="@string/setup_wizard_preference_summary"
+            app:layout="@layout/list_item_view"
+            app:key="setup_wizard"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:title="@string/advanced_title"
         app:layout="@layout/preference_category_title">
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_visibility_off_24dp"
+            app:title="@string/disable_album_art_title"
+            app:summary="@string/disable_album_art_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="disable_album_art"/>
 
         <SwitchPreferenceCompat
             app:icon="@drawable/ic_image_24dp"

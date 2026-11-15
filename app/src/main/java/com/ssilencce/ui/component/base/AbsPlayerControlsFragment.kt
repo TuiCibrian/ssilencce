@@ -40,6 +40,7 @@ import com.ssilencce.core.model.action.NowPlayingAction
 import com.ssilencce.core.model.player.PlayerColorScheme
 import com.ssilencce.core.model.player.PlayerTintTarget
 import com.ssilencce.core.model.player.ProgressState
+import com.ssilencce.core.model.shuffle.ShuffleModeState
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.getShapeAppearanceModel
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
@@ -50,6 +51,7 @@ import com.ssilencce.ui.component.views.MusicSlider
 import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.player.PlayerAnimator
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.SeekToDialogFragment
 import com.ssilencce.util.ANIMATE_PLAYER_CONTROL
 import com.ssilencce.util.DISPLAY_ALBUM_TITLE
 import com.ssilencce.util.DISPLAY_EXTRA_INFO
@@ -57,6 +59,7 @@ import com.ssilencce.util.ENABLE_SCROLLING_TEXT
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
 import com.ssilencce.util.PREFER_ALBUM_ARTIST_NAME
 import com.ssilencce.util.Preferences
+import com.ssilencce.util.SEEK_BAR_TOUCH_ONLY_ON_THUMB
 import com.ssilencce.util.SQUIGGLY_SEEK_BAR
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -96,7 +99,7 @@ abstract class AbsPlayerControlsFragment(
         get() = playerViewModel.shuffleModeEnabled
 
     protected val isRepeatModeOn: Boolean
-        get() = playerViewModel.repeatMode != Player.REPEAT_MODE_OFF
+        get() = playerViewModel.repeatMode != Player.REPEAT_MODE_OFF || playerViewModel.isRepeatLoadNextPauseActive
 
     private var lastPlaybackControlsColor: Int = 0
     private var lastDisabledPlaybackControlsColor: Int = 0
@@ -154,8 +157,16 @@ abstract class AbsPlayerControlsFragment(
             }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
-            playerViewModel.shuffleModeFlow.collect { shuffleMode ->
-                onUpdateShuffleMode(shuffleMode)
+            playerViewModel.repeatLoadNextPauseFlow.collect {
+                onRepeatLoadNextPauseChanged()
+            }
+        }
+        viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
+            combine(
+                playerViewModel.shuffleModeFlow,
+                playerViewModel.shuffleStateFlow,
+            ) { enabled, state -> Pair(enabled, state) }.collect { (enabled, state) ->
+                onUpdateShuffleMode(enabled, randomize = state == ShuffleModeState.Randomize)
             }
         }
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
@@ -184,6 +195,7 @@ abstract class AbsPlayerControlsFragment(
                 )
         }
         songTotalTime?.setOnClickListener(this)
+        songCurrentProgress?.setOnClickListener(this)
         songInfoView?.setOnLongClickListener(this)
         setUpProgressSlider()
     }
@@ -202,6 +214,10 @@ abstract class AbsPlayerControlsFragment(
 
     override fun onClick(view: View) {
         when (view) {
+            songCurrentProgress -> {
+                SeekToDialogFragment.show(childFragmentManager)
+            }
+
             songTotalTime -> {
                 val preferRemainingTime = Preferences.preferRemainingTime
                 Preferences.preferRemainingTime = !preferRemainingTime
@@ -237,6 +253,7 @@ abstract class AbsPlayerControlsFragment(
 
     private fun setUpProgressSlider() {
         musicSlider?.setUseSquiggly(Preferences.squigglySeekBar)
+        musicSlider?.touchOnlyOnThumb = Preferences.seekBarTouchOnlyOnThumb
         musicSlider?.setListener(
             object : MusicSlider.Listener {
                 override fun onProgressChanged(
@@ -285,25 +302,39 @@ abstract class AbsPlayerControlsFragment(
     protected abstract fun onUpdatePlayPause(isPlaying: Boolean)
 
     open fun onUpdateRepeatMode(repeatMode: Int) {
+        val loadNextPause = playerViewModel.isRepeatLoadNextPauseActive
         val iconResource =
-            when (repeatMode) {
-                Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
+            when {
+                loadNextPause -> R.drawable.ic_repeat_pause_24dp
+                repeatMode == Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
                 else -> R.drawable.ic_repeat_24dp
             }
         repeatButton?.let {
             it.setIconResource(iconResource)
             it.applyColor(
-                getPlaybackControlsColor(repeatMode != Player.REPEAT_MODE_OFF),
+                getPlaybackControlsColor(repeatMode != Player.REPEAT_MODE_OFF || loadNextPause),
                 isIconButton = true,
             )
         }
     }
 
-    open fun onUpdateShuffleMode(shuffleModeEnabled: Boolean) {
-        shuffleButton?.applyColor(
-            getPlaybackControlsColor(shuffleModeEnabled),
-            isIconButton = true,
-        )
+    protected open fun onRepeatLoadNextPauseChanged() {
+        onUpdateRepeatMode(playerViewModel.repeatMode)
+    }
+
+    open fun onUpdateShuffleMode(
+        shuffleModeEnabled: Boolean,
+        randomize: Boolean = false,
+    ) {
+        shuffleButton?.let {
+            it.setIconResource(
+                if (randomize) R.drawable.ic_randomize_24dp else R.drawable.ic_shuffle_24dp,
+            )
+            it.applyColor(
+                getPlaybackControlsColor(shuffleModeEnabled),
+                isIconButton = true,
+            )
+        }
     }
 
     fun setMarquee(
@@ -371,6 +402,10 @@ abstract class AbsPlayerControlsFragment(
             SQUIGGLY_SEEK_BAR -> {
                 musicSlider?.setUseSquiggly(sharedPreferences.getBoolean(key, false))
                 musicSlider?.animateSquigglyProgress = playerViewModel.isPlaying
+            }
+
+            SEEK_BAR_TOUCH_ONLY_ON_THUMB -> {
+                musicSlider?.touchOnlyOnThumb = sharedPreferences.getBoolean(key, false)
             }
 
             ENABLE_SCROLLING_TEXT -> {

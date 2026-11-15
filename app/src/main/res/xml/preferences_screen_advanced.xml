@@ -1,6 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
 
+    <SwitchPreferenceCompat
+        app:icon="@drawable/ic_visibility_off_24dp"
+        app:title="@string/show_unimportant_settings_title"
+        app:summary="@string/show_unimportant_settings_summary"
+        app:defaultValue="true"
+        app:layout="@layout/list_item_view"
+        app:widgetLayout="@layout/preference_switch"
+        app:key="show_unimportant_settings"/>
+
+    <PreferenceCategory
+        app:title="@string/system_header"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:icon="@drawable/ic_battery_charging_full_24dp"
+            app:title="@string/battery_guide_title"
+            app:summary="@string/battery_guide_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="battery"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/privacy_header"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:icon="@drawable/ic_visibility_off_24dp"
+            app:title="@string/ghost_mode_title"
+            app:summary="@string/ghost_mode_summary_settings"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="ghost_mode"/>
+
+    </PreferenceCategory>
+
     <ListPreference
         app:icon="@drawable/ic_language_24dp"
         app:title="@string/app_language_title"
@@ -20,6 +57,19 @@
         app:layout="@layout/list_item_view"
         app:widgetLayout="@layout/preference_switch"
         app:key="enable_rotation_lock"/>
+
+    <PreferenceCategory
+        app:title="@string/maintenance_header"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:title="@string/remove_missing_songs_title"
+            app:summary="@string/remove_missing_songs_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="remove_missing_songs"/>
+
+    </PreferenceCategory>
 
     <PreferenceCategory
         app:title="@string/backup_restore_header"

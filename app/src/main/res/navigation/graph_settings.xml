@@ -23,6 +23,13 @@
             app:popExitAnim="@anim/ssilencce_fragment_close_exit"
             app:destination="@+id/nav_now_playing_preferences"/>
         <action
+            android:id="@+id/action_to_lockScreenPreferences"
+            app:enterAnim="@anim/ssilencce_fragment_open_enter"
+            app:exitAnim="@anim/ssilencce_fragment_open_exit"
+            app:popEnterAnim="@anim/ssilencce_fragment_close_enter"
+            app:popExitAnim="@anim/ssilencce_fragment_close_exit"
+            app:destination="@+id/nav_lock_screen_preferences"/>
+        <action
             android:id="@+id/action_to_lyricsPreferences"
             app:enterAnim="@anim/ssilencce_fragment_open_enter"
             app:exitAnim="@anim/ssilencce_fragment_open_exit"
@@ -64,6 +71,13 @@
             app:popEnterAnim="@anim/ssilencce_fragment_close_enter"
             app:popExitAnim="@anim/ssilencce_fragment_close_exit"
             app:destination="@+id/nav_advanced_preferences"/>
+        <action
+            android:id="@+id/action_to_batteryPreferences"
+            app:enterAnim="@anim/ssilencce_fragment_open_enter"
+            app:exitAnim="@anim/ssilencce_fragment_open_exit"
+            app:popEnterAnim="@anim/ssilencce_fragment_close_enter"
+            app:popExitAnim="@anim/ssilencce_fragment_close_exit"
+            app:destination="@+id/nav_battery_preferences"/>
     </fragment>
     <fragment
         android:id="@+id/nav_interface_preferences"
@@ -73,6 +87,14 @@
         android:id="@+id/nav_now_playing_preferences"
         android:name="com.ssilencce.ui.screen.settings.NowPlayingPreferencesFragment"
         android:label="@string/now_playing_title"/>
+    <fragment
+        android:id="@+id/nav_lock_screen_preferences"
+        android:name="com.ssilencce.ui.screen.settings.LockScreenPreferencesFragment"
+        android:label="@string/lock_screen_player_title"/>
+    <fragment
+        android:id="@+id/nav_lock_screen_permissions"
+        android:name="com.ssilencce.ui.screen.settings.LockScreenPermissionsFragment"
+        android:label="@string/lock_screen_permission_title"/>
     <fragment
         android:id="@+id/nav_lyrics_preferences"
         android:name="com.ssilencce.ui.screen.settings.LyricsPreferencesFragment"
@@ -93,4 +115,12 @@
         android:id="@+id/nav_advanced_preferences"
         android:name="com.ssilencce.ui.screen.settings.AdvancedPreferencesFragment"
         android:label="@string/advanced_title"/>
+    <fragment
+        android:id="@+id/nav_battery_preferences"
+        android:name="com.ssilencce.ui.screen.settings.BatteryGuideFragment"
+        android:label="@string/battery_guide_title"/>
+    <fragment
+        android:id="@+id/nav_ghost_settings"
+        android:name="com.ssilencce.ui.screen.settings.GhostSettingsFragment"
+        android:label="@string/ghost_mode_title"/>
 </navigation>

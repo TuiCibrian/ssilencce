@@ -4,6 +4,10 @@ Implementation is complete in source and the reviewed v2 10-file set is live-int
 build, APK or device run was performed; the build and runtime probes below remain intentionally
 unchecked, and AA-07 is not complete.
 
+2026-11-14: `openspec/changes/tag-editor-finish` implements batch covers, session undo/rollback,
+in-place backup/restore and single-entity routing (7.6, 7.7a, 8.6, 9.6). Device/runtime gates 6.5,
+8.7 and 9.5 stay deferred.
+
 ## 1. Field model and plan
 
 - [x] 1.1 Add `core/model/tag/TagEditField.kt` with exactly the 17 text fields from the single-song
@@ -98,7 +102,7 @@ unchecked, and AA-07 is not complete.
 - [ ] 6.5 Runtime probes: MP3/FLAC/M4A/OGG/Opus/WAV/APE field matrix; common/varies; Keep/Clear; no
   first-file overwrite; read-only/corrupt file; 100+ selection; process death; legacy album/artist
   aggregation/guard behavior (all files, varies, dirty-only writes, destructive confirmation, no
-  ARTIST clear); cover and ReplayGain untouched. Not run in this turn.
+  ARTIST clear); cover and ReplayGain untouched. Not run in this turn. **Deferred: device gate.**
 
 ## 7. Legacy aggregation/guard follow-up (2026-11-07)
 
@@ -109,9 +113,15 @@ unchecked, and AA-07 is not complete.
   the dirty map.
 - [x] 7.5 Keep the multi-select batch editor as the safe multi-song path; single-entity actions
   continue to use the guarded legacy editors.
-- [ ] 7.6 Route single-entity album/artist actions to the batch editor or remove the legacy
-  editors after capability parity (W6).
-- [ ] 7.7 Add per-file values, covers, undo and the runtime legacy tests L1–L7.
+- [x] 7.6 Route single-entity album/artist actions to the batch editor. Both `Album.onAlbumMenu`
+  and `Artist.onArtistMenu` now launch `BatchTagEditorActivity` with the entity's song IDs through the
+  shared `launchBatchTagEditor` helper (dedupe, id filter, 500-song limit); composer-artist entries
+  stay unavailable. The legacy editors remain declared but are no longer reachable from menus
+  (`openspec/changes/tag-editor-finish`).
+- [x] 7.7a Per-file values (section 8) and batch covers + session undo (`tag-editor-finish`) are
+  delivered: cover replace/delete with read-back status, `BatchWriteJournal` original-bytes backup,
+  current-file rollback on hard failure, session undo with MediaStore rescan and album-art refresh.
+- [ ] 7.7b Runtime legacy tests L1–L7 — **deferred: device gate** (see 6.5/8.7/9.5).
 
 ## 8. Source follow-up 2026-11-08: per-file values and cooperative cancellation
 
@@ -124,11 +134,13 @@ unchecked, and AA-07 is not complete.
 - [x] 8.4 Add the per-file Compose dialog, stop action, skipped-file disclosure, aggregate preview
   cap, mapped error text and destructive Clear chip.
 - [x] 8.5 Re-run `probes/static-probe.ps1` (**PASS 121 / FAIL 0**), ktlint and `git diff --check`.
-- [ ] 8.6 Batch covers, session undo, single-entity routing to the batch editor, in-place write
-  backup/restore and the runtime format matrix remain open; do not claim AA-07 complete until they
-  are implemented or explicitly accepted.
+- [x] 8.6 Batch covers, session undo, single-entity routing to the batch editor and in-place write
+  backup/restore are delivered by `openspec/changes/tag-editor-finish`: `CoverOperation`
+  replace/delete with read-back status and album-art refresh, `BatchWriteJournal` cache-dir backup
+  with fail-closed copies and current-file rollback, session undo from the result screen, and
+  album/artist single-entity actions routed to the batch editor.
 - [ ] 8.7 Runtime tests for the legacy aggregation guard, per-file values, stop/cancel, read-only
-  files and ReplayGain/cover preservation remain unrun.
+  files and ReplayGain/cover preservation remain unrun. **Deferred: device gate.**
 
 ## 9. Independent review and live integration (2026-11-11)
 
@@ -139,7 +151,8 @@ unchecked, and AA-07 is not complete.
   `93936871...`; `MetadataWriter.kt` `6531A98D...`; before/after copies retained; no Gradle/hook.
 - [ ] 9.4 App-wide Android compile/build/APK and lint gate.
 - [ ] 9.5 Runtime safety/format matrix, read-only/corrupt/process-death/100+ and legacy aggregation
-  tests.
-- [ ] 9.6 Batch covers, session undo/rollback, single-entity routing and in-place write
-  backup/restore.
+  tests. **Deferred: device gate.**
+- [x] 9.6 Batch covers, session undo/rollback, single-entity routing and in-place write
+  backup/restore delivered at source by `openspec/changes/tag-editor-finish`; runtime evidence is
+  tracked by 9.5.
 - [ ] 9.7 Archive AA-07 only after 9.4-9.6 are implemented or explicitly accepted.

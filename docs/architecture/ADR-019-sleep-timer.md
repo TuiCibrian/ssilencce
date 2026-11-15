@@ -26,6 +26,15 @@ process-local countdown alone is not sufficient.
   events to the Compose bottom sheet (`SleepTimerScreen`).
 - Register the service-side listeners through `PlaybackService` and expose start/cancel via
   the session command surface so the timer can be toggled from the player UI.
+- Song-count timers are evaluated on automatic media-item transitions only; the currently
+  playing track counts as the first song. The final track is stopped through the player's
+  `pauseAtEndOfMediaItems` flag, combined with the queue stop position so canceling either
+  source does not clear the other.
+- The last five time-based choices (durations and end-at times) are persisted in the existing
+  `sleep_timer` DataStore and can be restarted with one tap or cleared.
+- An opt-in `sleep_timer_stop_music_only_in_foreground` policy keeps playback paused but alive
+  when the timer ends while an activity is visible; when no activity is visible it also calls
+  `pauseAllPlayersAndStopSelf()` so a sleeping user is not left with a media service.
 
 ## Consequences
 
@@ -36,3 +45,10 @@ process-local countdown alone is not sufficient.
   limitation of the platform model.
 - Sleep-timer state is observable reactive state (StateFlows), so the Compose UI stays in sync
   with the service.
+- Song-count timers do not survive process death (unlike AlarmManager deadlines), and the
+  history is best-effort (invalid rows are ignored).
+- UI visibility is tracked by `AppVisibility`; the policy reads the main SharedPreferences key
+  synchronously from the service.
+- Sleep-timer fade-out shares `PlaybackFadeController`/`PlaybackVolumeController` with the
+  play/pause fades, so equalizer volume, audio-focus ducking and sleep-timer fade-out compose
+  instead of overwriting each other (ADR-055).

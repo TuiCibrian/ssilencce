@@ -11,6 +11,18 @@
         android:id="@+id/action_add_to_playing_queue"
         android:title="@string/action_add_to_playing_queue" />
     <item
+        android:id="@+id/action_pause_after_this_song"
+        android:title="@string/queue_action_pause_after_this_song"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_play_after_current"
+        android:title="@string/queue_action_play_after_current"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_load_next_and_pause"
+        android:title="@string/queue_action_load_next_and_pause"
+        app:showAsAction="never"/>
+    <item
         android:id="@+id/action_add_to_playlist"
         android:title="@string/action_add_to_playlist" />
     <item
@@ -31,6 +43,10 @@
     <item
         android:id="@+id/action_tag_editor"
         android:title="@string/action_tag_editor"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_trim_audio"
+        android:title="@string/action_trim_audio"
         app:showAsAction="never"/>
     <item
         android:id="@+id/action_share"

@@ -36,10 +36,14 @@ object BackupArchivePolicy {
     const val NAMED_QUEUES_FILE = "named_queues.json"
     const val TRACK_POSITIONS_PATH = "positions"
     const val TRACK_POSITIONS_FILE = "track_positions.json"
+    const val SONG_PLAYBACK_PARAMS_PATH = "playback"
+    const val SONG_PLAYBACK_PARAMS_FILE = "song_playback_params.json"
+    const val NOTES_PATH = "notes"
 
     private const val PLAY_COUNTS_ENTRY = "$PLAY_COUNTS_PATH/$PLAY_COUNTS_FILE"
     private const val NAMED_QUEUES_ENTRY = "$NAMED_QUEUES_PATH/$NAMED_QUEUES_FILE"
     private const val TRACK_POSITIONS_ENTRY = "$TRACK_POSITIONS_PATH/$TRACK_POSITIONS_FILE"
+    private const val SONG_PLAYBACK_PARAMS_ENTRY = "$SONG_PLAYBACK_PARAMS_PATH/$SONG_PLAYBACK_PARAMS_FILE"
     private const val LEGACY_FAVORITES_ENTRY = "$PLAYLISTS_PATH/Favorites.m3u"
 
     data class PlayCountCounters(
@@ -75,6 +79,10 @@ object BackupArchivePolicy {
                 RestoreEntryKind.PerFileSettings
             }
 
+            name == SONG_PLAYBACK_PARAMS_ENTRY -> {
+                RestoreEntryKind.SongPlaybackParams
+            }
+
             name.hasArchivePrefix(PLAYLISTS_PATH) -> {
                 RestoreEntryKind.Playlists
             }
@@ -85,6 +93,10 @@ object BackupArchivePolicy {
 
             name.hasArchivePrefix(LYRICS_PATH) -> {
                 RestoreEntryKind.Lyrics
+            }
+
+            name.hasArchivePrefix(NOTES_PATH) && name.endsWith(".txt", ignoreCase = true) -> {
+                RestoreEntryKind.Notes
             }
 
             isCustomArtistPreferenceEntry(name) || isCustomArtistImageEntry(name) -> {

@@ -16,6 +16,7 @@ import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.extensions.media.asAlbumCoverUri
 import com.ssilencce.extensions.media.isArtistNameUnknown
+import com.ssilencce.util.DISABLE_ALBUM_ART
 import com.ssilencce.util.ImageSize
 import com.ssilencce.util.PREFERRED_IMAGE_SIZE
 import com.ssilencce.util.Preferences.requireString
@@ -29,10 +30,12 @@ class AudioCoverFetcher(
     private val repository: Repository,
     private val cover: AudioCover,
     private val imageSize: String,
+    private val artworkEnabled: Boolean,
 ) : Fetcher {
     private val contentResolver get() = options.context.contentResolver
 
     override suspend fun fetch(): FetchResult? {
+        if (!artworkEnabled) return null
         val stream =
             try {
                 if (cover.isIgnoreMediaStore) {
@@ -95,6 +98,7 @@ class AudioCoverFetcher(
                 repository = repository,
                 cover = data,
                 imageSize = preferences.requireString(PREFERRED_IMAGE_SIZE, ImageSize.MEDIUM),
+                artworkEnabled = !preferences.getBoolean(DISABLE_ALBUM_ART, false),
             )
     }
 }

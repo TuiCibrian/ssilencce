@@ -34,6 +34,7 @@ import androidx.media3.common.MediaItem
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.local.MediaQueryDispatcher
 import com.ssilencce.data.local.SongDurationFilterPolicy
+import com.ssilencce.data.local.extra.ExtraFormatLibrary
 import com.ssilencce.data.local.room.InclExclDao
 import com.ssilencce.data.local.room.InclExclEntity
 import com.ssilencce.data.model.Album
@@ -44,6 +45,7 @@ import com.ssilencce.extensions.hasR
 import com.ssilencce.extensions.utilities.getStringSafe
 import com.ssilencce.extensions.utilities.mapIfValid
 import com.ssilencce.extensions.utilities.takeOrDefault
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.Preferences
 import okhttp3.internal.toLongOrDefault
 
@@ -53,6 +55,8 @@ interface SongRepository {
     fun songs(query: String): List<Song>
 
     fun songs(cursor: Cursor?): List<Song>
+
+    fun ghostSongs(query: String? = null): List<Song>
 
     suspend fun songsByUri(uri: Uri): List<Song>
 
@@ -79,21 +83,87 @@ class RealSongRepository(
 ) : SongRepository {
     override fun songs(): List<Song> {
         val songs = songs(makeSongCursor(null, null))
-        return with(SongSortMode.AllSongs) { songs.sorted() }
+        val all = if (Preferences.extraFormatsScanEnabled) songs + filterGhostExtraSongs(extraFormatSongs()) else songs
+        return with(SongSortMode.AllSongs) { all.sorted() }
     }
 
-    override fun songs(query: String): List<Song> =
-        songs(
-            makeSongCursor(
-                selection = "${AudioColumns.TITLE} LIKE ? OR ${AudioColumns.ARTIST} LIKE ? OR ${AudioColumns.ALBUM} LIKE ?",
-                selectionValues = arrayOf("%$query%", "%$query%", "%$query%"),
-            ),
-        )
+    override fun songs(query: String): List<Song> {
+        val columns =
+            buildList {
+                add(AudioColumns.TITLE)
+                add(AudioColumns.ARTIST)
+                add(AudioColumns.ALBUM)
+                if (Preferences.useAlbumArtistIfArtistMissing) {
+                    add(AudioColumns.ALBUM_ARTIST)
+                }
+            }
+        val mediaSongs =
+            songs(
+                makeSongCursor(
+                    selection = columns.joinToString(" OR ") { "$it LIKE ?" },
+                    selectionValues = Array(columns.size) { "%$query%" },
+                ),
+            )
+        if (!Preferences.extraFormatsScanEnabled) return mediaSongs
+        val extra =
+            filterGhostExtraSongs(extraFormatSongs()).filter { song ->
+                song.title.contains(query, ignoreCase = true) ||
+                    song.artistName.contains(query, ignoreCase = true) ||
+                    song.albumName.contains(query, ignoreCase = true) ||
+                    (song.albumArtistName?.contains(query, ignoreCase = true) == true)
+            }
+        return mediaSongs + extra
+    }
 
     override fun songs(cursor: Cursor?): List<Song> =
         cursor.use {
             it.mapIfValid { getSongFromCursorImpl(this) }
         }
+
+    override fun ghostSongs(query: String?): List<Song> {
+        if (GhostMode.folderPaths.isEmpty()) return emptyList()
+        val searchColumns =
+            buildList {
+                add(AudioColumns.TITLE)
+                add(AudioColumns.ARTIST)
+                add(AudioColumns.ALBUM)
+                if (Preferences.useAlbumArtistIfArtistMissing) {
+                    add(AudioColumns.ALBUM_ARTIST)
+                }
+            }
+        val selection =
+            query
+                ?.takeIf { it.isNotBlank() }
+                ?.let { searchColumns.joinToString(" OR ") { column -> "$column LIKE ?" } }
+        val selectionValues =
+            query
+                ?.takeIf { it.isNotBlank() }
+                ?.let { Array(searchColumns.size) { "%$it%" } }
+        val extraGhost =
+            if (Preferences.extraFormatsScanEnabled) {
+                val normalizedQuery = query?.takeIf { it.isNotBlank() }
+                ghostExtraFormatSongs().filter { song ->
+                    normalizedQuery == null ||
+                        song.title.contains(normalizedQuery, ignoreCase = true) ||
+                        song.artistName.contains(normalizedQuery, ignoreCase = true) ||
+                        song.albumName.contains(normalizedQuery, ignoreCase = true) ||
+                        (song.albumArtistName?.contains(normalizedQuery, ignoreCase = true) == true)
+                }
+            } else {
+                emptyList()
+            }
+        return with(SongSortMode.AllSongs) {
+            (
+                songs(
+                    makeSongCursor(
+                        selection = selection,
+                        selectionValues = selectionValues,
+                        ghostOnly = true,
+                    ),
+                ) + extraGhost
+            ).sorted()
+        }
+    }
 
     override fun song(cursor: Cursor?): Song =
         cursor.use {
@@ -101,13 +171,18 @@ class RealSongRepository(
         }
 
     override fun song(songId: Long): Song =
-        song(
-            makeSongCursor(
-                selection = "${AudioColumns._ID}=?",
-                selectionValues = arrayOf(songId.toString()),
-                skipDurationFilter = true,
-            ),
-        )
+        if (songId < 0) {
+            ExtraFormatLibrary.songById(context, songId) ?: Song.emptySong
+        } else {
+            song(
+                makeSongCursor(
+                    selection = "${AudioColumns._ID}=?",
+                    selectionValues = arrayOf(songId.toString()),
+                    skipDurationFilter = true,
+                    includeGhost = true,
+                ),
+            )
+        }
 
     override suspend fun songsByUri(uri: Uri): List<Song> {
         var songs: List<Song> = emptyList()
@@ -182,7 +257,23 @@ class RealSongRepository(
                 null
             }
 
-        val ids = mediaItems.map { it.mediaId }
+        val preResolved = HashMap<String, Song>()
+        for (item in mediaItems) {
+            val tagged = item.localConfiguration?.tag as? Song
+            if (tagged != null) {
+                preResolved[item.mediaId] = tagged
+                continue
+            }
+            val numericId = item.mediaId.toLongOrNull()
+            if (numericId != null && numericId < 0) {
+                ExtraFormatLibrary.songById(context, numericId)?.let { preResolved[item.mediaId] = it }
+            }
+        }
+
+        val ids =
+            mediaItems
+                .map { it.mediaId }
+                .filter { it !in preResolved }
         val allSongs =
             buildList {
                 ids.chunked(900).forEach { chunk ->
@@ -196,6 +287,7 @@ class RealSongRepository(
                                 whitelistedPaths = whitelistedPaths,
                                 blacklistedPaths = blacklistedPaths,
                                 skipDurationFilter = true,
+                                includeGhost = true,
                             ),
                         ),
                     )
@@ -208,7 +300,7 @@ class RealSongRepository(
         val missing = ArrayList<MediaItem>()
 
         for (item in mediaItems) {
-            val song = songMap[item.mediaId]
+            val song = preResolved[item.mediaId] ?: songMap[item.mediaId]
             if (song != null && song != Song.emptySong) {
                 resultSongs.add(song)
             } else {
@@ -223,14 +315,20 @@ class RealSongRepository(
         if (mediaItem != null) {
             var song = mediaItem.localConfiguration?.tag
             if (song == null || song !is Song) {
+                val songId = mediaItem.mediaId.toLongOrNull()
                 song =
-                    song(
-                        makeSongCursor(
-                            selection = "${AudioColumns._ID}=?",
-                            selectionValues = arrayOf(mediaItem.mediaId),
-                            skipDurationFilter = true,
-                        ),
-                    )
+                    if (songId != null) {
+                        song(songId)
+                    } else {
+                        song(
+                            makeSongCursor(
+                                selection = "${AudioColumns._ID}=?",
+                                selectionValues = arrayOf(mediaItem.mediaId),
+                                skipDurationFilter = true,
+                                includeGhost = true,
+                            ),
+                        )
+                    }
             }
             return song
         }
@@ -240,15 +338,39 @@ class RealSongRepository(
     override fun songByFilePath(
         filePath: String,
         ignoreBlacklist: Boolean,
-    ): Song =
-        song(
+    ): Song {
+        ExtraFormatLibrary.songByPath(context, filePath)?.let { return it }
+        return song(
             makeSongCursor(
                 selection = "${AudioColumns.DATA}=?",
                 selectionValues = arrayOf(filePath),
                 ignoreBlacklist = ignoreBlacklist,
                 skipDurationFilter = true,
+                includeGhost = true,
             ),
         )
+    }
+
+    private fun extraFormatSongs(): List<Song> {
+        val minDurationMs = Preferences.minimumSongDuration * 1000L
+        val maxDurationMs = Preferences.maximumSongDuration * 1000L
+        return ExtraFormatLibrary.songs(context).filter { song ->
+            song.duration >= minDurationMs && (maxDurationMs <= 0 || song.duration <= maxDurationMs)
+        }
+    }
+
+    private fun ghostExtraFormatSongs(): List<Song> = extraFormatSongs().filter(::isGhostExtraPath)
+
+    /**
+     * Mirrors the MediaStore ghost selection: folders managed by GhostMode are hidden from the
+     * normal library even when the feature toggle is off, and only GhostSearch includes them.
+     */
+    private fun filterGhostExtraSongs(songs: List<Song>): List<Song> = if (GhostMode.folderPaths.isEmpty()) songs else songs.filterNot(::isGhostExtraPath)
+
+    private fun isGhostExtraPath(song: Song): Boolean {
+        val path = song.data.replace('\\', '/')
+        return GhostMode.folderPaths.any { folder -> path == folder || path.startsWith("$folder/") }
+    }
 
     override suspend fun initializeBlacklist() {
         val excludedPaths =
@@ -268,6 +390,8 @@ class RealSongRepository(
         whitelistedPaths: List<String>? = null,
         blacklistedPaths: List<String>? = null,
         skipDurationFilter: Boolean = false,
+        includeGhost: Boolean = false,
+        ghostOnly: Boolean = false,
     ): Cursor? {
         if (!skipDurationFilter) {
             SongDurationFilterPolicy
@@ -298,6 +422,17 @@ class RealSongRepository(
             }
         }
 
+        val ghostSelection =
+            when {
+                ghostOnly -> GhostMode.inclusionSelection()
+                !includeGhost -> GhostMode.exclusionSelection()
+                else -> null
+            }
+        ghostSelection?.let {
+            queryDispatcher.addSelection(it.selection)
+            queryDispatcher.addArguments(*it.arguments)
+        }
+
         return try {
             queryDispatcher.dispatch()
         } catch (e: SecurityException) {
@@ -314,6 +449,8 @@ class RealSongRepository(
         whitelistedPaths: List<String>? = null,
         blacklistedPaths: List<String>? = null,
         skipDurationFilter: Boolean = false,
+        includeGhost: Boolean = false,
+        ghostOnly: Boolean = false,
     ): Cursor? {
         val queryDispatcher =
             MediaQueryDispatcher()
@@ -328,6 +465,8 @@ class RealSongRepository(
             whitelistedPaths,
             blacklistedPaths,
             skipDurationFilter,
+            includeGhost,
+            ghostOnly,
         )
     }
 
@@ -378,6 +517,7 @@ class RealSongRepository(
                 selectionArgs,
                 ignoreBlacklist = true,
                 skipDurationFilter = true,
+                includeGhost = true,
             )
         return song(cursor)
     }
@@ -405,6 +545,12 @@ class RealSongRepository(
             } else {
                 null
             }
+        val discNumber =
+            if (hasR()) {
+                cursor.getInt(cursor.getColumnIndexOrThrow(MediaColumns.DISC_NUMBER))
+            } else {
+                0
+            }
         return Song(
             id,
             data,
@@ -423,6 +569,7 @@ class RealSongRepository(
             genreName,
             volumeName,
             composerName,
+            discNumber,
         )
     }
 
@@ -468,6 +615,9 @@ class RealSongRepository(
             }
             if (hasR()) {
                 baseProjection += MediaColumns.COMPOSER
+            }
+            if (hasR()) {
+                baseProjection += MediaColumns.DISC_NUMBER
             }
             if (idColumn != AudioColumns._ID) {
                 return baseProjection.copyOf().apply { set(0, idColumn) }

@@ -20,29 +20,45 @@ package com.ssilencce.ui.component.base
 import android.animation.AnimatorSet
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.drawable.AnimatedVectorDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.CallSuper
 import androidx.annotation.LayoutRes
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.appcompat.widget.PopupMenu
 import androidx.appcompat.widget.Toolbar
+import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import androidx.core.os.postDelayed
+import androidx.core.view.drawToBitmap
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.navOptions
+import androidx.preference.PreferenceManager
 import coil3.load
 import coil3.request.crossfade
 import coil3.request.transformations
@@ -51,31 +67,40 @@ import coil3.size.Scale
 import com.commit451.coiltransformations.BlurTransformation
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ssilencce.R
 import com.ssilencce.core.model.MediaEvent
 import com.ssilencce.core.model.PaletteColor
 import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.action.QuickAccessAction
 import com.ssilencce.core.model.player.PlayerColorScheme
 import com.ssilencce.core.model.player.PlayerColorSchemeMode
 import com.ssilencce.core.model.player.PlayerTintTarget
 import com.ssilencce.data.local.EditTarget
+import com.ssilencce.data.local.notes.SongNotesRepository
 import com.ssilencce.data.model.Genre
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.currentFragment
+import com.ssilencce.extensions.keepScreenOn
 import com.ssilencce.extensions.launchAndRepeatWithViewLifecycle
 import com.ssilencce.extensions.media.albumArtistName
+import com.ssilencce.extensions.media.asReadableDuration
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.isArtistNameUnknown
 import com.ssilencce.extensions.navigation.albumDetailArgs
 import com.ssilencce.extensions.navigation.artistDetailArgs
 import com.ssilencce.extensions.navigation.findActivityNavController
 import com.ssilencce.extensions.navigation.genreDetailArgs
+import com.ssilencce.extensions.observeKeyAsState
 import com.ssilencce.extensions.resources.animateBackgroundColor
 import com.ssilencce.extensions.resources.animateTintColor
 import com.ssilencce.extensions.resources.inflateMenu
 import com.ssilencce.extensions.resources.setMarquee
+import com.ssilencce.extensions.showToast
 import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.extensions.whichFragment
+import com.ssilencce.playback.cast.CastPlaybackProvider
+import com.ssilencce.ui.component.compose.QuickAccessRow
 import com.ssilencce.ui.component.menu.newPopupMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.dialogs.WebSearchDialog
@@ -87,15 +112,29 @@ import com.ssilencce.ui.screen.equalizer.EqualizerFragmentArgs
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.lyrics.LyricsEditorFragmentArgs
 import com.ssilencce.ui.screen.lyrics.LyricsFragment
+import com.ssilencce.ui.screen.notes.SongNotesFragmentArgs
+import com.ssilencce.ui.screen.player.AbRepeatToggleResult
 import com.ssilencce.ui.screen.player.PlayerGesturesController
 import com.ssilencce.ui.screen.player.PlayerGesturesController.GestureType
+import com.ssilencce.ui.screen.player.PlayerScreenshot
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.SeekToDialogFragment
+import com.ssilencce.ui.screen.player.art.FullScreenArtDialogFragment
 import com.ssilencce.ui.screen.player.cover.CoverPagerFragment
+import com.ssilencce.ui.screen.player.screencast.ScreencastManager
+import com.ssilencce.ui.screen.player.screencast.ScreencastPickerDialogFragment
 import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
+import com.ssilencce.ui.theme.SsilencceTheme
+import com.ssilencce.util.KEEP_SCREEN_ON_NOW_PLAYING
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.NOW_PLAYING_QUICK_ACCESS
 import com.ssilencce.util.Preferences
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
 /**
@@ -109,6 +148,8 @@ abstract class AbsPlayerFragment(
     CoverPagerFragment.Callbacks {
     val playerViewModel: PlayerViewModel by activityViewModel()
     val libraryViewModel: LibraryViewModel by activityViewModel()
+    private val songNotesRepository: SongNotesRepository by inject()
+    private val screencastManager: ScreencastManager by inject()
 
     private var gesturesController: PlayerGesturesController? = null
     private var coverFragment: CoverPagerFragment? = null
@@ -123,6 +164,14 @@ abstract class AbsPlayerFragment(
         get() = null
 
     private var colorAnimatorSet: AnimatorSet? = null
+    private var playerShown = false
+    private var lyricsVisible = false
+    private var quickAccessOverlay: ComposeView? = null
+
+    private val preferenceListener =
+        SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == KEEP_SCREEN_ON_NOW_PLAYING) applyKeepScreenOn()
+        }
 
     @CallSuper
     override fun onViewCreated(
@@ -132,6 +181,10 @@ abstract class AbsPlayerFragment(
         super.onViewCreated(view, savedInstanceState)
         onCreateChildFragments()
         onPrepareViewGestures(view)
+        setupQuickAccessOverlay(view)
+        Preferences.registerOnSharedPreferenceChangeListener(preferenceListener)
+        playerShown = (activity as? MainActivity)?.panelState == BottomSheetBehavior.STATE_EXPANDED
+        applyKeepScreenOn()
         viewLifecycleOwner.launchAndRepeatWithViewLifecycle {
             playerViewModel.mediaEvent
                 .filter { it == MediaEvent.FavoriteContentChanged }
@@ -205,7 +258,13 @@ abstract class AbsPlayerFragment(
     }
 
     @CallSuper
-    protected open fun onMenuInflated(menu: Menu) {}
+    protected open fun onMenuInflated(menu: Menu) {
+        CastPlaybackProvider.get(requireContext()).setupMenu(menu, R.id.action_cast)
+        menu.findItem(R.id.action_screencast)?.apply {
+            isCheckable = true
+            isChecked = screencastManager.isActive
+        }
+    }
 
     protected fun Menu.setShowAsAction(
         itemId: Int,
@@ -227,6 +286,20 @@ abstract class AbsPlayerFragment(
                 true
             }
 
+            R.id.action_cast -> {
+                CastPlaybackProvider.get(requireContext()).showDeviceChooser(requireActivity())
+                true
+            }
+
+            R.id.action_screencast -> {
+                if (!childFragmentManager.isStateSaved) {
+                    ScreencastPickerDialogFragment
+                        .newInstance()
+                        .show(childFragmentManager, ScreencastPickerDialogFragment.TAG)
+                }
+                true
+            }
+
             R.id.action_show_lyrics -> {
                 onQuickActionEvent(NowPlayingAction.Lyrics)
                 true
@@ -239,6 +312,52 @@ abstract class AbsPlayerFragment(
 
             R.id.action_sleep_timer -> {
                 onQuickActionEvent(NowPlayingAction.SleepTimer)
+                true
+            }
+
+            R.id.action_pause_after_this_song -> {
+                playerViewModel.pauseAfterSong(currentSong)
+                true
+            }
+
+            R.id.action_load_next_and_pause -> {
+                playerViewModel.loadNextSongAndPause()
+                true
+            }
+
+            R.id.action_ab_repeat -> {
+                when (val result = playerViewModel.toggleAbRepeatPoint()) {
+                    is AbRepeatToggleResult.PointASet -> {
+                        showToast(
+                            getString(
+                                R.string.ab_repeat_point_a_set,
+                                result.positionMs.asReadableDuration(),
+                            ),
+                        )
+                    }
+
+                    is AbRepeatToggleResult.RangeSet -> {
+                        showToast(
+                            getString(
+                                R.string.ab_repeat_range_set,
+                                result.startMs.asReadableDuration(),
+                                result.endMs.asReadableDuration(),
+                            ),
+                        )
+                    }
+
+                    AbRepeatToggleResult.Cleared -> {
+                        showToast(R.string.ab_repeat_cleared)
+                    }
+
+                    AbRepeatToggleResult.TooClose -> {
+                        showToast(R.string.ab_repeat_too_close)
+                    }
+
+                    AbRepeatToggleResult.Unavailable -> {
+                        Unit
+                    }
+                }
                 true
             }
 
@@ -270,20 +389,32 @@ abstract class AbsPlayerFragment(
             }
 
             R.id.action_equalizer -> {
-                if (currentFragment(R.id.fragment_container) is EqualizerFragment) {
-                    (activity as? MainActivity)?.collapsePanel()
-                } else {
-                    goToDestination(
-                        activity = requireActivity(),
-                        destinationId = R.id.nav_equalizer,
-                        args =
-                            EqualizerFragmentArgs
-                                .Builder()
-                                .setFromPlayer(true)
-                                .build()
-                                .toBundle(),
-                    )
-                }
+                openEqualizer()
+                true
+            }
+
+            R.id.action_fullscreen_art -> {
+                showFullScreenArt()
+                true
+            }
+
+            R.id.action_seek_to -> {
+                SeekToDialogFragment.show(childFragmentManager)
+                true
+            }
+
+            R.id.action_add_bookmark -> {
+                onQuickActionEvent(NowPlayingAction.AddBookmark)
+                true
+            }
+
+            R.id.action_song_notes -> {
+                onQuickActionEvent(NowPlayingAction.SongNotes)
+                true
+            }
+
+            R.id.action_share_now_playing -> {
+                showShareNowPlayingDialog()
                 true
             }
 
@@ -463,6 +594,8 @@ abstract class AbsPlayerFragment(
         animatorSet: AnimatorSet,
         lyricsVisible: Boolean,
     ) {
+        this.lyricsVisible = lyricsVisible
+        applyKeepScreenOn()
         playerToolbar?.menu?.onLyricsVisibilityChang(lyricsVisible)
     }
 
@@ -472,6 +605,10 @@ abstract class AbsPlayerFragment(
         gesturesController = null
         cancelColorAnimator()
         coverFragment = null
+        Preferences.unregisterOnSharedPreferenceChangeListener(preferenceListener)
+        (quickAccessOverlay?.parent as? ViewGroup)?.removeView(quickAccessOverlay)
+        quickAccessOverlay = null
+        activity?.keepScreenOn(false)
         super.onDestroyView()
     }
 
@@ -491,7 +628,9 @@ abstract class AbsPlayerFragment(
             NowPlayingAction.OpenPlayQueue -> {
                 if (Preferences.isAuroraAppearance) {
                     (activity as? MainActivity)?.navigateAuroraDestination(R.id.nav_queue)
-                } else findNavController().navigate(R.id.nav_queue)
+                } else {
+                    findNavController().navigate(R.id.nav_queue)
+                }
                 true
             }
 
@@ -535,6 +674,16 @@ abstract class AbsPlayerFragment(
                 true
             }
 
+            NowPlayingAction.AddBookmark -> {
+                addQuickBookmark()
+                true
+            }
+
+            NowPlayingAction.SongNotes -> {
+                openSongNotes()
+                true
+            }
+
             NowPlayingAction.AddToPlaylist -> {
                 AddToPlaylistDialog
                     .create(currentSong)
@@ -575,20 +724,242 @@ abstract class AbsPlayerFragment(
                 true
             }
 
+            NowPlayingAction.ShowFullScreenArt -> {
+                showFullScreenArt()
+                true
+            }
+
             NowPlayingAction.Nothing -> {
                 false
             }
         }
     }
 
+    internal fun onQuickAccessAction(action: QuickAccessAction): Boolean =
+        when (action) {
+            QuickAccessAction.Lyrics -> {
+                onQuickActionEvent(NowPlayingAction.Lyrics)
+            }
+
+            QuickAccessAction.Equalizer -> {
+                openEqualizer()
+                true
+            }
+
+            QuickAccessAction.SleepTimer -> {
+                onQuickActionEvent(NowPlayingAction.SleepTimer)
+            }
+
+            QuickAccessAction.Tempo -> {
+                findNavController().navigate(R.id.nav_sound_settings)
+                true
+            }
+
+            QuickAccessAction.PlayQueue -> {
+                onQuickActionEvent(NowPlayingAction.OpenPlayQueue)
+            }
+
+            QuickAccessAction.TagEditor -> {
+                onQuickActionEvent(NowPlayingAction.TagEditor)
+            }
+
+            QuickAccessAction.AddToPlaylist -> {
+                onQuickActionEvent(NowPlayingAction.AddToPlaylist)
+            }
+
+            QuickAccessAction.Bookmark -> {
+                onQuickActionEvent(NowPlayingAction.AddBookmark)
+            }
+
+            QuickAccessAction.SongNotes -> {
+                onQuickActionEvent(NowPlayingAction.SongNotes)
+            }
+        }
+
+    private fun openEqualizer() {
+        if (currentFragment(R.id.fragment_container) is EqualizerFragment) {
+            (activity as? MainActivity)?.collapsePanel()
+        } else {
+            goToDestination(
+                activity = requireActivity(),
+                destinationId = R.id.nav_equalizer,
+                args =
+                    EqualizerFragmentArgs
+                        .Builder()
+                        .setFromPlayer(true)
+                        .build()
+                        .toBundle(),
+            )
+        }
+    }
+
+    private fun addQuickBookmark() {
+        val song = playerViewModel.currentSong
+        if (song.id == -1L) return
+        val position = playerViewModel.progress.coerceAtLeast(0L)
+        viewLifecycleOwner.lifecycleScope.launch {
+            val added = songNotesRepository.addBookmark(song, position, "")
+            if (added) {
+                showToast(getString(R.string.song_notes_bookmark_added, position.asReadableDuration()))
+            } else {
+                showToast(R.string.song_notes_bookmark_add_failed)
+            }
+        }
+    }
+
+    private fun openSongNotes() {
+        val song = playerViewModel.currentSong
+        if (song.id == -1L) return
+        goToDestination(
+            activity = requireActivity(),
+            destinationId = R.id.nav_song_notes,
+            args =
+                SongNotesFragmentArgs
+                    .Builder(song)
+                    .setFromPlayer(true)
+                    .build()
+                    .toBundle(),
+        )
+    }
+
+    private fun showFullScreenArt() {
+        if (childFragmentManager.isStateSaved) return
+        val song = playerViewModel.currentSong
+        if (song.id == -1L) return
+        FullScreenArtDialogFragment
+            .newInstance(song)
+            .show(childFragmentManager, FullScreenArtDialogFragment.TAG)
+    }
+
+    private fun showShareNowPlayingDialog() {
+        val options =
+            arrayOf(
+                getString(R.string.share_now_playing_original),
+                getString(R.string.share_now_playing_square),
+            )
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.share_now_playing)
+            .setItems(options) { _, which ->
+                shareNowPlaying(square = which == 1)
+            }.show()
+    }
+
+    private fun shareNowPlaying(square: Boolean) {
+        val root = view ?: return
+        val context = requireContext()
+        val screenshot =
+            runCatching { root.drawToBitmap() }
+                .onFailure { error ->
+                    android.util.Log.e("AbsPlayerFragment", "Could not render the player view", error)
+                }.getOrNull()
+        if (screenshot == null) {
+            showToast(R.string.share_now_playing_failed)
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val uri =
+                withContext(Dispatchers.IO) {
+                    PlayerScreenshot.createShareUri(context, screenshot, square)
+                }
+            screenshot.recycle()
+            if (uri == null) {
+                showToast(R.string.share_now_playing_failed)
+                return@launch
+            }
+            val title = getString(R.string.share_now_playing)
+            runCatching {
+                startActivity(Intent.createChooser(PlayerScreenshot.shareIntent(context, uri, title), title))
+            }
+        }
+    }
+
+    private fun setupQuickAccessOverlay(root: View) {
+        if (Preferences.isAuroraAppearance || root !is ViewGroup) return
+        val context = requireContext()
+        val margin = (12 * resources.displayMetrics.density).toInt()
+        val composeView =
+            ComposeView(context).apply {
+                setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+                setContent {
+                    SsilencceTheme {
+                        val preferences = remember { PreferenceManager.getDefaultSharedPreferences(context) }
+                        val raw by preferences.observeKeyAsState(NOW_PLAYING_QUICK_ACCESS, Preferences.quickAccessActionsRaw)
+                        val actions = remember(raw) { QuickAccessAction.fromPreference(raw) }
+                        QuickAccessRow(
+                            actions = actions,
+                            onAction = { onQuickAccessAction(it) },
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
+                }
+            }
+        val params: ViewGroup.LayoutParams =
+            when (root) {
+                is ConstraintLayout -> {
+                    ConstraintLayout
+                        .LayoutParams(
+                            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                            ConstraintLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply {
+                            topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+                            startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+                            endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+                            topMargin = margin
+                        }
+                }
+
+                is FrameLayout -> {
+                    FrameLayout
+                        .LayoutParams(
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            FrameLayout.LayoutParams.WRAP_CONTENT,
+                            Gravity.TOP or Gravity.CENTER_HORIZONTAL,
+                        ).apply {
+                            topMargin = margin
+                        }
+                }
+
+                is LinearLayout -> {
+                    LinearLayout
+                        .LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply {
+                            gravity = Gravity.CENTER_HORIZONTAL
+                            topMargin = margin
+                        }
+                }
+
+                else -> {
+                    return
+                }
+            }
+        if (root is LinearLayout) {
+            root.addView(composeView, 0, params)
+        } else {
+            root.addView(composeView, params)
+        }
+        quickAccessOverlay = composeView
+    }
+
+    private fun applyKeepScreenOn() {
+        activity?.keepScreenOn(
+            playerShown && (Preferences.keepScreenOnForNowPlaying || lyricsVisible),
+        )
+    }
+
     @CallSuper
     open fun onShow() {
+        playerShown = true
+        applyKeepScreenOn()
         coverFragment?.showLyrics()
         playerControlsFragment?.onShow()
     }
 
     @CallSuper
     open fun onHide() {
+        playerShown = false
+        applyKeepScreenOn()
         coverFragment?.hideLyrics()
         playerControlsFragment?.onHide()
     }

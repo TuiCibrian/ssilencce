@@ -4,13 +4,17 @@ import android.content.Intent
 import android.content.pm.ShortcutManager
 import android.os.Bundle
 import androidx.annotation.OptIn
+import androidx.core.content.IntentCompat
 import androidx.core.content.getSystemService
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionError
 import androidx.media3.session.SessionResult
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
@@ -22,26 +26,40 @@ import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.MediaEvent
 import com.ssilencce.core.model.navigation.AuroraStartDestinationPolicy
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.core.model.shuffle.ShuffleModeState
+import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.extensions.currentFragment
+import com.ssilencce.extensions.navigation.artistDetailArgs
+import com.ssilencce.extensions.navigation.genreDetailArgs
 import com.ssilencce.extensions.navigation.isValidCategory
+import com.ssilencce.extensions.navigation.playlistDetailArgs
 import com.ssilencce.extensions.showToast
+import com.ssilencce.extensions.utilities.toEnum
 import com.ssilencce.extensions.whichFragment
 import com.ssilencce.playback.Playback
 import com.ssilencce.playback.library.MediaIDs
 import com.ssilencce.ui.IScrollHelper
 import com.ssilencce.ui.component.base.AbsSlidingMusicPanelActivity
 import com.ssilencce.ui.dialogs.AudioFocusAskDialog
+import com.ssilencce.ui.dialogs.playlists.AddToPlaylistDialog
+import com.ssilencce.ui.screen.lockscreen.LockScreenEntityLauncher
+import com.ssilencce.ui.screen.lockscreen.LockScreenEntityType
+import com.ssilencce.ui.screen.setup.SetupWizardActivity
 import com.ssilencce.ui.screen.update.UpdateDialog
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.Preferences
 import com.ssilencce.util.ShortcutEntityType
 import com.ssilencce.util.ShortcutHelper
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -56,6 +74,13 @@ class MainActivity :
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // AbsSlidingMusicPanelActivity already routes to the permission screen and finishes;
+        // only continue with the wizard check for a live activity.
+        if (!isFinishing && !Preferences.setupWizardCompleted) {
+            startActivity(Intent(this, SetupWizardActivity::class.java))
+            finish()
+            return
+        }
         title = null
         supportFragmentManager.setFragmentResultListener(AudioFocusAskDialog.RESULT_KEY, this) { _, result ->
             val requestId = result.getString(AudioFocusAskDialog.ARG_REQUEST_ID) ?: return@setFragmentResultListener
@@ -69,6 +94,30 @@ class MainActivity :
         updateTabs()
         setupNavigationController()
 
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                playerViewModel.stopAfterPosition.collect { (title, canceled) ->
+                    if (title != null) {
+                        showToast(
+                            if (canceled) {
+                                getString(R.string.sleep_timer_stop_after_x_canceled, title)
+                            } else {
+                                getString(R.string.sleep_timer_stop_after_x, title)
+                            },
+                        )
+                    }
+                }
+            }
+        }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                playerViewModel.queueMessage.collect { messageRes ->
+                    showToast(messageRes)
+                }
+            }
+        }
+
         val shortcutManager = getSystemService<ShortcutManager>()
         shortcutManager?.removeDynamicShortcuts(OLD_SHORTCUT_IDS)
 
@@ -78,12 +127,16 @@ class MainActivity :
     override fun onConnected(controller: MediaController) {
         super.onConnected(controller)
         refreshAudioFocusAskState(controller)
+        refreshShuffleState(controller)
         intent?.let { handlePlaybackIntent(it, true) }
     }
 
     override fun onResumeFragments() {
         super.onResumeFragments()
-        mediaControllerOwner.get()?.let(::refreshAudioFocusAskState)
+        mediaControllerOwner.get()?.let {
+            refreshAudioFocusAskState(it)
+            refreshShuffleState(it)
+        }
     }
 
     @OptIn(UnstableApi::class)
@@ -117,6 +170,21 @@ class MainActivity :
                 Playback.EVENT_AUDIO_FOCUS_ASK -> {
                     audioFocusStateRevision++
                     reconcileAudioFocusAskDialog(args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID))
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
+
+                Playback.EVENT_REPEAT_LOAD_NEXT_PAUSE_CHANGED -> {
+                    playerViewModel.onRepeatLoadNextPauseChanged(
+                        args.getBoolean(Playback.EXTRA_LOAD_NEXT_PAUSE_ACTIVE, false),
+                    )
+                    SessionResult(SessionResult.RESULT_SUCCESS)
+                }
+
+                Playback.EVENT_SHUFFLE_STATE_CHANGED -> {
+                    playerViewModel.onShuffleStateChanged(
+                        ShuffleModeState.fromValue(args.getString(Playback.EXTRA_SHUFFLE_STATE))
+                            ?: ShuffleModeState.Off,
+                    )
                     SessionResult(SessionResult.RESULT_SUCCESS)
                 }
 
@@ -294,6 +362,21 @@ class MainActivity :
                 setIntent(Intent())
             }
 
+            LockScreenEntityLauncher.ACTION_OPEN_ENTITY -> {
+                handleLockScreenEntity(intent)
+                setIntent(Intent())
+            }
+
+            ACTION_ADD_TO_PLAYLIST -> {
+                showAddToPlaylistForCurrentSong()
+                setIntent(Intent())
+            }
+
+            ACTION_OPEN_GHOST_SEARCH -> {
+                openGhostSearch()
+                setIntent(Intent())
+            }
+
             else -> {
                 libraryViewModel.handleIntent(intent).observe(this) { result ->
                     if (result.handled) {
@@ -312,6 +395,78 @@ class MainActivity :
                         showToast(R.string.unplayable_file)
                     }
                 }
+            }
+        }
+    }
+
+    private fun openGhostSearch() {
+        val navController = whichFragment<NavHostFragment>(R.id.fragment_container).navController
+        if (navController.currentDestination?.id != R.id.nav_ghost_search) {
+            navController.navigate(R.id.nav_ghost_search)
+        }
+    }
+
+    private fun showAddToPlaylistForCurrentSong() {
+        lifecycleScope.launch {
+            val song =
+                withTimeoutOrNull(ADD_TO_PLAYLIST_TIMEOUT_MS) {
+                    playerViewModel.currentSongFlow.first { it != Song.emptySong }
+                } ?: playerViewModel.currentSong
+            if (song == Song.emptySong ||
+                isFinishing ||
+                isDestroyed ||
+                supportFragmentManager.isStateSaved
+            ) {
+                return@launch
+            }
+            AddToPlaylistDialog
+                .create(song)
+                .show(supportFragmentManager, "ADD_TO_PLAYLIST")
+        }
+    }
+
+    private fun handleLockScreenEntity(intent: Intent) {
+        val type =
+            intent
+                .getStringExtra(LockScreenEntityLauncher.EXTRA_ENTITY_TYPE)
+                ?.toEnum<LockScreenEntityType>()
+                ?: return
+        val navController = findNavController(R.id.fragment_container)
+        when (type) {
+            LockScreenEntityType.Artist -> {
+                IntentCompat
+                    .getParcelableExtra(intent, LockScreenEntityLauncher.EXTRA_SONG, Song::class.java)
+                    ?.let { navController.navigate(R.id.nav_artist_detail, artistDetailArgs(it)) }
+            }
+
+            LockScreenEntityType.Folder -> {
+                val path = intent.getStringExtra(LockScreenEntityLauncher.EXTRA_FOLDER_PATH).orEmpty()
+                if (path.isBlank()) {
+                    navController.navigate(R.id.nav_folders)
+                } else {
+                    navController.navigate(
+                        R.id.nav_folder_detail,
+                        Bundle().apply { putString("extraFolderPath", path) },
+                    )
+                }
+            }
+
+            LockScreenEntityType.Genre -> {
+                IntentCompat
+                    .getParcelableExtra(intent, LockScreenEntityLauncher.EXTRA_GENRE, Genre::class.java)
+                    ?.let { navController.navigate(R.id.nav_genre_detail, genreDetailArgs(it)) }
+            }
+
+            LockScreenEntityType.Playlist -> {
+                val playlistId = intent.getLongExtra(LockScreenEntityLauncher.EXTRA_PLAYLIST_ID, -1L)
+                if (playlistId > 0) {
+                    navController.navigate(R.id.nav_playlist_detail, playlistDetailArgs(playlistId))
+                }
+            }
+
+            LockScreenEntityType.GhostSearch -> {
+                // The GhostSearch destination owns the existing PIN gate; never list contents here.
+                openGhostSearch()
             }
         }
     }
@@ -363,6 +518,32 @@ class MainActivity :
         }
     }
 
+    @OptIn(UnstableApi::class)
+    private fun refreshShuffleState(controller: MediaController) {
+        lifecycleScope.launch {
+            try {
+                val result =
+                    controller
+                        .sendCustomCommand(
+                            SessionCommand(Playback.GET_SHUFFLE_STATE, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        ).await()
+                if (mediaControllerOwner.get() === controller &&
+                    result.resultCode == SessionResult.RESULT_SUCCESS
+                ) {
+                    playerViewModel.onShuffleStateChanged(
+                        ShuffleModeState.fromValue(result.extras?.getString(Playback.EXTRA_SHUFFLE_STATE))
+                            ?: ShuffleModeState.Off,
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                // Reconnection queries the authoritative state again.
+            }
+        }
+    }
+
     private fun reconcileAudioFocusAskDialog(requestId: String?) {
         if (isFinishing || supportFragmentManager.isStateSaved) return
         val existing = supportFragmentManager.findFragmentByTag(AudioFocusAskDialog.TAG) as? AudioFocusAskDialog
@@ -408,7 +589,23 @@ class MainActivity :
         }
     }
 
+    override fun onDestroy() {
+        entityShortcutJob?.cancel()
+        super.onDestroy()
+    }
+
+    override fun onStop() {
+        if (!isChangingConfigurations) {
+            GhostMode.lock()
+        }
+        super.onStop()
+    }
+
     companion object {
+        const val ACTION_ADD_TO_PLAYLIST = "com.ssilencce.action.ADD_TO_PLAYLIST"
+        const val ACTION_OPEN_GHOST_SEARCH = "com.ssilencce.action.OPEN_GHOST_SEARCH"
+        private const val ADD_TO_PLAYLIST_TIMEOUT_MS = 1500L
+
         private const val APP_SHORTCUT_LAST_ADDED = "com.ssilencce.shortcut.LAST_ADDED"
         private const val APP_SHORTCUT_TOP_TRACKS = "com.ssilencce.shortcut.TOP_TRACKS"
         private const val APP_SHORTCUT_SHUFFLE = "com.ssilencce.shortcut.SHUFFLE"

@@ -25,6 +25,9 @@ import com.ssilencce.core.SsilencceDatabase
 import com.ssilencce.core.audio.AudioOutputObserver
 import com.ssilencce.data.local.EditTarget
 import com.ssilencce.data.local.MediaStoreWriter
+import com.ssilencce.data.local.audio.clip.AudioClipExporter
+import com.ssilencce.data.local.audio.clip.RingtoneClipStore
+import com.ssilencce.data.local.notes.SongNotesRepository
 import com.ssilencce.data.local.replaygain.ReplayGainDecoder
 import com.ssilencce.data.local.replaygain.ReplayGainScanner
 import com.ssilencce.data.local.replaygain.ReplayGainTagWriter
@@ -52,6 +55,7 @@ import com.ssilencce.data.local.repository.SmartRepository
 import com.ssilencce.data.local.repository.SongRepository
 import com.ssilencce.data.local.repository.SpecialRepository
 import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.Song
 import com.ssilencce.data.remote.deezer.DeezerService
 import com.ssilencce.data.remote.github.GitHubService
 import com.ssilencce.data.remote.jsonHttpClient
@@ -61,10 +65,14 @@ import com.ssilencce.data.remote.lyrics.LyricsDownloadService
 import com.ssilencce.data.remote.musicbrainz.MusicBrainzService
 import com.ssilencce.data.remote.provideOkHttp
 import com.ssilencce.playback.SleepTimer
+import com.ssilencce.playback.effects.ReverbController
 import com.ssilencce.playback.equalizer.EqualizerManager
 import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.MonoAudioProcessor
 import com.ssilencce.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.ui.screen.audiocutter.AudioCutterViewModel
 import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.screen.ghost.GhostSearchViewModel
 import com.ssilencce.ui.screen.info.InfoViewModel
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.library.albums.AlbumDetailViewModel
@@ -75,8 +83,13 @@ import com.ssilencce.ui.screen.library.playlists.PlaylistDetailViewModel
 import com.ssilencce.ui.screen.library.search.SearchViewModel
 import com.ssilencce.ui.screen.library.years.YearDetailViewModel
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
+import com.ssilencce.ui.screen.miniplayer.MiniPlayerRequest
+import com.ssilencce.ui.screen.miniplayer.MiniPlayerViewModel
+import com.ssilencce.ui.screen.notes.SongNotesViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.player.screencast.ScreencastManager
 import com.ssilencce.ui.screen.replaygain.ReplayGainScanViewModel
+import com.ssilencce.ui.screen.setup.SetupWizardViewModel
 import com.ssilencce.ui.screen.sleeptimer.SleepTimerViewModel
 import com.ssilencce.ui.screen.tageditor.BatchTagEditorViewModel
 import com.ssilencce.ui.screen.tageditor.TagEditorViewModel
@@ -133,10 +146,18 @@ private val mainModule =
             ReplayGainAudioProcessor()
         }
         single {
+            MonoAudioProcessor()
+        }
+        single {
+            ReverbController()
+        }
+        single {
             EqualizerManager(
                 context = androidContext(),
                 balanceProcessor = get(),
                 replayGainProcessor = get(),
+                monoProcessor = get(),
+                reverbController = get(),
                 audioOutputObserver = get(),
             )
         }
@@ -165,6 +186,12 @@ private val mainModule =
         single {
             AudioOutputObserver(context = androidContext())
         }
+        single {
+            AudioClipExporter(context = androidContext())
+        }
+        single {
+            RingtoneClipStore(context = androidContext(), exporter = get())
+        }
     }
 
 private val roomModule =
@@ -180,6 +207,7 @@ private val roomModule =
                     SsilencceDatabase.MIGRATION_5_6,
                     SsilencceDatabase.MIGRATION_6_7,
                     SsilencceDatabase.MIGRATION_7_8,
+                    SsilencceDatabase.MIGRATION_8_9,
                 ).build()
         }
 
@@ -218,6 +246,10 @@ private val roomModule =
         factory {
             get<SsilencceDatabase>().namedQueueDao()
         }
+
+        factory {
+            get<SsilencceDatabase>().songPlaybackParamDao()
+        }
     }
 
 private val dataModule =
@@ -239,6 +271,10 @@ private val dataModule =
 
         single {
             NamedQueueRepository(dao = get(), database = get())
+        }
+
+        single {
+            SongNotesRepository(context = androidContext())
         }
 
         single {
@@ -303,6 +339,14 @@ private val dataModule =
         } bind LyricsRepository::class
 
         single {
+            ScreencastManager(
+                context = androidContext(),
+                repository = get(),
+                lyricsRepository = get(),
+            )
+        }
+
+        single {
             NetworkRepositoryImpl(
                 context = androidContext(),
                 preferences = get(),
@@ -321,7 +365,15 @@ private val viewModule =
         }
 
         viewModel {
-            PlayerViewModel(preferences = get(), repository = get(), namedQueueRepository = get())
+            PlayerViewModel(preferences = get(), repository = get(), namedQueueRepository = get(), songPlaybackParamDao = get())
+        }
+
+        viewModel { (request: MiniPlayerRequest) ->
+            MiniPlayerViewModel(
+                context = androidApplication(),
+                repository = get(),
+                initialRequest = request,
+            )
         }
 
         viewModel {
@@ -344,6 +396,24 @@ private val viewModule =
             ReplayGainScanViewModel(
                 repository = get(),
                 scanner = get(),
+            )
+        }
+
+        viewModel {
+            SetupWizardViewModel(
+                application = androidApplication(),
+                repository = get(),
+                inclExclDao = get(),
+            )
+        }
+
+        viewModel { (songId: Long) ->
+            AudioCutterViewModel(
+                repository = get(),
+                exporter = get(),
+                ringtoneStore = get(),
+                contentResolver = get(),
+                songId = songId,
             )
         }
 
@@ -385,6 +455,10 @@ private val viewModule =
             SearchViewModel(repository = get())
         }
 
+        viewModel {
+            GhostSearchViewModel(songRepository = get())
+        }
+
         viewModel { (target: EditTarget) ->
             TagEditorViewModel(
                 repository = get(),
@@ -402,6 +476,10 @@ private val viewModule =
 
         viewModel {
             LyricsViewModel(application = androidApplication(), preferences = get(), repository = get())
+        }
+
+        viewModel { (song: Song) ->
+            SongNotesViewModel(repository = get(), song = song)
         }
 
         viewModel {

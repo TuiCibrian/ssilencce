@@ -17,11 +17,13 @@ package com.ssilencce.playback
 
 /**
  * Pure availability rule for the explicit reshuffle command. Reshuffle never enables shuffle;
- * it is available only for a non-empty queue with shuffle already on.
+ * it is available only for a non-empty queue with the fixed shuffle order active. Randomize has no
+ * order to rebuild.
  */
 object QueueReshufflePolicy {
     fun canReshuffle(
         shuffleEnabled: Boolean,
         mediaItemCount: Int,
-    ): Boolean = shuffleEnabled && mediaItemCount > 0
+        randomize: Boolean = false,
+    ): Boolean = shuffleEnabled && !randomize && mediaItemCount > 0
 }

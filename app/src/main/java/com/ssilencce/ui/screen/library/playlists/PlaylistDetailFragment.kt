@@ -67,6 +67,7 @@ import com.ssilencce.ui.component.menu.onPlaylistMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.dialogs.playlists.RemoveFromPlaylistDialog
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.Preferences
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -152,8 +153,9 @@ class PlaylistDetailFragment :
                 binding.header.description.isGone = true
             }
             binding.collapsingAppBarLayout.title = playlist.playlistEntity.playlistName
-            binding.header.subtitle.text = playlist.songs.toSongs().playlistInfo(requireContext())
-            binding.header.image.playlistImage(playlist)
+            val visiblePlaylistSongs = GhostMode.filterSongEntities(playlist.songs)
+            binding.header.subtitle.text = GhostMode.filterSongs(playlist.songs.toSongs()).playlistInfo(requireContext())
+            binding.header.image.playlistImage(playlist.copy(songs = visiblePlaylistSongs))
         }
         detailViewModel.getSongs().observe(viewLifecycleOwner) {
             binding.progressIndicator.hide()
@@ -170,20 +172,22 @@ class PlaylistDetailFragment :
 
     private fun applyQuickSearch() {
         val adapter = playlistSongAdapter ?: return
+        val visibleSongs = GhostMode.filterSongs(allSongs)
+        val hasHiddenSongs = visibleSongs.size != allSongs.size
         if (quickSearchQuery.isBlank()) {
-            adapter.dataSet = allSongs
-            adapter.setLockDrag(Preferences.lockedPlaylists)
+            adapter.dataSet = visibleSongs
+            adapter.setLockDrag(Preferences.lockedPlaylists || hasHiddenSongs)
         } else {
             recyclerViewDragDropManager?.cancelDrag()
             adapter.setLockDrag(true)
-            adapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+            adapter.dataSet = visibleSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
         }
         updateEmptyState()
     }
 
     private fun updateEmptyState() {
         val visibleCount = playlistSongAdapter?.dataSet?.size ?: 0
-        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, allSongs.size, visibleCount)
+        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, GhostMode.filterSongs(allSongs).size, visibleCount)
         binding.empty.setText(if (noMatches) R.string.quick_search_empty else R.string.empty_label)
         binding.empty.isVisible = visibleCount == 0
     }

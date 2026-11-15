@@ -37,6 +37,32 @@
         <item>expanded</item>
     </string-array>
 
+    <string-array name="pref_notification_style_entries">
+        <item>@string/notification_style_system</item>
+        <item>@string/notification_style_small</item>
+        <item>@string/notification_style_big_simple</item>
+        <item>@string/notification_style_big_advanced</item>
+    </string-array>
+
+    <string-array name="pref_notification_style_values">
+        <item>system</item>
+        <item>small</item>
+        <item>big_simple</item>
+        <item>big_advanced</item>
+    </string-array>
+
+    <string-array name="pref_notification_background_entries">
+        <item>@string/notification_background_theme</item>
+        <item>@string/notification_background_cover</item>
+        <item>@string/notification_background_custom</item>
+    </string-array>
+
+    <string-array name="pref_notification_background_values">
+        <item>theme</item>
+        <item>cover</item>
+        <item>custom</item>
+    </string-array>
+
     <string-array name="pref_song_title_mode_entries">
         <item>@string/song_title_mode_follow_sort</item>
         <item>@string/song_title_mode_song_title</item>
@@ -71,6 +97,16 @@
         <item>simplified</item>
     </string-array>
 
+    <string-array name="pref_shuffle_behavior_entries">
+        <item>@string/shuffle_behavior_all_songs</item>
+        <item>@string/shuffle_behavior_below_current</item>
+    </string-array>
+
+    <string-array name="pref_shuffle_behavior_values">
+        <item>all_songs</item>
+        <item>below_current</item>
+    </string-array>
+
     <string-array name="pref_album_shuffle_mode_entries">
         <item>@string/shuffle_albums_ordered_songs</item>
         <item>@string/ordered_albums_shuffle_songs</item>
@@ -93,6 +129,32 @@
         <item>shuffle_artists</item>
         <item>shuffle_songs</item>
         <item>shuffle_all</item>
+    </string-array>
+
+    <string-array name="pref_previous_button_entries">
+        <item>@string/previous_button_restart</item>
+        <item>@string/previous_button_always_previous</item>
+    </string-array>
+
+    <string-array name="pref_previous_button_values">
+        <item>restart</item>
+        <item>previous</item>
+    </string-array>
+
+    <string-array name="pref_seek_controls_min_duration_entries">
+        <item>@string/seek_controls_min_duration_off</item>
+        <item>@string/seek_controls_min_duration_10</item>
+        <item>@string/seek_controls_min_duration_20</item>
+        <item>@string/seek_controls_min_duration_30</item>
+        <item>@string/seek_controls_min_duration_60</item>
+    </string-array>
+
+    <string-array name="pref_seek_controls_min_duration_values">
+        <item>0</item>
+        <item>10</item>
+        <item>20</item>
+        <item>30</item>
+        <item>60</item>
     </string-array>
 
     <string-array name="queue_next_mode_entries">
@@ -289,6 +351,73 @@
         <item>tr</item>
         <item>uk</item>
         <item>vi</item>
+    </string-array>
+
+    <!-- Battery & background OEM guide -->
+    <string-array name="battery_guide_steps_xiaomi">
+        <item>1. Open Settings → Apps → Manage apps → ssilencce.</item>
+        <item>2. Tap Battery saver and choose No restrictions.</item>
+        <item>3. Return to the app info screen, tap Autostart and enable ssilencce.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_huawei">
+        <item>1. Open Settings → Battery → App launch.</item>
+        <item>2. Find ssilencce and turn off Manage automatically.</item>
+        <item>3. Enable Auto-launch, Secondary launch and Run in background.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_samsung">
+        <item>1. Open Settings → Battery → Background usage limits.</item>
+        <item>2. Remove ssilencce from Sleeping apps and Deep sleeping apps.</item>
+        <item>3. Add ssilencce to Never sleeping apps.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap Keep open.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_oppo">
+        <item>1. Open Settings → Battery → App battery management → ssilencce.</item>
+        <item>2. Allow background activity.</item>
+        <item>3. Open Settings → Apps → Auto-launch and enable ssilencce.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_realme">
+        <item>1. Open Settings → Battery → App battery management → ssilencce.</item>
+        <item>2. Allow background activity and turn off Smart power saving for the app.</item>
+        <item>3. Open Settings → Apps → Auto-launch and enable ssilencce.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_vivo">
+        <item>1. Open Settings → Battery → Background power consumption management.</item>
+        <item>2. Find ssilencce and allow high background power consumption.</item>
+        <item>3. Open iManager → App manager → Autostart and enable ssilencce.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_asus">
+        <item>1. Open Settings → Battery → Battery optimization.</item>
+        <item>2. Find ssilencce and choose Not optimized.</item>
+        <item>3. In Mobile Manager, allow ssilencce to auto-start and keep running.</item>
+        <item>4. Open Recents, long-press the ssilencce card and tap the lock icon.</item>
+    </string-array>
+
+    <string-array name="battery_guide_steps_generic">
+        <item>1. Open Settings → Apps → ssilencce → Battery.</item>
+        <item>2. Choose Unrestricted or turn off battery optimization for the app.</item>
+        <item>3. Open Recents, long-press the ssilencce card and pin or lock it if your launcher allows it.</item>
+    </string-array>
+
+    <!-- Lock screen player wallpaper -->
+    <string-array name="pref_lock_screen_wallpaper_entries">
+        <item>@string/lock_screen_wallpaper_cover</item>
+        <item>@string/lock_screen_wallpaper_custom</item>
+    </string-array>
+
+    <string-array name="pref_lock_screen_wallpaper_values">
+        <item>Cover</item>
+        <item>Custom</item>
     </string-array>
 
 </resources>

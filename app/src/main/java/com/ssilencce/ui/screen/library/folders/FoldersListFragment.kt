@@ -47,6 +47,7 @@ import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.screen.library.ReloadType
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.Preferences
 import java.io.File
 
@@ -117,6 +118,7 @@ class FoldersListFragment :
 
     override fun onResume() {
         super.onResume()
+        toolbar.menu.findItem(R.id.action_hierarchy_view)?.isChecked = Preferences.hierarchyFolderView
         libraryViewModel.forceReload(ReloadType.Folders)
     }
 
@@ -170,7 +172,19 @@ class FoldersListFragment :
             is Folder -> {
                 when (menuItem.itemId) {
                     R.id.action_blacklist -> {
-                        libraryViewModel.blacklistPath(File(file.filePath))
+                        ExcludeFolderDialog.show(this, file.filePath, file.fileName)
+                    }
+
+                    R.id.action_ghost_folder -> {
+                        addGhostFolder(file.filePath)
+                    }
+
+                    R.id.action_folder_info -> {
+                        FolderInfoDialog.show(this, file.filePath)
+                    }
+
+                    R.id.action_rename_folder -> {
+                        FolderNameDialog.showRename(this, file.filePath, file.fileName)
                     }
 
                     R.id.action_set_as_start_directory -> {
@@ -260,6 +274,15 @@ class FoldersListFragment :
         return true
     }
 
+    private fun addGhostFolder(path: String) {
+        if (GhostMode.addFolder(path)) {
+            showToast(R.string.ghost_folder_added)
+            libraryViewModel.reloadAll()
+        } else {
+            showToast(R.string.ghost_folder_already_added)
+        }
+    }
+
     override fun onCreateMenu(
         menu: Menu,
         inflater: MenuInflater,
@@ -268,6 +291,22 @@ class FoldersListFragment :
         inflater.inflate(R.menu.menu_folders, menu)
         menu.removeItem(R.id.action_view_type)
         menu.findItem(R.id.action_hierarchy_view)?.isChecked = Preferences.hierarchyFolderView
+        updateFolderActionVisibility(menu, fileSystem)
+    }
+
+    private fun updateFolderActionVisibility(
+        menu: Menu,
+        fileSystem: FileSystemQuery?,
+    ) {
+        val hasFolder =
+            fileSystem != null && !fileSystem.isFlatView && !fileSystem.isStorageRoot && fileSystem.path != null
+        menu.findItem(R.id.action_set_as_start_directory)?.isVisible = hasFolder
+        menu.findItem(R.id.action_go_to_start_directory)?.isVisible = fileSystem?.isFlatView == false
+        menu.findItem(R.id.action_create_folder)?.isVisible =
+            fileSystem != null && !fileSystem.isFlatView && fileSystem.path != null
+        menu.findItem(R.id.action_folder_info)?.isVisible = hasFolder
+        menu.findItem(R.id.action_exclude_folder)?.isVisible = hasFolder
+        menu.findItem(R.id.action_ghost_folder)?.isVisible = hasFolder
     }
 
     override fun onPrepareMenu(menu: Menu) {
@@ -298,6 +337,39 @@ class FoldersListFragment :
                         showToast(getString(R.string.start_directory_set, currentFileSystem.name))
                     }
                 }
+                return true
+            }
+
+            R.id.action_create_folder -> {
+                fileSystem?.path?.let { currentPath ->
+                    FolderNameDialog.showCreate(this, currentPath)
+                }
+                return true
+            }
+
+            R.id.action_folder_info -> {
+                fileSystem?.path?.let { currentPath ->
+                    FolderInfoDialog.show(this, currentPath)
+                }
+                return true
+            }
+
+            R.id.action_exclude_folder -> {
+                fileSystem?.let { currentFileSystem ->
+                    val currentPath = currentFileSystem.path
+                    if (currentPath != null) {
+                        ExcludeFolderDialog.show(
+                            this,
+                            currentPath,
+                            currentFileSystem.name ?: currentPath,
+                        )
+                    }
+                }
+                return true
+            }
+
+            R.id.action_ghost_folder -> {
+                fileSystem?.path?.let { addGhostFolder(it) }
                 return true
             }
 
@@ -339,12 +411,7 @@ class FoldersListFragment :
         }
 
     private fun showFolders(fileSystem: FileSystemQuery) {
-        toolbar.menu.let {
-            it.findItem(R.id.action_set_as_start_directory)?.isVisible =
-                !fileSystem.isFlatView && !fileSystem.isStorageRoot
-            it.findItem(R.id.action_go_to_start_directory)?.isVisible =
-                !fileSystem.isFlatView
-        }
+        updateFolderActionVisibility(toolbar.menu, fileSystem)
         allFiles = fileSystem.getNavigableChildren(sortMode)
         applyQuickSearch()
     }

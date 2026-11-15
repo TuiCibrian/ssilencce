@@ -19,14 +19,18 @@ package com.ssilencce.data.model
 
 import android.content.ContentUris
 import android.net.Uri
+import android.os.Bundle
 import android.os.Parcelable
 import android.provider.MediaStore
+import android.webkit.MimeTypeMap
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import com.ssilencce.coil.CoverProvider
+import com.ssilencce.core.model.MediaItemExtras
 import com.ssilencce.core.model.filesystem.FileSystemItem
 import com.ssilencce.data.local.repository.RealSongRepository.Companion.getAudioContentUri
 import com.ssilencce.extensions.hasQ
+import com.ssilencce.extensions.media.resolvedArtistName
 import com.ssilencce.extensions.media.songInfo
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
@@ -52,24 +56,35 @@ open class Song(
     open val genreName: String?,
     open val volumeName: String? = null,
     open val composerName: String? = null,
+    open val discNumber: Int = 0,
 ) : Parcelable,
     FileSystemItem {
     val uri: Uri
         get() =
-            if (hasQ()) {
-                volumeName.let { volume ->
-                    if (volume != null && volume != MediaStore.VOLUME_EXTERNAL) {
-                        ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(volume), id)
-                    } else {
-                        ContentUris.withAppendedId(getAudioContentUri(), id)
+            ExtraFormatUriStore.uriFor(id)?.let { Uri.parse(it) }
+                ?: if (hasQ()) {
+                    volumeName.let { volume ->
+                        if (volume != null && volume != MediaStore.VOLUME_EXTERNAL) {
+                            ContentUris.withAppendedId(MediaStore.Audio.Media.getContentUri(volume), id)
+                        } else {
+                            ContentUris.withAppendedId(getAudioContentUri(), id)
+                        }
                     }
+                } else {
+                    ContentUris.withAppendedId(getAudioContentUri(), id)
                 }
-            } else {
-                ContentUris.withAppendedId(getAudioContentUri(), id)
-            }
 
     @IgnoredOnParcel
     val dateModified by lazy { Date(rawDateModified * 1000) }
+
+    /** MIME type of the underlying audio file, resolved without touching the content resolver. */
+    val mimeType: String?
+        get() =
+            data
+                .substringAfterLast('.', "")
+                .takeIf { it.isNotEmpty() }
+                ?.lowercase()
+                ?.let { extension -> MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) }
 
     override val fileName: String
         get() = data.substringAfterLast("/", title)
@@ -101,6 +116,7 @@ open class Song(
         song.genreName,
         song.volumeName,
         song.composerName,
+        song.discNumber,
     )
 
     fun toMediaItem(itemId: String = id.toString()): MediaItem =
@@ -110,7 +126,9 @@ open class Song(
             MediaItem
                 .Builder()
                 .setUri(uri)
+                .setMimeType(mimeType)
                 .setMediaId(itemId)
+                .setTag(this)
                 .setMediaMetadata(
                     MediaMetadata
                         .Builder()
@@ -120,13 +138,18 @@ open class Song(
                         .setTitle(title)
                         .setSubtitle(songInfo())
                         .setAlbumTitle(albumName)
-                        .setArtist(artistName)
+                        .setArtist(resolvedArtistName())
                         .setAlbumArtist(albumArtistName)
                         .setGenre(genreName)
                         .setTrackNumber(trackNumber)
                         .setReleaseYear(year)
                         .setDurationMs(duration.coerceAtLeast(0))
-                        .build(),
+                        .setExtras(
+                            Bundle().apply {
+                                putLong(MediaItemExtras.ALBUM_ID, albumId)
+                                putInt(MediaItemExtras.DISC_NUMBER, discNumber)
+                            },
+                        ).build(),
                 ).build()
         }
 
@@ -149,6 +172,7 @@ open class Song(
         if (title != song.title) return false
         if (albumArtistName != song.albumArtistName) return false
         if (genreName != song.genreName) return false
+        if (discNumber != song.discNumber) return false
         return volumeName == song.volumeName
     }
 
@@ -170,6 +194,7 @@ open class Song(
             albumArtistName,
             genreName,
             volumeName,
+            discNumber,
         )
 
     override fun toString(): String =
@@ -191,6 +216,7 @@ open class Song(
             ", genreName='" + genreName + '\'' +
             ", volumeName='" + volumeName + '\'' +
             ", composerName='" + composerName + '\'' +
+            ", discNumber=" + discNumber +
             '}'
 
     companion object {

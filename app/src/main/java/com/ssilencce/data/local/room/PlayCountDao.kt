@@ -37,6 +37,9 @@ interface PlayCountDao {
     @Query("SELECT * FROM PlayCountEntity")
     suspend fun allPlayCounts(): List<PlayCountEntity>
 
+    @Query("SELECT id, play_count AS playCount, time_played AS timePlayed FROM PlayCountEntity")
+    suspend fun allPlayStatistics(): List<SongPlayStatistics>
+
     @Query("DELETE FROM PlayCountEntity WHERE id = :songId")
     suspend fun deleteSongInPlayCount(songId: Long)
 

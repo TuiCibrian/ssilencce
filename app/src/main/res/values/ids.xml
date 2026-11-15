@@ -8,6 +8,9 @@
     <item name="action_sort_order_track_list" type="id"/>
     <item name="action_sort_order_date_added" type="id"/>
     <item name="action_sort_order_date_modified" type="id"/>
+    <item name="action_sort_order_last_played" type="id"/>
+    <item name="action_sort_order_most_played" type="id"/>
+    <item name="action_sort_order_least_played" type="id"/>
     <item name="action_sort_order_file_name" type="id"/>
     <item name="action_sort_order_path" type="id"/>
     <item name="action_sort_order_number_of_albums" type="id"/>

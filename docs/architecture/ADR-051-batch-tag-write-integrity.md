@@ -2,8 +2,14 @@
 
 ## Status
 
-Proposed (2026-11-11). **Not approved. Not implemented.** No code lease, source change, build or
-runtime evidence exists for this decision.
+Partially implemented (2026-11-14). `openspec/changes/add-batch-tag-editor` and
+`openspec/changes/tag-editor-finish` implement a bounded subset: a session journal copies each
+file's original bytes to `cacheDir/tag-write-backup/<uuid>/` before the destructive open (2 GiB
+per file, 4 GiB per session, 7-day stale pruning), a failed open/save/read-back restores the
+current file, and the editor offers a session undo for successfully written files. Not
+implemented: the `noBackupFilesDir` binding, SHA-256/sidecar validation, fail-closed pre-open
+identity checks, the 512 MiB free-space reserve, `MISMATCH`/`KEPT_CHANGED` rollback, and
+`WRITE_STARTED`/`RECOVERY_NEEDED` process-death recovery. No device/runtime evidence exists.
 
 ## Context
 
@@ -42,6 +48,8 @@ work; it does not approve or implement it.
 - Add no dependency, Room schema, permission, version change or translated string. The backup
   directory binding and any new English status labels are C-owned. No content-URI atomicity is
   claimed; restore is a verified stream overwrite with post-restore hash verification.
+- Session undo intentionally restores only hard failures; `Mismatch`/`KeptChanged` stay reported as
+  `Partial` with undo available, because rolling them back would discard fields that did persist.
 
 ## Consequences
 

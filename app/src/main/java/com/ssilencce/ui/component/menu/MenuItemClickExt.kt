@@ -45,11 +45,14 @@ import com.ssilencce.ui.dialogs.playlists.EditPlaylistDialog
 import com.ssilencce.ui.dialogs.showExportFormatChoice
 import com.ssilencce.ui.dialogs.showShortcutConfirm
 import com.ssilencce.ui.dialogs.songs.DeleteSongsDialog
+import com.ssilencce.ui.screen.audiocutter.AudioCutterActivity
 import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.screen.library.folders.FolderTransferDialog
+import com.ssilencce.ui.screen.library.folders.HideSongsDialog
+import com.ssilencce.ui.screen.notes.SongNotesFragmentArgs
+import com.ssilencce.ui.screen.miniplayer.MiniPlayerActivity
 import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.screen.replaygain.ReplayGainScanActivity
-import com.ssilencce.ui.screen.tageditor.AlbumTagEditorActivity
-import com.ssilencce.ui.screen.tageditor.ArtistTagEditorActivity
 import com.ssilencce.ui.screen.tageditor.BatchTagEditorActivity
 import com.ssilencce.ui.screen.tageditor.BatchTagEditorViewModel
 import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
@@ -67,6 +70,11 @@ fun Song.onSongMenu(
         return false
     }
     return when (menuItem.itemId) {
+        R.id.action_preview -> {
+            fragment.startActivity(MiniPlayerActivity.previewIntent(fragment.requireContext(), this))
+            true
+        }
+
         R.id.action_play_next -> {
             val playerViewModel = fragment.getActivityViewModel<PlayerViewModel>()
             playerViewModel.queueNext(this)
@@ -78,6 +86,21 @@ fun Song.onSongMenu(
             val playerViewModel = fragment.getActivityViewModel<PlayerViewModel>()
             playerViewModel.enqueue(this)
             fragment.showToast(R.string.added_title_to_playing_queue)
+            true
+        }
+
+        R.id.action_pause_after_this_song -> {
+            fragment.getActivityViewModel<PlayerViewModel>().pauseAfterSong(this)
+            true
+        }
+
+        R.id.action_play_after_current -> {
+            fragment.getActivityViewModel<PlayerViewModel>().playAfterCurrentSong(this)
+            true
+        }
+
+        R.id.action_load_next_and_pause -> {
+            fragment.getActivityViewModel<PlayerViewModel>().loadNextSongAndPause()
             true
         }
 
@@ -126,6 +149,13 @@ fun Song.onSongMenu(
             true
         }
 
+        R.id.action_song_notes -> {
+            fragment
+                .findActivityNavController(R.id.fragment_container)
+                .navigate(R.id.nav_song_notes, SongNotesFragmentArgs.Builder(this).build().toBundle())
+            true
+        }
+
         R.id.action_tag_editor -> {
             val tagEditorIntent =
                 Intent(fragment.requireContext(), SongTagEditorActivity::class.java)
@@ -141,8 +171,30 @@ fun Song.onSongMenu(
             true
         }
 
+        R.id.action_trim_audio -> {
+            fragment.startActivity(
+                AudioCutterActivity.intent(fragment.requireContext(), id),
+            )
+            true
+        }
+
         R.id.action_delete_from_device -> {
             DeleteSongsDialog.create(this).show(fragment.childFragmentManager, "DELETE_SONGS")
+            true
+        }
+
+        R.id.action_move_to_folder -> {
+            FolderTransferDialog.show(fragment, listOf(this), copy = false)
+            true
+        }
+
+        R.id.action_copy_to_folder -> {
+            FolderTransferDialog.show(fragment, listOf(this), copy = true)
+            true
+        }
+
+        R.id.action_hide_songs -> {
+            HideSongsDialog.show(fragment, listOf(this))
             true
         }
 
@@ -169,6 +221,30 @@ fun List<Song>.onSongsMenu(
         R.id.action_shuffle_play -> {
             val playerViewModel = fragment.getActivityViewModel<PlayerViewModel>()
             playerViewModel.openAndShuffleQueue(this)
+            true
+        }
+
+        R.id.action_shuffle_play_next -> {
+            val playerViewModel = fragment.getActivityViewModel<PlayerViewModel>()
+            val shuffled = shuffled()
+            playerViewModel.queueNext(shuffled)
+            if (size == 1) {
+                fragment.showToast(R.string.added_title_to_playing_queue)
+            } else {
+                fragment.showToast(fragment.getString(R.string.added_x_titles_to_playing_queue, size))
+            }
+            true
+        }
+
+        R.id.action_shuffle_add_to_queue -> {
+            val playerViewModel = fragment.getActivityViewModel<PlayerViewModel>()
+            val shuffled = shuffled()
+            playerViewModel.enqueue(shuffled)
+            if (size == 1) {
+                fragment.showToast(R.string.added_title_to_playing_queue)
+            } else {
+                fragment.showToast(fragment.getString(R.string.added_x_titles_to_playing_queue, size))
+            }
             true
         }
 
@@ -212,27 +288,7 @@ fun List<Song>.onSongsMenu(
         }
 
         R.id.action_tag_editor -> {
-            val ids = map { it.id }.filter { it != -1L }.distinct()
-            when {
-                ids.isEmpty() -> {
-                    fragment.showToast(R.string.batch_tag_editor_empty)
-                }
-
-                ids.size > BatchTagEditorViewModel.MAX_BATCH_SONGS -> {
-                    fragment.showToast(
-                        fragment.getString(
-                            R.string.batch_tag_editor_too_many,
-                            BatchTagEditorViewModel.MAX_BATCH_SONGS,
-                        ),
-                    )
-                }
-
-                else -> {
-                    fragment.startActivity(
-                        BatchTagEditorActivity.intent(fragment.requireContext(), ids.toLongArray()),
-                    )
-                }
-            }
+            launchBatchTagEditor(fragment, map { it.id })
             true
         }
 
@@ -246,13 +302,74 @@ fun List<Song>.onSongsMenu(
             true
         }
 
+        R.id.action_trim_audio -> {
+            if (size == 1) {
+                fragment.startActivity(
+                    AudioCutterActivity.intent(fragment.requireContext(), first().id),
+                )
+            } else {
+                fragment.showToast(R.string.audio_cutter_select_single)
+            }
+            true
+        }
+
         R.id.action_delete_from_device -> {
             DeleteSongsDialog.create(this).show(fragment.childFragmentManager, "DELETE_SONGS")
             true
         }
 
+        R.id.action_move_to_folder -> {
+            FolderTransferDialog.show(fragment, this, copy = false)
+            true
+        }
+
+        R.id.action_copy_to_folder -> {
+            FolderTransferDialog.show(fragment, this, copy = true)
+            true
+        }
+
+        R.id.action_hide_songs -> {
+            HideSongsDialog.show(fragment, this)
+            true
+        }
+
+        R.id.action_song_notes -> {
+            val song = singleOrNull() ?: return false
+            fragment
+                .findActivityNavController(R.id.fragment_container)
+                .navigate(R.id.nav_song_notes, SongNotesFragmentArgs.Builder(song).build().toBundle())
+            true
+        }
+
         else -> {
             false
+        }
+    }
+}
+
+private fun launchBatchTagEditor(
+    fragment: Fragment,
+    songIds: List<Long>,
+) {
+    val ids = songIds.filter { it != -1L }.distinct()
+    when {
+        ids.isEmpty() -> {
+            fragment.showToast(R.string.batch_tag_editor_empty)
+        }
+
+        ids.size > BatchTagEditorViewModel.MAX_BATCH_SONGS -> {
+            fragment.showToast(
+                fragment.getString(
+                    R.string.batch_tag_editor_too_many,
+                    BatchTagEditorViewModel.MAX_BATCH_SONGS,
+                ),
+            )
+        }
+
+        else -> {
+            fragment.startActivity(
+                BatchTagEditorActivity.intent(fragment.requireContext(), ids.toLongArray()),
+            )
         }
     }
 }
@@ -270,10 +387,7 @@ fun Album.onAlbumMenu(
         }
 
         R.id.action_tag_editor -> {
-            val tagEditorIntent =
-                Intent(fragment.requireContext(), AlbumTagEditorActivity::class.java)
-            tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.album(this))
-            fragment.startActivity(tagEditorIntent)
+            launchBatchTagEditor(fragment, songs.map { it.id })
             true
         }
 
@@ -309,9 +423,7 @@ fun Artist.onArtistMenu(
             if (composerName != null) {
                 false
             } else {
-                val tagEditorIntent = Intent(fragment.requireContext(), ArtistTagEditorActivity::class.java)
-                tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.artist(this))
-                fragment.startActivity(tagEditorIntent)
+                launchBatchTagEditor(fragment, songs.map { it.id })
                 true
             }
         }

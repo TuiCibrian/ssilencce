@@ -98,10 +98,17 @@ fun SsilencceTheme(
     dynamicColor: Boolean = Preferences.isMaterialYouTheme,
     content: @Composable () -> Unit,
 ) {
+    val accentColor = Preferences.accentColor
     var colorScheme =
         when {
             Preferences.isAuroraAppearance -> {
                 AuroraDesign.colors
+            }
+
+            accentColor != 0 -> {
+                remember(accentColor, darkTheme) {
+                    dynamicColorScheme(Color(accentColor), darkTheme, PaletteStyle.Content)
+                }
             }
 
             dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {

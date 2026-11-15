@@ -19,8 +19,9 @@ import com.ssilencce.data.local.room.*
         TrackPositionEntity::class,
         NamedQueueEntity::class,
         NamedQueueItemEntity::class,
+        SongPlaybackParamEntity::class,
     ],
-    version = 8,
+    version = 9,
     exportSchema = false,
 )
 abstract class SsilencceDatabase : RoomDatabase() {
@@ -41,6 +42,8 @@ abstract class SsilencceDatabase : RoomDatabase() {
     abstract fun trackPositionDao(): TrackPositionDao
 
     abstract fun namedQueueDao(): NamedQueueDao
+
+    abstract fun songPlaybackParamDao(): SongPlaybackParamDao
 
     companion object {
         val MIGRATION_1_2 =
@@ -156,6 +159,24 @@ abstract class SsilencceDatabase : RoomDatabase() {
                             `order` INTEGER NOT NULL,
                             `media_id` TEXT NOT NULL,
                             PRIMARY KEY(`queue_id`, `order`)
+                        )
+                        """.trimIndent(),
+                    )
+                }
+            }
+
+        val MIGRATION_8_9 =
+            object : Migration(8, 9) {
+                override fun migrate(db: SupportSQLiteDatabase) {
+                    // Per-song tempo overrides are optional; existing songs keep following the
+                    // global speed and pitch.
+                    db.execSQL(
+                        """
+                        CREATE TABLE IF NOT EXISTS `song_playback_params` (
+                            `song_id` INTEGER NOT NULL,
+                            `speed` REAL NOT NULL,
+                            `pitch` REAL NOT NULL,
+                            PRIMARY KEY(`song_id`)
                         )
                         """.trimIndent(),
                     )

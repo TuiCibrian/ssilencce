@@ -29,7 +29,9 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.ssilencce.extensions.isLandscape
 import com.ssilencce.ui.screen.equalizer.EqualizerViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.ui.theme.SsilencceTheme
+import org.koin.androidx.viewmodel.ext.android.activityViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
 /**
@@ -37,6 +39,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
  */
 class SoundSettingsFragment : BottomSheetDialogFragment() {
     private val viewModel: EqualizerViewModel by viewModel()
+    private val playerViewModel: PlayerViewModel by activityViewModel()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         val dialog = super.onCreateDialog(savedInstanceState)
@@ -59,7 +62,7 @@ class SoundSettingsFragment : BottomSheetDialogFragment() {
             )
             setContent {
                 SsilencceTheme {
-                    SoundSettingsSheet(viewModel)
+                    SoundSettingsSheet(viewModel, playerViewModel)
                 }
             }
         }

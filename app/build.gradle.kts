@@ -145,9 +145,16 @@ android {
     sourceSets {
         named("github") {
             kotlin.directories.add("src/shared/java")
+            kotlin.directories.add("src/cast/java")
+            manifest.srcFile("src/cast/AndroidManifest.xml")
         }
         named("fdroid") {
             kotlin.directories.add("src/shared/java")
+            kotlin.directories.add("src/nocast/java")
+        }
+        named("playstore") {
+            kotlin.directories.add("src/cast/java")
+            manifest.srcFile("src/cast/AndroidManifest.xml")
         }
     }
 
@@ -369,6 +376,10 @@ val ktlintFormat by tasks.registering(JavaExec::class) {
 }
 
 dependencies {
+    // Chromecast is only available in the GMS flavors; fdroid stays GMS-free.
+    "githubImplementation"(libs.media3.cast)
+    "playstoreImplementation"(libs.media3.cast)
+
     implementation(libs.material.components)
     implementation(libs.androidx.core)
     implementation(libs.androidx.core.splashscreen)

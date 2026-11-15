@@ -52,7 +52,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.ssilencce.R
-import com.ssilencce.core.model.tag.BatchWriteReport
+import com.ssilencce.core.model.tag.CoverWriteStatus
 import com.ssilencce.core.model.tag.FieldOperation
 import com.ssilencce.core.model.tag.FieldWriteResult
 import com.ssilencce.core.model.tag.FieldWriteStatus
@@ -68,17 +68,21 @@ fun BatchTagEditorScreen(
     onPerFileOperation: (Long, TagEditField, FieldOperation) -> Unit,
     onOpenPerFile: (TagEditField) -> Unit,
     onClosePerFile: () -> Unit,
+    onPickCover: () -> Unit,
+    onDeleteCover: () -> Unit,
+    onKeepCover: () -> Unit,
     onSave: () -> Unit,
     onStop: () -> Unit,
+    onUndo: () -> Unit,
     onClose: () -> Unit,
 ) {
-    val isWriting = state is BatchTagEditorUiState.Writing
+    val busy = state is BatchTagEditorUiState.Writing || state is BatchTagEditorUiState.Undoing
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.batch_tag_editor_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onClose, enabled = !isWriting) {
+                    IconButton(onClick = onClose, enabled = !busy) {
                         Icon(
                             painter = painterResource(R.drawable.ic_close_24dp),
                             contentDescription = stringResource(R.string.close_action),
@@ -103,7 +107,7 @@ fun BatchTagEditorScreen(
             }
 
             is BatchTagEditorUiState.Ready -> {
-                ReadyContent(state, contentPadding, onOperationChange, onOpenPerFile)
+                ReadyContent(state, contentPadding, onOperationChange, onOpenPerFile, onPickCover, onDeleteCover, onKeepCover)
                 state.perFileField?.let { field ->
                     PerFileFieldDialog(
                         field = field,
@@ -119,7 +123,15 @@ fun BatchTagEditorScreen(
             }
 
             is BatchTagEditorUiState.Result -> {
-                ResultContent(state.report, contentPadding, onClose)
+                ResultContent(state, contentPadding, onUndo, onClose)
+            }
+
+            is BatchTagEditorUiState.Undoing -> {
+                UndoProgressContent(state, contentPadding)
+            }
+
+            is BatchTagEditorUiState.Undone -> {
+                UndoneContent(state, contentPadding, onClose)
             }
 
             is BatchTagEditorUiState.Error -> {
@@ -170,6 +182,9 @@ private fun ReadyContent(
     contentPadding: PaddingValues,
     onOperationChange: (TagEditField, FieldOperation) -> Unit,
     onOpenPerFile: (TagEditField) -> Unit,
+    onPickCover: () -> Unit,
+    onDeleteCover: () -> Unit,
+    onKeepCover: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(contentPadding),
@@ -178,6 +193,14 @@ private fun ReadyContent(
     ) {
         item {
             SelectionHeader(state)
+        }
+        item {
+            BatchCoverCard(
+                cover = state.cover,
+                onPickCover = onPickCover,
+                onDeleteCover = onDeleteCover,
+                onKeepCover = onKeepCover,
+            )
         }
         items(state.fields, key = { it.field.name }) { fieldState ->
             BatchFieldEditor(
@@ -538,18 +561,34 @@ private fun BatchSaveBar(
         ) {
             Text(
                 text =
-                    if (state.changedFieldCount == 0) {
+                    if (!state.hasChanges) {
                         stringResource(R.string.batch_tag_editor_no_changes)
-                    } else {
+                    } else if (state.changedFieldCount > 0) {
                         stringResource(
                             R.string.batch_tag_editor_save_summary,
                             state.changedFieldCount,
                             state.readableCount,
                         )
+                    } else {
+                        stringResource(R.string.batch_tag_editor_cover_summary, state.readableCount)
                     },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            if (state.cover.hasChange && state.changedFieldCount > 0) {
+                Text(
+                    text =
+                        stringResource(
+                            if (state.cover.action == BatchCoverAction.DELETE) {
+                                R.string.batch_tag_editor_cover_will_remove
+                            } else {
+                                R.string.batch_tag_editor_cover_will_replace
+                            },
+                        ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             if (state.perFileOverrideCount > 0) {
                 Text(
                     text =
@@ -615,10 +654,12 @@ private fun WritingContent(
 
 @Composable
 private fun ResultContent(
-    report: BatchWriteReport,
+    state: BatchTagEditorUiState.Result,
     contentPadding: PaddingValues,
+    onUndo: () -> Unit,
     onClose: () -> Unit,
 ) {
+    val report = state.report
     LazyColumn(
         modifier = Modifier.fillMaxSize().padding(contentPadding),
         contentPadding = PaddingValues(16.dp),
@@ -643,6 +684,19 @@ private fun ResultContent(
                     ),
                 style = MaterialTheme.typography.bodyMedium,
             )
+            if (report.coverRequested) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text =
+                        stringResource(
+                            R.string.batch_tag_editor_result_cover_summary,
+                            report.coverWrittenFiles,
+                            report.coverDeletedFiles,
+                            report.coverFailedFiles,
+                        ),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
             Spacer(Modifier.height(4.dp))
             Text(
                 text =
@@ -663,14 +717,89 @@ private fun ResultContent(
         items(report.files, key = { "${it.songId}-${it.fileName}" }) { file ->
             FileReportCard(file)
         }
+        if (state.canUndo) {
+            item {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.batch_tag_editor_undo_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(4.dp))
+                Button(
+                    onClick = onUndo,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.batch_tag_editor_undo))
+                }
+            }
+        }
         item {
             Spacer(Modifier.height(8.dp))
-            Button(
+            TextButton(
                 onClick = onClose,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(stringResource(R.string.close_action))
             }
+        }
+    }
+}
+
+@Composable
+private fun UndoProgressContent(
+    state: BatchTagEditorUiState.Undoing,
+    contentPadding: PaddingValues,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        Spacer(Modifier.height(16.dp))
+        Text(
+            text = stringResource(R.string.batch_tag_editor_undoing, state.completed, state.total),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+        )
+    }
+}
+
+@Composable
+private fun UndoneContent(
+    state: BatchTagEditorUiState.Undone,
+    contentPadding: PaddingValues,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(contentPadding).padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text(
+            text = stringResource(R.string.batch_tag_editor_undone_title),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.batch_tag_editor_undone_summary, state.restored, state.failed),
+            style = MaterialTheme.typography.bodyMedium,
+            textAlign = TextAlign.Center,
+        )
+        if (state.failed > 0) {
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.batch_tag_editor_undone_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+            )
+        }
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = onClose, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.close_action))
         }
     }
 }
@@ -710,6 +839,25 @@ private fun FileReportCard(file: FileWriteReport) {
                     text = "${stringResource(field.labelRes)}: ${fieldOperationLabel(operation)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
+                )
+            }
+            if (file.coverStatus != CoverWriteStatus.KEPT) {
+                Text(
+                    text =
+                        stringResource(
+                            R.string.batch_tag_editor_field_status,
+                            stringResource(R.string.batch_tag_editor_cover),
+                            coverStatusLabel(file.coverStatus),
+                        ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color =
+                        if (file.coverStatus == CoverWriteStatus.WRITTEN ||
+                            file.coverStatus == CoverWriteStatus.DELETED
+                        ) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
                 )
             }
             file.fields.filter { it.isReportable() }.forEach { result ->
@@ -835,6 +983,16 @@ private fun fieldStatusLabel(status: FieldWriteStatus): String =
     }
 
 @Composable
+private fun coverStatusLabel(status: CoverWriteStatus): String =
+    when (status) {
+        CoverWriteStatus.KEPT -> stringResource(R.string.batch_tag_editor_cover_kept)
+        CoverWriteStatus.WRITTEN -> stringResource(R.string.batch_tag_editor_cover_written)
+        CoverWriteStatus.DELETED -> stringResource(R.string.batch_tag_editor_cover_deleted)
+        CoverWriteStatus.MISMATCH -> stringResource(R.string.batch_tag_editor_cover_mismatch)
+        CoverWriteStatus.NOT_ATTEMPTED -> stringResource(R.string.batch_tag_editor_cover_not_attempted)
+    }
+
+@Composable
 private fun detailLabel(detail: String): String =
     when (detail) {
         "missing" -> stringResource(R.string.batch_tag_editor_missing_file)
@@ -845,6 +1003,10 @@ private fun detailLabel(detail: String): String =
         "scan_failed" -> stringResource(R.string.batch_tag_editor_scan_failed)
         "no_changes" -> stringResource(R.string.batch_tag_editor_no_changes)
         "cancelled" -> stringResource(R.string.batch_tag_editor_file_cancelled)
+        "backup_failed" -> stringResource(R.string.batch_tag_editor_backup_failed)
+        "rolled_back" -> stringResource(R.string.batch_tag_editor_rolled_back)
+        "rollback_failed" -> stringResource(R.string.batch_tag_editor_rollback_failed)
+        "write_failed" -> stringResource(R.string.batch_tag_editor_write_failed)
         else -> stringResource(R.string.batch_tag_editor_unknown_detail)
     }
 

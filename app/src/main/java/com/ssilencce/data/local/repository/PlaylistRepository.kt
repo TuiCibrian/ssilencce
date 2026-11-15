@@ -37,6 +37,7 @@ import com.ssilencce.data.model.Playlist
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.utilities.mapIfValid
 import com.ssilencce.extensions.utilities.takeOrDefault
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.cursor.SortedCursorUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -134,6 +135,8 @@ interface PlaylistRepository {
     suspend fun deleteSongsFromPlaylist(songs: List<SongEntity>)
 
     suspend fun deleteSongsFromAllPlaylists(songsIds: List<Long>)
+
+    suspend fun countSongsInAllPlaylists(songsIds: List<Long>): Int
 }
 
 class RealPlaylistRepository(
@@ -211,29 +214,33 @@ class RealPlaylistRepository(
 
     override suspend fun playlistsWithSongs(sorted: Boolean): List<PlaylistWithSongs> =
         playlistDao.playlistsWithSongs().let { playlistWithSongs ->
+            val visiblePlaylists = playlistWithSongs.map { it.withoutGhostSongs() }
             if (sorted) {
                 with(PlaylistSortMode.AllPlaylists) {
-                    playlistWithSongs.sorted()
+                    visiblePlaylists.sorted()
                 }
             } else {
-                playlistWithSongs
+                visiblePlaylists
             }
         }
 
-    override suspend fun playlistWithSongs(playlistId: Long): PlaylistWithSongs = playlistDao.playlistWithSongs(playlistId) ?: PlaylistWithSongs.Empty
+    override suspend fun playlistWithSongs(playlistId: Long): PlaylistWithSongs = playlistDao.playlistWithSongs(playlistId)?.withoutGhostSongs() ?: PlaylistWithSongs.Empty
 
-    override fun playlistWithSongsObservable(playlistId: Long): LiveData<PlaylistWithSongs> = playlistDao.playlistWithSongsObservable(playlistId).map { result -> result ?: PlaylistWithSongs.Empty }
+    override fun playlistWithSongsObservable(playlistId: Long): LiveData<PlaylistWithSongs> =
+        playlistDao.playlistWithSongsObservable(playlistId).map { result ->
+            result ?: PlaylistWithSongs.Empty
+        }
 
-    override suspend fun playlistSongs(playlistId: Long): List<SongEntity> = playlistDao.songsFromPlaylist(playlistId)
+    override suspend fun playlistSongs(playlistId: Long): List<SongEntity> = GhostMode.filterSongEntities(playlistDao.songsFromPlaylist(playlistId))
 
     override fun playlistSongsObservable(playListId: Long): LiveData<List<SongEntity>> = playlistDao.songsFromPlaylistObservable(playListId)
 
-    override suspend fun searchPlaylists(searchQuery: String): List<PlaylistWithSongs> = playlistDao.searchPlaylists("%$searchQuery%")
+    override suspend fun searchPlaylists(searchQuery: String): List<PlaylistWithSongs> = playlistDao.searchPlaylists("%$searchQuery%").map { it.withoutGhostSongs() }
 
     override suspend fun searchPlaylistSongs(
         playlistId: Long,
         searchQuery: String,
-    ): List<SongEntity> = playlistDao.searchSongs(playlistId, "%$searchQuery%")
+    ): List<SongEntity> = GhostMode.filterSongEntities(playlistDao.searchSongs(playlistId, "%$searchQuery%"))
 
     override suspend fun insertSongs(songs: List<SongEntity>) {
         playlistDao.insertSongsToPlaylist(songs)
@@ -266,7 +273,7 @@ class RealPlaylistRepository(
         val favorite = context.getString(R.string.favorites_label)
         val favoritesPlaylist = playlistDao.playlist(favorite)
         return if (favoritesPlaylist.isNotEmpty()) {
-            playlistDao.favoritesSongs(favoritesPlaylist.single().playListId).toSongs()
+            GhostMode.filterSongs(playlistDao.favoritesSongs(favoritesPlaylist.single().playListId).toSongs())
         } else {
             emptyList()
         }
@@ -275,7 +282,7 @@ class RealPlaylistRepository(
     override fun favoriteSongsFlow(): Flow<List<Song>> =
         playlistDao.favoritesSongsFlow(context.getString(R.string.favorites_label)).map {
             withContext(Dispatchers.Default) {
-                it.toSongs()
+                GhostMode.filterSongs(it.toSongs())
             }
         }
 
@@ -373,6 +380,18 @@ class RealPlaylistRepository(
         songsIds.chunked(MAX_ITEMS_PER_CHUNK).forEach { chunkIds ->
             playlistDao.deleteSongsFromAllPlaylists(chunkIds)
         }
+    }
+
+    override suspend fun countSongsInAllPlaylists(songsIds: List<Long>): Int {
+        if (songsIds.isEmpty()) return 0
+        return songsIds.chunked(MAX_ITEMS_PER_CHUNK).sumOf { chunkIds ->
+            playlistDao.countSongsInAllPlaylists(chunkIds)
+        }
+    }
+
+    private fun PlaylistWithSongs.withoutGhostSongs(): PlaylistWithSongs {
+        val visibleSongs = GhostMode.filterSongEntities(songs)
+        return if (visibleSongs.size == songs.size) this else copy(songs = visibleSongs)
     }
 
     @Suppress("DEPRECATION")

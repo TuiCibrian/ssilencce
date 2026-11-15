@@ -26,6 +26,7 @@ import androidx.navigation.contains
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.FragmentNavigator
 import androidx.navigation.fragment.FragmentNavigatorExtras
+import com.ssilencce.core.model.ArtistNamePolicy
 import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.data.SearchFilter
 import com.ssilencce.data.model.*
@@ -103,18 +104,27 @@ fun artistDetailArgs(artist: Artist) =
     }
 
 fun artistDetailArgs(album: Album) =
-    if (Preferences.onlyAlbumArtists && !album.albumArtistName.isNullOrEmpty()) {
+    if (shouldUseAlbumArtist(album.safeGetFirstSong().artistName, album.albumArtistName)) {
         artistDetailArgs(-1, album.albumArtistName)
     } else {
         artistDetailArgs(album.artistId, null)
     }
 
 fun artistDetailArgs(song: Song) =
-    if (Preferences.onlyAlbumArtists && !song.albumArtistName.isNullOrEmpty()) {
+    if (shouldUseAlbumArtist(song.artistName, song.albumArtistName)) {
         artistDetailArgs(-1, song.albumArtistName)
     } else {
         artistDetailArgs(song.artistId, null)
     }
+
+private fun shouldUseAlbumArtist(
+    artistName: String?,
+    albumArtistName: String?,
+): Boolean {
+    if (albumArtistName.isNullOrEmpty()) return false
+    return Preferences.onlyAlbumArtists ||
+        (Preferences.useAlbumArtistIfArtistMissing && ArtistNamePolicy.isMissing(artistName))
+}
 
 fun artistDetailArgs(
     artistId: Long,

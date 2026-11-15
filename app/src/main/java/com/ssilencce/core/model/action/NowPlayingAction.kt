@@ -36,6 +36,14 @@ enum class NowPlayingAction(
         iconRes = R.drawable.ic_edit_note_24dp,
         titleRes = R.string.action_lyrics_editor,
     ),
+    AddBookmark(
+        iconRes = R.drawable.ic_bookmark_24dp,
+        titleRes = R.string.action_add_bookmark,
+    ),
+    SongNotes(
+        iconRes = R.drawable.ic_edit_note_24dp,
+        titleRes = R.string.action_song_notes,
+    ),
     AddToPlaylist(
         iconRes = R.drawable.ic_playlist_add_24dp,
         titleRes = R.string.action_add_to_playlist,
@@ -87,6 +95,10 @@ enum class NowPlayingAction(
     SeekForward(
         iconRes = R.drawable.ic_fast_forward_24dp,
         titleRes = R.string.action_seek_forward,
+    ),
+    ShowFullScreenArt(
+        iconRes = R.drawable.ic_open_in_full_24dp,
+        titleRes = R.string.action_view_full_art,
     ),
     Nothing(
         iconRes = R.drawable.ic_close_24dp,

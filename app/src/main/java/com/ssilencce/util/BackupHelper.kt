@@ -24,6 +24,7 @@ import android.util.Log
 import androidx.annotation.StringRes
 import androidx.preference.PreferenceManager
 import com.ssilencce.R
+import com.ssilencce.data.local.notes.SongNotesRepository
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.local.room.LyricsDao
 import com.ssilencce.data.local.room.LyricsEntity
@@ -32,6 +33,8 @@ import com.ssilencce.data.local.room.NamedQueueEntity
 import com.ssilencce.data.local.room.NamedQueueItemEntity
 import com.ssilencce.data.local.room.PlayCountDao
 import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.local.room.SongPlaybackParamDao
+import com.ssilencce.data.local.room.SongPlaybackParamEntity
 import com.ssilencce.data.local.room.TrackPositionDao
 import com.ssilencce.data.mapper.toSongEntity
 import com.ssilencce.data.model.Song
@@ -40,6 +43,7 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.util.backup.BackupArchivePolicy
 import com.ssilencce.util.backup.NamedQueueBackupEntry
 import com.ssilencce.util.backup.PlayCountBackupEntry
+import com.ssilencce.util.backup.SongPlaybackParamBackupEntry
 import com.ssilencce.util.backup.TrackPositionBackupEntry
 import com.ssilencce.util.backup.toBackupEntry
 import com.ssilencce.util.backup.toEntity
@@ -75,7 +79,9 @@ object BackupHelper : KoinComponent {
     private val lyricsDao by inject<LyricsDao>()
     private val playCountDao by inject<PlayCountDao>()
     private val trackPositionDao by inject<TrackPositionDao>()
+    private val songPlaybackParamDao by inject<SongPlaybackParamDao>()
     private val namedQueueDao by inject<NamedQueueDao>()
+    private val songNotesRepository by inject<SongNotesRepository>()
 
     // Backups may come from other builds of the app; unknown fields must not abort a restore.
     private val json = Json { ignoreUnknownKeys = true }
@@ -116,8 +122,10 @@ object BackupHelper : KoinComponent {
                 zipItems.addAll(getPlayCountZipItems())
                 zipItems.addAll(getNamedQueueZipItems())
                 zipItems.addAll(getTrackPositionZipItems())
+                zipItems.addAll(getSongPlaybackParamsZipItems())
                 zipItems.addAll(getSettingsZipItems(context))
                 zipItems.addAll(getLyricsZipItems())
+                zipItems.addAll(getNotesZipItems())
                 zipItems.addAll(getCustomArtistZipItems(context))
                 val outputStream = context.contentResolver.openOutputStream(uri) ?: throw FileNotFoundException()
                 zipAll(context.getString(R.string.app_name), zipItems, outputStream)
@@ -248,6 +256,13 @@ object BackupHelper : KoinComponent {
         return listOf(ZipItem(TRACK_POSITIONS_PATH.child(TRACK_POSITIONS_FILE), fileContent = serialized))
     }
 
+    private suspend fun getSongPlaybackParamsZipItems(): List<ZipItem> {
+        val params = songPlaybackParamDao.all()
+        if (params.isEmpty()) return emptyList()
+        val serialized = json.encodeToString(params.map { it.toBackupEntry() })
+        return listOf(ZipItem(SONG_PLAYBACK_PARAMS_PATH.child(SONG_PLAYBACK_PARAMS_FILE), fileContent = serialized))
+    }
+
     private suspend fun getLyricsZipItems(): List<ZipItem> {
         val allLyrics = lyricsDao.getAllLyrics()
         if (allLyrics.isNotEmpty()) {
@@ -255,6 +270,11 @@ object BackupHelper : KoinComponent {
         }
         return emptyList()
     }
+
+    private fun getNotesZipItems(): List<ZipItem> =
+        songNotesRepository.noteFiles().map { noteFile ->
+            ZipItem(NOTES_PATH.child(noteFile.name), noteFile.absolutePath)
+        }
 
     private fun getSettingsZipItems(context: Context): List<ZipItem> {
         val sharedPrefPath = File(context.filesDir.parentFile, "shared_prefs")
@@ -332,7 +352,10 @@ object BackupHelper : KoinComponent {
                                 RestoreEntryKind.PlayCounts,
                                 RestoreEntryKind.Queues,
                                 RestoreEntryKind.PerFileSettings,
+                                RestoreEntryKind.SongPlaybackParams,
                                 -> MAX_JSON_ENTRY_BYTES
+
+                                RestoreEntryKind.Notes -> MAX_NOTE_ENTRY_BYTES
 
                                 else -> MAX_SINGLE_ENTRY_BYTES
                             }
@@ -375,6 +398,12 @@ object BackupHelper : KoinComponent {
                                     }
                                 }
 
+                                RestoreEntryKind.SongPlaybackParams -> {
+                                    if (selected) {
+                                        summary.recordRestoreResult(restoreSongPlaybackParams(entryStream))
+                                    }
+                                }
+
                                 RestoreEntryKind.Settings -> {
                                     if (selected) {
                                         val imported =
@@ -393,6 +422,12 @@ object BackupHelper : KoinComponent {
                                     // An empty lyrics cache is a valid backup no-op, not a failure.
                                     if (selected && restoreLyrics(entryStream)) {
                                         summary.recordImport()
+                                    }
+                                }
+
+                                RestoreEntryKind.Notes -> {
+                                    if (selected) {
+                                        summary.recordRestoreResult(restoreNoteFile(entryStream, entry))
                                     }
                                 }
 
@@ -453,6 +488,31 @@ object BackupHelper : KoinComponent {
         if (lyrics.isEmpty()) return false
         lyricsDao.insertLyrics(lyrics)
         return true
+    }
+
+    private suspend fun restoreNoteFile(
+        zipIn: InputStream,
+        zipEntry: ZipEntry,
+    ): RestoreApplyResult {
+        val fileName =
+            try {
+                zipEntry.requireSafeFileName()
+            } catch (error: IOException) {
+                return RestoreApplyResult(failed = true)
+            }
+        if (!songNotesRepository.isNoteFileName(fileName)) {
+            return RestoreApplyResult(failed = true)
+        }
+        val directory = songNotesRepository.notesDirectory()
+        if (!directory.isDirectory && !directory.mkdirs()) {
+            return RestoreApplyResult(failed = true)
+        }
+        val target = File(directory, fileName)
+        return if (restoreFileAtomically(target, zipIn, zipEntry.name)) {
+            RestoreApplyResult(imported = true)
+        } else {
+            RestoreApplyResult(failed = true)
+        }
     }
 
     private suspend fun restorePreferences(
@@ -973,6 +1033,30 @@ object BackupHelper : KoinComponent {
         return RestoreApplyResult(imported = true)
     }
 
+    private suspend fun restoreSongPlaybackParams(zipIn: InputStream): RestoreApplyResult {
+        val entries =
+            try {
+                json.decodeFromString<List<SongPlaybackParamBackupEntry>>(zipIn.bufferedReader().readText())
+            } catch (error: SerializationException) {
+                Log.e(TAG, "Invalid per-song playback-parameters backup entry", error)
+                return RestoreApplyResult(failed = true)
+            }
+        if (entries.isEmpty()) return RestoreApplyResult()
+        val validEntries =
+            entries
+                .distinctBy { it.songId }
+                .filter { entry ->
+                    entry.songId > 0L &&
+                        entry.speed.isFinite() &&
+                        entry.speed in MIN_SONG_TEMPO..MAX_SONG_TEMPO &&
+                        entry.pitch.isFinite() &&
+                        entry.pitch in MIN_SONG_TEMPO..MAX_SONG_TEMPO
+                }
+        if (validEntries.isEmpty()) return RestoreApplyResult()
+        songPlaybackParamDao.upsertAll(validEntries.map { it.toEntity() })
+        return RestoreApplyResult(imported = true)
+    }
+
     private suspend fun restoreCustomArtistImages(
         context: Context,
         zipIn: InputStream,
@@ -1094,10 +1178,16 @@ object BackupHelper : KoinComponent {
     private const val NAMED_QUEUES_FILE = BackupArchivePolicy.NAMED_QUEUES_FILE
     private const val TRACK_POSITIONS_PATH = BackupArchivePolicy.TRACK_POSITIONS_PATH
     private const val TRACK_POSITIONS_FILE = BackupArchivePolicy.TRACK_POSITIONS_FILE
+    private const val SONG_PLAYBACK_PARAMS_PATH = BackupArchivePolicy.SONG_PLAYBACK_PARAMS_PATH
+    private const val SONG_PLAYBACK_PARAMS_FILE = BackupArchivePolicy.SONG_PLAYBACK_PARAMS_FILE
+    private const val NOTES_PATH = BackupArchivePolicy.NOTES_PATH
+    private const val MIN_SONG_TEMPO = .5f
+    private const val MAX_SONG_TEMPO = 2f
     private const val MAX_BACKUP_ENTRIES = 1000
     private const val MAX_BACKUP_UNCOMPRESSED_BYTES = 100L * 1024 * 1024
     private const val MAX_SINGLE_ENTRY_BYTES = MAX_BACKUP_UNCOMPRESSED_BYTES
     private const val MAX_JSON_ENTRY_BYTES = 10L * 1024 * 1024
+    private const val MAX_NOTE_ENTRY_BYTES = 1L * 1024 * 1024
     private const val MAX_SETTINGS_ENTRY_BYTES = 1L * 1024 * 1024
     private const val MAX_PREFERENCE_KEYS = 1000
     private const val MAX_PREFERENCE_KEY_CHARS = 256
@@ -1118,6 +1208,8 @@ object BackupHelper : KoinComponent {
             RestoreEntryKind.PlayCounts -> BackupContent.PlayCounts in contents
             RestoreEntryKind.Queues -> BackupContent.Queues in contents
             RestoreEntryKind.PerFileSettings -> BackupContent.PerFileSettings in contents
+            RestoreEntryKind.SongPlaybackParams -> BackupContent.PlaybackParams in contents
+            RestoreEntryKind.Notes -> BackupContent.Notes in contents
             RestoreEntryKind.Unrecognized -> false
         }
 
@@ -1183,6 +1275,8 @@ enum class BackupContent(
     PlayCounts(R.string.backup_play_counts),
     Queues(R.string.backup_queues),
     PerFileSettings(R.string.backup_per_file_settings),
+    PlaybackParams(R.string.backup_playback_params),
     Lyrics(R.string.backup_synced_lyrics),
+    Notes(R.string.backup_notes),
     ArtistImages(R.string.backup_artist_images),
 }

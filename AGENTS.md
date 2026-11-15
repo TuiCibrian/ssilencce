@@ -48,71 +48,76 @@ Package-level map (condensed). Full per-file analysis: see `docs/CODE_MAP.md`.
 All paths are relative to `app/src/main/java/com/ssilencce/` unless stated otherwise.
 
 ### Root & Build Configuration
-- `app/build.gradle.kts` — Flavors (github/fdroid/playstore), semantic `Version` classes, signing, ABI splits, Last.fm key injection, CI APK naming with git hash, WorkManager runtime for scheduled backups.
+- `app/build.gradle.kts` — Flavors (github/fdroid/playstore), semantic `Version` classes, signing, ABI splits, Last.fm key injection, CI APK naming with git hash, WorkManager runtime for scheduled backups/statistics CSV, per-flavor Chromecast source sets (`src/cast` for github/playstore, `src/nocast` for fdroid) and `media3-cast` dependencies (same media3 version).
 - `build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml` — Plugin declarations, repository/module setup, version catalog.
 - `public.properties` — Per-flavor public config (download/donation URLs, lyrics API endpoints).
-- `app/src/main/AndroidManifest.xml` — Permissions, activities, `PlaybackService` (MediaLibraryService), `PlaybackTileService` (Quick Settings), widget receivers, FileProvider/CoverProvider, Android Auto.
+- `app/src/main/AndroidManifest.xml` — Permissions (`SET_WALLPAPER`, `WRITE_SETTINGS`), activities (`AudioCutterActivity`, `MiniPlayerActivity` with audio VIEW filters, `SetupWizardActivity`, `LockScreenPlayerActivity`), `PlaybackService` (MediaLibraryService), `PlaybackTileService` (Quick Settings), widget receivers, FileProvider/CoverProvider, Android Auto.
 - `metadata/`, `assets/`, `.github/workflows/` — Store listings (37 locales), store badges, CI/release pipelines.
 
 ### core/ — Base, models & widgets
-- `core/SsilencceDatabase.kt` — Room database (v8) with 11 entities, 9 DAOs and migrations through 7→8.
+- `core/SsilencceDatabase.kt` — Room database (v9) with 12 entities, 10 DAOs and migrations through 8→9.
 - `core/appwidgets/` — 3 Glance widgets (SsilencceGlanceWidget/CardWidget/FullWidget) + receivers + serialized `PlaybackState` in DataStore, per-widget System/AlbumArt/Wallpaper settings and config (`WidgetSettings`, `WallpaperThemeProvider`, `WidgetConfigActivity`).
-- `core/audio/` — `AudioOutputObserver` (audio device/volume/bit-perfect flows), `AutoEqTxtParser`.
-- `core/model/` — Domain models: action/, audiodevice/, equalizer/ (incl. AutoEq), filesystem/, list/ (SongListDisplayPolicy), lyrics/, player/, shuffle/, sort/, task/, theme/, plus CategoryInfo, ComposerNamePolicy, GenreSubcategory, MediaEvent, NotPlayedDaysPolicy, PaletteColor, GridViewType.
+- `core/audio/` — `AudioOutputObserver` (audio device/volume/mute/bit-perfect flows), `AutoEqTxtParser`.
+- `core/model/` — Domain models: action/ (incl. QuickAccessAction), audiodevice/ (incl. cast/remote MediaRouter route type), equalizer/ (AutoEq, ISO band tables/resampler, system-equalizer hand-off, reverb), filesystem/ (FolderInfo), list/, lockscreen/, lyrics/, menu/ (entity menu catalog), player/ (notification button/style), shuffle/ (three-state model and behavior), sort/, tag/ (batch cover), task/, theme/, plus ArtistNamePolicy, CategoryInfo, ComposerNamePolicy, GenreSubcategory, MediaEvent, MediaItemExtras, NotPlayedDaysPolicy, PaletteColor, GridViewType.
 - `core/palette/PaletteProcessor.kt` — Cover color extraction (QuantizerCelebi + Palette).
-- `core/sort/` — Locale-aware sorting (SortCollator, SortMode).
+- `core/sort/` — Locale-aware sorting (SortCollator, SortMode, SongPlayStatisticsCache).
 
 ### data/ — Data, repositories & network
-- `data/model/` — Song/Album/Artist/Genre/GenreContent/Playlist/Folder/ReleaseYear, ListeningPeriod/ArtistPlayStat + lyrics/, network/, replaygain/, search/ models.
-- `data/local/` - MediaStore layer (MediaQueryDispatcher, MediaStoreObserver/Writer), MetadataReader/Writer (TagLib), TagWriteVerifier (batch read-back field verifier), ReplayGainTagExtractor + `replaygain/` (BS.1770 analyzer, MediaExtractor/MediaCodec decoder with AAC encoder-delay handling, alias/malformed-safe tag resolver, album scanner with write-failure rollback, verified tag writer with explicit WAV RIFF ID3v2 codec and MP4 freeform support); lyrics parsers (LRC + TTML) and InstrumentalDetector.
-- `data/local/room/` — 11 entities + 9 DAOs (playlists, queue, play counts, history, lyrics cache, include/exclude, play events, track positions, named queues) and the PlaylistWithSongs relation.
-- `data/local/repository/` — `Repository` interface + implementations (Song/Album/Artist/Genre/Playlist/Search/Smart/Special/Lyrics/Network) + `NamedQueueRepository` for named-queue snapshots.
+- `data/model/` — Song (disc number, resolved artist, MIME)/Album/Artist (fallback name/stable id)/Genre/GenreContent/Playlist/Folder/ReleaseYear, ListeningPeriod/ArtistPlayStat, ExtraFormatUriStore, lyrics/ (incl. source selection), notes/ (SongNotes + codec), network/, replaygain/, search/ models.
+- `data/local/` - MediaStore layer (MediaQueryDispatcher, MediaStoreObserver/Writer), MetadataReader/Writer (TagLib, batch cover/rollback), BatchWriteJournal, TagWriteVerifier, ReplayGainTagExtractor + `replaygain/`; lyrics parsers (LRC + TTML), InstrumentalDetector, lyrics source store; `notes/` — file-backed per-song notes and bookmarks (`notes/<song id> - <title>.txt`), atomic writes and backup file listing; `extra/` — opt-in AIFF/DSD supplementary index and header probe; `audio/clip/` — lossless audio range export (`AudioClipExporter`, `Mp3RawTrimmer`), clip naming/format models and `RingtoneClipStore`; `LibraryRescan` (chosen-folder MediaScanner rescan with process-scoped debounce) and `MediaMountRescanReceiver`.
+- `data/local/room/` — 12 entities + 10 DAOs (playlists, queue, play counts, history, lyrics cache, include/exclude, play events, track positions, named queues, song_playback_params) and the PlaylistWithSongs relation; `SongPlayStatistics` projection.
+- `data/local/repository/` — `Repository` interface + implementations (Song/Album/Artist/Genre/Playlist/Search/Smart/Special/Lyrics/Network) + `NamedQueueRepository`, `NamedQueueMaintenancePolicy` (append-merge/LRU eviction) and `MissingSongsCleanup`; song/playlist/history/genre queries apply the ghost filter centrally and merge extra-format songs.
 - `data/local/search/` — Search filters (Smart/Basic/LastAdded) + mappers.
 - `data/remote/` — KtorClient (10 MB cache), Deezer, GitHub (updater), Last.fm, ListenBrainz, MusicBrainz, lyrics APIs (Lyrically/BetterLyrics/LRCLib).
 - `src/shared/` vs `src/playstore/` — `PaxsenixSearchHelper`: real iTunes Search client (github/fdroid) vs null stub (playstore).
 
 ### playback/ — Playback engine
-- `playback/PlaybackService.kt` — Core: MediaLibraryService owning ExoPlayer, MediaSession, equalizer, notifications, Bluetooth, widgets, audio focus and session recovery.
-- `playback/` resilience — `AudioFocusController` (Normal/Ignore/Ask/ResumeAfterCall, pending-ask cleanup, ducking), `PlaybackTileService` (Quick Settings), ordered non-blocking `TrackPositionWriter`, bounded `SESSION_RECOVERY`.
-- Queue/persistence: AdvancedForwardingPlayer (explicit playback-intent gate), ImprovedShuffleOrder, PersistentStorage + application-owned PlaybackStateWriter (ordered active/named snapshots and restore barrier), ProgressObserver, SleepTimer, Playback(+Extension).
-- `playback/equalizer/` — EqualizerManager + engines (BasicEQEngine, DynamicsProcessingEngine).
-- `playback/processor/` + `playback/renderer/` — Balance/ReplayGain audio processors injected into DefaultAudioSink; ALAC codec workaround.
-- `playback/library/` + `playback/shuffle/` — MediaItem resolution (incl. AAOS), smart shuffle modes.
+- `playback/PlaybackService.kt` — Core: MediaLibraryService owning the active local or Cast session player, MediaSession, equalizer, notifications, Bluetooth, widgets, audio focus, sleep timer, crossfade, A-B repeat and session recovery.
+- `playback/` resilience — `AudioFocusController` (Normal/Ignore/Ask/ResumeAfterCall, pending-ask cleanup, ducking), `PlaybackTileService` (Quick Settings), ordered non-blocking `TrackPositionWriter`, bounded `SESSION_RECOVERY`, `ResumeAutoplayPolicy`, `PlaybackVolumeController` + `PlaybackFadeController` (fade-in/out and duck/equalizer/crossfade volume composition), song-count/stop-after-song sleep timer with persisted recent timers and a foreground-only stop policy, dynamic screen-off trigger (only while the active player is playing) feeding the lock-screen player, `RepeatPolicy` (off/all/one/load-next-and-pause), `ShuffleCyclePolicy`, `ShuffleStateHolder`.
+- Queue/persistence: AdvancedForwardingPlayer (explicit playback-intent gate, mute/fade/crossfade hooks), ImprovedShuffleOrder, `RandomizeShuffleOrder`, PersistentStorage + application-owned PlaybackStateWriter (ordered active/named snapshots and restore barrier), ProgressObserver, SleepTimer, Playback(+Extension).
+- `playback/crossfade/` — `CrossfadeController` (dual-player equal-power crossfade, manual-skip interception, main-player commit), `CrossfadePlayer` (secondary ExoPlayer mirroring renderers and audio session, no wake lock/focus) and `GaplessAlbumDetector`.
+- `playback/cast/` — Flavor-agnostic `CastPlayback` contract (main) plus the real `CastPlayer` + Cast SDK session + embedded LAN HTTP server implementation (`src/cast`, github/playstore) and the GMS-free no-op provider (`src/nocast`, fdroid).
+- `playback/notification/` — custom Media3 system provider (configurable buttons, ghost masking), lock-screen artwork policy and opt-in RemoteViews notification styles.
+- `playback/equalizer/` — EqualizerManager + engines (BasicEQEngine, DynamicsProcessingEngine) with 3/5/10/15/31-band resampling, system EQ hand-off and session-bound environmental reverb controller.
+- `playback/processor/` + `playback/renderer/` — Balance, runtime stereo/mono downmix and ReplayGain processors injected into DefaultAudioSink; gapless gate; ALAC codec workaround.
+- `playback/extractor/` — AIFF/DSD extra extractors, DSD decimator, FFmpeg capability probe and extra-format support.
+- `playback/library/` + `playback/shuffle/` — MediaItem resolution (incl. AAOS, folders, composers and current queue), Auto media buttons and smart shuffle modes.
 
 ### coil/ — Image loading
-- Fetchers: AudioCoverFetcher, ArtistImageFetcher, AutoGeneratedImageFetcher (mosaics), PlaylistImageFetcher.
+- Fetchers: AudioCoverFetcher, ArtistImageFetcher, AutoGeneratedImageFetcher (mosaics), PlaylistImageFetcher (all respect disable-album-art).
 - CoverProvider (content:// URIs), CustomArtistImageManager, CustomPlaylistImageManager, KeyerStore/MapperStore, bitmap loader for notifications.
 
 ### util/ and extensions/
-- `util/Preferences.kt` — Central typed access to all app settings (incl. audio-focus mode, per-track resume, session recovery, active named queue).
-- BackupHelper (ZIP backup/restore, strict playlist-write failures, valid empty-playlist entries, structured `createBackupFile` results, RestoreSummary), `util/backup/` (WorkManager scheduled backups), MusicUtil (batch delete), CryptoUtil (Keystore AES), StorageUtil, ShortcutHelper (dynamic entity shortcuts), m3u/ (staged M3U/M3U8/PLS export), cursor/, oem/ (MIUI/Samsung output switcher).
-- `extensions/` — Activity, Fragment, Context, files/ (File, SAF), media/, navigation/, resources/ (Color/Drawable/View), utilities/.
+- `util/Preferences.kt` — Central typed access to all app settings (incl. audio-focus mode, per-track resume, session recovery, active named queue, transport/fade/crossfade, notification layout/style, ghost mode, lock screen, extra-format scan and shuffle behavior).
+- BackupHelper (ZIP backup/restore, per-song playback params, song notes `notes/*.txt`, strict playlist-write failures, valid empty-playlist entries, structured `createBackupFile` results, RestoreSummary), `util/backup/` (WorkManager scheduled backups), MusicUtil (batch delete), CryptoUtil (Keystore AES), StorageUtil, ShortcutHelper (dynamic entity shortcuts), m3u/ (staged M3U/M3U8/PLS export), cursor/, oem/ (MIUI/Samsung output switcher, `PowerManagementGuide`, `LockScreenPermissionGuide`), `AppVisibility`, `GhostMode`, `FolderInfoProvider`, `FolderFileOperations`.
+- `extensions/` — Activity, Fragment, Context, files/ (File, SAF incl. ordered path resolution/display names), media/, navigation/, resources/ (Color/Drawable/View), utilities/.
 
 ### App entry points
-- `App.kt` — Application: Koin startup, default preferences, crash handler, custom Coil ImageLoader.
-- `MainModule.kt` — All Koin DI modules (services, database, repositories, playback, ViewModels).
+- `App.kt` — Application: Koin startup, default preferences, crash handler, custom Coil ImageLoader, new-install wizard flag, process-scoped media-mount rescan receiver and AppVisibility registration.
+- `MainModule.kt` — All Koin DI modules (services, database v9, repositories, playback, ViewModels, audio clip export/ringtone store, screencast manager, setup wizard).
 - `MediaControllerOwner.kt` — Lifecycle-aware MediaController for the PlaybackService MediaSession.
 
 ### ui/ — Components, adapters & theme
 - `ui/adapters/` — Adapter per entity (song/album/artist/genre/playlist/year/file/search/home) with multi-select (CAB).
 - `ui/component/base/` — Base activities/fragments (AbsSlidingMusicPanelActivity, AbsRecyclerViewFragment with quick-search host, AbsPlayerFragment, AbsTagEditorActivity...) and the QuickSearchable contract.
-- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText), menus, sliders, preferences, QuickSearchBar.
-- `ui/component/views/` — Legacy views (MusicSlider, MorphicIconButton, SquigglyProgress...).
+- `ui/component/compose/` — Reusable composables, incl. lyrics views (LyricsView, KaraokeStyleText, LyricsSelectionBar), QuickAccessRow, AbRepeatChip, menus, sliders, preferences, QuickSearchBar.
+- `ui/component/views/` — Legacy views (MusicSlider with thumb-only mode, MorphicIconButton, SquigglyProgress...).
 - `ui/component/compose/aurora/` — Optional Aurora ribbon, six-destination navigation, grouped vector-mark drawer (Library/Discover/Sound & system), home actions and explicit unavailable states; `ui/theme/AuroraDesign.kt`, `AuroraLegacyStyling.kt` and `AuroraHeaderScroll.kt` bridge monochrome styling and the floating header treatment to both UI stacks (ADR-036, ADR-037).
 - `ui/component/transform/` — 10 ViewPager PageTransformers (carousel, depth, flips, stack...).
-- `ui/component/preferences/` — Custom preferences + Compose preference dialogs.
+- `ui/component/preferences/` — Custom preferences + Compose preference dialogs (menu customization, notification layout/background, quick access).
 - `ui/dialogs/` — Playlist, delete-songs, SAF, folder-chooser, multi-check dialogs.
-- `ui/theme/` — SsilencceTheme, static M3 palettes, typography, Monet dynamic schemes.
+- `ui/theme/` — SsilencceTheme (custom accent), static M3 palettes, typography, Monet dynamic schemes.
 
 ### ui/screen/ — Screens
-- `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
-- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`; seven top-level lists implement inline quick search; album list filters by composer on API 30+, genre detail offers Songs/Albums/Artists subcategories, and Not Recently Played exposes an arbitrary 1–3650-day threshold with history-interval fallback.
-- player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment; named-queue CRUD and audio-focus session commands.
+- `MainActivity.kt` (NavHost, playback intents, shortcuts, first-run setup-wizard gate) + `PermissionsActivity.kt`.
+- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`; seven top-level lists implement inline quick search; album list filters by composer on API 30+, multi-disc album detail, genre detail offers Songs/Albums/Artists subcategories, and Not Recently Played exposes an arbitrary 1–3650-day threshold with history-interval fallback; folders/ has info/create/rename/exclude/move/copy/hide dialogs.
+- player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles, each with controls fragment; named-queue CRUD/merge, A-B repeat, per-song tempo, seek helpers, artwork/share actions, screencast (`player/screencast/` Presentation-based external display), cast/screencast overflow and audio-focus session commands.
 - player/aurora/ — Compose Aurora chrome for the same seven saved styles, reusing the native cover pager, gestures, ViewModel and inherited song actions; non-Aurora players remain available.
-- lyrics/, queue/ (named queues, queue-local search, configurable Queues category browser), settings/ (settings search, scheduled-backup sheet), equalizer/, replaygain/ (Compose calculation confirmation/progress/result), tageditor/ (single-song/album/artist editors, LegacyTagAggregator, and the multi-select batch tag editor with per-file values and cooperative stop), sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes, detail lists with period stats/history removal), error/ (crash handler).
+- lyrics/ (select-lines multi-select/copy/share, per-song source picker, manual LRC sync), queue/ (named queues, merge/eviction, queue-local search, configurable Queues category browser), settings/ (settings search, scheduled-backup/statistics sheets, notification style/background, menu customization, quick access, lock screen, ghost mode, setup wizard, rescan, remove missing songs, battery guide, accent color), equalizer/ (system card, reverb card, ReplayGain extras), replaygain/, tageditor/ (single-song editor, LegacyTagAggregator, and the multi-select + single-entity album/artist Compose batch editor with per-file values, cover replace/delete, cooperative stop, in-place backup/restore and session undo; the legacy album/artist editors remain declared but are no longer reachable from menus), sleeptimer/ (song count, history, foreground-only policy), scrobbling/, sound/ (mono, crossfade, per-song tempo), update/, about/, info/, other/ (mini-player, shuffle modes, detail lists with period stats/history removal), error/ (crash handler).
+- audiocutter/ (Compose trimmer, preview and system-sound actions), ghost/ (Ghost search), lockscreen/ (keyguard-overlay player), miniplayer/ (dialog external-audio/preview player), notes/ (notes editor/bookmark list), setup/ (first-run library setup).
 
 ### res/ (resources)
-- drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (23), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
+- drawable/ (~180 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/ and the two custom notification layouts), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs incl. notes/ghost/lock-screen destinations), menu/ (23, incl. A-B/seek/share/screencast/cast and shuffle-selection entries), xml/ (preferences incl. battery/lock-screen, widgets info, shortcuts, automotive), font/anim/raw/.
 
 ## Agent Skills
 
@@ -144,7 +149,7 @@ Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/ag
 
 ### Domain docs
 
-Single-context; ADRs under `docs/architecture/` (ADR-001 through ADR-051) plus feature docs: `docs/FEATURES.md` (what
+Single-context; ADRs under `docs/architecture/` (ADR-001 through ADR-065) plus feature docs: `docs/FEATURES.md` (what
 exists), `docs/MISSING_FEATURES.md` (gaps vs Musicolet) and `docs/MUSICOLET_FEATURES.md`
 (reference snapshot of the other app). See `docs/agents/domain.md` and the
 [Documentation Maintenance](#documentation-maintenance) section.

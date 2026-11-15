@@ -19,9 +19,9 @@ package com.ssilencce.playback.equalizer
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.media.audiofx.AudioEffect
 import android.util.Log
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
@@ -36,6 +36,8 @@ import com.ssilencce.core.model.equalizer.BalanceState
 import com.ssilencce.core.model.equalizer.BassBoostState
 import com.ssilencce.core.model.equalizer.CompressorState
 import com.ssilencce.core.model.equalizer.EqBandCapabilities
+import com.ssilencce.core.model.equalizer.EqBandFrequencies
+import com.ssilencce.core.model.equalizer.EqBandResampler
 import com.ssilencce.core.model.equalizer.EqEngineMode
 import com.ssilencce.core.model.equalizer.EqOutputAssociationPolicy
 import com.ssilencce.core.model.equalizer.EqProfile
@@ -45,6 +47,10 @@ import com.ssilencce.core.model.equalizer.EqState
 import com.ssilencce.core.model.equalizer.LimiterState
 import com.ssilencce.core.model.equalizer.LoudnessGainState
 import com.ssilencce.core.model.equalizer.ReplayGainState
+import com.ssilencce.core.model.equalizer.ReverbPreset
+import com.ssilencce.core.model.equalizer.ReverbSettings
+import com.ssilencce.core.model.equalizer.ReverbState
+import com.ssilencce.core.model.equalizer.SystemEqualizer
 import com.ssilencce.core.model.equalizer.TempoState
 import com.ssilencce.core.model.equalizer.VirtualizerState
 import com.ssilencce.core.model.equalizer.VolumeState
@@ -52,10 +58,12 @@ import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 import com.ssilencce.data.model.replaygain.ReplayGainMode
 import com.ssilencce.extensions.files.getFormattedFileName
 import com.ssilencce.extensions.utilities.toEnum
+import com.ssilencce.playback.effects.ReverbController
 import com.ssilencce.playback.equalizer.engine.BasicEQEngine
 import com.ssilencce.playback.equalizer.engine.DynamicsProcessingEngine
 import com.ssilencce.playback.equalizer.engine.EQEngine
 import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.MonoAudioProcessor
 import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -73,6 +81,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 
@@ -84,6 +93,8 @@ class EqualizerManager(
     private val context: Context,
     private val balanceProcessor: BalanceAudioProcessor,
     private val replayGainProcessor: ReplayGainAudioProcessor,
+    private val monoProcessor: MonoAudioProcessor,
+    private val reverbController: ReverbController,
     audioOutputObserver: AudioOutputObserver,
 ) {
     private val eqScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -236,8 +247,42 @@ class EqualizerManager(
                     mode = prefs[Keys.REPLAYGAIN_MODE]?.toEnum<ReplayGainMode>() ?: ReplayGainMode.Off,
                     preamp = prefs[Keys.REPLAYGAIN_PREAMP] ?: 0f,
                     preampWithoutGain = prefs[Keys.REPLAYGAIN_PREAMP_WITHOUT_GAIN] ?: 0f,
+                    useEmbeddedTags = prefs[Keys.REPLAYGAIN_USE_EMBEDDED_TAGS] ?: true,
+                    preventClipping = prefs[Keys.REPLAYGAIN_PREVENT_CLIPPING] ?: true,
+                    headroomDb = prefs[Keys.REPLAYGAIN_HEADROOM] ?: 0f,
+                    constantVolume = prefs[Keys.REPLAYGAIN_CONSTANT_VOLUME] ?: false,
                 )
             }.stateIn(eqScope, SharingStarted.Eagerly, ReplayGainState.Unspecified)
+
+    val monoOutput =
+        context.eqDataStore.data
+            .map { prefs -> prefs[Keys.MONO_OUTPUT] ?: false }
+            .stateIn(eqScope, SharingStarted.Eagerly, false)
+
+    val reverbState =
+        context.eqDataStore.data
+            .map { prefs ->
+                val preset = ReverbPreset.fromName(prefs[Keys.REVERB_PRESET])
+                val defaultSettings = ReverbSettings.forPreset(preset)
+                ReverbState(
+                    supported = prefs[Keys.REVERB_SUPPORTED] ?: false,
+                    enabled = prefs[Keys.REVERB_ENABLED] ?: false,
+                    preset = preset,
+                    settings =
+                        ReverbSettings(
+                            roomLevel = prefs[Keys.REVERB_ROOM_LEVEL] ?: defaultSettings.roomLevel,
+                            roomHfLevel = prefs[Keys.REVERB_ROOM_HF_LEVEL] ?: defaultSettings.roomHfLevel,
+                            decayTimeMs = prefs[Keys.REVERB_DECAY_TIME] ?: defaultSettings.decayTimeMs,
+                            decayHfRatio = prefs[Keys.REVERB_DECAY_HF_RATIO] ?: defaultSettings.decayHfRatio,
+                            reflectionsLevel = prefs[Keys.REVERB_REFLECTIONS_LEVEL] ?: defaultSettings.reflectionsLevel,
+                            reflectionsDelayMs = prefs[Keys.REVERB_REFLECTIONS_DELAY] ?: defaultSettings.reflectionsDelayMs,
+                            reverbLevel = prefs[Keys.REVERB_LEVEL] ?: defaultSettings.reverbLevel,
+                            reverbDelayMs = prefs[Keys.REVERB_DELAY] ?: defaultSettings.reverbDelayMs,
+                            diffusion = prefs[Keys.REVERB_DIFFUSION] ?: defaultSettings.diffusion,
+                            density = prefs[Keys.REVERB_DENSITY] ?: defaultSettings.density,
+                        ),
+                )
+            }.stateIn(eqScope, SharingStarted.Eagerly, ReverbState.Unspecified)
 
     val compressorState =
         context.eqDataStore.data
@@ -315,10 +360,17 @@ class EqualizerManager(
             .debounce(100)
             .onEach { newState ->
                 val isDisabled = newState.isDisabledByReason
-                if (eqEngine == null && eqSession.id != NO_SESSION_ID && !isDisabled) {
+                if (newState.usesSystemEqualizer && eqEngine != null) {
+                    eqEngine?.release()
+                    eqEngine = null
+                    setBandCapabilities(EqBandCapabilities.Empty)
+                }
+                if (eqEngine == null && eqSession.id != NO_SESSION_ID && !isDisabled &&
+                    !newState.usesSystemEqualizer
+                ) {
                     eqEngine =
                         createEngine(
-                            mode = eqState.value.engineMode,
+                            mode = newState.engineMode,
                             sessionId = eqSession.id,
                             bandCount = newState.preferredBandCount,
                         )
@@ -332,6 +384,12 @@ class EqualizerManager(
                 } else {
                     setSessionIsActive(false, newState)
                 }
+                reverbController.update(
+                    sessionId = eqSession.id,
+                    effectsAllowed = !isDisabled,
+                    enabled = reverbState.value.isUsable,
+                    settings = reverbState.value.settings,
+                )
             }.launchIn(eqScope)
 
         balanceState
@@ -345,6 +403,10 @@ class EqualizerManager(
             .filterNot { it == ReplayGainState.Unspecified }
             .debounce(50)
             .onEach { state ->
+                replayGainProcessor.useEmbeddedTags = state.useEmbeddedTags
+                replayGainProcessor.constantVolume = state.constantVolume
+                replayGainProcessor.preventClipping = state.preventClipping
+                replayGainProcessor.headroomDb = state.headroomDb
                 if (state.mode.isOn) {
                     replayGainProcessor.mode = state.mode
                     replayGainProcessor.preAmpGain = state.preamp
@@ -354,6 +416,27 @@ class EqualizerManager(
                     replayGainProcessor.preAmpGain = 0f
                     replayGainProcessor.preAmpGainWithoutTag = 0f
                 }
+            }.flowOn(Dispatchers.Main)
+            .launchIn(eqScope)
+
+        combine(
+            monoOutput,
+            audioOutputObserver.bitPerfectState,
+        ) { mono, bitPerfect -> mono && !bitPerfect.isActive }
+            .debounce(50)
+            .onEach { monoProcessor.isMonoEnabled = it }
+            .launchIn(eqScope)
+
+        reverbState
+            .filterNot { it == ReverbState.Unspecified }
+            .debounce(50)
+            .onEach { state ->
+                reverbController.update(
+                    sessionId = eqSession.id,
+                    effectsAllowed = !eqState.value.isDisabledByReason,
+                    enabled = state.isUsable,
+                    settings = state.settings,
+                )
             }.flowOn(Dispatchers.Main)
             .launchIn(eqScope)
 
@@ -382,6 +465,7 @@ class EqualizerManager(
     ) = withContext(IO) {
         try {
             val effects = AudioEffect.queryEffects().orEmpty()
+            var migratedBandCount = false
             context.eqDataStore.edit { prefs ->
                 val eqInitialized = prefs[Keys.EQ_INITIALIZED]
                 if (eqInitialized != true) {
@@ -393,8 +477,12 @@ class EqualizerManager(
                     prefs[Keys.EQ_INITIALIZED] = true
                 }
                 prefs[Keys.EQ_SUPPORTED] =
-                    effects.any {
-                        it.type == engineMode.type
+                    if (engineMode.usesInAppEngine) {
+                        effects.any {
+                            it.type == engineMode.type
+                        }
+                    } else {
+                        SystemEqualizer.isAvailable(context)
                     }
                 prefs[Keys.VIRTUALIZER_SUPPORTED] =
                     effects.any {
@@ -408,16 +496,87 @@ class EqualizerManager(
                     effects.any {
                         it.type == AudioEffect.EFFECT_TYPE_LOUDNESS_ENHANCER
                     }
+                prefs[Keys.REVERB_SUPPORTED] =
+                    effects.any {
+                        it.type == AudioEffect.EFFECT_TYPE_ENV_REVERB
+                    }
+                if (engineMode == EqEngineMode.DynamicsProcessing) {
+                    migratedBandCount = migrateLegacyBandCount(prefs)
+                }
+            }
+            if (migratedBandCount) {
+                // Let the eqState emission recreate the engine with the migrated band count.
+                eqEngine?.release()
+                eqEngine = null
             }
         } catch (e: Exception) {
             Log.e(TAG, "The EQ couldn't be initialized. Maybe audio effects aren't available on this device?", e)
         }
     }
 
+    private fun migrateLegacyBandCount(prefs: MutablePreferences): Boolean {
+        val storedBandCount = prefs[Keys.EQ_BAND_COUNT] ?: return false
+        if (EqBandFrequencies.isSupported(storedBandCount)) return false
+
+        val targetBandCount = EqBandFrequencies.closestBandCount(storedBandCount)
+        val sourceFrequencies =
+            EqBandFrequencies.forBandCount(storedBandCount)
+                ?: EqBandFrequencies.logSpaced(storedBandCount)
+        val targetFrequencies = EqBandFrequencies.forBandCount(targetBandCount) ?: return false
+
+        prefs[Keys.EQ_BAND_COUNT] = targetBandCount
+        resampleStoredProfile(
+            json = prefs[Keys.PRESET],
+            storedBandCount = storedBandCount,
+            sourceFrequenciesInHz = sourceFrequencies,
+            targetFrequenciesInHz = targetFrequencies,
+        )?.let { prefs[Keys.PRESET] = it }
+        resampleStoredProfile(
+            json = prefs[Keys.CUSTOM_PRESET],
+            storedBandCount = storedBandCount,
+            sourceFrequenciesInHz = sourceFrequencies,
+            targetFrequenciesInHz = targetFrequencies,
+        )?.let { prefs[Keys.CUSTOM_PRESET] = it }
+        return true
+    }
+
+    private fun resampleStoredProfile(
+        json: String?,
+        storedBandCount: Int,
+        sourceFrequenciesInHz: IntArray,
+        targetFrequenciesInHz: IntArray,
+    ): String? {
+        if (json.isNullOrBlank()) return json
+        return runCatching {
+            val profile = Json.decodeFromString<EqProfile>(json)
+            if (!profile.isValid || profile.numberOfBands != storedBandCount) {
+                json
+            } else {
+                Json.encodeToString(
+                    profile.copy(
+                        levels =
+                            EqBandResampler.resample(
+                                levels = profile.levels,
+                                sourceFrequenciesInHz = sourceFrequenciesInHz,
+                                targetFrequenciesInHz = targetFrequenciesInHz,
+                            ),
+                    ),
+                )
+            }
+        }.getOrDefault(json)
+    }
+
     fun release() {
         setSession(EqSession(SessionType.Internal, NO_SESSION_ID, false))
         eqEngine?.release()
         eqEngine = null
+        reverbController.update(
+            sessionId = NO_SESSION_ID,
+            effectsAllowed = false,
+            enabled = false,
+            settings = reverbState.value.settings,
+        )
+        monoProcessor.isMonoEnabled = false
     }
 
     fun isProfileNameAvailable(profileName: String): Boolean = eqProfiles.value.none { it.name.equals(profileName, ignoreCase = true) }
@@ -554,13 +713,8 @@ class EqualizerManager(
         val bandCapabilities = bandCapabilities.value
 
         var imported = 0
-        for (profile in toImport) {
-            if (!profile.isValid ||
-                profile.isCustom ||
-                !bandCapabilities.isBandCountSupported(profile.numberOfBands)
-            ) {
-                continue
-            }
+        for (importedProfile in toImport) {
+            val profile = normalizeImportedProfile(importedProfile, bandCapabilities) ?: continue
             val existingIndex = currentProfiles.indexOfFirst { it.name.equals(profile.name, ignoreCase = true) }
             if (existingIndex >= 0) {
                 currentProfiles[existingIndex] = profile
@@ -574,6 +728,30 @@ class EqualizerManager(
             setEqualizerProfiles(currentProfiles)
         }
         return imported
+    }
+
+    /**
+     * Accepts the legacy 32-band layout by interpolating it to the closest supported layout; other
+     * unknown layouts are rejected as before.
+     */
+    private fun normalizeImportedProfile(
+        profile: EqProfile,
+        bandCapabilities: EqBandCapabilities,
+    ): EqProfile? {
+        if (!profile.isValid || profile.isCustom) return null
+        if (bandCapabilities.isBandCountSupported(profile.numberOfBands)) return profile
+
+        val sourceFrequencies = EqBandFrequencies.forBandCount(profile.numberOfBands) ?: return null
+        val targetBandCount = EqBandFrequencies.closestBandCount(profile.numberOfBands)
+        val targetFrequencies = bandCapabilities.getFrequenciesOrNull(targetBandCount) ?: return null
+        return profile.copy(
+            levels =
+                EqBandResampler.resample(
+                    levels = profile.levels,
+                    sourceFrequenciesInHz = sourceFrequencies,
+                    targetFrequenciesInHz = targetFrequencies,
+                ),
+        )
     }
 
     suspend fun importAutoEqProfile(
@@ -682,7 +860,7 @@ class EqualizerManager(
             eqSession.copy(
                 id = audioSessionId,
                 type =
-                    if (eqState.enabled) {
+                    if (eqState.enabled && eqState.engineMode.usesInAppEngine) {
                         SessionType.Internal
                     } else {
                         SessionType.External
@@ -700,7 +878,7 @@ class EqualizerManager(
                 eqSession.copy(
                     active = isActive,
                     type =
-                        if (eqState.enabled) {
+                        if (eqState.enabled && eqState.engineMode.usesInAppEngine) {
                             SessionType.Internal
                         } else {
                             SessionType.External
@@ -731,12 +909,13 @@ class EqualizerManager(
 
             SessionType.External -> {
                 if (oldSession.id != NO_SESSION_ID) {
-                    val intent =
-                        Intent(AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION)
-                            .putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-                            .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, oldSession.id)
-
-                    context.sendBroadcast(intent)
+                    context.sendBroadcast(
+                        SystemEqualizer.sessionIntent(
+                            action = AudioEffect.ACTION_CLOSE_AUDIO_EFFECT_CONTROL_SESSION,
+                            sessionId = oldSession.id,
+                            packageName = context.packageName,
+                        ),
+                    )
                 }
             }
         }
@@ -757,16 +936,22 @@ class EqualizerManager(
                 }
 
                 SessionType.External -> {
-                    val intent =
-                        Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
-                            .putExtra(AudioEffect.EXTRA_AUDIO_SESSION, newSession.id)
-                            .putExtra(AudioEffect.EXTRA_PACKAGE_NAME, context.packageName)
-                            .putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-
-                    context.sendBroadcast(intent)
+                    context.sendBroadcast(
+                        SystemEqualizer.sessionIntent(
+                            action = AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION,
+                            sessionId = newSession.id,
+                            packageName = context.packageName,
+                        ),
+                    )
                 }
             }
         }
+        reverbController.update(
+            sessionId = newSession.id,
+            effectsAllowed = !eqState.isDisabledByReason,
+            enabled = reverbState.value.isUsable,
+            settings = reverbState.value.settings,
+        )
     }
 
     suspend fun setEqualizerState(
@@ -836,27 +1021,50 @@ class EqualizerManager(
 
     suspend fun setBandCount(
         bandCount: Int,
-        profileAfterChange: EqProfile = getEmptyCustomProfile(bandCount = bandCount),
+        profileAfterChange: EqProfile? = null,
     ): Boolean {
-        if (eqState.value.preferredBandCount == bandCount) {
+        val currentState = eqState.value
+        if (currentState.preferredBandCount == bandCount) {
             return false
         }
 
         val bandCapabilities = this.bandCapabilities.value
-        if (bandCapabilities.hasMultipleBandConfigurations &&
-            bandCapabilities.isBandCountSupported(bandCount)
-        ) {
-            eqEngine?.let { engine ->
-                if (engine.setBandCount(bandCount)) {
-                    setEqualizerState(
-                        state = eqState.value.copy(preferredBandCount = bandCount),
-                        newProfile = profileAfterChange,
-                    )
-                    return true
-                }
-            }
+        if (!bandCapabilities.isBandCountSupported(bandCount)) {
+            return false
         }
-        return false
+
+        val engineChanged = eqEngine?.let { it.setBandCount(bandCount) } ?: true
+        if (!engineChanged) {
+            return false
+        }
+
+        setEqualizerState(
+            state = currentState.copy(preferredBandCount = bandCount),
+            newProfile = profileAfterChange ?: resampleCurrentProfileTo(bandCount, bandCapabilities),
+        )
+        return true
+    }
+
+    /**
+     * Interpolates the applied curve to a new layout so changing the band count never discards it.
+     * A named preset becomes a Custom profile because the resampled curve is no longer the preset.
+     */
+    private fun resampleCurrentProfileTo(
+        bandCount: Int,
+        bandCapabilities: EqBandCapabilities,
+    ): EqProfile {
+        val levels =
+            EqBandResampler
+                .resampleProfile(
+                    profile = eqCurrentProfile.value,
+                    bandCapabilities = bandCapabilities,
+                    targetBandCount = bandCount,
+                )?.levels ?: FloatArray(bandCount)
+        return EqProfile(
+            name = EqProfile.CUSTOM_PRESET_NAME,
+            levels = levels,
+            isCustom = true,
+        )
     }
 
     suspend fun setEnableBitPerfect(bitPerfect: Boolean) {
@@ -908,6 +1116,43 @@ class EqualizerManager(
             prefs[Keys.REPLAYGAIN_PREAMP] = replayGain.preamp
             prefs[Keys.REPLAYGAIN_PREAMP_WITHOUT_GAIN] = replayGain.preampWithoutGain
             prefs[Keys.REPLAYGAIN_MODE] = replayGain.mode.name
+            prefs[Keys.REPLAYGAIN_USE_EMBEDDED_TAGS] = replayGain.useEmbeddedTags
+            prefs[Keys.REPLAYGAIN_PREVENT_CLIPPING] = replayGain.preventClipping
+            prefs[Keys.REPLAYGAIN_HEADROOM] = replayGain.headroomDb
+            prefs[Keys.REPLAYGAIN_CONSTANT_VOLUME] = replayGain.constantVolume
+        }
+    }
+
+    suspend fun setMonoOutput(enabled: Boolean) {
+        context.eqDataStore.edit { prefs ->
+            prefs[Keys.MONO_OUTPUT] = enabled
+        }
+    }
+
+    suspend fun setReverb(
+        enabled: Boolean = reverbState.value.enabled,
+        preset: ReverbPreset = reverbState.value.preset,
+        settings: ReverbSettings = reverbState.value.settings,
+    ) {
+        val normalizedSettings =
+            if (preset.isCustom) {
+                settings
+            } else {
+                ReverbSettings.forPreset(preset)
+            }
+        context.eqDataStore.edit { prefs ->
+            prefs[Keys.REVERB_ENABLED] = enabled
+            prefs[Keys.REVERB_PRESET] = preset.name
+            prefs[Keys.REVERB_ROOM_LEVEL] = normalizedSettings.roomLevel
+            prefs[Keys.REVERB_ROOM_HF_LEVEL] = normalizedSettings.roomHfLevel
+            prefs[Keys.REVERB_DECAY_TIME] = normalizedSettings.decayTimeMs
+            prefs[Keys.REVERB_DECAY_HF_RATIO] = normalizedSettings.decayHfRatio
+            prefs[Keys.REVERB_REFLECTIONS_LEVEL] = normalizedSettings.reflectionsLevel
+            prefs[Keys.REVERB_REFLECTIONS_DELAY] = normalizedSettings.reflectionsDelayMs
+            prefs[Keys.REVERB_LEVEL] = normalizedSettings.reverbLevel
+            prefs[Keys.REVERB_DELAY] = normalizedSettings.reverbDelayMs
+            prefs[Keys.REVERB_DIFFUSION] = normalizedSettings.diffusion
+            prefs[Keys.REVERB_DENSITY] = normalizedSettings.density
         }
     }
 
@@ -1003,6 +1248,10 @@ class EqualizerManager(
 
     private fun getPresetsByBandCount(bandCount: Int) =
         when (bandCount) {
+            0 -> {
+                emptyList()
+            }
+
             5 -> {
                 listOf(
                     EqProfile("Bass Boost", floatArrayOf(11f, 6f, -1f, -2.5f, -0.5f)),
@@ -1047,22 +1296,48 @@ class EqualizerManager(
         mode: EqEngineMode,
         sessionId: Int,
         bandCount: Int,
-    ): EQEngine? =
-        runCatching {
+    ): EQEngine? {
+        if (!mode.usesInAppEngine) return null
+        return runCatching {
             if (EqEngineMode.isSwitchingSupported()) {
                 when (mode) {
                     EqEngineMode.Basic -> BasicEQEngine(sessionId)
                     EqEngineMode.DynamicsProcessing -> DynamicsProcessingEngine(sessionId, bandCount)
+                    EqEngineMode.System -> null
                 }
             } else {
                 BasicEQEngine(sessionId)
             }
         }.onSuccess { newEngine ->
-            applyChangesToEngine(engine = newEngine)
-            setBandCapabilities(newEngine.bandCapabilities)
+            if (newEngine != null) {
+                applyChangesToEngine(engine = newEngine)
+                setBandCapabilities(newEngine.bandCapabilities)
+                normalizeBandCount(newEngine.bandCapabilities)
+            }
         }.onFailure {
             Log.e(TAG, "Failed to open EQ session", it)
         }.getOrNull()
+    }
+
+    /**
+     * Keeps the stored preference aligned with the layout the engine actually exposes. This is the
+     * device-fixed count for the Legacy engine and a migrated legacy layout for the Precision engine.
+     */
+    private fun normalizeBandCount(bandCapabilities: EqBandCapabilities) {
+        val state = eqState.value
+        if (bandCapabilities.bandConfigurations.isEmpty() || state.preferredBandCount <= 0) return
+        if (bandCapabilities.isBandCountSupported(state.preferredBandCount)) return
+
+        val targetBandCount =
+            bandCapabilities.getClosestBandCount(state.preferredBandCount, state.proMode) ?: return
+        eqScope.launch {
+            if (eqState.value.preferredBandCount == targetBandCount) return@launch
+            setEqualizerState(
+                state = eqState.value.copy(preferredBandCount = targetBandCount),
+                newProfile = resampleCurrentProfileTo(targetBandCount, bandCapabilities),
+            )
+        }
+    }
 
     private fun applyChangesToEngine(
         engine: EQEngine? = this.eqEngine,
@@ -1173,6 +1448,11 @@ class EqualizerManager(
         eqEngine?.release()
         eqEngine = null
         initializeEqualizer(newEngineMode)
+        if (!newEngineMode.usesInAppEngine) {
+            eqEngine?.release()
+            eqEngine = null
+            setBandCapabilities(EqBandCapabilities.Empty)
+        }
     }
 
     interface Keys {
@@ -1203,6 +1483,24 @@ class EqualizerManager(
             val REPLAYGAIN_MODE = stringPreferencesKey("replaygain.mode")
             val REPLAYGAIN_PREAMP = floatPreferencesKey("replaygain.preamp")
             val REPLAYGAIN_PREAMP_WITHOUT_GAIN = floatPreferencesKey("replaygain.preamp.without_gain")
+            val REPLAYGAIN_USE_EMBEDDED_TAGS = booleanPreferencesKey("replaygain.use_embedded_tags")
+            val REPLAYGAIN_PREVENT_CLIPPING = booleanPreferencesKey("replaygain.prevent_clipping")
+            val REPLAYGAIN_HEADROOM = floatPreferencesKey("replaygain.headroom")
+            val REPLAYGAIN_CONSTANT_VOLUME = booleanPreferencesKey("replaygain.constant_volume")
+            val MONO_OUTPUT = booleanPreferencesKey("audio.mono")
+            val REVERB_SUPPORTED = booleanPreferencesKey("eq.reverb.supported")
+            val REVERB_ENABLED = booleanPreferencesKey("eq.reverb.enabled")
+            val REVERB_PRESET = stringPreferencesKey("eq.reverb.preset")
+            val REVERB_ROOM_LEVEL = intPreferencesKey("eq.reverb.room_level")
+            val REVERB_ROOM_HF_LEVEL = intPreferencesKey("eq.reverb.room_hf_level")
+            val REVERB_DECAY_TIME = intPreferencesKey("eq.reverb.decay_time")
+            val REVERB_DECAY_HF_RATIO = intPreferencesKey("eq.reverb.decay_hf_ratio")
+            val REVERB_REFLECTIONS_LEVEL = intPreferencesKey("eq.reverb.reflections_level")
+            val REVERB_REFLECTIONS_DELAY = intPreferencesKey("eq.reverb.reflections_delay")
+            val REVERB_LEVEL = intPreferencesKey("eq.reverb.level")
+            val REVERB_DELAY = intPreferencesKey("eq.reverb.delay")
+            val REVERB_DIFFUSION = intPreferencesKey("eq.reverb.diffusion")
+            val REVERB_DENSITY = intPreferencesKey("eq.reverb.density")
             val VOLUME = floatPreferencesKey("player.volume")
             val CENTER_BALANCE = floatPreferencesKey("eq.balance")
             val SPEED = floatPreferencesKey("eq.speed")

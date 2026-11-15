@@ -29,8 +29,11 @@ fun Player.getQueueItems(shuffleMode: Boolean = this.shuffleModeEnabled): List<Q
     if (timeline.isEmpty) return emptyList()
 
     val result = mutableListOf<QueueItem>()
+    val visited = HashSet<Int>()
     var index = timeline.getFirstWindowIndex(shuffleMode)
-    while (index != C.INDEX_UNSET) {
+    // Bounded by the timeline size and a visited set so a dynamic shuffle order (randomize) can
+    // never turn this walk into an endless loop.
+    while (index != C.INDEX_UNSET && result.size < mediaItemCount && visited.add(index)) {
         result.add(QueueItem(getMediaItemAt(index), index))
         index = timeline.getNextWindowIndex(index, Player.REPEAT_MODE_OFF, shuffleMode)
     }

@@ -5,6 +5,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
+import com.ssilencce.R
 import com.ssilencce.data.local.MetadataReader
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.mapper.toPlayCount
@@ -21,6 +22,10 @@ import com.ssilencce.extensions.media.replayGainStr
 import com.ssilencce.extensions.media.songDurationStr
 import com.ssilencce.extensions.utilities.dateStr
 import com.ssilencce.extensions.utilities.format
+import com.ssilencce.playback.PlaybackDecoderRegistry
+import com.ssilencce.playback.extractor.ExtraFormatKind
+import com.ssilencce.playback.extractor.ExtraFormatSupport
+import com.ssilencce.playback.extractor.ExtraFormatUnsupportedReason
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -114,7 +119,7 @@ class InfoViewModel(
                     val filePath = file.getPrettyAbsolutePath()
                     val fileSize = file.getHumanReadableSize()
 
-                    val audioHeaderInfo = getAudioHeader(file.toAudioFile()?.audioHeader, metadataReader)
+                    val audioHeaderInfo = getAudioHeader(file.toAudioFile()?.audioHeader, metadataReader, song, context)
 
                     val title = metadataReader.first(MetadataReader.TITLE)
                     val album = metadataReader.first(MetadataReader.ALBUM)
@@ -192,13 +197,40 @@ class InfoViewModel(
     private fun getAudioHeader(
         header: AudioHeader?,
         metadataReader: MetadataReader,
-    ): AudioHeaderInfo =
-        AudioHeaderInfo(
-            format = header?.formatFixed,
+        song: Song,
+        context: Context,
+    ): AudioHeaderInfo {
+        val extension = song.data.substringAfterLast('.', "").uppercase()
+        val extraKind = ExtraFormatKind.forPath(song.data)
+        val descriptor = extraKind?.let { ExtraFormatSupport.describe(it) }
+        val snapshot = PlaybackDecoderRegistry.forSong(song.id)
+        val decoder =
+            descriptor?.decoder
+                ?: snapshot?.decoderName
+                ?: descriptor?.unsupportedReason?.messageRes?.let { context.getString(it) }
+                ?: context.getString(R.string.decoder_system)
+        return AudioHeaderInfo(
+            format = descriptor?.container ?: header?.formatFixed ?: extension.takeIf { it.isNotBlank() },
             bitrate = metadataReader.bitrate(),
             sampleRate = metadataReader.sampleRate(),
             channels = metadataReader.channelName(),
             variableBitrate = header?.isVariableBitRate == true,
-            lossless = header?.isLossless == true,
+            lossless = header?.isLossless == true || descriptor?.kind?.let { it in LOSSLESS_EXTRA_FORMATS } == true,
+            container = descriptor?.container ?: header?.formatFixed ?: extension.takeIf { it.isNotBlank() },
+            codec = descriptor?.codec ?: header?.formatFixed ?: extension.takeIf { it.isNotBlank() },
+            decoder = decoder,
+            bitDepth = header?.bitsPerSample?.takeIf { it > 0 }?.let { "$it-bit" },
         )
+    }
+
+    private val ExtraFormatUnsupportedReason.messageRes: Int
+        get() =
+            when (this) {
+                ExtraFormatUnsupportedReason.APE_DECODER_MISSING -> R.string.decoder_ape_unavailable
+                ExtraFormatUnsupportedReason.WMA_DECODER_MISSING -> R.string.decoder_wma_unavailable
+            }
+
+    private companion object {
+        val LOSSLESS_EXTRA_FORMATS = setOf(ExtraFormatKind.AIFF, ExtraFormatKind.DSF, ExtraFormatKind.DFF, ExtraFormatKind.APE)
+    }
 }

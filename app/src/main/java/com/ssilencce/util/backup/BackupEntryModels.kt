@@ -17,6 +17,7 @@ package com.ssilencce.util.backup
 
 import com.ssilencce.data.local.room.NamedQueueWithItems
 import com.ssilencce.data.local.room.PlayCountEntity
+import com.ssilencce.data.local.room.SongPlaybackParamEntity
 import com.ssilencce.data.local.room.TrackPositionEntity
 import kotlinx.serialization.Serializable
 
@@ -60,6 +61,13 @@ data class TrackPositionBackupEntry(
     val mediaId: String,
     val positionMs: Long,
     val updatedAt: Long,
+)
+
+@Serializable
+data class SongPlaybackParamBackupEntry(
+    val songId: Long,
+    val speed: Float,
+    val pitch: Float,
 )
 
 fun PlayCountEntity.toBackupEntry(): PlayCountBackupEntry =
@@ -131,4 +139,18 @@ fun TrackPositionBackupEntry.toEntity(): TrackPositionEntity =
         mediaId = mediaId,
         positionMs = positionMs,
         updatedAt = updatedAt,
+    )
+
+fun SongPlaybackParamEntity.toBackupEntry(): SongPlaybackParamBackupEntry =
+    SongPlaybackParamBackupEntry(
+        songId = songId,
+        speed = speed,
+        pitch = pitch,
+    )
+
+fun SongPlaybackParamBackupEntry.toEntity(): SongPlaybackParamEntity =
+    SongPlaybackParamEntity(
+        songId = songId,
+        speed = speed,
+        pitch = pitch,
     )

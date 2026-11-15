@@ -7,7 +7,7 @@ import com.ssilencce.R
 import java.util.UUID
 
 enum class EqEngineMode(
-    val type: UUID,
+    val type: UUID?,
     @StringRes val titleRes: Int,
     @StringRes val descriptionRes: Int,
     val defaultBandCount: Int,
@@ -27,7 +27,17 @@ enum class EqEngineMode(
         defaultBandCount = 10,
         supportsProMode = true,
     ),
+    System(
+        type = null,
+        titleRes = R.string.eq_engine_system_title,
+        descriptionRes = R.string.eq_engine_system_description,
+        defaultBandCount = 0,
+        supportsProMode = false,
+    ),
     ;
+
+    val usesInAppEngine: Boolean
+        get() = this != System
 
     companion object {
         val Auto = if (isSwitchingSupported()) DynamicsProcessing else Basic

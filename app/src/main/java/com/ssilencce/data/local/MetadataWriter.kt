@@ -12,14 +12,18 @@ import com.kyant.taglib.Picture
 import com.kyant.taglib.TagLib
 import com.ssilencce.core.model.tag.BatchTagEditPlan
 import com.ssilencce.core.model.tag.BatchWriteReport
+import com.ssilencce.core.model.tag.CoverOperation
+import com.ssilencce.core.model.tag.CoverWriteStatus
 import com.ssilencce.core.model.tag.FieldWriteResult
 import com.ssilencce.core.model.tag.FieldWriteStatus
 import com.ssilencce.core.model.tag.FileWriteReport
 import com.ssilencce.core.model.tag.FileWriteStatus
+import com.ssilencce.core.model.tag.TagEditPlan
 import com.ssilencce.data.local.replaygain.ReplayGainTags
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
 import com.ssilencce.data.model.Song
+import com.ssilencce.extensions.hasQ
 import com.ssilencce.extensions.media.createAlbumArtThumbFile
 import com.ssilencce.extensions.media.deleteAlbumArt
 import com.ssilencce.extensions.media.insertAlbumArt
@@ -41,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.resume
 
 private const val SCAN_TIMEOUT_MS = 60_000L
+private const val BATCH_PICTURE_QUALITY = 90
 
 class MetadataWriter : KoinComponent {
     private val contentResolver: ContentResolver by inject()
@@ -149,13 +154,17 @@ class MetadataWriter : KoinComponent {
         context: Context,
         contents: List<EditTarget.Content>,
         plan: BatchTagEditPlan,
+        cover: CoverOperation = CoverOperation.Keep,
+        journal: BatchWriteJournal? = null,
+        albumIdBySongId: Map<Long, Long> = emptyMap(),
         onProgress: (done: Int, total: Int) -> Unit = { _, _ -> },
         shouldContinue: () -> Boolean = { true },
     ) = withContext(IO) {
         require(plan.isValid) { "Batch tag plan contains a blank Set value" }
         val requestedFields = plan.changedFields
-        if (contents.isEmpty() || requestedFields.isEmpty()) {
-            return@withContext BatchWriteReport(emptyList(), requestedFields)
+        val coverRequested = cover.hasChange
+        if (contents.isEmpty() || (requestedFields.isEmpty() && !coverRequested)) {
+            return@withContext BatchWriteReport(emptyList(), requestedFields, coverRequested)
         }
         val reports = mutableListOf<FileWriteReport>()
         val savedForScan = mutableListOf<EditTarget.Content>()
@@ -164,67 +173,37 @@ class MetadataWriter : KoinComponent {
             contents.forEachIndexed { index, content ->
                 if (cancelled || !shouldContinue()) {
                     cancelled = true
-                    reports.add(cancelledReport(content, plan))
+                    reports.add(cancelledReport(content, plan, coverRequested))
                     return@forEachIndexed
                 }
                 currentCoroutineContext().ensureActive()
                 onProgress(index, contents.size)
                 val filePlan = plan.planFor(content.id)
-                if (!filePlan.hasChanges) {
-                    reports.add(
-                        FileWriteReport(
-                            songId = content.id,
-                            fileName = content.displayName(),
-                            status = FileWriteStatus.UNCHANGED,
-                            detail = "no_changes",
-                            overrides = plan.perSong[content.id].orEmpty(),
-                        ),
-                    )
+                if (!filePlan.hasChanges && !coverRequested) {
+                    reports.add(unchangedReport(content, plan))
                     onProgress(index + 1, contents.size)
                     return@forEachIndexed
                 }
-                val overrides = filePlan.toPropertyOverrides()
-                val report =
+                val backup = journal?.backup(content)
+                if (journal != null && backup == null) {
+                    reports.add(failedReport(content, plan, "backup_failed", coverRequested))
+                    onProgress(index + 1, contents.size)
+                    return@forEachIndexed
+                }
+                val written =
                     try {
-                        val propertyWrite =
-                            contentResolver.openFileDescriptor(content.uri, "rw")?.use { fd ->
-                                writePropertyMap(fd, overrides)
-                            }
-                        when {
-                            propertyWrite == null -> {
-                                failedReport(content, plan, "open_failed")
-                            }
-
-                            !propertyWrite.saved -> {
-                                failedReport(content, plan, "save_failed")
-                            }
-
-                            else -> {
-                                contentResolver.notifyChange(content.uri, null)
-                                savedForScan.add(content)
-                                val after = readPropertyMap(content.uri)
-                                if (after == null) {
-                                    failedReport(content, plan, "read_back_failed")
-                                } else {
-                                    val fieldResults =
-                                        TagWriteVerifier.verify(filePlan, propertyWrite.before, after)
-                                    FileWriteReport(
-                                        songId = content.id,
-                                        fileName = content.displayName(),
-                                        status = TagWriteVerifier.fileStatus(fieldResults),
-                                        fields = fieldResults,
-                                        overrides = plan.perSong[content.id].orEmpty(),
-                                    )
-                                }
-                            }
-                        }
+                        writeOneFile(content, plan, filePlan, cover, journal, backup)
                     } catch (cancellation: CancellationException) {
                         throw cancellation
                     } catch (throwable: Throwable) {
                         Log.e("MetadataWriter", "Failed to write batch metadata for ${content.uri}", throwable)
-                        failedReport(content, plan, throwable.message ?: "write_failed")
+                        val detail = rollback(journal, backup) ?: "write_failed"
+                        WroteFile(failedReport(content, plan, detail, coverRequested), true)
                     }
-                reports.add(report)
+                if (written.bytesChanged) {
+                    savedForScan.add(content)
+                }
+                reports.add(written.report)
                 onProgress(index + 1, contents.size)
             }
         } catch (cancellation: CancellationException) {
@@ -259,7 +238,226 @@ class MetadataWriter : KoinComponent {
                     report
                 }
             }
-        BatchWriteReport(finalReports, requestedFields)
+        refreshCoverArtwork(cover, finalReports, albumIdBySongId)
+        BatchWriteReport(finalReports, requestedFields, coverRequested)
+    }
+
+    private suspend fun writeOneFile(
+        content: EditTarget.Content,
+        plan: BatchTagEditPlan,
+        filePlan: TagEditPlan,
+        cover: CoverOperation,
+        journal: BatchWriteJournal?,
+        backup: BatchWriteJournal.Entry?,
+    ): WroteFile {
+        val coverRequested = cover.hasChange
+        var writtenCoverStatus =
+            if (coverRequested) CoverWriteStatus.NOT_ATTEMPTED else CoverWriteStatus.KEPT
+        val descriptor =
+            try {
+                contentResolver.openFileDescriptor(content.uri, "rw")
+            } catch (throwable: Throwable) {
+                Log.e("MetadataWriter", "Failed to open ${content.uri}", throwable)
+                null
+            }
+        if (descriptor == null) {
+            return WroteFile(failedReport(content, plan, "open_failed", coverRequested), false)
+        }
+        val propertyWrite =
+            try {
+                descriptor.use { fd ->
+                    if (coverRequested) {
+                        writtenCoverStatus = writeCover(fd, cover)
+                    }
+                    if (filePlan.hasChanges) {
+                        writePropertyMap(fd, filePlan.toPropertyOverrides())
+                    } else {
+                        null
+                    }
+                }
+            } catch (throwable: Throwable) {
+                Log.e("MetadataWriter", "Failed to write ${content.uri}", throwable)
+                val detail = rollback(journal, backup) ?: "write_failed"
+                return WroteFile(failedReport(content, plan, detail, coverRequested), true)
+            }
+        if (propertyWrite?.saved == false) {
+            val detail = rollback(journal, backup) ?: "save_failed"
+            return WroteFile(failedReport(content, plan, detail, coverRequested), true)
+        }
+        contentResolver.notifyChange(content.uri, null)
+        var fieldResults: List<FieldWriteResult> = emptyList()
+        if (filePlan.hasChanges) {
+            val after = readPropertyMap(content.uri)
+            if (after == null) {
+                val detail = rollback(journal, backup) ?: "read_back_failed"
+                return WroteFile(failedReport(content, plan, detail, coverRequested), true)
+            }
+            val before = propertyWrite?.before.orEmpty()
+            fieldResults = TagWriteVerifier.verify(filePlan, before, after)
+        }
+        var coverStatus = writtenCoverStatus
+        if (coverRequested) {
+            coverStatus = verifyCover(content.uri, cover)
+        }
+        val status = combineFileStatus(TagWriteVerifier.fileStatus(fieldResults), coverStatus)
+        return WroteFile(
+            FileWriteReport(
+                songId = content.id,
+                fileName = content.displayName(),
+                status = status,
+                fields = fieldResults,
+                overrides = plan.perSong[content.id].orEmpty(),
+                coverStatus = coverStatus,
+            ),
+            true,
+        )
+    }
+
+    private suspend fun rollback(
+        journal: BatchWriteJournal?,
+        backup: BatchWriteJournal.Entry?,
+    ): String? {
+        if (journal == null || backup == null) {
+            return null
+        }
+        return if (journal.restore(backup)) {
+            journal.discard(backup)
+            "rolled_back"
+        } else {
+            "rollback_failed"
+        }
+    }
+
+    private fun writeCover(
+        fd: ParcelFileDescriptor,
+        cover: CoverOperation,
+    ): CoverWriteStatus =
+        when (cover) {
+            CoverOperation.Keep -> {
+                CoverWriteStatus.KEPT
+            }
+
+            CoverOperation.Delete -> {
+                if (TagLib.savePictures(fd.dup().detachFd(), arrayOf())) {
+                    CoverWriteStatus.DELETED
+                } else {
+                    CoverWriteStatus.MISMATCH
+                }
+            }
+
+            is CoverOperation.Replace -> {
+                if (TagLib.savePictures(fd.dup().detachFd(), arrayOf(compressPicture(cover.bitmap, BATCH_PICTURE_QUALITY)))) {
+                    CoverWriteStatus.WRITTEN
+                } else {
+                    CoverWriteStatus.MISMATCH
+                }
+            }
+        }
+
+    private fun verifyCover(
+        uri: Uri,
+        cover: CoverOperation,
+    ): CoverWriteStatus =
+        try {
+            val pictures =
+                contentResolver.openFileDescriptor(uri, "r")?.use { fd ->
+                    TagLib.getMetadata(fd.dup().detachFd(), readPictures = true)?.pictures
+                }
+            when {
+                pictures == null -> {
+                    CoverWriteStatus.MISMATCH
+                }
+
+                cover is CoverOperation.Delete -> {
+                    if (pictures.isEmpty()) CoverWriteStatus.DELETED else CoverWriteStatus.MISMATCH
+                }
+
+                cover is CoverOperation.Replace -> {
+                    if (pictures.isNotEmpty()) CoverWriteStatus.WRITTEN else CoverWriteStatus.MISMATCH
+                }
+
+                else -> {
+                    CoverWriteStatus.KEPT
+                }
+            }
+        } catch (throwable: Throwable) {
+            Log.e("MetadataWriter", "Failed to read back the cover for $uri", throwable)
+            CoverWriteStatus.MISMATCH
+        }
+
+    private fun combineFileStatus(
+        textStatus: FileWriteStatus,
+        coverStatus: CoverWriteStatus,
+    ): FileWriteStatus =
+        when (textStatus) {
+            FileWriteStatus.UNCHANGED -> {
+                when (coverStatus) {
+                    CoverWriteStatus.WRITTEN, CoverWriteStatus.DELETED -> FileWriteStatus.SUCCEEDED
+                    CoverWriteStatus.MISMATCH -> FileWriteStatus.FAILED
+                    else -> FileWriteStatus.UNCHANGED
+                }
+            }
+
+            else -> {
+                if (coverStatus == CoverWriteStatus.MISMATCH && textStatus != FileWriteStatus.FAILED) {
+                    FileWriteStatus.PARTIAL
+                } else {
+                    textStatus
+                }
+            }
+        }
+
+    /**
+     * Drops the MediaStore album-art cache for the albums whose embedded cover changed so the
+     * provider regenerates it from the written file. On API 29+ the row is dropped and the
+     * provider extracts the cover on demand; older versions also need the new thumbnail file.
+     */
+    fun refreshAlbumArtwork(
+        albumIds: Collection<Long>,
+        bitmap: Bitmap?,
+    ) {
+        val ids = albumIds.filter { it > 0 }.distinct()
+        if (ids.isEmpty()) {
+            return
+        }
+        try {
+            when {
+                bitmap == null -> {
+                    ids.forEach { contentResolver.deleteAlbumArt(it) }
+                }
+
+                !hasQ() -> {
+                    val thumb = createPictureThumbFile(compressPicture(bitmap, BATCH_PICTURE_QUALITY))
+                    if (thumb != null) {
+                        ids.forEach { contentResolver.insertAlbumArt(it, thumb.path) }
+                    }
+                }
+
+                else -> {
+                    ids.forEach { contentResolver.deleteAlbumArt(it) }
+                }
+            }
+        } catch (throwable: Throwable) {
+            Log.e("MetadataWriter", "Failed to refresh album artwork for $ids", throwable)
+        }
+    }
+
+    private fun refreshCoverArtwork(
+        cover: CoverOperation,
+        reports: List<FileWriteReport>,
+        albumIdBySongId: Map<Long, Long>,
+    ) {
+        if (!cover.hasChange) {
+            return
+        }
+        val targetStatus =
+            if (cover is CoverOperation.Delete) CoverWriteStatus.DELETED else CoverWriteStatus.WRITTEN
+        val albumIds =
+            reports
+                .filter { it.coverStatus == targetStatus }
+                .mapNotNull { albumIdBySongId[it.songId] }
+                .distinct()
+        refreshAlbumArtwork(albumIds, (cover as? CoverOperation.Replace)?.bitmap)
     }
 
     private fun createPicture(target: EditTarget): Picture? {
@@ -267,9 +465,16 @@ class MetadataWriter : KoinComponent {
         if (target.artworkId == -1L || pictureBitmap == null) {
             return null
         }
+        return compressPicture(pictureBitmap, quality = 100)
+    }
+
+    private fun compressPicture(
+        bitmap: Bitmap,
+        quality: Int,
+    ): Picture {
         val byteArray =
-            ByteArrayOutputStream(pictureBitmap.byteCount).use {
-                pictureBitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+            ByteArrayOutputStream(bitmap.byteCount).use {
+                bitmap.compress(Bitmap.CompressFormat.JPEG, quality, it)
                 it.toByteArray()
             }
         return Picture(
@@ -368,9 +573,22 @@ class MetadataWriter : KoinComponent {
             null
         }
 
+    private fun unchangedReport(
+        content: EditTarget.Content,
+        plan: BatchTagEditPlan,
+    ): FileWriteReport =
+        FileWriteReport(
+            songId = content.id,
+            fileName = content.displayName(),
+            status = FileWriteStatus.UNCHANGED,
+            detail = "no_changes",
+            overrides = plan.perSong[content.id].orEmpty(),
+        )
+
     private fun cancelledReport(
         content: EditTarget.Content,
         plan: BatchTagEditPlan,
+        coverRequested: Boolean = false,
     ): FileWriteReport {
         val filePlan = plan.planFor(content.id)
         return FileWriteReport(
@@ -383,6 +601,7 @@ class MetadataWriter : KoinComponent {
                 },
             detail = "cancelled",
             overrides = plan.perSong[content.id].orEmpty(),
+            coverStatus = if (coverRequested) CoverWriteStatus.NOT_ATTEMPTED else CoverWriteStatus.KEPT,
         )
     }
 
@@ -390,6 +609,7 @@ class MetadataWriter : KoinComponent {
         content: EditTarget.Content,
         plan: BatchTagEditPlan,
         detail: String,
+        coverRequested: Boolean = false,
     ): FileWriteReport {
         val filePlan = plan.planFor(content.id)
         return FileWriteReport(
@@ -402,6 +622,7 @@ class MetadataWriter : KoinComponent {
                 },
             detail = detail,
             overrides = plan.perSong[content.id].orEmpty(),
+            coverStatus = if (coverRequested) CoverWriteStatus.NOT_ATTEMPTED else CoverWriteStatus.KEPT,
         )
     }
 
@@ -447,6 +668,12 @@ class MetadataWriter : KoinComponent {
     private class PropertyWriteResult(
         val before: Map<String, Array<String>>,
         val saved: Boolean,
+    )
+
+    private class WroteFile(
+        val report: FileWriteReport,
+        /** True when the writer opened the file for writing, so MediaStore must be rescanned. */
+        val bytesChanged: Boolean,
     )
 
     private class WriteResultInternal(

@@ -45,6 +45,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -63,10 +64,13 @@ import androidx.media3.common.Player
 import androidx.preference.PreferenceManager
 import com.ssilencce.R
 import com.ssilencce.core.model.action.NowPlayingAction
+import com.ssilencce.core.model.action.QuickAccessAction
+import com.ssilencce.core.model.shuffle.ShuffleModeState
 import com.ssilencce.core.model.theme.NowPlayingScreen
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.media.asReadableDuration
 import com.ssilencce.extensions.observeKeyAsState
+import com.ssilencce.ui.component.compose.QuickAccessRow
 import com.ssilencce.ui.component.compose.aurora.rememberAuroraMotionScale
 import com.ssilencce.ui.component.views.MorphicIconButton
 import com.ssilencce.ui.component.views.MusicSlider
@@ -78,8 +82,10 @@ import com.ssilencce.util.DISPLAY_ALBUM_TITLE
 import com.ssilencce.util.DISPLAY_EXTRA_INFO
 import com.ssilencce.util.ENABLE_SCROLLING_TEXT
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.NOW_PLAYING_QUICK_ACCESS
 import com.ssilencce.util.PREFER_REMAINING_TIME
 import com.ssilencce.util.Preferences
+import com.ssilencce.util.SEEK_BAR_TOUCH_ONLY_ON_THUMB
 import com.ssilencce.util.SQUIGGLY_SEEK_BAR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -97,9 +103,13 @@ internal fun AuroraPlayerScreen(
     artistName: (Song) -> CharSequence,
     nextSongInfo: (Song) -> String,
     onAction: (NowPlayingAction) -> Unit,
+    onQuickAccess: (QuickAccessAction) -> Unit,
+    onSeekTo: () -> Unit,
     onCollapse: () -> Unit,
     onEqualizer: () -> Unit,
     onDetails: () -> Unit,
+    castAvailable: Boolean,
+    onCast: () -> Unit,
     onOverflowItem: (Int) -> Unit,
     onShuffleOptions: () -> Unit,
     onExtraInfoOptions: () -> Unit,
@@ -111,13 +121,20 @@ internal fun AuroraPlayerScreen(
     val nextSong by playerViewModel.nextSongFlow.collectAsStateWithLifecycle()
     val playing by playerViewModel.isPlayingFlow.collectAsStateWithLifecycle()
     val repeat by playerViewModel.repeatModeFlow.collectAsStateWithLifecycle()
+    val repeatLoadNextPause by playerViewModel.repeatLoadNextPauseFlow.collectAsStateWithLifecycle()
     val shuffle by playerViewModel.shuffleModeFlow.collectAsStateWithLifecycle()
+    val shuffleState by playerViewModel.shuffleStateFlow.collectAsStateWithLifecycle()
+    val randomize = shuffleState == ShuffleModeState.Randomize
     val extraInfo by playerViewModel.extraInfoFlow.collectAsStateWithLifecycle()
+    val duration by playerViewModel.durationFlow.collectAsStateWithLifecycle()
+    val seekControlsAvailable = Preferences.isSeekControlsAvailable(duration)
     val context = LocalContext.current
     val preferences = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
     val displayExtraInfo by preferences.observeKeyAsState(DISPLAY_EXTRA_INFO, Preferences.displayExtraInfo)
     val extraInfoFields by preferences.observeKeyAsState(NOW_PLAYING_EXTRA_INFO, "")
     val displayAlbumTitle by preferences.observeKeyAsState(DISPLAY_ALBUM_TITLE, Preferences.displayAlbumTitle)
+    val quickAccessRaw by preferences.observeKeyAsState(NOW_PLAYING_QUICK_ACCESS, Preferences.quickAccessActionsRaw)
+    val quickAccess = remember(quickAccessRaw) { QuickAccessAction.fromPreference(quickAccessRaw) }
     val marquee = rememberAuroraMotionScale(shown, ENABLE_SCROLLING_TEXT, preferenceDefault = false) > 0f
     LaunchedEffect(displayExtraInfo, extraInfoFields) { playerViewModel.generateExtraInfo() }
     val style = Preferences.nowPlayingScreen
@@ -171,6 +188,10 @@ internal fun AuroraPlayerScreen(
             Row(Modifier.fillMaxWidth().height(48.dp).background(if (fullCover) AuroraDesign.glassStrong else Color.Transparent), verticalAlignment = Alignment.CenterVertically) {
                 PlayerAction(R.drawable.ic_keyboard_arrow_down_24dp, R.string.aurora_collapse_player, onCollapse)
                 Text(stringResource(R.string.now_playing), Modifier.weight(1f), fontSize = 13.sp, color = AuroraDesign.muted)
+                PlayerAction(R.drawable.ic_bookmark_24dp, R.string.action_add_bookmark, { onAction(NowPlayingAction.AddBookmark) })
+                if (castAvailable) {
+                    PlayerAction(R.drawable.ic_cast_24dp, R.string.cast_device, onCast)
+                }
                 PlayerAction(if (lyricsVisible) R.drawable.ic_lyrics_24dp else R.drawable.ic_lyrics_outline_24dp, if (lyricsVisible) R.string.action_hide_lyrics else R.string.action_show_lyrics, { onAction(NowPlayingAction.Lyrics) })
             }
         }
@@ -192,6 +213,15 @@ internal fun AuroraPlayerScreen(
                         color = AuroraDesign.muted,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (quickAccess.isNotEmpty()) {
+                    QuickAccessRow(
+                        actions = quickAccess,
+                        onAction = onQuickAccess,
+                        modifier = Modifier.padding(top = 8.dp),
+                        containerColor = AuroraDesign.glassStrong,
+                        contentColor = Color.White,
                     )
                 }
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -227,8 +257,18 @@ internal fun AuroraPlayerScreen(
                                     )
                                 }
                             overflowItem(R.id.action_favorite, if (favorite) R.string.action_remove_from_favorites else R.string.action_add_to_favorites, if (favorite) R.drawable.ic_favorite_24dp else R.drawable.ic_favorite_outline_24dp, onItemClick)
+                            if (castAvailable) {
+                                overflowItem(R.id.action_cast, R.string.cast_device, R.drawable.ic_cast_24dp, onItemClick)
+                            }
+                            overflowItem(R.id.action_fullscreen_art, R.string.action_view_full_art, R.drawable.ic_open_in_full_24dp, onItemClick)
                             overflowItem(R.id.action_playing_queue, R.string.playing_queue_label, R.drawable.ic_queue_music_24dp, onItemClick)
+                            overflowItem(R.id.action_seek_to, R.string.seek_to_title, R.drawable.ic_history_24dp, onItemClick)
+                            overflowItem(R.id.action_add_bookmark, R.string.action_add_bookmark, R.drawable.ic_bookmark_24dp, onItemClick)
+                            overflowItem(R.id.action_song_notes, R.string.action_song_notes, R.drawable.ic_edit_note_24dp, onItemClick)
                             overflowItem(R.id.action_sleep_timer, R.string.action_sleep_timer, R.drawable.ic_timer_24dp, onItemClick)
+                            overflowItem(R.id.action_pause_after_this_song, R.string.queue_action_pause_after_this_song, R.drawable.ic_pause_24dp, onItemClick)
+                            overflowItem(R.id.action_load_next_and_pause, R.string.queue_action_load_next_and_pause, R.drawable.ic_next_24dp, onItemClick)
+                            overflowItem(R.id.action_ab_repeat, R.string.ab_repeat, R.drawable.ic_repeat_24dp, onItemClick)
                             overflowItem(R.id.action_show_lyrics, if (lyricsVisible) R.string.action_hide_lyrics else R.string.action_show_lyrics, if (lyricsVisible) R.drawable.ic_lyrics_24dp else R.drawable.ic_lyrics_outline_24dp, onItemClick)
                             overflowItem(R.id.action_equalizer, R.string.equalizer_label, R.drawable.ic_equalizer_24dp, onItemClick)
                             overflowItem(R.id.action_sound_settings, R.string.sound_settings, R.drawable.ic_volume_up_24dp, onItemClick)
@@ -241,32 +281,53 @@ internal fun AuroraPlayerScreen(
                             overflowItem(R.id.action_tag_editor, R.string.action_tag_editor, R.drawable.ic_edit_24dp, onItemClick)
                             overflowItem(R.id.action_web_search, R.string.web_search, R.drawable.ic_language_24dp, onItemClick)
                             overflowItem(R.id.action_share, R.string.action_share, R.drawable.ic_share_24dp, onItemClick)
+                            overflowItem(R.id.action_share_now_playing, R.string.share_now_playing, R.drawable.ic_share_24dp, onItemClick)
                             overflowItem(R.id.action_delete_from_device, R.string.action_delete_from_device, R.drawable.ic_delete_24dp, onItemClick)
                             overflowItem(R.id.action_details, R.string.action_details, R.drawable.ic_info_24dp, onItemClick)
                         }
                     }
                     PlayerAction(
-                        if (repeat == Player.REPEAT_MODE_ONE) R.drawable.ic_repeat_one_24dp else R.drawable.ic_repeat_24dp,
+                        when {
+                            repeatLoadNextPause -> R.drawable.ic_repeat_pause_24dp
+                            repeat == Player.REPEAT_MODE_ONE -> R.drawable.ic_repeat_one_24dp
+                            else -> R.drawable.ic_repeat_24dp
+                        },
                         R.string.action_cycle_repeat,
                         playerViewModel::cycleRepeatMode,
-                        tint = if (repeat == Player.REPEAT_MODE_OFF) AuroraDesign.muted else Color.White,
+                        tint = if (repeat == Player.REPEAT_MODE_OFF && !repeatLoadNextPause) AuroraDesign.muted else Color.White,
                         state =
                             stringResource(
-                                when (repeat) {
-                                    Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
-                                    Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
+                                when {
+                                    repeatLoadNextPause -> R.string.repeat_mode_load_next_pause
+                                    repeat == Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
+                                    repeat == Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
                                     else -> R.string.repeat_mode_off
                                 },
                             ),
                     )
-                    PlayerAction(R.drawable.ic_shuffle_24dp, R.string.action_toggle_shuffle, playerViewModel::toggleShuffleMode, onLongClick = onShuffleOptions, tint = if (shuffle) Color.White else AuroraDesign.muted, state = stringResource(if (shuffle) R.string.shuffle_on else R.string.shuffle_off), longLabel = R.string.shuffle_mode_header)
+                    PlayerAction(
+                        if (randomize) R.drawable.ic_randomize_24dp else R.drawable.ic_shuffle_24dp,
+                        R.string.action_toggle_shuffle,
+                        playerViewModel::toggleShuffleMode,
+                        onLongClick = onShuffleOptions,
+                        tint = if (shuffle) Color.White else AuroraDesign.muted,
+                        state =
+                            stringResource(
+                                when {
+                                    randomize -> R.string.randomize_on
+                                    shuffle -> R.string.shuffle_on
+                                    else -> R.string.shuffle_off
+                                },
+                            ),
+                        longLabel = R.string.shuffle_mode_header,
+                    )
                 }
-                PlayerProgress(playerViewModel, shown, playing)
+                PlayerProgress(playerViewModel, shown, playing, onSeekTo)
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     PlayerAction(R.drawable.ic_volume_up_24dp, R.string.sound_settings, { onAction(NowPlayingAction.SoundSettings) })
-                    PlayerAction(if (style == NowPlayingScreen.M3) R.drawable.ic_previous_m3_24dp else R.drawable.ic_previous_24dp, R.string.action_previous, playerViewModel::seekToPrevious, playerViewModel::seekBack, iconSize = 28, repeatOnHold = true, longLabel = R.string.action_seek_backward)
+                    PlayerAction(if (style == NowPlayingScreen.M3) R.drawable.ic_previous_m3_24dp else R.drawable.ic_previous_24dp, R.string.action_previous, playerViewModel::seekToPrevious, if (seekControlsAvailable) playerViewModel::seekBack else null, iconSize = 28, repeatOnHold = seekControlsAvailable, longLabel = if (seekControlsAvailable) R.string.action_seek_backward else null)
                     PlayPauseButton(style, playing, shown, playerViewModel::togglePlayPause)
-                    PlayerAction(if (style == NowPlayingScreen.M3) R.drawable.ic_next_m3_24dp else R.drawable.ic_next_24dp, R.string.action_next, playerViewModel::seekToNext, playerViewModel::seekForward, iconSize = 28, repeatOnHold = true, longLabel = R.string.action_seek_forward)
+                    PlayerAction(if (style == NowPlayingScreen.M3) R.drawable.ic_next_m3_24dp else R.drawable.ic_next_24dp, R.string.action_next, playerViewModel::seekToNext, if (seekControlsAvailable) playerViewModel::seekForward else null, iconSize = 28, repeatOnHold = seekControlsAvailable, longLabel = if (seekControlsAvailable) R.string.action_seek_forward else null)
                     PlayerAction(R.drawable.ic_equalizer_24dp, R.string.equalizer_label, onEqualizer)
                 }
                 if (Preferences.isShowNextSong) {
@@ -552,6 +613,7 @@ private fun PlayerProgress(
     viewModel: PlayerViewModel,
     shown: Boolean,
     playing: Boolean,
+    onSeekTo: () -> Unit,
 ) {
     val position = if (shown) viewModel.progressFlow.collectAsStateWithLifecycle().value else viewModel.progress
     val duration by viewModel.durationFlow.collectAsStateWithLifecycle()
@@ -560,15 +622,25 @@ private fun PlayerProgress(
     val preferences = remember(context) { PreferenceManager.getDefaultSharedPreferences(context) }
     val remaining by preferences.observeKeyAsState(PREFER_REMAINING_TIME, Preferences.preferRemainingTime)
     val squiggly by preferences.observeKeyAsState(SQUIGGLY_SEEK_BAR, Preferences.squigglySeekBar)
+    val thumbOnly by preferences.observeKeyAsState(SEEK_BAR_TOUCH_ONLY_ON_THUMB, Preferences.seekBarTouchOnlyOnThumb)
     var seek by remember { mutableStateOf<Float?>(null) }
     val total = duration.coerceAtLeast(1L)
     val progress = seek ?: position.coerceAtLeast(0L).toFloat().coerceAtMost(total.toFloat())
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(progress.toLong().asReadableDuration(), fontSize = 12.sp, color = AuroraDesign.muted)
+        Text(
+            progress.toLong().asReadableDuration(),
+            Modifier
+                .sizeIn(minWidth = 48.dp, minHeight = 48.dp)
+                .clickable(onClickLabel = stringResource(R.string.seek_to_title), onClick = onSeekTo)
+                .wrapContentHeight(Alignment.CenterVertically),
+            fontSize = 12.sp,
+            color = AuroraDesign.muted,
+        )
         if (squiggly) {
             AndroidView(factory = {
                 MusicSlider(it).apply {
                     currentColor = android.graphics.Color.WHITE
+                    touchOnlyOnThumb = Preferences.seekBarTouchOnlyOnThumb
                     setListener(
                         object : MusicSlider.Listener {
                             override fun onProgressChanged(
@@ -590,6 +662,7 @@ private fun PlayerProgress(
                 }
             }, update = { slider ->
                 slider.animateSquigglyProgress = motionScale > 0f && playing
+                slider.touchOnlyOnThumb = thumbOnly
                 slider.valueTo = total.coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
                 if (!slider.isTrackingTouch) slider.value = progress.toInt()
             }, onRelease = {
@@ -597,24 +670,48 @@ private fun PlayerProgress(
                 it.animateSquigglyProgress = false
             }, modifier = Modifier.weight(1f).height(48.dp))
         } else {
-            Slider(
-                value = progress,
-                onValueChange = { seek = it },
-                onValueChangeFinished = {
-                    viewModel.seekTo(progress.toLong())
-                    seek = null
-                },
-                valueRange = 0f..total.toFloat(),
-                enabled = duration > 0,
-                modifier = Modifier.weight(1f),
-                thumb = { Box(Modifier.size(17.dp).background(Color.White, CircleShape)) },
-                track = { state ->
-                    Canvas(Modifier.fillMaxWidth().height(4.dp)) {
-                        drawLine(Color(0xFF181818), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 4.dp.toPx(), StrokeCap.Round)
-                        drawLine(Color.White, Offset(0f, size.height / 2), Offset(size.width * (state.value / total.toFloat()).coerceIn(0f, 1f), size.height / 2), 4.dp.toPx(), StrokeCap.Round)
-                    }
-                },
-            )
+            BoxWithConstraints(Modifier.weight(1f)) {
+                Slider(
+                    value = progress,
+                    onValueChange = { seek = it },
+                    onValueChangeFinished = {
+                        viewModel.seekTo(progress.toLong())
+                        seek = null
+                    },
+                    valueRange = 0f..total.toFloat(),
+                    enabled = duration > 0,
+                    modifier = Modifier.fillMaxWidth(),
+                    thumb = { Box(Modifier.size(17.dp).background(Color.White, CircleShape)) },
+                    track = { state ->
+                        Canvas(Modifier.fillMaxWidth().height(4.dp)) {
+                            drawLine(Color(0xFF181818), Offset(0f, size.height / 2), Offset(size.width, size.height / 2), 4.dp.toPx(), StrokeCap.Round)
+                            drawLine(Color.White, Offset(0f, size.height / 2), Offset(size.width * (state.value / total.toFloat()).coerceIn(0f, 1f), size.height / 2), 4.dp.toPx(), StrokeCap.Round)
+                        }
+                    },
+                )
+                if (thumbOnly && duration > 0) {
+                    val fraction = (progress / total.toFloat()).coerceIn(0f, 1f)
+                    val thumbCenter = 10.dp + (maxWidth - 20.dp) * fraction
+                    val gap = 22.dp
+                    val noInteraction = remember { MutableInteractionSource() }
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterStart)
+                            .fillMaxHeight()
+                            .width((thumbCenter - gap).coerceAtLeast(0.dp))
+                            .clearAndSetSemantics { }
+                            .clickable(interactionSource = noInteraction, indication = null, onClick = {}),
+                    )
+                    Box(
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .fillMaxHeight()
+                            .width((maxWidth - thumbCenter - gap).coerceAtLeast(0.dp))
+                            .clearAndSetSemantics { }
+                            .clickable(interactionSource = noInteraction, indication = null, onClick = {}),
+                    )
+                }
+            }
         }
         val timeDescription = stringResource(if (remaining) R.string.aurora_remaining_time else R.string.aurora_total_time)
         val toggleDescription = stringResource(if (remaining) R.string.aurora_total_time else R.string.aurora_remaining_time)

@@ -102,8 +102,11 @@ import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.lyrics.LyricsMode
 import com.ssilencce.data.model.lyrics.LyricsSource
+import com.ssilencce.data.model.lyrics.LyricsSourceChoice
+import com.ssilencce.data.model.lyrics.LyricsSourceSelection
 import com.ssilencce.data.model.lyrics.RawLyrics
 import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.extensions.files.getDocumentDisplayName
 import com.ssilencce.extensions.hasR
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.media.isArtistNameUnknown
@@ -118,10 +121,14 @@ import com.ssilencce.ui.component.compose.menu.MenuItem
 import com.ssilencce.ui.component.compose.menu.OverflowMenu
 import com.ssilencce.ui.component.compose.menu.TopAppBarMenu
 import com.ssilencce.ui.screen.library.LibraryViewModel
+import com.ssilencce.ui.screen.player.PlayerViewModel
 import com.ssilencce.util.Preferences
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.viewmodel.koinActivityViewModel
+import java.io.File
 import kotlin.time.Duration.Companion.milliseconds
 
 private val SnapshotMapSaver =
@@ -153,6 +160,11 @@ enum class LyricsEditorResult {
     Success,
 }
 
+private enum class LyricsEditorMode {
+    Edit,
+    Sync,
+}
+
 @Immutable
 sealed class LyricsEditorUiState(
     open val isLoading: Boolean,
@@ -172,6 +184,7 @@ sealed class LyricsEditorUiState(
 fun LyricsEditorScreen(
     song: Song,
     viewModel: LyricsViewModel = koinActivityViewModel(),
+    playerViewModel: PlayerViewModel = koinActivityViewModel(),
     onBackClick: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -184,6 +197,7 @@ fun LyricsEditorScreen(
     val coroutineScope = rememberCoroutineScope()
     val textFieldState = rememberTextFieldState()
     val focusRequester = remember { FocusRequester() }
+    val lyricsSyncState = rememberLyricsSyncState()
 
     val permissionRequestLauncher =
         rememberLauncherForActivityResult(
@@ -266,6 +280,66 @@ fun LyricsEditorScreen(
     val editedContent = rememberSaveable(saver = SnapshotMapSaver) { mutableStateMapOf() }
     var selectedSource by rememberSaveable { mutableStateOf(LyricsSource.Embedded) }
     val isFileSource by remember { derivedStateOf { selectedSource == LyricsSource.File } }
+    var editorMode by rememberSaveable { mutableStateOf(LyricsEditorMode.Edit) }
+    var pendingLrcExport by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val playerPosition by playerViewModel.progressFlow.collectAsStateWithLifecycle()
+    val playerIsPlaying by playerViewModel.isPlayingFlow.collectAsStateWithLifecycle()
+    val currentSong by playerViewModel.currentSongFlow.collectAsStateWithLifecycle()
+    val isCurrentSong = currentSong.id == song.id
+
+    val createLrcLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/plain")) { uri ->
+            val lrc = pendingLrcExport
+            pendingLrcExport = null
+            if (uri != null && lrc != null) {
+                coroutineScope.launch {
+                    val success =
+                        withContext(Dispatchers.IO) {
+                            runCatching {
+                                context.contentResolver.openOutputStream(uri, "wt")?.use { output ->
+                                    output.write(lrc.toByteArray(Charsets.UTF_8))
+                                } != null
+                            }.getOrDefault(false)
+                        }
+                    if (success) {
+                        runCatching {
+                            context.contentResolver.takePersistableUriPermission(
+                                uri,
+                                Intent.FLAG_GRANT_READ_URI_PERMISSION,
+                            )
+                        }
+                        context.showToast(R.string.lyrics_sync_file_saved)
+                        viewModel.setLyricsSourceSelection(
+                            song,
+                            LyricsSourceSelection(
+                                source = LyricsSourceChoice.File,
+                                fileUri = uri.toString(),
+                                fileName = context.getDocumentDisplayName(uri) ?: uri.lastPathSegment,
+                            ),
+                        )
+                    } else {
+                        context.showToast(R.string.lyrics_sync_file_failed)
+                    }
+                }
+            }
+        }
+
+    LaunchedEffect(isFileSource) {
+        if (isFileSource) {
+            editorMode = LyricsEditorMode.Edit
+        }
+    }
+
+    var lastSource by rememberSaveable { mutableStateOf(selectedSource) }
+    LaunchedEffect(selectedSource) {
+        if (selectedSource != lastSource) {
+            lastSource = selectedSource
+            if (editorMode == LyricsEditorMode.Sync) {
+                editorMode = LyricsEditorMode.Edit
+            }
+        }
+    }
 
     LaunchedEffect(uiState, selectedSource) {
         uiState.let {
@@ -409,6 +483,74 @@ fun LyricsEditorScreen(
         }
     }
 
+    fun saveSyncedLyricsEmbedded(lrc: String) {
+        editedContent[LyricsSource.Embedded] = lrc
+        textFieldState.setContent(lrc)
+        viewModel.saveLyrics(song, mapOf(LyricsSource.Embedded to lrc))
+    }
+
+    fun selectMode(mode: LyricsEditorMode) {
+        if (mode == LyricsEditorMode.Sync) {
+            lyricsSyncState.setContent(textFieldState.text.toString())
+        }
+        editorMode = mode
+    }
+
+    fun exportSyncedLyricsFile(lrc: String) {
+        coroutineScope.launch {
+            val savedDirectly =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val songFile = File(song.data)
+                        val parent = songFile.parentFile ?: return@runCatching false
+                        File(parent, "${songFile.nameWithoutExtension}.lrc").writeText(lrc)
+                        true
+                    }.getOrDefault(false)
+                }
+            if (savedDirectly) {
+                context.showToast(R.string.lyrics_sync_file_saved)
+                viewModel.onLyricsFileSaved(song)
+            } else {
+                pendingLrcExport = lrc
+                val baseName = File(song.data).nameWithoutExtension.ifBlank { song.title }
+                createLrcLauncher.launch("$baseName.lrc")
+            }
+        }
+    }
+
+    val editorModeSelector: @Composable () -> Unit = {
+        if (!isFileSource) {
+            ButtonGroup(
+                onSelected = { selectMode(it) },
+                buttonItems = LyricsEditorMode.entries,
+                buttonStateResolver = { it == editorMode },
+                buttonTextResolver = { mode ->
+                    stringResource(
+                        if (mode == LyricsEditorMode.Edit) {
+                            R.string.lyrics_edit_mode
+                        } else {
+                            R.string.lyrics_sync_mode
+                        },
+                    )
+                },
+                buttonIconResolver = { mode, isChecked ->
+                    if (isChecked) {
+                        painterResource(
+                            if (mode == LyricsEditorMode.Edit) {
+                                R.drawable.ic_edit_24dp
+                            } else {
+                                R.drawable.ic_timer_24dp
+                            },
+                        )
+                    } else {
+                        null
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -427,15 +569,14 @@ fun LyricsEditorScreen(
                     }
                 },
                 actions = {
-                    if (Preferences.isAuroraAppearance) {
+                    if (Preferences.isAuroraAppearance && editorMode == LyricsEditorMode.Edit && !isFileSource) {
                         TopAppBarMenu(
                             items =
                                 listOf(
                                     MenuItem.Button.DropDown(
-                                        text = stringResource(R.string.aurora_lyrics_sync) + " · " + stringResource(R.string.aurora_future_title),
+                                        text = stringResource(R.string.aurora_lyrics_sync),
                                         icon = painterResource(R.drawable.ic_timer_24dp),
-                                        enabled = false,
-                                        onClick = {},
+                                        onClick = { selectMode(LyricsEditorMode.Sync) },
                                     ),
                                     MenuItem.Button.DropDown(
                                         text = stringResource(R.string.aurora_lyrics_qr) + " · " + stringResource(R.string.aurora_future_title),
@@ -446,7 +587,7 @@ fun LyricsEditorScreen(
                                 ),
                         )
                     }
-                    if (isLandscape) {
+                    if (isLandscape && editorMode == LyricsEditorMode.Edit) {
                         TopAppBarMenu(
                             showItemIcons = true,
                             items =
@@ -492,7 +633,7 @@ fun LyricsEditorScreen(
             )
         },
         bottomBar = {
-            if (!isLandscape) {
+            if (!isLandscape && editorMode == LyricsEditorMode.Edit) {
                 LyricsEditorBottomBar(
                     enabled = !uiState.isLoading && !isFileSource,
                     downloadEnabled = isLyricsDownloadEnabled,
@@ -534,24 +675,42 @@ fun LyricsEditorScreen(
                         modifier = Modifier.fillMaxWidth(),
                     )
 
+                    editorModeSelector()
+
                     LyricsFileNotice(
                         isFileSource = isFileSource,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
 
-                OutlinedTextField(
-                    state = textFieldState,
-                    readOnly = isFileSource,
-                    placeholder = {
-                        Text(stringResource(R.string.write_lyrics_here))
-                    },
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxHeight()
-                            .focusRequester(focusRequester),
-                )
+                if (editorMode == LyricsEditorMode.Edit) {
+                    OutlinedTextField(
+                        state = textFieldState,
+                        readOnly = isFileSource,
+                        placeholder = {
+                            Text(stringResource(R.string.write_lyrics_here))
+                        },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                                .focusRequester(focusRequester),
+                    )
+                } else {
+                    LyricsSyncEditor(
+                        state = lyricsSyncState,
+                        currentPosition = if (isCurrentSong) playerPosition.coerceAtLeast(0L) else 0L,
+                        isPlaying = playerIsPlaying,
+                        isCurrentSong = isCurrentSong,
+                        onTogglePlayPause = { playerViewModel.togglePlayPause() },
+                        onSaveEmbedded = { saveSyncedLyricsEmbedded(it) },
+                        onExportFile = { exportSyncedLyricsFile(it) },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                    )
+                }
             }
         } else {
             Column(
@@ -577,19 +736,42 @@ fun LyricsEditorScreen(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
 
-                OutlinedTextField(
-                    state = textFieldState,
-                    readOnly = isFileSource,
-                    placeholder = {
-                        Text(stringResource(R.string.write_lyrics_here))
-                    },
-                    modifier =
-                        Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .focusRequester(focusRequester),
-                )
+                if (!isFileSource) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                        editorModeSelector()
+                    }
+                }
+
+                if (editorMode == LyricsEditorMode.Edit) {
+                    OutlinedTextField(
+                        state = textFieldState,
+                        readOnly = isFileSource,
+                        placeholder = {
+                            Text(stringResource(R.string.write_lyrics_here))
+                        },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .focusRequester(focusRequester),
+                    )
+                } else {
+                    LyricsSyncEditor(
+                        state = lyricsSyncState,
+                        currentPosition = if (isCurrentSong) playerPosition.coerceAtLeast(0L) else 0L,
+                        isPlaying = playerIsPlaying,
+                        isCurrentSong = isCurrentSong,
+                        onTogglePlayPause = { playerViewModel.togglePlayPause() },
+                        onSaveEmbedded = { saveSyncedLyricsEmbedded(it) },
+                        onExportFile = { exportSyncedLyricsFile(it) },
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp),
+                    )
+                }
 
                 LyricsFileNotice(
                     isFileSource = isFileSource,

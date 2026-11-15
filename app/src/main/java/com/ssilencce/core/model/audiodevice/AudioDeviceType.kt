@@ -113,6 +113,20 @@ enum class AudioDeviceType(
                 MediaRouter.RouteInfo.DEVICE_TYPE_BUILTIN_SPEAKER,
             ),
     ),
+    Cast(
+        iconRes = R.drawable.ic_cast_24dp,
+        nameRes = R.string.audio_device_cast,
+        isProduct = true,
+        audioDeviceTypes = emptyArray(),
+        mediaRouteTypes =
+            arrayOf(
+                MediaRouter.RouteInfo.DEVICE_TYPE_TV,
+                MediaRouter.RouteInfo.DEVICE_TYPE_SPEAKER,
+                MediaRouter.RouteInfo.DEVICE_TYPE_REMOTE_SPEAKER,
+                MediaRouter.RouteInfo.DEVICE_TYPE_AUDIO_VIDEO_RECEIVER,
+                MediaRouter.RouteInfo.DEVICE_TYPE_GROUP,
+            ),
+    ),
     Unknown(
         iconRes = R.drawable.ic_speaker_24dp,
         nameRes = R.string.audio_device_builtin_speaker,

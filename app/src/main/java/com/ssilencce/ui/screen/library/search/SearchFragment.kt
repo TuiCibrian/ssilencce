@@ -46,6 +46,7 @@ import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import androidx.transition.TransitionManager
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.Chip
 import com.ssilencce.R
 import com.ssilencce.data.SearchFilter
 import com.ssilencce.data.local.room.PlaylistWithSongs
@@ -80,6 +81,7 @@ import com.ssilencce.ui.component.menu.onArtistMenu
 import com.ssilencce.ui.component.menu.onPlaylistMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.flow.collectLatest
 import net.yslibrary.android.keyboardvisibilityevent.KeyboardVisibilityEvent
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -158,13 +160,22 @@ class SearchFragment :
         }
         binding.voiceSearch.setOnClickListener(this)
         binding.clearText.setOnClickListener(this)
+        binding.clearSearchHistory.setOnClickListener {
+            Preferences.clearSearchHistory()
+            renderSearchHistory()
+        }
         binding.modeButtonGroup.addOnButtonCheckedListener(this)
         binding.searchView.apply {
             reactionToKey(KeyEvent.KEYCODE_ENTER) {
+                commitSearchQuery()
                 hideSoftKeyboard()
             }
             doAfterTextChanged {
                 search(it?.toString())
+            }
+            setOnLongClickListener {
+                findNavController().navigate(R.id.nav_ghost_search)
+                true
             }
             focusAndShowKeyboard()
         }
@@ -214,6 +225,7 @@ class SearchFragment :
                 },
             )
         }
+        renderSearchHistory()
     }
 
     private val adapterDataObserver =
@@ -224,7 +236,7 @@ class SearchFragment :
                 if (!isEmpty) {
                     binding.recyclerView.scheduleLayoutAnimation()
                 }
-                binding.empty.isVisible = isEmpty
+                binding.empty.isVisible = isEmpty && !binding.searchHistoryScroll.isVisible
             }
         }
 
@@ -288,6 +300,7 @@ class SearchFragment :
         song: Song,
         results: List<Any>,
     ) {
+        commitSearchQuery()
         viewModel.songClick(song, results)
     }
 
@@ -300,6 +313,7 @@ class SearchFragment :
         album: Album,
         sharedElements: Array<Pair<View, String>>,
     ) {
+        commitSearchQuery()
         findNavController().navigate(
             R.id.nav_album_detail,
             albumDetailArgs(album.id),
@@ -318,6 +332,7 @@ class SearchFragment :
         artist: Artist,
         sharedElements: Array<Pair<View, String>>,
     ) {
+        commitSearchQuery()
         findNavController().navigate(
             R.id.nav_artist_detail,
             artistDetailArgs(artist),
@@ -333,6 +348,7 @@ class SearchFragment :
     ): Boolean = artist.onArtistMenu(this, menuItem)
 
     override fun playlistClick(playlist: PlaylistWithSongs) {
+        commitSearchQuery()
         findNavController().navigate(R.id.nav_playlist_detail, playlistDetailArgs(playlist.playlistEntity.playListId))
     }
 
@@ -349,6 +365,7 @@ class SearchFragment :
     }
 
     override fun genreClick(genre: Genre) {
+        commitSearchQuery()
         findNavController().navigate(R.id.nav_genre_detail, genreDetailArgs(genre))
     }
 
@@ -358,6 +375,50 @@ class SearchFragment :
         binding.voiceSearch.isGone = query.isNotEmpty()
         binding.clearText.isVisible = query.isNotEmpty()
         viewModel.updateQuery(query = query)
+        updateSearchHistoryVisibility()
+    }
+
+    private fun commitSearchQuery() {
+        val query =
+            binding.searchView.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        if (query.isEmpty()) return
+        Preferences.addSearchHistory(query)
+        renderSearchHistory()
+    }
+
+    private fun renderSearchHistory() {
+        val queries = Preferences.searchHistory()
+        binding.searchHistoryGroup.removeAllViews()
+        queries.forEach { query ->
+            val chip =
+                Chip(requireContext()).apply {
+                    text = query
+                    isCheckable = false
+                    setCloseIconResource(R.drawable.ic_close_24dp)
+                    closeIconContentDescription = getString(R.string.clear_action)
+                    isCloseIconVisible = true
+                    setOnClickListener {
+                        binding.searchView.setText(query)
+                        binding.searchView.setSelection(query.length)
+                    }
+                    setOnCloseIconClickListener {
+                        Preferences.removeSearchHistory(query)
+                        renderSearchHistory()
+                    }
+                }
+            binding.searchHistoryGroup.addView(chip)
+        }
+        updateSearchHistoryVisibility()
+    }
+
+    private fun updateSearchHistoryVisibility() {
+        val showHistory =
+            binding.searchView.text.isNullOrEmpty() && binding.searchHistoryGroup.childCount > 0
+        binding.searchHistoryScroll.isVisible = showHistory
+        binding.empty.isVisible = !showHistory && searchAdapter.isEmpty
     }
 
     private fun startVoiceSearch() {

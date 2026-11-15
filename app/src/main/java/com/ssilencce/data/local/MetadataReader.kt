@@ -72,6 +72,13 @@ class MetadataReader(
         return "${audioProperties!!.bitrate} kbps"
     }
 
+    /** Returns the stream length in milliseconds, or null when TagLib cannot determine it. */
+    fun durationMs(): Long? = audioProperties?.length?.toLong()?.takeIf { it > 0 }
+
+    fun sampleRateHz(): Int? = audioProperties?.sampleRate?.takeIf { it > 0 }
+
+    fun channelCount(): Int? = audioProperties?.channels?.takeIf { it > 0 }
+
     fun sampleRate(): String? {
         if (audioProperties == null || audioProperties!!.sampleRate <= 0) {
             return null

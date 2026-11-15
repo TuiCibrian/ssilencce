@@ -72,5 +72,10 @@
 - [x] 8.4 Amend the OpenSpec proposal/design/spec/tasks and add the dated decision record; add a
   source/pure probe for restart-at-zero.
 - [ ] 8.5 Independent Spec and Standards/security review of this final delta.
-- [ ] 8.6 Fresh frozen build and targeted runtime gate: new queue, start at 0, play; classify the
-  historical Source error separately.
+- [x] 8.6 Fresh frozen build and targeted runtime gate: new queue, start at 0, play; classify the
+  historical Source error separately. **emulator-qa 2026-11-14 PASS** on the final-gate x86_64
+  APK (`E5FC0E1B1F81F180F16E1463FC71E2AE56298A1E98432FCDB019E1331F48D01A`): before the switch
+  Long Track was paused at 20.712 s (active item id 4); choosing Most played produced a
+  13-item weighted queue, `state=3` playing, `position=0`, active item id 0 and metadata
+  `MD One`; no Source error occurred. Evidence:
+  `runtime/verify/results/evidence/41-shuffle-sheet.*`, `42-special-shuffle-after.png`.

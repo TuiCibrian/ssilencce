@@ -29,12 +29,14 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import coil3.request.crossfade
 import com.google.android.material.transition.MaterialArcMotion
 import com.google.android.material.transition.MaterialContainerTransform
 import com.ssilencce.R
 import com.ssilencce.coil.albumImage
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.core.sort.SortMode
@@ -99,7 +101,9 @@ class AlbumDetailFragment :
 
     private lateinit var headerAdapter: HeaderAdapter
     private lateinit var songHeaderAdapter: SectionHeaderAdapter
-    private lateinit var simpleSongAdapter: SimpleSongAdapter
+    private val songSectionAdapters = mutableListOf<SectionHeaderAdapter?>()
+    private val songAdapters = mutableListOf<SimpleSongAdapter>()
+    private var songGroups: List<Pair<String?, List<Song>>> = emptyList()
     private lateinit var moreAlbumsAdapter: HorizontalListAdapter
     private lateinit var wikiAdapter: WikiAdapter
     private lateinit var concatAdapter: ConcatAdapter
@@ -169,21 +173,46 @@ class AlbumDetailFragment :
 
     private fun getAlbum(): Album = detailViewModel.getAlbum()
 
-    private fun createSongAdapter() {
+    private fun createSongAdapters() {
         val itemLayoutRes =
             if (Preferences.compactAlbumSongView) {
                 R.layout.item_song
             } else {
                 R.layout.item_song_detailed
             }
-        simpleSongAdapter =
-            SimpleSongAdapter(
-                context = requireActivity(),
-                songs = getAlbum().songs,
-                layoutRes = itemLayoutRes,
-                sortMode = SongSortMode.AlbumSongs,
-                callback = this,
+        songSectionAdapters.clear()
+        songAdapters.clear()
+        songGroups = buildSongGroups(allSongs)
+        songGroups.forEach { (title, songs) ->
+            songSectionAdapters.add(title?.let { SectionHeaderAdapter(it) })
+            songAdapters.add(
+                SimpleSongAdapter(
+                    context = requireActivity(),
+                    songs = songs,
+                    layoutRes = itemLayoutRes,
+                    sortMode = SongSortMode.AlbumSongs,
+                    callback = this,
+                ),
             )
+        }
+    }
+
+    /**
+     * Multi-disc albums are grouped per disc so the list can show a section header for each
+     * disc. Other sort orders keep a single flat list without disc headers.
+     */
+    private fun buildSongGroups(songs: List<Song>): List<Pair<String?, List<Song>>> {
+        if (SongSortMode.AlbumSongs.selectedKey != SortKey.Track) {
+            return listOf(null to songs)
+        }
+        val discs = songs.map { it.discNumber.coerceAtLeast(1) }.distinct()
+        if (discs.size <= 1) {
+            return listOf(null to songs)
+        }
+        return songs
+            .groupBy { it.discNumber.coerceAtLeast(1) }
+            .toSortedMap()
+            .map { (disc, discSongs) -> getString(R.string.disc_x, disc) to discSongs }
     }
 
     private fun setupRecyclerView() {
@@ -218,7 +247,7 @@ class AlbumDetailFragment :
                     detailViewModel.loadAlbumDetail()
                 }
             }
-        createSongAdapter()
+        createSongAdapters()
 
         val albumAdapter = AlbumAdapter(requireActivity(), emptyList(), R.layout.item_image, callback = this)
         moreAlbumsAdapter =
@@ -235,14 +264,16 @@ class AlbumDetailFragment :
     }
 
     private fun updateConcatAdapter() {
-        concatAdapter =
-            ConcatAdapter(
-                headerAdapter,
-                songHeaderAdapter,
-                simpleSongAdapter,
-                moreAlbumsAdapter,
-                wikiAdapter,
-            )
+        val adapters = mutableListOf<RecyclerView.Adapter<out RecyclerView.ViewHolder>>()
+        adapters.add(headerAdapter)
+        adapters.add(songHeaderAdapter)
+        songAdapters.forEachIndexed { index, songAdapter ->
+            songSectionAdapters.getOrNull(index)?.let { adapters.add(it) }
+            adapters.add(songAdapter)
+        }
+        adapters.add(moreAlbumsAdapter)
+        adapters.add(wikiAdapter)
+        concatAdapter = ConcatAdapter(*adapters.toTypedArray())
         binding.recyclerView.adapter = concatAdapter
     }
 
@@ -275,28 +306,34 @@ class AlbumDetailFragment :
         headerAdapter.notifyItemChanged(0)
 
         allSongs = album.songs
+        createSongAdapters()
+        updateConcatAdapter()
         applyQuickSearch()
         loadSimilarContent(album)
         loadWiki(album)
     }
 
     private fun visibleSongs(): List<Song> =
-        if (quickSearchQuery.isBlank() || !::simpleSongAdapter.isInitialized) {
+        if (quickSearchQuery.isBlank() || songAdapters.isEmpty()) {
             allSongs
         } else {
-            simpleSongAdapter.dataSet
+            songAdapters.flatMap { it.dataSet }
         }
 
     private fun applyQuickSearch() {
-        if (!::simpleSongAdapter.isInitialized) return
-        simpleSongAdapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+        if (songAdapters.isEmpty()) return
+        songGroups.forEachIndexed { index, (_, songs) ->
+            val filtered = songs.filter { it.matchesDetailQuery(quickSearchQuery) }
+            songAdapters[index].dataSet = filtered
+            songSectionAdapters[index]?.setVisible(filtered.isNotEmpty())
+        }
         updateSongHeader()
     }
 
     private fun updateSongHeader() {
         val album = getAlbum()
         songHeaderAdapter.updateTitle(
-            if (allSongs.isNotEmpty() && quickSearchQuery.isNotBlank() && simpleSongAdapter.dataSet.isEmpty()) {
+            if (allSongs.isNotEmpty() && quickSearchQuery.isNotBlank() && songAdapters.all { it.dataSet.isEmpty() }) {
                 getString(R.string.quick_search_empty)
             } else {
                 buildInfoString(
@@ -436,7 +473,7 @@ class AlbumDetailFragment :
                 val isChecked = !menuItem.isChecked
                 Preferences.compactAlbumSongView = isChecked
                 menuItem.isChecked = isChecked
-                createSongAdapter()
+                createSongAdapters()
                 updateConcatAdapter()
                 applyQuickSearch()
                 true

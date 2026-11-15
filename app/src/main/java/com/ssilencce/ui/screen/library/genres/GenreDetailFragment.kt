@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ssilencce.R
 import com.ssilencce.core.model.GenreSubcategory
+import com.ssilencce.core.model.menu.MenuCustomizationGroup
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.ArtistSortMode
@@ -63,6 +64,7 @@ import com.ssilencce.ui.component.base.QuickSearchHost
 import com.ssilencce.ui.component.base.QuickSearchPolicy
 import com.ssilencce.ui.component.base.QuickSearchState
 import com.ssilencce.ui.component.base.matchesDetailQuery
+import com.ssilencce.ui.component.menu.MenuCustomizationFilter
 import com.ssilencce.ui.component.menu.onAlbumMenu
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.component.menu.onArtistMenu
@@ -356,6 +358,7 @@ class GenreDetailFragment :
         inflater: MenuInflater,
     ) {
         inflater.inflate(R.menu.menu_genre_detail, menu)
+        MenuCustomizationFilter.apply(menu, MenuCustomizationGroup.Genre)
         when (subcategory) {
             GenreSubcategory.Songs -> SongSortMode.GenreSongs.createMenu(menu)
             GenreSubcategory.Albums -> AlbumSortMode.GenreAlbums.createMenu(menu)

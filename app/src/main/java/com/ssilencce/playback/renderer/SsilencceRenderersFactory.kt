@@ -24,23 +24,29 @@ import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.MonoAudioProcessor
 import com.ssilencce.playback.processor.ReplayGainAudioProcessor
 
 @OptIn(UnstableApi::class)
 class SsilencceRenderersFactory(
     context: Context,
     private val balanceProcessor: BalanceAudioProcessor,
+    private val monoProcessor: MonoAudioProcessor,
     private val replayGainProcessor: ReplayGainAudioProcessor,
+    private val isGaplessEnabled: () -> Boolean = { true },
 ) : DefaultRenderersFactory(context) {
     override fun buildAudioSink(
         context: Context,
         enableFloatOutput: Boolean,
         enableAudioOutputPlaybackParams: Boolean,
     ): AudioSink =
-        DefaultAudioSink
-            .Builder(context)
-            .setAudioProcessors(arrayOf(balanceProcessor, replayGainProcessor))
-            .setEnableFloatOutput(enableFloatOutput)
-            .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
-            .build()
+        GaplessGateAudioSink(
+            DefaultAudioSink
+                .Builder(context)
+                .setAudioProcessors(arrayOf(balanceProcessor, monoProcessor, replayGainProcessor))
+                .setEnableFloatOutput(enableFloatOutput)
+                .setEnableAudioOutputPlaybackParameters(enableAudioOutputPlaybackParams)
+                .build(),
+            isGaplessEnabled,
+        )
 }

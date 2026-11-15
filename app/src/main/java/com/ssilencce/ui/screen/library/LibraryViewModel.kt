@@ -199,6 +199,24 @@ class LibraryViewModel(
             }
         }
 
+    /**
+     * Refreshes every library surface after a filter change (for example ghost folders).
+     */
+    fun reloadAll() {
+        viewModelScope.launch(IO) {
+            fetchSongs()
+            fetchAlbums()
+            fetchArtists()
+            fetchAlbumArtists()
+            fetchComposers()
+            fetchPlaylists()
+            fetchGenres()
+            fetchYears()
+            fetchSuggestions()
+            fetchFolders()
+        }
+    }
+
     private suspend fun fetchSuggestions() {
         val currentValue =
             suggestions.value?.copy(state = SuggestedResult.State.Loading)

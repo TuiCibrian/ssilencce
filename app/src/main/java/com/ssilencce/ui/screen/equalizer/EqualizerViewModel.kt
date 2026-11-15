@@ -4,8 +4,6 @@ import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.ContentResolver
 import android.content.Context
-import android.content.Intent
-import android.media.audiofx.AudioEffect
 import android.net.Uri
 import android.util.JsonReader
 import android.util.JsonToken
@@ -20,6 +18,9 @@ import com.ssilencce.core.model.equalizer.CompressorState
 import com.ssilencce.core.model.equalizer.EqEngineMode
 import com.ssilencce.core.model.equalizer.EqProfile
 import com.ssilencce.core.model.equalizer.LimiterState
+import com.ssilencce.core.model.equalizer.ReverbPreset
+import com.ssilencce.core.model.equalizer.ReverbSettings
+import com.ssilencce.core.model.equalizer.SystemEqualizer
 import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 import com.ssilencce.data.local.MediaStoreWriter
 import com.ssilencce.data.model.replaygain.ReplayGainMode
@@ -27,7 +28,6 @@ import com.ssilencce.extensions.MIME_TYPE_APPLICATION
 import com.ssilencce.extensions.MIME_TYPE_PLAIN_TEXT
 import com.ssilencce.extensions.files.getContentUri
 import com.ssilencce.extensions.files.readString
-import com.ssilencce.extensions.resolveActivity
 import com.ssilencce.extensions.showToast
 import com.ssilencce.playback.equalizer.EqualizerManager
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +56,8 @@ class EqualizerViewModel(
     val balanceState = equalizerManager.balanceState
     val tempoState = equalizerManager.tempoState
     val replayGainState = equalizerManager.replayGainState
+    val reverbState = equalizerManager.reverbState
+    val monoOutput = equalizerManager.monoOutput
     val bitPerfectAudio = equalizerManager.bitPerfectAudio
     val audioOffload = equalizerManager.audioOffload
     val audioFloatOutput = equalizerManager.audioFloatOutput
@@ -229,14 +231,35 @@ class EqualizerViewModel(
         mode: ReplayGainMode = replayGainState.value.mode,
         preamp: Float = replayGainState.value.preamp,
         preampWithoutGain: Float = replayGainState.value.preampWithoutGain,
+        useEmbeddedTags: Boolean = replayGainState.value.useEmbeddedTags,
+        preventClipping: Boolean = replayGainState.value.preventClipping,
+        headroomDb: Float = replayGainState.value.headroomDb,
+        constantVolume: Boolean = replayGainState.value.constantVolume,
     ) = viewModelScope.launch(Dispatchers.IO) {
         equalizerManager.setReplayGain(
             replayGainState.value.copy(
                 mode = mode,
                 preamp = preamp,
                 preampWithoutGain = preampWithoutGain,
+                useEmbeddedTags = useEmbeddedTags,
+                preventClipping = preventClipping,
+                headroomDb = headroomDb,
+                constantVolume = constantVolume,
             ),
         )
+    }
+
+    fun setMonoOutput(enabled: Boolean) =
+        viewModelScope.launch(Dispatchers.IO) {
+            equalizerManager.setMonoOutput(enabled)
+        }
+
+    fun setReverb(
+        enabled: Boolean = reverbState.value.enabled,
+        preset: ReverbPreset = reverbState.value.preset,
+        settings: ReverbSettings = reverbState.value.settings,
+    ) = viewModelScope.launch(Dispatchers.IO) {
+        equalizerManager.setReverb(enabled, preset, settings)
     }
 
     fun setCompressor(
@@ -567,24 +590,17 @@ class EqualizerViewModel(
             equalizerManager.resetConfiguration()
         }
 
-    fun hasSystemEqualizer(context: Context): Boolean {
-        val intent = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-        return context.packageManager.resolveActivity(intent) != null
-    }
+    fun hasSystemEqualizer(context: Context): Boolean = SystemEqualizer.isAvailable(context)
 
     fun openSystemEqualizer(context: Context) {
         val sessionId = this.equalizerManager.eqSession.id
-        if (sessionId != AudioEffect.ERROR_BAD_VALUE) {
-            try {
-                val equalizer = Intent(AudioEffect.ACTION_DISPLAY_AUDIO_EFFECT_CONTROL_PANEL)
-                equalizer.putExtra(AudioEffect.EXTRA_AUDIO_SESSION, sessionId)
-                equalizer.putExtra(AudioEffect.EXTRA_CONTENT_TYPE, AudioEffect.CONTENT_TYPE_MUSIC)
-                (context as? Activity)?.startActivityForResult(equalizer, 500)
-            } catch (_: ActivityNotFoundException) {
-                context.showToast(R.string.no_equalizer)
-            }
-        } else {
-            context.showToast(R.string.no_audio_ID)
+        try {
+            (context as? Activity)?.startActivityForResult(
+                SystemEqualizer.displayPanelIntent(sessionId),
+                500,
+            )
+        } catch (_: ActivityNotFoundException) {
+            context.showToast(R.string.no_equalizer)
         }
     }
 }

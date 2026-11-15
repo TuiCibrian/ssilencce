@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:title="@string/battery_optimization_category"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:icon="@drawable/ic_battery_charging_full_24dp"
+            app:title="@string/battery_optimization_title"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="battery_optimization"/>
+
+        <Preference
+            app:iconSpaceReserved="true"
+            app:summary="@string/battery_optimization_note"
+            app:persistent="false"
+            app:selectable="false"
+            app:layout="@layout/list_item_view"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/battery_guide_steps_category"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:title="@string/battery_guide_steps_title_generic"
+            app:persistent="false"
+            app:selectable="false"
+            app:layout="@layout/list_item_view"
+            app:key="oem_steps"/>
+
+        <Preference
+            app:icon="@drawable/ic_push_pin_24dp"
+            app:title="@string/battery_guide_pin_title"
+            app:summary="@string/battery_guide_pin_summary"
+            app:persistent="false"
+            app:selectable="false"
+            app:layout="@layout/list_item_view"
+            app:key="pin_recents"/>
+
+        <Preference
+            app:icon="@drawable/ic_restart_alt_24dp"
+            app:title="@string/battery_guide_autostart_title"
+            app:summary="@string/battery_guide_autostart_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="auto_start"/>
+
+        <Preference
+            app:icon="@drawable/ic_touch_app_24dp"
+            app:title="@string/battery_guide_shortcuts_title"
+            app:summary="@string/battery_guide_shortcuts_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="miui_shortcuts"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/battery_guide_more_category"
+        app:layout="@layout/preference_category_title">
+
+        <Preference
+            app:icon="@drawable/ic_settings_24dp"
+            app:title="@string/battery_guide_app_settings_title"
+            app:summary="@string/battery_guide_app_settings_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="app_settings"/>
+
+        <Preference
+            app:icon="@drawable/ic_update_24dp"
+            app:title="@string/battery_guide_refresh_title"
+            app:summary="@string/battery_guide_refresh_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="refresh_status"/>
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

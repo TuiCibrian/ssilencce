@@ -127,6 +127,7 @@ import androidx.preference.PreferenceManager
 import com.ssilencce.R
 import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.core.model.action.QueueClearingBehavior
+import com.ssilencce.core.model.shuffle.ShuffleModeState
 import com.ssilencce.data.local.repository.QueueNamePolicy
 import com.ssilencce.data.local.room.NamedQueueSummary
 import com.ssilencce.data.model.QueueSong
@@ -226,7 +227,10 @@ fun QueueScreen(
     val namedQueues by playerViewModel.namedQueuesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val activeNamedQueueId by playerViewModel.activeNamedQueueIdFlow.collectAsStateWithLifecycle()
     val repeatMode by playerViewModel.repeatModeFlow.collectAsStateWithLifecycle()
+    val repeatLoadNextPause by playerViewModel.repeatLoadNextPauseFlow.collectAsStateWithLifecycle()
     val shuffleMode by playerViewModel.shuffleModeFlow.collectAsStateWithLifecycle()
+    val shuffleState by playerViewModel.shuffleStateFlow.collectAsStateWithLifecycle()
+    val randomize = shuffleState == ShuffleModeState.Randomize
     val queueDuration = remember(playQueue) { playQueue.songsDurationStr().toString() }
 
     val queueLocked by sharedPreferences.observeKeyAsState(LOCKED_QUEUE, false)
@@ -320,16 +324,6 @@ fun QueueScreen(
                     }
             }
         }
-
-    ObserveAsEvent(playerViewModel.stopAfterPosition) { (title, canceled) ->
-        if (title != null) {
-            if (canceled) {
-                context.showToast(context.getString(R.string.sleep_timer_stop_after_x_canceled, title))
-            } else {
-                context.showToast(context.getString(R.string.sleep_timer_stop_after_x, title))
-            }
-        }
-    }
 
     fun toggleHapticFeedback(checked: Boolean) {
         if (checked) {
@@ -444,13 +438,16 @@ fun QueueScreen(
                 modifier = Modifier.weight(1f),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_shuffle_24dp),
+                    painter =
+                        painterResource(
+                            if (randomize) R.drawable.ic_randomize_24dp else R.drawable.ic_shuffle_24dp,
+                        ),
                     contentDescription = stringResource(R.string.action_toggle_shuffle),
                 )
             }
 
             TonalToggleButton(
-                checked = repeatMode != Player.REPEAT_MODE_OFF,
+                checked = repeatMode != Player.REPEAT_MODE_OFF || repeatLoadNextPause,
                 onCheckedChange = { checked ->
                     toggleHapticFeedback(checked)
                     playerViewModel.cycleRepeatMode()
@@ -460,9 +457,10 @@ fun QueueScreen(
             ) {
                 Icon(
                     painter =
-                        when (repeatMode) {
-                            Player.REPEAT_MODE_ALL -> painterResource(R.drawable.ic_repeat_24dp)
-                            Player.REPEAT_MODE_ONE -> painterResource(R.drawable.ic_repeat_one_24dp)
+                        when {
+                            repeatLoadNextPause -> painterResource(R.drawable.ic_repeat_pause_24dp)
+                            repeatMode == Player.REPEAT_MODE_ALL -> painterResource(R.drawable.ic_repeat_24dp)
+                            repeatMode == Player.REPEAT_MODE_ONE -> painterResource(R.drawable.ic_repeat_one_24dp)
                             else -> painterResource(R.drawable.ic_repeat_24dp)
                         },
                     contentDescription = stringResource(R.string.action_cycle_repeat),
@@ -543,7 +541,12 @@ fun QueueScreen(
                         MenuItem.Button.DropDown(
                             icon = painterResource(R.drawable.ic_shuffle_24dp),
                             text = stringResource(R.string.reshuffle_queue),
-                            enabled = QueueReshufflePolicy.canReshuffle(shuffleMode, playQueue.size),
+                            enabled =
+                                QueueReshufflePolicy.canReshuffle(
+                                    shuffleEnabled = shuffleMode,
+                                    mediaItemCount = playQueue.size,
+                                    randomize = randomize,
+                                ),
                             visible = playQueue.isNotEmpty(),
                             onClick = playerViewModel::reshuffleQueue,
                         ),
@@ -613,7 +616,9 @@ fun QueueScreen(
                                 durationText = queueDuration,
                                 queueLocked = queueLocked,
                                 shuffleMode = shuffleMode,
+                                randomize = randomize,
                                 repeatMode = repeatMode,
+                                repeatLoadNextPause = repeatLoadNextPause,
                                 onCloseClick = onCloseClick,
                                 onOpenQueuesManager = { showQueuesManager = true },
                                 onReshuffleQueue = playerViewModel::reshuffleQueue,
@@ -1029,8 +1034,15 @@ fun QueueScreen(
                                                     itemIndex = index,
                                                     queueIndex = position.current,
                                                     isCurrentSong = isCurrentSong,
-                                                    onStopAfterThisTrackClick = {
-                                                        playerViewModel.stopAt(index)
+                                                    hasNextSong = position.current + 1 < playQueue.size,
+                                                    onPauseAfterThisSongClick = {
+                                                        playerViewModel.pauseAfterQueueItem(index)
+                                                    },
+                                                    onPlayAfterCurrentClick = {
+                                                        playerViewModel.playItemAfterCurrent(index)
+                                                    },
+                                                    onLoadNextAndPauseClick = {
+                                                        playerViewModel.loadNextSongAndPause()
                                                     },
                                                     onPutAfterCurrentTrackClick = {
                                                         playerViewModel.moveToNextPosition(index)
@@ -1125,8 +1137,15 @@ fun QueueScreen(
                                                 QueueItemMenu(
                                                     itemIndex = index,
                                                     queueIndex = position.current,
-                                                    onStopAfterThisTrackClick = {
-                                                        playerViewModel.stopAt(index)
+                                                    hasNextSong = position.current + 1 < playQueue.size,
+                                                    onPauseAfterThisSongClick = {
+                                                        playerViewModel.pauseAfterQueueItem(index)
+                                                    },
+                                                    onPlayAfterCurrentClick = {
+                                                        playerViewModel.playItemAfterCurrent(index)
+                                                    },
+                                                    onLoadNextAndPauseClick = {
+                                                        playerViewModel.loadNextSongAndPause()
                                                     },
                                                     onPutAfterCurrentTrackClick = {
                                                         playerViewModel.moveToNextPosition(index)
@@ -1233,6 +1252,7 @@ fun QueueScreen(
             onRename = playerViewModel::renameNamedQueue,
             onDelete = playerViewModel::deleteNamedQueue,
             onRemoveOthers = playerViewModel::deleteOtherNamedQueues,
+            onMerge = playerViewModel::mergeNamedQueues,
         )
     }
 
@@ -1240,9 +1260,6 @@ fun QueueScreen(
         context.showToast(
             context.getString(message.messageRes, *message.formatArgs.toTypedArray()),
         )
-    }
-    ObserveAsEvent(playerViewModel.queueMessage) { messageRes ->
-        context.showToast(context.getString(messageRes))
     }
 }
 
@@ -1298,7 +1315,9 @@ private fun AuroraQueueHeader(
     durationText: String,
     queueLocked: Boolean,
     shuffleMode: Boolean,
+    randomize: Boolean,
     repeatMode: Int,
+    repeatLoadNextPause: Boolean,
     onCloseClick: (() -> Unit)?,
     onOpenQueuesManager: () -> Unit,
     onReshuffleQueue: () -> Unit,
@@ -1453,24 +1472,49 @@ private fun AuroraQueueHeader(
                 items =
                     listOf(
                         MenuItem.Button.DropDown(
-                            icon = painterResource(R.drawable.ic_shuffle_24dp),
-                            text = stringResource(if (shuffleMode) R.string.shuffle_on else R.string.shuffle_off),
+                            icon =
+                                painterResource(
+                                    if (randomize) R.drawable.ic_randomize_24dp else R.drawable.ic_shuffle_24dp,
+                                ),
+                            text =
+                                stringResource(
+                                    when {
+                                        randomize -> R.string.randomize_on
+                                        shuffleMode -> R.string.shuffle_on
+                                        else -> R.string.shuffle_off
+                                    },
+                                ),
                             onClick = onToggleShuffle,
                         ),
                         MenuItem.Button.DropDown(
                             icon = painterResource(R.drawable.ic_shuffle_24dp),
                             text = stringResource(R.string.reshuffle_queue),
-                            enabled = QueueReshufflePolicy.canReshuffle(shuffleMode, queueSize),
+                            enabled =
+                                QueueReshufflePolicy.canReshuffle(
+                                    shuffleEnabled = shuffleMode,
+                                    mediaItemCount = queueSize,
+                                    randomize = randomize,
+                                ),
                             visible = queueSize > 0,
                             onClick = onReshuffleQueue,
                         ),
                         MenuItem.Button.DropDown(
-                            icon = painterResource(if (repeatMode == Player.REPEAT_MODE_ONE) R.drawable.ic_repeat_one_24dp else R.drawable.ic_repeat_24dp),
+                            icon =
+                                painterResource(
+                                    if (repeatLoadNextPause) {
+                                        R.drawable.ic_repeat_pause_24dp
+                                    } else if (repeatMode == Player.REPEAT_MODE_ONE) {
+                                        R.drawable.ic_repeat_one_24dp
+                                    } else {
+                                        R.drawable.ic_repeat_24dp
+                                    },
+                                ),
                             text =
                                 stringResource(
-                                    when (repeatMode) {
-                                        Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
-                                        Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
+                                    when {
+                                        repeatLoadNextPause -> R.string.repeat_mode_load_next_pause
+                                        repeatMode == Player.REPEAT_MODE_ONE -> R.string.repeat_mode_one
+                                        repeatMode == Player.REPEAT_MODE_ALL -> R.string.repeat_mode_all
                                         else -> R.string.repeat_mode_off
                                     },
                                 ),
@@ -1627,12 +1671,14 @@ private fun AuroraQueuesManagerDialog(
     onRename: (String, String, String?) -> Unit,
     onDelete: (String) -> Unit,
     onRemoveOthers: () -> Unit,
+    onMerge: (sourceQueueId: String, targetQueueId: String, skipDuplicates: Boolean) -> Unit,
 ) {
     var showSaveDialog by remember { mutableStateOf(false) }
     var saveDraftName by remember { mutableStateOf("") }
     var renameTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
     var renameDraftName by remember { mutableStateOf<String?>(null) }
     var deleteTarget by remember { mutableStateOf<NamedQueueSummary?>(null) }
+    var mergeSource by remember { mutableStateOf<NamedQueueSummary?>(null) }
     var showRemoveOthers by remember { mutableStateOf(false) }
     var duplicateRequest by remember { mutableStateOf<QueueDuplicateRequest?>(null) }
     var replaceRequest by remember { mutableStateOf<QueueDuplicateRequest?>(null) }
@@ -1696,7 +1742,9 @@ private fun AuroraQueuesManagerDialog(
                                 NamedQueueRow(
                                     queue = queue,
                                     active = queue.id == activeQueueId,
+                                    mergeEnabled = queues.size > 1,
                                     onSwitch = { onSwitch(queue.id) },
+                                    onMerge = { mergeSource = queue },
                                     onRename = {
                                         renameDraftName = null
                                         renameTarget = queue
@@ -1949,13 +1997,26 @@ private fun AuroraQueuesManagerDialog(
             },
         )
     }
+    mergeSource?.let { source ->
+        NamedQueueMergeDialog(
+            source = source,
+            targets = queues.filterNot { it.id == source.id },
+            onDismiss = { mergeSource = null },
+            onMerge = { targetQueueId, skipDuplicates ->
+                mergeSource = null
+                onMerge(source.id, targetQueueId, skipDuplicates)
+            },
+        )
+    }
 }
 
 @Composable
 private fun NamedQueueRow(
     queue: NamedQueueSummary,
     active: Boolean,
+    mergeEnabled: Boolean,
     onSwitch: () -> Unit,
+    onMerge: () -> Unit,
     onRename: () -> Unit,
     onDelete: () -> Unit,
 ) {
@@ -1999,6 +2060,14 @@ private fun NamedQueueRow(
                     },
                 fontSize = 12.sp,
                 color = AuroraDesign.muted,
+            )
+        }
+        IconButton(onClick = onMerge, enabled = mergeEnabled) {
+            Icon(
+                painter = painterResource(R.drawable.ic_playlist_add_24dp),
+                contentDescription = stringResource(R.string.named_queue_merge),
+                modifier = Modifier.size(19.dp),
+                tint = AuroraDesign.muted,
             )
         }
         IconButton(onClick = onRename) {
@@ -2079,7 +2148,10 @@ private fun AuroraQueueItemMenu(
     itemIndex: Int,
     queueIndex: Int,
     isCurrentSong: Boolean,
-    onStopAfterThisTrackClick: () -> Unit,
+    hasNextSong: Boolean,
+    onPauseAfterThisSongClick: () -> Unit,
+    onPlayAfterCurrentClick: () -> Unit,
+    onLoadNextAndPauseClick: () -> Unit,
     onPutAfterCurrentTrackClick: () -> Unit,
     onRemoveFromQueueClick: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
@@ -2121,9 +2193,21 @@ private fun AuroraQueueItemMenu(
                 listOf(
                     MenuItem.Button.DropDown(
                         icon = painterResource(R.drawable.ic_stop_circle_24dp),
-                        text = stringResource(R.string.sleep_timer_stop_after_this_track),
+                        text = stringResource(R.string.queue_action_pause_after_this_song),
                         enabled = itemIndex >= queueIndex,
-                        onClick = onStopAfterThisTrackClick,
+                        onClick = onPauseAfterThisSongClick,
+                    ),
+                    MenuItem.Button.DropDown(
+                        icon = painterResource(R.drawable.ic_queue_play_next_24dp),
+                        text = stringResource(R.string.queue_action_play_after_current),
+                        enabled = itemIndex > queueIndex,
+                        onClick = onPlayAfterCurrentClick,
+                    ),
+                    MenuItem.Button.DropDown(
+                        icon = painterResource(R.drawable.ic_next_24dp),
+                        text = stringResource(R.string.queue_action_load_next_and_pause),
+                        enabled = hasNextSong,
+                        onClick = onLoadNextAndPauseClick,
                     ),
                     MenuItem.Button.DropDown(
                         icon = painterResource(R.drawable.ic_queue_play_next_24dp),
@@ -2178,7 +2262,10 @@ private fun AuroraQueueItemMenu(
 private fun QueueItemMenu(
     itemIndex: Int,
     queueIndex: Int,
-    onStopAfterThisTrackClick: () -> Unit,
+    hasNextSong: Boolean,
+    onPauseAfterThisSongClick: () -> Unit,
+    onPlayAfterCurrentClick: () -> Unit,
+    onLoadNextAndPauseClick: () -> Unit,
     onPutAfterCurrentTrackClick: () -> Unit,
     onRemoveFromQueueClick: () -> Unit,
     onAddToPlaylistClick: () -> Unit,
@@ -2191,9 +2278,21 @@ private fun QueueItemMenu(
             listOf(
                 MenuItem.Button.DropDown(
                     icon = painterResource(R.drawable.ic_stop_circle_24dp),
-                    text = stringResource(R.string.sleep_timer_stop_after_this_track),
+                    text = stringResource(R.string.queue_action_pause_after_this_song),
                     enabled = itemIndex >= queueIndex,
-                    onClick = onStopAfterThisTrackClick,
+                    onClick = onPauseAfterThisSongClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_queue_play_next_24dp),
+                    text = stringResource(R.string.queue_action_play_after_current),
+                    enabled = itemIndex > queueIndex,
+                    onClick = onPlayAfterCurrentClick,
+                ),
+                MenuItem.Button.DropDown(
+                    icon = painterResource(R.drawable.ic_next_24dp),
+                    text = stringResource(R.string.queue_action_load_next_and_pause),
+                    enabled = hasNextSong,
+                    onClick = onLoadNextAndPauseClick,
                 ),
                 MenuItem.Button.DropDown(
                     icon = painterResource(R.drawable.ic_queue_play_next_24dp),

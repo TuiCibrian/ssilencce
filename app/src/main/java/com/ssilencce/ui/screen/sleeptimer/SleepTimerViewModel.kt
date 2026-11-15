@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.ssilencce.App
 import com.ssilencce.playback.SleepTimer
 import com.ssilencce.playback.SleepTimerEndTime
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -25,9 +26,12 @@ import java.time.ZonedDateTime
 
 private val Context.sleepTimerDataStore by preferencesDataStore("sleep_timer")
 
+private const val DEFAULT_SONG_COUNT = 3
+
 enum class SleepTimerMode {
     Duration,
     EndAt,
+    Songs,
 }
 
 class SleepTimerViewModel(
@@ -56,6 +60,8 @@ class SleepTimerViewModel(
                 timerMode = mode,
                 endAtHour = prefs[Keys.END_AT_HOUR] ?: initialEndAt.first,
                 endAtMinute = prefs[Keys.END_AT_MINUTE] ?: initialEndAt.second,
+                songCount = prefs[Keys.SONG_COUNT] ?: DEFAULT_SONG_COUNT,
+                history = SleepTimerHistoryEntry.decode(prefs[Keys.HISTORY]),
             )
         }
 
@@ -74,6 +80,8 @@ class SleepTimerViewModel(
                     timerMode = SleepTimerMode.Duration,
                     endAtHour = initialEndAt.first,
                     endAtMinute = initialEndAt.second,
+                    songCount = DEFAULT_SONG_COUNT,
+                    history = emptyList(),
                 ),
         )
 
@@ -94,12 +102,14 @@ class SleepTimerViewModel(
         isFinishMusic: Boolean = uiState.value.isFinishMusic,
         isFadeOut: Boolean = uiState.value.isFadeOut,
         fadeOutDuration: Float = uiState.value.fadeOutDuration,
+        songCount: Int = uiState.value.songCount,
     ) = viewModelScope.launch(Dispatchers.IO) {
         getApplication<App>().sleepTimerDataStore.edit {
             it[Keys.TIMER_VALUE] = value
             it[Keys.IS_FINISH_MUSIC] = isFinishMusic
             it[Keys.IS_FADE_OUT] = isFadeOut
             it[Keys.FADE_OUT_DURATION] = fadeOutDuration
+            it[Keys.SONG_COUNT] = songCount.coerceAtLeast(1)
         }
     }
 
@@ -107,34 +117,85 @@ class SleepTimerViewModel(
         mode: SleepTimerMode,
         endAtHour: Int,
         endAtMinute: Int,
+        songCount: Int = uiState.value.songCount,
     ) = viewModelScope.launch(Dispatchers.IO) {
-        if (!sleepTimer.canScheduleExactAlarm()) {
+        val state = uiState.value
+        if (mode != SleepTimerMode.Songs && !sleepTimer.canScheduleExactAlarm()) {
             sleepTimer.launchExactAlarmPermissionRequest()
             return@launch
         }
-        val delayMillis =
-            when (mode) {
-                SleepTimerMode.Duration -> uiState.value.timerValue.toLong() * 60 * 1000
-                SleepTimerMode.EndAt -> SleepTimerEndTime.delayMillis(ZonedDateTime.now(), endAtHour, endAtMinute)
-            }
-        sleepTimer.set(
-            millisInFuture = delayMillis,
-            allowPendingQuit = uiState.value.isFinishMusic,
-            fadeOut = uiState.value.isFadeOut,
-            fadeDuration = uiState.value.fadeOutDuration.toLong() * 1000,
+        startTimerInternal(
+            mode = mode,
+            durationMinutes = state.timerValue.toInt().coerceAtLeast(1),
+            endAtHour = endAtHour,
+            endAtMinute = endAtMinute,
+            songCount = songCount,
+            isFinishMusic = state.isFinishMusic,
+            isFadeOut = state.isFadeOut,
+            fadeOutDuration = state.fadeOutDuration,
         )
-        getApplication<App>().sleepTimerDataStore.edit { prefs ->
-            prefs[Keys.TIMER_VALUE] = uiState.value.timerValue
-            prefs[Keys.IS_FINISH_MUSIC] = uiState.value.isFinishMusic
-            prefs[Keys.IS_FADE_OUT] = uiState.value.isFadeOut
-            prefs[Keys.FADE_OUT_DURATION] = uiState.value.fadeOutDuration
-            prefs[Keys.TIMER_MODE] = mode.name
-            if (mode == SleepTimerMode.EndAt) {
-                prefs[Keys.END_AT_HOUR] = endAtHour
-                prefs[Keys.END_AT_MINUTE] = endAtMinute
+    }
+
+    /** One-tap "stop after this song": the current track is the first and only counted song. */
+    fun startStopAfterThisSong() =
+        viewModelScope.launch(Dispatchers.IO) {
+            val state = uiState.value
+            startTimerInternal(
+                mode = SleepTimerMode.Songs,
+                durationMinutes = state.timerValue.toInt().coerceAtLeast(1),
+                endAtHour = state.endAtHour,
+                endAtMinute = state.endAtMinute,
+                songCount = 1,
+                isFinishMusic = state.isFinishMusic,
+                isFadeOut = state.isFadeOut,
+                fadeOutDuration = state.fadeOutDuration,
+            )
+        }
+
+    /** Reuses a persisted time-based timer immediately. */
+    fun reuseHistory(entry: SleepTimerHistoryEntry) =
+        viewModelScope.launch(Dispatchers.IO) {
+            if (!sleepTimer.canScheduleExactAlarm()) {
+                sleepTimer.launchExactAlarmPermissionRequest()
+                return@launch
+            }
+            val state = uiState.value
+            when (entry) {
+                is SleepTimerHistoryEntry.Duration -> {
+                    startTimerInternal(
+                        mode = SleepTimerMode.Duration,
+                        durationMinutes = entry.minutes,
+                        endAtHour = state.endAtHour,
+                        endAtMinute = state.endAtMinute,
+                        songCount = state.songCount,
+                        isFinishMusic = state.isFinishMusic,
+                        isFadeOut = state.isFadeOut,
+                        fadeOutDuration = state.fadeOutDuration,
+                    )
+                }
+
+                is SleepTimerHistoryEntry.EndAt -> {
+                    startTimerInternal(
+                        mode = SleepTimerMode.EndAt,
+                        durationMinutes = state.timerValue.toInt().coerceAtLeast(1),
+                        endAtHour = entry.hour,
+                        endAtMinute = entry.minute,
+                        songCount = state.songCount,
+                        isFinishMusic = state.isFinishMusic,
+                        isFadeOut = state.isFadeOut,
+                        fadeOutDuration = state.fadeOutDuration,
+                    )
+                }
             }
         }
-        _sleepTimerEvent.send(SleepTimerEvent.Set)
+
+    fun clearHistory() =
+        viewModelScope.launch(Dispatchers.IO) {
+            getApplication<App>().sleepTimerDataStore.edit { it.remove(Keys.HISTORY) }
+        }
+
+    fun setStopMusicOnlyInForeground(enabled: Boolean) {
+        Preferences.sleepTimerStopMusicOnlyInForeground = enabled
     }
 
     fun cancelTimer() =
@@ -143,6 +204,67 @@ class SleepTimerViewModel(
                 _sleepTimerEvent.send(SleepTimerEvent.Canceled)
             }
         }
+
+    private suspend fun startTimerInternal(
+        mode: SleepTimerMode,
+        durationMinutes: Int,
+        endAtHour: Int,
+        endAtMinute: Int,
+        songCount: Int,
+        isFinishMusic: Boolean,
+        isFadeOut: Boolean,
+        fadeOutDuration: Float,
+    ) {
+        val fadeDurationMillis = fadeOutDuration.toLong() * 1000
+        if (mode == SleepTimerMode.Songs) {
+            sleepTimer.setSongCount(
+                songs = songCount.coerceAtLeast(1),
+                fadeOut = isFadeOut,
+                fadeDuration = fadeDurationMillis,
+            )
+        } else {
+            val delayMillis =
+                when (mode) {
+                    SleepTimerMode.Duration -> durationMinutes.toLong() * 60 * 1000
+                    SleepTimerMode.EndAt -> SleepTimerEndTime.delayMillis(ZonedDateTime.now(), endAtHour, endAtMinute)
+                    SleepTimerMode.Songs -> 0L
+                }
+            sleepTimer.set(
+                millisInFuture = delayMillis,
+                allowPendingQuit = isFinishMusic,
+                fadeOut = isFadeOut,
+                fadeDuration = fadeDurationMillis,
+            )
+        }
+        getApplication<App>().sleepTimerDataStore.edit { prefs ->
+            prefs[Keys.TIMER_VALUE] = durationMinutes.toFloat()
+            prefs[Keys.SONG_COUNT] = songCount.coerceAtLeast(1)
+            prefs[Keys.IS_FINISH_MUSIC] = isFinishMusic
+            prefs[Keys.IS_FADE_OUT] = isFadeOut
+            prefs[Keys.FADE_OUT_DURATION] = fadeOutDuration
+            prefs[Keys.TIMER_MODE] = mode.name
+            if (mode == SleepTimerMode.EndAt) {
+                prefs[Keys.END_AT_HOUR] = endAtHour
+                prefs[Keys.END_AT_MINUTE] = endAtMinute
+            }
+            val historyEntry =
+                when (mode) {
+                    SleepTimerMode.Duration -> SleepTimerHistoryEntry.Duration(durationMinutes)
+                    SleepTimerMode.EndAt -> SleepTimerHistoryEntry.EndAt(endAtHour, endAtMinute)
+                    SleepTimerMode.Songs -> null
+                }
+            if (historyEntry != null) {
+                prefs[Keys.HISTORY] =
+                    SleepTimerHistoryEntry.encode(
+                        SleepTimerHistoryEntry.add(
+                            SleepTimerHistoryEntry.decode(prefs[Keys.HISTORY]),
+                            historyEntry,
+                        ),
+                    )
+            }
+        }
+        _sleepTimerEvent.send(SleepTimerEvent.Set)
+    }
 
     private interface Keys {
         companion object {
@@ -153,6 +275,8 @@ class SleepTimerViewModel(
             val TIMER_MODE = stringPreferencesKey("timer_mode")
             val END_AT_HOUR = intPreferencesKey("end_at_hour")
             val END_AT_MINUTE = intPreferencesKey("end_at_minute")
+            val SONG_COUNT = intPreferencesKey("song_count")
+            val HISTORY = stringPreferencesKey("timer_history")
         }
     }
 }

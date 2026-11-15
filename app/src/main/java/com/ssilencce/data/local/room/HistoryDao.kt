@@ -34,6 +34,9 @@ interface HistoryDao {
     @Query("DELETE FROM HistoryEntity WHERE id IN (:songIds)")
     fun deleteSongsInHistory(songIds: List<Long>)
 
+    @Query("SELECT COUNT(*) FROM HistoryEntity WHERE id IN (:songIds)")
+    suspend fun countSongsInHistory(songIds: List<Long>): Int
+
     @Query(
         """
     SELECT * FROM HistoryEntity

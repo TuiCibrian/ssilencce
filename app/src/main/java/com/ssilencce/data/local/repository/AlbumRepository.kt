@@ -52,11 +52,7 @@ class RealAlbumRepository(
                 arrayOf(albumId.toString()),
                 DEFAULT_SORT_ORDER,
             )
-        val songs =
-            with(SongSortMode.AlbumSongs) {
-                songRepository.songs(cursor).sorted()
-            }
-        return getAlbumFromSongs(albumId, songs)
+        return getAlbumFromSongs(albumId, songRepository.songs(cursor))
     }
 
     override fun albums(query: String): List<Album> {
@@ -125,13 +121,15 @@ class RealAlbumRepository(
         id: Long,
         songs: List<Song>,
     ): Album {
+        val orderedSongs = with(SongSortMode.AlbumSongs) { songs.sorted() }
         var artistName: String? = null
         var albumArtistName: String? = null
         var minYear = Int.MAX_VALUE
+        var minDiscNumber = Int.MAX_VALUE
         var minTrackNumber = Int.MAX_VALUE
         var firstSongIndex = 0
 
-        songs.forEachIndexed { index, song ->
+        orderedSongs.forEachIndexed { index, song ->
             if (artistName == null) {
                 artistName = song.artistName
             }
@@ -144,7 +142,14 @@ class RealAlbumRepository(
                 minYear = song.year
             }
 
-            if (song.trackNumber > -1 && song.trackNumber < minTrackNumber) {
+            // The opening song follows disc-then-track order, so multi-disc albums keep the
+            // cover/label of the first track of the first disc.
+            val discNumber = song.discNumber.coerceAtLeast(0)
+            val opensAlbum =
+                discNumber < minDiscNumber ||
+                    (discNumber == minDiscNumber && song.trackNumber in 0..<minTrackNumber)
+            if (song.trackNumber > -1 && opensAlbum) {
+                minDiscNumber = discNumber
                 minTrackNumber = song.trackNumber
                 firstSongIndex = index
             }
@@ -156,7 +161,7 @@ class RealAlbumRepository(
             albumArtistName = albumArtistName,
             year = if (minYear == Int.MAX_VALUE) 0 else minYear,
             firstSongIndex = firstSongIndex.coerceAtLeast(0),
-            songs = songs,
+            songs = orderedSongs,
         )
     }
 

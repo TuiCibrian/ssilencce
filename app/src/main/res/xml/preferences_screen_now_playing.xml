@@ -162,6 +162,13 @@
             app:widgetLayout="@layout/preference_switch"
             app:key="add_extra_controls" />
 
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/quick_access_actions_title"
+            app:summary="@string/quick_access_actions_summary"
+            app:layout="@layout/list_item_view"
+            app:key="now_playing_quick_access" />
+
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -176,6 +183,24 @@
             app:layout="@layout/list_item_view"
             app:widgetLayout="@layout/preference_switch"
             app:key="squiggly_seek_bar" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/seek_bar_touch_only_on_thumb_title"
+            app:summary="@string/seek_bar_touch_only_on_thumb_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="seek_bar_touch_only_on_thumb" />
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/keep_screen_on_title"
+            app:summary="@string/keep_screen_on_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="keep_screen_on_now_playing" />
 
         <SwitchPreferenceCompat
             app:iconSpaceReserved="true"

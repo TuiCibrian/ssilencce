@@ -17,6 +17,7 @@
 
 package com.ssilencce.data.model
 
+import com.ssilencce.core.model.ComposerNamePolicy
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.SongProvider
 import java.util.Objects
@@ -30,12 +31,13 @@ data class Artist(
     val filterSingles: Boolean,
     val isAlbumArtist: Boolean = false,
     val composerName: String? = null,
+    val nameOverride: String? = null,
 ) : SongProvider {
     constructor(artistName: String, albums: List<Album>, filterSingles: Boolean, isAlbumArtist: Boolean = true) :
         this(albums.firstOrNull()?.artistId ?: -1, albums, filterSingles, true)
 
     val name: String
-        get() = composerName ?: if (isAlbumArtist) getAlbumArtistName() ?: "-" else getArtistName()
+        get() = composerName ?: nameOverride ?: if (isAlbumArtist) getAlbumArtistName() ?: "-" else getArtistName()
 
     val isComposer: Boolean
         get() = composerName != null
@@ -72,17 +74,24 @@ data class Artist(
             songs == artist.songs &&
             isAlbumArtist == artist.isAlbumArtist &&
             filterSingles == artist.filterSingles &&
-            composerName == artist.composerName
+            composerName == artist.composerName &&
+            nameOverride == artist.nameOverride
     }
 
-    override fun hashCode(): Int = Objects.hash(id, songs, isAlbumArtist, filterSingles, composerName)
+    override fun hashCode(): Int = Objects.hash(id, songs, isAlbumArtist, filterSingles, composerName, nameOverride)
 
-    override fun toString(): String = "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles, composerName=$composerName}"
+    override fun toString(): String =
+        "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles, " +
+            "composerName=$composerName, nameOverride=$nameOverride}"
 
     companion object {
         const val UNKNOWN = "<unknown>"
         const val VARIOUS_ARTISTS_DISPLAY_NAME = "Various Artists"
         const val VARIOUS_ARTISTS_ID: Long = -2
+
+        private const val ALBUM_ARTIST_FALLBACK_ID_OFFSET = 10_000_000_000L
+
+        fun albumArtistFallbackId(name: String): Long = ALBUM_ARTIST_FALLBACK_ID_OFFSET + ComposerNamePolicy.stableId(name)
 
         val empty = Artist(-1, arrayListOf(), false)
     }

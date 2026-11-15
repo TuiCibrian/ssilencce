@@ -73,6 +73,24 @@ sealed class KeySortItem(
         SortKey.DateModified,
     )
 
+    object DateLastPlayed : KeySortItem(
+        R.id.action_sort_order_last_played,
+        R.string.sort_order_last_played_date,
+        SortKey.DateLastPlayed,
+    )
+
+    object MostPlayed : KeySortItem(
+        R.id.action_sort_order_most_played,
+        R.string.sort_order_most_played,
+        SortKey.MostPlayed,
+    )
+
+    object LeastPlayed : KeySortItem(
+        R.id.action_sort_order_least_played,
+        R.string.sort_order_least_played,
+        SortKey.LeastPlayed,
+    )
+
     object FileName : KeySortItem(
         R.id.action_sort_order_file_name,
         R.string.sort_order_file_name,

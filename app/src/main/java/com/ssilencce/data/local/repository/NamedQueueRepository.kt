@@ -42,6 +42,18 @@ data class NamedQueueRenameResult(
     val replacedQueueId: String?,
 )
 
+data class NamedQueueCreateResult(
+    val queue: NamedQueueEntity,
+    val evictedQueueId: String? = null,
+    val evictedQueueName: String? = null,
+)
+
+data class NamedQueueMergeResult(
+    val targetName: String,
+    val addedCount: Int,
+    val skippedCount: Int,
+)
+
 data class NamedQueueSnapshot(
     val mediaIds: List<String>,
     val resumeIndex: Int,
@@ -77,27 +89,105 @@ class NamedQueueRepository(
     suspend fun create(
         requestedName: String,
         snapshot: NamedQueueSnapshot,
-    ): NamedQueueEntity =
+        deleteLeastRecentWhenFull: Boolean = false,
+        protectedQueueId: String? = null,
+    ): NamedQueueCreateResult =
         mutex.withLock {
-            val existing = dao.queues()
-            if (!QueueNamePolicy.canCreate(existing.size)) {
-                throw NamedQueueLimitException()
-            }
-            val name = QueueNamePolicy.uniqueName(validatedName(requestedName), existing.map { it.name })
-            val now = System.currentTimeMillis()
-            val entity =
-                NamedQueueEntity(
-                    id = UUID.randomUUID().toString(),
-                    name = name,
-                    createdAt = now,
-                    updatedAt = now,
-                    resumeIndex = snapshot.resumeIndex,
-                    resumePositionMs = snapshot.resumePositionMs,
-                    repeatMode = snapshot.repeatMode,
-                    shuffleEnabled = snapshot.shuffleEnabled,
+            database.withTransaction {
+                val existing = dao.queues()
+                var evicted: NamedQueueEntity? = null
+                if (!QueueNamePolicy.canCreate(existing.size)) {
+                    if (!deleteLeastRecentWhenFull) {
+                        throw NamedQueueLimitException()
+                    }
+                    evicted =
+                        NamedQueueMaintenancePolicy.leastRecentlyUsed(
+                            queues = existing,
+                            protectedQueueId = protectedQueueId,
+                        ) ?: throw NamedQueueLimitException()
+                    dao.deleteQueueWithItems(evicted.id)
+                }
+                val remainingNames =
+                    existing
+                        .filterNot { it.id == evicted?.id }
+                        .map { it.name }
+                val name =
+                    QueueNamePolicy.uniqueName(
+                        validatedName(requestedName),
+                        remainingNames,
+                    )
+                val now = System.currentTimeMillis()
+                val entity =
+                    NamedQueueEntity(
+                        id = UUID.randomUUID().toString(),
+                        name = name,
+                        createdAt = now,
+                        updatedAt = now,
+                        resumeIndex = snapshot.resumeIndex,
+                        resumePositionMs = snapshot.resumePositionMs,
+                        repeatMode = snapshot.repeatMode,
+                        shuffleEnabled = snapshot.shuffleEnabled,
+                    )
+                dao.saveQueue(entity, snapshot.toItems(entity.id))
+                NamedQueueCreateResult(
+                    queue = entity,
+                    evictedQueueId = evicted?.id,
+                    evictedQueueName = evicted?.name,
                 )
-            dao.saveQueue(entity, snapshot.toItems(entity.id))
-            entity
+            }
+        }
+
+    /**
+     * Appends the songs of [sourceQueueId] to [targetQueueId]. Both saved queues must exist and
+     * differ. The target keeps its name and resume state; only its item list grows. The source
+     * queue is kept. Duplicate skipping compares media ids.
+     */
+    suspend fun merge(
+        sourceQueueId: String,
+        targetQueueId: String,
+        skipDuplicates: Boolean,
+    ): NamedQueueMergeResult? =
+        mutex.withLock {
+            database.withTransaction {
+                if (sourceQueueId == targetQueueId) return@withTransaction null
+                val source = dao.queue(sourceQueueId) ?: return@withTransaction null
+                val target = dao.queue(targetQueueId) ?: return@withTransaction null
+                val targetMediaIds =
+                    dao.items(targetQueueId).sortedBy { it.order }.map { it.mediaId }
+                val sourceMediaIds =
+                    dao.items(sourceQueueId).sortedBy { it.order }.map { it.mediaId }
+                val mergedMediaIds =
+                    NamedQueueMaintenancePolicy.mergeMediaIds(
+                        targetMediaIds = targetMediaIds,
+                        sourceMediaIds = sourceMediaIds,
+                        skipDuplicates = skipDuplicates,
+                    )
+                if (mergedMediaIds == targetMediaIds) {
+                    return@withTransaction NamedQueueMergeResult(
+                        targetName = target.name,
+                        addedCount = 0,
+                        skippedCount = sourceMediaIds.size,
+                    )
+                }
+                val addedCount = mergedMediaIds.size - targetMediaIds.size
+                dao.replaceItemsAndResume(
+                    queueId = targetQueueId,
+                    items =
+                        mergedMediaIds.mapIndexed { index, mediaId ->
+                            NamedQueueItemEntity(queueId = targetQueueId, order = index, mediaId = mediaId)
+                        },
+                    resumeIndex = target.resumeIndex,
+                    resumePositionMs = target.resumePositionMs,
+                    repeatMode = target.repeatMode,
+                    shuffleEnabled = target.shuffleEnabled,
+                    updatedAt = System.currentTimeMillis(),
+                )
+                NamedQueueMergeResult(
+                    targetName = target.name,
+                    addedCount = addedCount,
+                    skippedCount = sourceMediaIds.size - addedCount,
+                )
+            }
         }
 
     /**

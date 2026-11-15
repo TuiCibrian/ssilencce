@@ -18,6 +18,7 @@
 package com.ssilencce.ui.screen.settings
 
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
@@ -41,11 +42,15 @@ import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.SeekBarPreference
 import coil3.SingletonImageLoader
 import com.google.android.material.color.DynamicColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ssilencce.BuildConfig
 import com.ssilencce.R
 import com.ssilencce.coil.CoverProvider
 import com.ssilencce.core.model.lyrics.LyricsViewSettings
+import com.ssilencce.core.model.menu.MenuCustomizationGroup
+import com.ssilencce.data.local.LibraryRescan
 import com.ssilencce.data.local.SongDurationFilterPolicy
+import com.ssilencce.data.local.extra.ExtraFormatScanner
 import com.ssilencce.data.local.room.InclExclDao
 import com.ssilencce.data.model.network.ScrobblingService
 import com.ssilencce.extensions.files.getFormattedFileName
@@ -67,7 +72,11 @@ import com.ssilencce.ui.component.preferences.dialog.ClearQueueActionPreferenceD
 import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.HeadsetButtonMappingDialog
 import com.ssilencce.ui.component.preferences.dialog.IgnoreKeywordsPreferenceDialog
+import com.ssilencce.ui.component.preferences.dialog.MenuCustomizationDialog
+import com.ssilencce.ui.component.preferences.dialog.NotificationBackgroundColorDialog
+import com.ssilencce.ui.component.preferences.dialog.NotificationButtonLayoutDialog
 import com.ssilencce.ui.component.preferences.dialog.NowPlayingScreenPreferenceDialog
+import com.ssilencce.ui.component.preferences.dialog.QuickAccessPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.SingleSelectionDialog
 import com.ssilencce.ui.component.preferences.dialog.SongClickActionPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.titleRes
@@ -78,9 +87,11 @@ import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.scrobbling.ScrobblingServiceLoginFragment
 import com.ssilencce.ui.screen.settings.backup.BackupShareDialogFragment
+import com.ssilencce.ui.screen.setup.SetupWizardActivity
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import com.ssilencce.ui.theme.styleAuroraHierarchy
+import com.ssilencce.util.ACCENT_COLOR
 import com.ssilencce.util.ADD_EXTRA_CONTROLS
 import com.ssilencce.util.AUDIO_FOCUS_MODE
 import com.ssilencce.util.AURORA_APPEARANCE
@@ -96,8 +107,12 @@ import com.ssilencce.util.COVER_LEFT_DOUBLE_TAP_ACTION
 import com.ssilencce.util.COVER_LONG_PRESS_ACTION
 import com.ssilencce.util.COVER_RIGHT_DOUBLE_TAP_ACTION
 import com.ssilencce.util.COVER_SINGLE_TAP_ACTION
+import com.ssilencce.util.DISABLE_ALBUM_ART
 import com.ssilencce.util.ENABLE_ROTATION_LOCK
+import com.ssilencce.util.EXTRA_FORMATS_SCAN
 import com.ssilencce.util.GENERAL_THEME
+import com.ssilencce.util.GHOST_MODE
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.HEADSET_BUTTON_MAPPING
 import com.ssilencce.util.HEADSET_CLICK_DELAY_MS
 import com.ssilencce.util.HEADSET_DOUBLE_CLICK_ACTION
@@ -112,17 +127,29 @@ import com.ssilencce.util.LANGUAGE_NAME
 import com.ssilencce.util.LASTFM_LOGIN
 import com.ssilencce.util.LAST_ADDED_CUTOFF
 import com.ssilencce.util.LIBRARY_CATEGORIES
+import com.ssilencce.util.LIBRARY_RESCAN
 import com.ssilencce.util.LISTENBRAINZ_LOGIN
 import com.ssilencce.util.MATERIAL_YOU
 import com.ssilencce.util.MAXIMUM_SONG_DURATION
 import com.ssilencce.util.MINIMUM_SONG_DURATION
+import com.ssilencce.util.NOTIFICATION_ALWAYS_EXPANDED
+import com.ssilencce.util.NOTIFICATION_BACKGROUND_MODE
+import com.ssilencce.util.NOTIFICATION_BUTTON_LAYOUT
+import com.ssilencce.util.NOTIFICATION_COMPACT_BUTTONS
+import com.ssilencce.util.NOTIFICATION_CUSTOM_BACKGROUND_COLOR
+import com.ssilencce.util.NOTIFICATION_EXPANDED_BUTTONS
+import com.ssilencce.util.NOTIFICATION_STYLE
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.NOW_PLAYING_QUICK_ACCESS
 import com.ssilencce.util.NOW_PLAYING_SCREEN
 import com.ssilencce.util.ON_CLEAR_QUEUE_ACTION
 import com.ssilencce.util.ON_SONG_CLICK_ACTION
 import com.ssilencce.util.PREFERRED_IMAGE_SIZE
 import com.ssilencce.util.Preferences
+import com.ssilencce.util.REMOVE_MISSING_SONGS
 import com.ssilencce.util.RESTORE_DATA
+import com.ssilencce.util.SETUP_WIZARD
+import com.ssilencce.util.SHOW_UNIMPORTANT_SETTINGS
 import com.ssilencce.util.SORTING_IGNORE_KEYWORDS
 import com.ssilencce.util.TRASH_MUSIC_FILES
 import com.ssilencce.util.USE_CUSTOM_FONT
@@ -138,6 +165,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
+import java.util.Locale
 
 class AppearancePreferencesFragment : PreferenceScreenFragment() {
     override fun onCreatePreferences(
@@ -308,6 +336,7 @@ open class PreferenceScreenFragment :
         }
 
     private val preferences: SharedPreferences by inject()
+    private val affectedCategories = hashMapOf<Preference, Boolean>()
 
     override fun onCreatePreferences(
         savedInstanceState: Bundle?,
@@ -336,12 +365,42 @@ open class PreferenceScreenFragment :
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        findPreference<Preference>(GHOST_MODE)?.summary = ghostModeSummary()
+    }
+
     fun preparePreferences() {
-        listOf(GENERAL_THEME, MATERIAL_YOU, BLACK_THEME).forEach { key ->
+        listOf(GENERAL_THEME, MATERIAL_YOU, BLACK_THEME, ACCENT_COLOR).forEach { key ->
             findPreference<Preference>(key)?.isEnabled = !Preferences.isAuroraAppearance
         }
         findPreference<Preference>("about")?.summary =
             getString(R.string.about_summary, BuildConfig.VERSION_NAME)
+
+        findPreference<Preference>(ACCENT_COLOR)?.apply {
+            setOnPreferenceClickListener {
+                AccentColorDialog().show(childFragmentManager, AccentColorDialog.TAG)
+                true
+            }
+        }
+        onUpdateAccentColor()
+
+        findPreference<Preference>(NOTIFICATION_CUSTOM_BACKGROUND_COLOR)?.apply {
+            setOnPreferenceClickListener {
+                NotificationBackgroundColorDialog().show(
+                    childFragmentManager,
+                    NotificationBackgroundColorDialog.TAG,
+                )
+                true
+            }
+        }
+
+        findPreference<Preference>("battery")?.apply {
+            setOnPreferenceClickListener {
+                findNavController().navigate(R.id.nav_battery_preferences)
+                true
+            }
+        }
 
         findPreference<ThemePreference>(GENERAL_THEME)?.apply {
             customCallback =
@@ -447,6 +506,39 @@ open class PreferenceScreenFragment :
             )
         }
 
+        findPreference<Preference>(GHOST_MODE)?.summary = ghostModeSummary()
+
+        findPreference<Preference>(LIBRARY_RESCAN)?.apply {
+            setOnPreferenceClickListener {
+                confirmLibraryRescan()
+                true
+            }
+        }
+
+        findPreference<Preference>(EXTRA_FORMATS_SCAN)?.setOnPreferenceChangeListener { _, newValue ->
+            val enabled = newValue == true
+            Preferences.extraFormatsScanEnabled = enabled
+            ExtraFormatScanner.scanAsync { count ->
+                if (isAdded) {
+                    if (enabled) {
+                        showToast(getString(R.string.extra_formats_scan_finished, count))
+                    }
+                    libraryViewModel.forceReload(ReloadType.Songs)
+                }
+            }
+            true
+        }
+
+        findPreference<Preference>(SETUP_WIZARD)?.apply {
+            setOnPreferenceClickListener {
+                startActivity(
+                    Intent(requireContext(), SetupWizardActivity::class.java)
+                        .putExtra(SetupWizardActivity.EXTRA_FROM_SETTINGS, true),
+                )
+                true
+            }
+        }
+
         findPreference<Preference>(IGNORE_MEDIA_STORE)?.onPreferenceChangeListener =
             Preference.OnPreferenceChangeListener { _, _ ->
                 clearImageLoaderCache()
@@ -534,10 +626,36 @@ open class PreferenceScreenFragment :
 
         onUpdateNowPlayingScreen()
         onUpdateCoverActions()
+        onUpdateQuickAccess()
+        onUpdateMenuCustomization()
         onUpdateHeadsetMapping()
+        onUpdateNotificationButtons()
+        onUpdateNotificationAppearance()
         onUpdateLyricsPreferences()
         onUpdateQueuePreferences()
         onUpdateSortingIgnoreKeywords()
+        applyUnimportantSettingsVisibility()
+    }
+
+    private fun applyUnimportantSettingsVisibility() {
+        val screen = preferenceScreen ?: return
+        SettingsVisibilityPolicy.apply(
+            screen = screen,
+            showUnimportant = Preferences.showUnimportantSettings,
+            affectedCategories = affectedCategories,
+        )
+    }
+
+    private fun onUpdateAccentColor() {
+        findPreference<Preference>(ACCENT_COLOR)?.summary =
+            if (Preferences.accentColor == 0) {
+                getString(R.string.accent_color_summary_default)
+            } else {
+                getString(
+                    R.string.accent_color_summary_custom,
+                    String.format(Locale.ROOT, "#%06X", 0xFFFFFF and Preferences.accentColor),
+                )
+            }
     }
 
     private fun showManualBackupResult(
@@ -564,6 +682,13 @@ open class PreferenceScreenFragment :
 
     @Suppress("DEPRECATION")
     override fun onDisplayPreferenceDialog(preference: Preference) {
+        val menuCustomizationGroup = MenuCustomizationGroup.fromPreferenceKey(preference.key)
+        if (menuCustomizationGroup != null) {
+            MenuCustomizationDialog
+                .newInstance(menuCustomizationGroup)
+                .show(childFragmentManager, MenuCustomizationDialog.TAG)
+            return
+        }
         if (preference is ListPreference) {
             val dialogFragment = SingleSelectionDialog.newInstance(preference.key)
             dialogFragment.setTargetFragment(this, 0)
@@ -577,6 +702,8 @@ open class PreferenceScreenFragment :
 
                     NOW_PLAYING_EXTRA_INFO -> ExtraInfoPreferenceDialog.nowPlaying(requireContext())
 
+                    NOW_PLAYING_QUICK_ACCESS -> QuickAccessPreferenceDialog()
+
                     WIDGET_THIRD_LINE_CONTENT -> ExtraInfoPreferenceDialog.appWidgets(requireContext())
 
                     ON_SONG_CLICK_ACTION -> SongClickActionPreferenceDialog()
@@ -584,6 +711,8 @@ open class PreferenceScreenFragment :
                     ON_CLEAR_QUEUE_ACTION -> ClearQueueActionPreferenceDialog()
 
                     HEADSET_BUTTON_MAPPING -> HeadsetButtonMappingDialog()
+
+                    NOTIFICATION_BUTTON_LAYOUT -> NotificationButtonLayoutDialog()
 
                     SORTING_IGNORE_KEYWORDS -> IgnoreKeywordsPreferenceDialog()
 
@@ -621,6 +750,16 @@ open class PreferenceScreenFragment :
                 true
             }
 
+            preference.key == REMOVE_MISSING_SONGS -> {
+                RemoveMissingSongsDialog().show(childFragmentManager, RemoveMissingSongsDialog.TAG)
+                true
+            }
+
+            preference.key == GHOST_MODE -> {
+                findNavController().navigate(R.id.nav_ghost_settings)
+                true
+            }
+
             else -> {
                 super.onPreferenceTreeClick(preference)
             }
@@ -638,16 +777,35 @@ open class PreferenceScreenFragment :
                 requireActivity().recreate()
             }
 
+            ACCENT_COLOR -> {
+                onUpdateAccentColor()
+                requireActivity().recreate()
+            }
+
+            SHOW_UNIMPORTANT_SETTINGS -> {
+                applyUnimportantSettingsVisibility()
+            }
+
+            DISABLE_ALBUM_ART -> {
+                clearImageLoaderCache()
+                requireActivity().recreate()
+            }
+
             NOW_PLAYING_SCREEN -> {
                 onUpdateNowPlayingScreen()
             }
 
             COVER_DOUBLE_TAP_ACTION,
+            COVER_SINGLE_TAP_ACTION,
             COVER_LEFT_DOUBLE_TAP_ACTION,
             COVER_RIGHT_DOUBLE_TAP_ACTION,
             COVER_LONG_PRESS_ACTION,
             -> {
                 onUpdateCoverActions()
+            }
+
+            NOW_PLAYING_QUICK_ACCESS -> {
+                onUpdateQuickAccess()
             }
 
             ON_SONG_CLICK_ACTION,
@@ -675,7 +833,66 @@ open class PreferenceScreenFragment :
             LyricsViewSettings.Key.BACKGROUND_EFFECT -> {
                 onUpdateLyricsPreferences()
             }
+
+            NOTIFICATION_COMPACT_BUTTONS,
+            NOTIFICATION_EXPANDED_BUTTONS,
+            -> {
+                onUpdateNotificationButtons()
+            }
+
+            NOTIFICATION_STYLE,
+            NOTIFICATION_CUSTOM_BACKGROUND_COLOR,
+            -> {
+                onUpdateNotificationAppearance()
+            }
+
+            else -> {
+                if (MenuCustomizationGroup.fromPreferenceKey(key) != null) {
+                    onUpdateMenuCustomization()
+                }
+            }
         }
+    }
+
+    private fun onUpdateNotificationButtons() {
+        val names =
+            Preferences.notificationButtonLayout.compact.map { getString(it.labelRes) }
+        findPreference<Preference>(NOTIFICATION_BUTTON_LAYOUT)?.summary =
+            if (names.isEmpty()) {
+                getString(R.string.notification_button_layout_summary)
+            } else {
+                getString(R.string.notification_button_layout_summary_value, names.joinToString(", "))
+            }
+    }
+
+    private fun onUpdateNotificationAppearance() {
+        val style = Preferences.notificationStyle
+        findPreference<Preference>(NOTIFICATION_STYLE)?.summary =
+            if (style.isCustom) {
+                getString(
+                    R.string.notification_style_summary_value,
+                    getString(style.labelRes),
+                )
+            } else {
+                getString(R.string.notification_style_summary_system)
+            }
+        listOf(
+            NOTIFICATION_BACKGROUND_MODE,
+            NOTIFICATION_CUSTOM_BACKGROUND_COLOR,
+        ).forEach { key ->
+            findPreference<Preference>(key)?.isEnabled = style.isCustom
+        }
+        findPreference<Preference>(NOTIFICATION_ALWAYS_EXPANDED)?.isEnabled = style.showsSeekBar
+        val customColor = Preferences.notificationCustomBackgroundColor
+        findPreference<Preference>(NOTIFICATION_CUSTOM_BACKGROUND_COLOR)?.summary =
+            if (customColor == 0) {
+                getString(R.string.notification_background_custom_summary)
+            } else {
+                getString(
+                    R.string.notification_background_custom_summary_value,
+                    String.format(Locale.ROOT, "#%06X", 0xFFFFFF and customColor),
+                )
+            }
     }
 
     private fun onUpdateNowPlayingScreen() {
@@ -698,6 +915,29 @@ open class PreferenceScreenFragment :
 
         findPreference<Preference>(COVER_LONG_PRESS_ACTION)?.summary =
             getString(Preferences.coverLongPressAction.titleRes)
+    }
+
+    private fun onUpdateQuickAccess() {
+        val count = Preferences.quickAccessActions.size
+        findPreference<Preference>(NOW_PLAYING_QUICK_ACCESS)?.summary =
+            if (count == 0) {
+                getString(R.string.quick_access_actions_summary)
+            } else {
+                getString(R.string.quick_access_actions_summary_count, count)
+            }
+    }
+
+    private fun onUpdateMenuCustomization() {
+        MenuCustomizationGroup.entries.forEach { group ->
+            val state = Preferences.menuCustomization(group)
+            val enabledCount = group.items.count { state.isEnabled(it.key) }
+            findPreference<Preference>(group.preferenceKey)?.summary =
+                if (enabledCount == group.items.size) {
+                    getString(R.string.menu_customization_all_shown)
+                } else {
+                    getString(R.string.menu_customization_count, enabledCount, group.items.size)
+                }
+        }
     }
 
     private fun onUpdateHeadsetMapping() {
@@ -737,8 +977,33 @@ open class PreferenceScreenFragment :
             }
     }
 
+    private fun ghostModeSummary(): CharSequence {
+        val folderCount = GhostMode.folderPaths.size
+        return when {
+            !Preferences.ghostModeEnabled || folderCount == 0 -> getString(R.string.ghost_mode_summary_settings)
+            else -> resources.getQuantityString(R.plurals.ghost_mode_summary_folders, folderCount, folderCount)
+        }
+    }
+
     private fun showLibraryFolderSelector(type: Int) {
         BlacklistWhitelistDialog.newInstance(type).show(childFragmentManager, "LIBRARY_PATHS_PREFERENCE")
+    }
+
+    private fun confirmLibraryRescan() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.rescan_library_title)
+            .setMessage(R.string.rescan_library_message)
+            .setPositiveButton(R.string.rescan_library_action) { _, _ -> rescanLibrary() }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun rescanLibrary() {
+        val context = requireContext().applicationContext
+        context.showToast(R.string.rescan_library_started)
+        LibraryRescan.scanAsync(context) {
+            context.showToast(R.string.scan_finished)
+        }
     }
 
     private fun clearImageLoaderCache() =

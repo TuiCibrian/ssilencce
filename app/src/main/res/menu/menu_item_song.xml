@@ -3,14 +3,29 @@
         android:id="@+id/action_play"
         android:title="@string/action_play"/>
     <item
+        android:id="@+id/action_preview"
+        android:title="@string/action_preview"/>
+    <item
         android:id="@+id/action_play_next"
         android:title="@string/action_queue_next"/>
     <item
         android:id="@+id/action_add_to_playing_queue"
         android:title="@string/action_add_to_playing_queue" />
     <item
+        android:id="@+id/action_pause_after_this_song"
+        android:title="@string/queue_action_pause_after_this_song" />
+    <item
+        android:id="@+id/action_play_after_current"
+        android:title="@string/queue_action_play_after_current" />
+    <item
+        android:id="@+id/action_load_next_and_pause"
+        android:title="@string/queue_action_load_next_and_pause" />
+    <item
         android:id="@+id/action_add_to_playlist"
         android:title="@string/action_add_to_playlist" />
+    <item
+        android:id="@+id/action_song_notes"
+        android:title="@string/action_song_notes" />
     <item
         android:id="@+id/menu_go_to"
         android:title="@string/go_to_label">
@@ -27,11 +42,29 @@
         </menu>
     </item>
     <item
+        android:id="@+id/menu_file_actions"
+        android:title="@string/action_file_actions">
+        <menu>
+            <item
+                android:id="@+id/action_move_to_folder"
+                android:title="@string/action_move_to_folder"/>
+            <item
+                android:id="@+id/action_copy_to_folder"
+                android:title="@string/action_copy_to_folder"/>
+            <item
+                android:id="@+id/action_hide_songs"
+                android:title="@string/action_hide_songs"/>
+        </menu>
+    </item>
+    <item
         android:id="@+id/action_tag_editor"
         android:title="@string/action_tag_editor"/>
     <item
         android:id="@+id/action_calculate_replay_gain"
         android:title="@string/action_calculate_replay_gain"/>
+    <item
+        android:id="@+id/action_trim_audio"
+        android:title="@string/action_trim_audio"/>
     <item
         android:id="@+id/action_share"
         android:title="@string/action_share"/>

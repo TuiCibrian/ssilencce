@@ -79,6 +79,15 @@
             app:widgetLayout="@layout/preference_switch"
             app:key="clear_queue_on_completion"/>
 
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/auto_delete_oldest_named_queue_title"
+            app:summary="@string/auto_delete_oldest_named_queue_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="auto_delete_oldest_named_queue"/>
+
     </PreferenceCategory>
 
     <PreferenceCategory
@@ -93,6 +102,43 @@
             app:layout="@layout/list_item_view"
             app:widgetLayout="@layout/preference_switch"
             app:key="remember_shuffle_mode"/>
+
+        <ListPreference
+            app:icon="@drawable/ic_shuffle_24dp"
+            app:title="@string/shuffle_behavior_title"
+            app:summary="@string/shuffle_behavior_summary"
+            app:entries="@array/pref_shuffle_behavior_entries"
+            app:entryValues="@array/pref_shuffle_behavior_values"
+            app:defaultValue="all_songs"
+            app:layout="@layout/list_item_view"
+            app:key="shuffle_behavior"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_shuffle_24dp"
+            app:title="@string/shuffle_standard_mode_title"
+            app:summary="@string/shuffle_standard_mode_summary"
+            app:defaultValue="true"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="shuffle_standard_enabled"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_randomize_24dp"
+            app:title="@string/shuffle_randomize_mode_title"
+            app:summary="@string/shuffle_randomize_mode_summary"
+            app:defaultValue="true"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="shuffle_randomize_enabled"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_repeat_24dp"
+            app:title="@string/repeat_load_next_pause_available_title"
+            app:summary="@string/repeat_load_next_pause_available_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="repeat_load_next_and_pause_available"/>
 
         <ListPreference
             app:icon="@drawable/ic_album_24dp"
@@ -120,26 +166,186 @@
         app:title="@string/controls_header"
         app:layout="@layout/preference_category_title">
 
-        <SwitchPreferenceCompat
-            app:iconSpaceReserved="true"
-            app:title="@string/rewind_with_back_title"
-            app:summary="@string/rewind_with_back_summary"
-            app:defaultValue="true"
+        <ListPreference
+            app:icon="@drawable/ic_previous_24dp"
+            app:title="@string/previous_button_title"
+            app:summary="@string/previous_button_summary"
+            app:entries="@array/pref_previous_button_entries"
+            app:entryValues="@array/pref_previous_button_values"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="restart"
             app:layout="@layout/list_item_view"
-            app:widgetLayout="@layout/preference_switch"
-            app:key="rewind_with_back"/>
+            app:key="previous_button_action"/>
 
         <SeekBarPreference
             app:icon="@drawable/ic_fast_forward_24dp"
-            app:title="@string/rewind_fast_forward_amount_title"
-            app:summary="@string/rewind_fast_forward_amount_summary"
+            app:title="@string/seek_forward_amount_title"
+            app:summary="@string/seek_forward_amount_summary"
             android:max="60"
             app:min="5"
             app:defaultValue="10"
             app:showSeekBarValue="true"
             app:layout="@layout/list_item_view_bottom_widget"
             app:widgetLayout="@layout/preference_seekbar"
-            app:key="seek_interval"/>
+            app:key="seek_forward_interval"/>
+
+        <SeekBarPreference
+            app:icon="@drawable/ic_fast_rewind_24dp"
+            app:title="@string/seek_back_amount_title"
+            app:summary="@string/seek_back_amount_summary"
+            android:max="60"
+            app:min="5"
+            app:defaultValue="10"
+            app:showSeekBarValue="true"
+            app:layout="@layout/list_item_view_bottom_widget"
+            app:widgetLayout="@layout/preference_seekbar"
+            app:key="seek_back_interval"/>
+
+        <ListPreference
+            app:icon="@drawable/ic_fast_forward_24dp"
+            app:title="@string/seek_controls_min_duration_title"
+            app:summary="@string/seek_controls_min_duration_summary"
+            app:entries="@array/pref_seek_controls_min_duration_entries"
+            app:entryValues="@array/pref_seek_controls_min_duration_values"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="0"
+            app:layout="@layout/list_item_view"
+            app:key="seek_controls_min_duration"/>
+
+        <SeekBarPreference
+            app:icon="@drawable/ic_play_24dp"
+            app:title="@string/fade_in_title"
+            app:summary="@string/fade_in_summary"
+            android:max="4000"
+            app:min="0"
+            app:seekBarIncrement="100"
+            app:defaultValue="0"
+            app:showSeekBarValue="true"
+            app:layout="@layout/list_item_view_bottom_widget"
+            app:widgetLayout="@layout/preference_seekbar"
+            app:key="playback_fade_in_duration"/>
+
+        <SeekBarPreference
+            app:icon="@drawable/ic_pause_24dp"
+            app:title="@string/fade_out_title"
+            app:summary="@string/fade_out_summary"
+            android:max="4000"
+            app:min="0"
+            app:seekBarIncrement="100"
+            app:defaultValue="0"
+            app:showSeekBarValue="true"
+            app:layout="@layout/list_item_view_bottom_widget"
+            app:widgetLayout="@layout/preference_seekbar"
+            app:key="playback_fade_out_duration"/>
+
+        <SeekBarPreference
+            app:icon="@drawable/ic_crossfade_24dp"
+            app:title="@string/crossfade_title"
+            app:summary="@string/crossfade_summary"
+            android:max="12000"
+            app:min="0"
+            app:seekBarIncrement="500"
+            app:defaultValue="0"
+            app:showSeekBarValue="true"
+            app:layout="@layout/list_item_view_bottom_widget"
+            app:widgetLayout="@layout/preference_seekbar"
+            app:key="playback_crossfade_duration"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_fast_forward_24dp"
+            app:title="@string/crossfade_on_skip_title"
+            app:summary="@string/crossfade_on_skip_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="playback_crossfade_on_manual_skip"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_shuffle_24dp"
+            app:title="@string/crossfade_gapless_albums_title"
+            app:summary="@string/crossfade_gapless_albums_summary"
+            app:defaultValue="true"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="playback_crossfade_gapless_albums"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/gapless_playback_title"
+            app:summary="@string/gapless_playback_summary"
+            app:defaultValue="true"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="gapless_playback"/>
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/notification_header"
+        app:layout="@layout/preference_category_title">
+
+        <ListPreference
+            app:icon="@drawable/ic_notifications_24dp"
+            app:title="@string/notification_style_title"
+            app:summary="@string/notification_style_summary"
+            app:entries="@array/pref_notification_style_entries"
+            app:entryValues="@array/pref_notification_style_values"
+            app:defaultValue="system"
+            app:layout="@layout/list_item_view"
+            app:key="notification_style"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:icon="@drawable/ic_notifications_24dp"
+            app:title="@string/notification_button_layout_title"
+            app:summary="@string/notification_button_layout_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="notification_button_layout"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_playlist_add_24dp"
+            app:title="@string/notification_replace_close_title"
+            app:summary="@string/notification_replace_close_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="notification_replace_close_with_add_to_playlist"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_album_24dp"
+            app:title="@string/notification_broadcast_album_art_title"
+            app:summary="@string/notification_broadcast_album_art_summary"
+            app:defaultValue="true"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="notification_broadcast_album_art"/>
+
+        <ListPreference
+            app:icon="@drawable/ic_palette_24dp"
+            app:title="@string/notification_background_title"
+            app:entries="@array/pref_notification_background_entries"
+            app:entryValues="@array/pref_notification_background_values"
+            app:defaultValue="theme"
+            app:useSimpleSummaryProvider="true"
+            app:layout="@layout/list_item_view"
+            app:key="notification_background"/>
+
+        <Preference
+            app:icon="@drawable/ic_palette_24dp"
+            app:title="@string/notification_background_custom_title"
+            app:summary="@string/notification_background_custom_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="notification_background_color"/>
+
+        <SwitchPreferenceCompat
+            app:icon="@drawable/ic_open_in_full_24dp"
+            app:title="@string/notification_always_expanded_title"
+            app:summary="@string/notification_always_expanded_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="notification_always_expanded"/>
 
     </PreferenceCategory>
 
@@ -164,6 +370,15 @@
             app:layout="@layout/list_item_view"
             app:widgetLayout="@layout/preference_switch"
             app:key="pause_on_disconnect"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/resume_only_if_paused_by_disconnect_title"
+            app:summary="@string/resume_only_if_paused_by_disconnect_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="resume_only_if_paused_by_disconnect"/>
 
         <com.ssilencce.ui.component.preferences.CustomDialogPreference
             app:iconSpaceReserved="true"
@@ -196,6 +411,25 @@
             app:layout="@layout/list_item_view"
             app:widgetLayout="@layout/preference_switch"
             app:key="pause_on_bluetooth_disconnect"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/prevent_unwanted_autoplay_title"
+            app:summary="@string/prevent_unwanted_autoplay_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="prevent_unwanted_autoplay"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/prevent_unwanted_autoplay_strict_title"
+            app:summary="@string/prevent_unwanted_autoplay_strict_summary"
+            app:defaultValue="false"
+            app:dependency="prevent_unwanted_autoplay"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="prevent_unwanted_autoplay_strict"/>
 
     </PreferenceCategory>
 
@@ -255,6 +489,15 @@
 
         <SwitchPreferenceCompat
             app:iconSpaceReserved="true"
+            app:title="@string/prevent_playback_when_muted_title"
+            app:summary="@string/prevent_playback_when_muted_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="prevent_playback_when_muted"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
             app:title="@string/mp3_index_seeking_title"
             app:summary="@string/mp3_index_seeking_summary"
             app:defaultValue="false"
@@ -275,6 +518,14 @@
             app:persistent="false"
             app:selectable="false"
             app:layout="@layout/list_item_view"/>
+
+        <SwitchPreferenceCompat
+            app:title="@string/sleep_timer_stop_only_music_in_foreground_title"
+            app:summary="@string/sleep_timer_stop_only_music_in_foreground_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="sleep_timer_stop_music_only_in_foreground"/>
 
     </PreferenceCategory>
 

@@ -52,7 +52,16 @@ class AppTheme private constructor(
             }
             val generalTheme = Preferences.generalTheme
             val themeMode = Preferences.getThemeMode(generalTheme)
+            val accentColor = Preferences.accentColor
             if (DynamicColors.isDynamicColorAvailable()) {
+                if (accentColor != 0) {
+                    return AppTheme(
+                        id = generalTheme,
+                        themeRes = themeMode.themeRes,
+                        applyDynamicColors = true,
+                        seedColor = accentColor,
+                    )
+                }
                 if (Preferences.isMaterialYouTheme) {
                     return AppTheme(
                         id = generalTheme,

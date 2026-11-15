@@ -13,7 +13,8 @@ data class EqState(
     val proMode: Boolean,
 ) {
     val isDisabledByReason = disableReason != null
-    val isUsable = supported && enabled && !isDisabledByReason
+    val usesSystemEqualizer = engineMode == EqEngineMode.System
+    val isUsable = supported && enabled && !isDisabledByReason && !usesSystemEqualizer
 
     enum class DisableReason(
         val titleRes: Int,

@@ -30,6 +30,7 @@ fun newPopupMenu(
 ): PopupMenu =
     PopupMenu(anchor.context, anchor).apply {
         inflate(menuRes)
+        MenuCustomizationFilter.apply(menu, menuRes)
         if (menuConsumer != null) {
             menuConsumer(menu)
         }

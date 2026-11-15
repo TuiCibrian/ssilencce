@@ -5,9 +5,11 @@ import android.content.SharedPreferences
 import android.net.Uri
 import android.util.Log
 import android.util.LruCache
+import androidx.core.net.toUri
 import com.ssilencce.data.local.EditTarget
 import com.ssilencce.data.local.MetadataReader
 import com.ssilencce.data.local.MetadataWriter
+import com.ssilencce.data.local.lyrics.LyricsSourceStore
 import com.ssilencce.data.local.lyrics.lrc.LrcLyricsParser
 import com.ssilencce.data.local.lyrics.ttml.TtmlLyricsParser
 import com.ssilencce.data.local.room.LyricsDao
@@ -15,6 +17,8 @@ import com.ssilencce.data.local.room.LyricsEntity
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.lyrics.LyricsFile
 import com.ssilencce.data.model.lyrics.LyricsSource
+import com.ssilencce.data.model.lyrics.LyricsSourceChoice
+import com.ssilencce.data.model.lyrics.LyricsSourceSelection
 import com.ssilencce.data.model.lyrics.RawLyrics
 import com.ssilencce.data.model.lyrics.SyncedLyrics
 import com.ssilencce.data.remote.lyrics.LyricsDownloadService
@@ -26,6 +30,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
 import java.nio.charset.Charset
+import java.util.Locale
 import java.util.regex.Pattern
 
 interface LyricsRepository {
@@ -36,12 +41,26 @@ interface LyricsRepository {
 
     suspend fun fileLyrics(song: Song): RawLyrics.File?
 
+    /**
+     * Lyrics from the document the user picked for this song through SAF, if any.
+     */
+    suspend fun userFileLyrics(song: Song): RawLyrics.File?
+
     suspend fun embeddedLyrics(song: Song): RawLyrics.Embedded?
 
     suspend fun storedLyrics(
         song: Song,
         allowDownload: Boolean,
     ): RawLyrics.Stored?
+
+    suspend fun lyricsSourceSelection(songId: Long): LyricsSourceSelection
+
+    suspend fun setLyricsSourceSelection(
+        songId: Long,
+        selection: LyricsSourceSelection,
+    )
+
+    suspend fun invalidateFileLyricsCache(songId: Long)
 
     suspend fun downloadLyrics(
         song: Song,
@@ -67,6 +86,8 @@ class RealLyricsRepository(
     private val lyricsDao: LyricsDao,
 ) : LyricsRepository {
     private val memoryCache = LruCache<Long, Map<LyricsSource, RawLyrics>>(20)
+
+    private val lyricsSourceStore = LyricsSourceStore(context)
 
     private val charsetDetector = UniversalDetector()
 
@@ -160,6 +181,44 @@ class RealLyricsRepository(
         return null
     }
 
+    override suspend fun userFileLyrics(song: Song): RawLyrics.File? {
+        val selection = lyricsSourceStore.get(song.id)
+        if (selection.source != LyricsSourceChoice.File) return null
+        val uri = selection.fileUri?.toUri() ?: return null
+        val content = readUriText(uri) ?: return null
+        if (content.isBlank()) return null
+        val format =
+            formatFromFileName(selection.fileName)
+                ?: sniffFormat(content)
+                ?: return null
+        return RawLyrics.File(LyricsFile(uri.toString(), format), content)
+    }
+
+    private fun readUriText(uri: Uri): String? =
+        try {
+            context.contentResolver.openInputStream(uri)?.buffered()?.use { stream ->
+                val charset = detectEncoding(stream)
+                stream.reader(charset).use { it.readText() }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Couldn't read the selected lyrics document $uri", e)
+            null
+        }
+
+    private fun formatFromFileName(fileName: String?): LyricsFile.Format? =
+        when (fileName?.substringAfterLast('.', "")?.lowercase(Locale.ROOT)) {
+            LyricsFile.Format.LRC.value -> LyricsFile.Format.LRC
+            LyricsFile.Format.TTML.value -> LyricsFile.Format.TTML
+            else -> null
+        }
+
+    private fun sniffFormat(content: String): LyricsFile.Format? =
+        when {
+            lrcLyricsParser.handles(content) -> LyricsFile.Format.LRC
+            ttmlLyricsParser.handles(content) -> LyricsFile.Format.TTML
+            else -> null
+        }
+
     override suspend fun embeddedLyrics(song: Song): RawLyrics.Embedded? {
         if (song.id != Song.emptySong.id) {
             getCachedLyrics<RawLyrics.Embedded>(LyricsSource.Embedded, song.id)?.let { return it }
@@ -221,6 +280,21 @@ class RealLyricsRepository(
             }
         }
         return null
+    }
+
+    override suspend fun lyricsSourceSelection(songId: Long): LyricsSourceSelection = lyricsSourceStore.get(songId)
+
+    override suspend fun setLyricsSourceSelection(
+        songId: Long,
+        selection: LyricsSourceSelection,
+    ) {
+        lyricsSourceStore.put(songId, selection)
+        // A changed source can point at a different file; never serve the previously cached one.
+        removeCachedLyrics(LyricsSource.File, songId)
+    }
+
+    override suspend fun invalidateFileLyricsCache(songId: Long) {
+        removeCachedLyrics(LyricsSource.File, songId)
     }
 
     override suspend fun downloadLyrics(

@@ -38,6 +38,7 @@ class QueueSong(
     override val albumArtistName: String?,
     override val genreName: String?,
     override val volumeName: String? = null,
+    override val discNumber: Int = 0,
 ) : Song(
         id = id,
         data = data,
@@ -55,6 +56,7 @@ class QueueSong(
         albumArtistName = albumArtistName,
         genreName = genreName,
         volumeName = volumeName,
+        discNumber = discNumber,
     ) {
     constructor(key: Pair<Long, Int>, song: Song) : this(
         key = key,
@@ -74,5 +76,6 @@ class QueueSong(
         albumArtistName = song.albumArtistName,
         genreName = song.genreName,
         volumeName = song.volumeName,
+        discNumber = song.discNumber,
     )
 }

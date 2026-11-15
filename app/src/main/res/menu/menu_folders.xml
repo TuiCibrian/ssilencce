@@ -7,6 +7,22 @@
         android:checkable="true"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_create_folder"
+        android:title="@string/action_create_folder"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_folder_info"
+        android:title="@string/folder_info_title"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_exclude_folder"
+        android:title="@string/action_exclude_folder"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_ghost_folder"
+        android:title="@string/ghost_folder_action"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_set_as_start_directory"
         android:title="@string/action_set_as_start_directory"
         app:showAsAction="never"/>

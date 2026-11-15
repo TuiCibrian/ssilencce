@@ -106,6 +106,7 @@ import com.ssilencce.core.model.equalizer.EqBand
 import com.ssilencce.core.model.equalizer.EqEngineMode
 import com.ssilencce.core.model.equalizer.EqProfile
 import com.ssilencce.core.model.equalizer.ReplayGainState
+import com.ssilencce.core.model.equalizer.ReverbPreset
 import com.ssilencce.core.model.equalizer.autoeq.AutoEqProfile
 import com.ssilencce.data.model.replaygain.ReplayGainMode
 import com.ssilencce.extensions.MIME_TYPE_APPLICATION
@@ -221,10 +222,16 @@ fun EqualizerScreen(
     val compressor by eqViewModel.compressorState.collectAsState()
     val limiter by eqViewModel.limiterState.collectAsState()
     val replayGain by eqViewModel.replayGainState.collectAsState()
+    val reverb by eqViewModel.reverbState.collectAsState()
 
     val availableBandCounts =
         remember(eqBandCapabilities, eqState.proMode) {
             eqBandCapabilities.getAvailableBandCounts(eqState.proMode)
+        }
+
+    val displayedBandCount =
+        remember(eqBandCapabilities, eqState.preferredBandCount) {
+            eqBandCapabilities.bandConfigurations.singleOrNull()?.bandCount ?: eqState.preferredBandCount
         }
 
     val bandResponseValues =
@@ -555,6 +562,7 @@ fun EqualizerScreen(
     if (showSetEngineDialog) {
         EngineSelectorDialog(
             currentEngine = eqState.engineMode,
+            hasSystemEqualizer = hasSystemEqualizer,
             onConfirm = {
                 eqViewModel.setEngineMode(it)
                 showSetEngineDialog = false
@@ -620,7 +628,7 @@ fun EqualizerScreen(
                             icon = painterResource(R.drawable.ic_equalizer_24dp),
                             onClick = { showSetEngineDialog = true },
                             enabled = !eqState.isDisabledByReason,
-                            visible = EqEngineMode.isSwitchingSupported(),
+                            visible = EqEngineMode.isSwitchingSupported() || hasSystemEqualizer || eqState.usesSystemEqualizer,
                         ),
                         MenuItem.Button.Checkable(
                             text = stringResource(R.string.eq_pro_mode),
@@ -666,13 +674,15 @@ fun EqualizerScreen(
                                     Text(outputDevice.getDeviceName(context), Modifier.weight(1f), maxLines = 2, overflow = TextOverflow.Ellipsis)
                                     Icon(painterResource(R.drawable.ic_arrow_drop_down_24dp), null)
                                 }
-                                val enableDescription = stringResource(R.string.enable_equalizer)
-                                Switch(checked = eqState.isUsable, onCheckedChange = { eqViewModel.setEqualizerState(isEnabled = it) }, enabled = eqState.supported && !eqState.isDisabledByReason, modifier = Modifier.semantics { contentDescription = enableDescription })
+                                if (!eqState.usesSystemEqualizer) {
+                                    val enableDescription = stringResource(R.string.enable_equalizer)
+                                    Switch(checked = eqState.isUsable, onCheckedChange = { eqViewModel.setEqualizerState(isEnabled = it) }, enabled = eqState.supported && !eqState.isDisabledByReason, modifier = Modifier.semantics { contentDescription = enableDescription })
+                                }
                             }
                         }
                     }
                 }
-                if (aurora && !eqState.supported && !eqState.isDisabledByReason) {
+                if (aurora && !eqState.supported && !eqState.isDisabledByReason && !eqState.usesSystemEqualizer) {
                     item {
                         EmptyView(
                             icon = painterResource(R.drawable.ic_equalizer_24dp),
@@ -692,7 +702,7 @@ fun EqualizerScreen(
                         }
                     }
                 } else {
-                    if (!aurora) {
+                    if (!aurora && !eqState.usesSystemEqualizer) {
                         item {
                             MaterialSwitch(
                                 title = stringResource(R.string.enable_equalizer),
@@ -706,14 +716,23 @@ fun EqualizerScreen(
                         }
                     }
 
-                    if (eqState.supported) {
+                    if (eqState.usesSystemEqualizer) {
+                        item {
+                            SystemEqualizerCard(
+                                isAvailable = eqState.supported,
+                                onOpenSystemEqualizer = { eqViewModel.openSystemEqualizer(context) },
+                            )
+                        }
+                    }
+
+                    if (eqState.supported && !eqState.usesSystemEqualizer) {
                         if (aurora) {
                             item {
                                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                                     AssistChip(onClick = {
                                         auroraSoundPage = false
                                         showBandCountSelector = !showBandCountSelector
-                                    }, enabled = eqState.isUsable && eqBandCapabilities.hasMultipleBandConfigurations, label = { Text(stringResource(R.string.graphic_eq_band_count, eqState.preferredBandCount)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_equalizer_24dp), null) }, modifier = Modifier.heightIn(min = 48.dp))
+                                    }, enabled = eqState.isUsable && eqBandCapabilities.hasMultipleBandConfigurations, label = { Text(stringResource(R.string.graphic_eq_band_count, displayedBandCount)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_equalizer_24dp), null) }, modifier = Modifier.heightIn(min = 48.dp))
                                     AssistChip(onClick = { showProfileSelectorDialog = true }, enabled = eqState.isUsable, label = { Text(eqCurrentProfile.getName(context)) }, modifier = Modifier.heightIn(min = 48.dp))
                                     IconButton(onClick = { showProfileSaverDialog = true }, enabled = eqState.isUsable && eqCurrentProfile.isCustom) { Icon(painterResource(R.drawable.ic_save_24dp), stringResource(R.string.action_save)) }
                                     IconButton(onClick = { deleteProfileState = Pair(eqCurrentProfile, true) }, enabled = eqState.isUsable && !eqCurrentProfile.isCustom) { Icon(painterResource(R.drawable.ic_delete_24dp), stringResource(R.string.delete_action)) }
@@ -828,20 +847,31 @@ fun EqualizerScreen(
                                     title = stringResource(R.string.graphic_eq_label),
                                     icon = painterResource(R.drawable.ic_graphic_eq_24dp),
                                     titleEndContent = {
-                                        if (!aurora && eqBandCapabilities.hasMultipleBandConfigurations) {
+                                        if (!aurora) {
+                                            val hasMultipleBandConfigurations = eqBandCapabilities.hasMultipleBandConfigurations
                                             ShapedText(
                                                 text =
                                                     stringResource(
                                                         R.string.graphic_eq_band_count,
-                                                        eqState.preferredBandCount,
+                                                        displayedBandCount,
                                                     ),
                                                 style = MaterialTheme.typography.bodySmallEmphasized,
-                                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                                containerColor =
+                                                    if (hasMultipleBandConfigurations) {
+                                                        MaterialTheme.colorScheme.primaryContainer
+                                                    } else {
+                                                        MaterialTheme.colorScheme.surfaceContainerHighest
+                                                    },
                                                 shape = CircleShape,
-                                                enabled = eqState.isUsable,
-                                                onClick = {
-                                                    showBandCountSelector = showBandCountSelector.not()
-                                                },
+                                                enabled = eqState.isUsable && hasMultipleBandConfigurations,
+                                                onClick =
+                                                    if (hasMultipleBandConfigurations) {
+                                                        {
+                                                            showBandCountSelector = showBandCountSelector.not()
+                                                        }
+                                                    } else {
+                                                        null
+                                                    },
                                             )
                                         }
                                     },
@@ -871,6 +901,18 @@ fun EqualizerScreen(
                                                         vertical = 8.dp,
                                                         horizontal = 16.dp,
                                                     ),
+                                            )
+                                        }
+
+                                        if (!eqBandCapabilities.hasMultipleBandConfigurations) {
+                                            Text(
+                                                text =
+                                                    stringResource(
+                                                        R.string.eq_band_count_fixed_by_device,
+                                                        displayedBandCount,
+                                                    ),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
 
@@ -1206,32 +1248,86 @@ fun EqualizerScreen(
                                             horizontalAlignment = Alignment.CenterHorizontally,
                                             modifier = Modifier.fillMaxWidth(),
                                         ) {
-                                            ParameterSlider(
-                                                label = stringResource(R.string.rg_with_tag),
-                                                value = replayGain.preamp,
-                                                range = -15f..15f,
-                                                onValueChangeFinished = {
-                                                    eqViewModel.setReplayGain(preamp = it)
+                                            if (!replayGain.constantVolume) {
+                                                ReplayGainSwitchRow(
+                                                    title = stringResource(R.string.rg_use_embedded_tags),
+                                                    subtitle = stringResource(R.string.rg_use_embedded_tags_description),
+                                                    checked = replayGain.useEmbeddedTags,
+                                                    onCheckedChange = {
+                                                        eqViewModel.setReplayGain(useEmbeddedTags = it)
+                                                    },
+                                                )
+                                            }
+                                            ReplayGainSwitchRow(
+                                                title = stringResource(R.string.rg_constant_volume),
+                                                subtitle = stringResource(R.string.rg_constant_volume_description),
+                                                checked = replayGain.constantVolume,
+                                                onCheckedChange = {
+                                                    eqViewModel.setReplayGain(constantVolume = it)
                                                 },
-                                                format = "%+.1f",
+                                            )
+                                            if (replayGain.constantVolume) {
+                                                ParameterSlider(
+                                                    label = stringResource(R.string.rg_constant_gain),
+                                                    value = replayGain.preamp,
+                                                    range = -15f..15f,
+                                                    onValueChangeFinished = {
+                                                        eqViewModel.setReplayGain(preamp = it)
+                                                    },
+                                                    format = "%+.1f",
+                                                    unit = " dB",
+                                                )
+                                            } else {
+                                                if (replayGain.useEmbeddedTags) {
+                                                    ParameterSlider(
+                                                        label = stringResource(R.string.rg_with_tag),
+                                                        value = replayGain.preamp,
+                                                        range = -15f..15f,
+                                                        onValueChangeFinished = {
+                                                            eqViewModel.setReplayGain(preamp = it)
+                                                        },
+                                                        format = "%+.1f",
+                                                        unit = " dB",
+                                                    )
+                                                }
+                                                ParameterSlider(
+                                                    label = stringResource(R.string.rg_without_tag),
+                                                    value = replayGain.preampWithoutGain,
+                                                    range = -15f..15f,
+                                                    onValueChangeFinished = {
+                                                        eqViewModel.setReplayGain(preampWithoutGain = it)
+                                                    },
+                                                    format = "%+.1f",
+                                                    unit = " dB",
+                                                )
+                                            }
+                                            ParameterSlider(
+                                                label = stringResource(R.string.rg_headroom),
+                                                value = replayGain.headroomDb,
+                                                range = 0f..12f,
+                                                onValueChangeFinished = {
+                                                    eqViewModel.setReplayGain(headroomDb = it)
+                                                },
+                                                format = "%.1f",
                                                 unit = " dB",
                                             )
-                                            ParameterSlider(
-                                                label = stringResource(R.string.rg_without_tag),
-                                                value = replayGain.preampWithoutGain,
-                                                range = -15f..15f,
-                                                onValueChangeFinished = {
-                                                    eqViewModel.setReplayGain(preampWithoutGain = it)
-                                                },
-                                                format = "%+.1f",
-                                                unit = " dB",
-                                            )
+                                            if (!replayGain.constantVolume) {
+                                                ReplayGainSwitchRow(
+                                                    title = stringResource(R.string.rg_prevent_clipping),
+                                                    subtitle = stringResource(R.string.rg_prevent_clipping_description),
+                                                    checked = replayGain.preventClipping,
+                                                    onCheckedChange = {
+                                                        eqViewModel.setReplayGain(preventClipping = it)
+                                                    },
+                                                )
+                                            }
                                             Spacer(Modifier.height(4.dp))
                                             ResetButton(
                                                 onClick = {
                                                     eqViewModel.setReplayGain(
                                                         preamp = 0f,
                                                         preampWithoutGain = 0f,
+                                                        headroomDb = 0f,
                                                     )
                                                 },
                                             )
@@ -1240,10 +1336,28 @@ fun EqualizerScreen(
                                 }
                             }
                         }
+
+                        if ((!aurora || auroraSoundPage) && reverb.supported) {
+                            item {
+                                ReverbCard(
+                                    state = reverb,
+                                    effectsAllowed = !eqState.isDisabledByReason,
+                                    onEnabledChange = { eqViewModel.setReverb(enabled = it) },
+                                    onPresetSelected = { eqViewModel.setReverb(preset = it) },
+                                    onSettingsChange = {
+                                        eqViewModel.setReverb(
+                                            preset = ReverbPreset.Custom,
+                                            settings = it,
+                                        )
+                                    },
+                                    onReset = { eqViewModel.setReverb(preset = ReverbPreset.MediumRoom) },
+                                )
+                            }
+                        }
                     }
                 }
             }
-            if (aurora) {
+            if (aurora && !eqState.usesSystemEqualizer) {
                 HorizontalDivider(color = AuroraDesign.border)
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     FilterChip(selected = !auroraSoundPage, onClick = { auroraSoundPage = false }, label = { Text(stringResource(R.string.aurora_eq_bands)) }, leadingIcon = { Icon(painterResource(R.drawable.ic_equalizer_24dp), null) }, modifier = Modifier.weight(1f).heightIn(min = 48.dp))
@@ -1835,10 +1949,21 @@ private fun AutoEqProfileItem(
 @Composable
 private fun EngineSelectorDialog(
     currentEngine: EqEngineMode,
+    hasSystemEqualizer: Boolean,
     onConfirm: (EqEngineMode) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var selectedMode by remember { mutableStateOf(currentEngine) }
+    val selectableEngines =
+        remember(currentEngine, hasSystemEqualizer) {
+            EqEngineMode.entries.filter { mode ->
+                when (mode) {
+                    EqEngineMode.Basic -> true
+                    EqEngineMode.DynamicsProcessing -> EqEngineMode.isSwitchingSupported() || mode == currentEngine
+                    EqEngineMode.System -> hasSystemEqualizer || mode == currentEngine
+                }
+            }
+        }
 
     AlertDialog(
         icon = {
@@ -1850,7 +1975,7 @@ private fun EngineSelectorDialog(
         title = { Text(stringResource(R.string.set_eq_engine_title)) },
         text = {
             LazyColumn {
-                items(EqEngineMode.entries) { mode ->
+                items(selectableEngines) { mode ->
                     DialogListItemWithRadio(
                         onClick = { selectedMode = mode },
                         isSelected = mode == selectedMode,
@@ -1888,6 +2013,39 @@ private fun EngineSelectorDialog(
 }
 
 @Composable
+private fun ReplayGainSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
+    }
+}
+
+@Composable
 private fun ReplayGainModeSelector(
     replayGain: ReplayGainState,
     onModeSelected: (ReplayGainMode) -> Unit,
@@ -1919,7 +2077,7 @@ private fun ReplayGainModeSelector(
 }
 
 @Composable
-private fun ParameterSlider(
+internal fun ParameterSlider(
     label: String,
     value: Float,
     range: ClosedFloatingPointRange<Float>,
@@ -1979,7 +2137,7 @@ private fun EQValueText(
 }
 
 @Composable
-private fun ResetButton(onClick: () -> Unit) {
+internal fun ResetButton(onClick: () -> Unit) {
     TextButton(onClick = onClick) {
         Icon(
             painter = painterResource(R.drawable.ic_restart_alt_24dp),

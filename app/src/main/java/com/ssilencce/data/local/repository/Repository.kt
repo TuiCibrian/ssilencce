@@ -61,6 +61,10 @@ const val MAX_ITEMS_PER_CHUNK = 900
 interface Repository {
     suspend fun allSongs(): List<Song>
 
+    suspend fun ghostSongs(): List<Song>
+
+    suspend fun ghostSongs(query: String): List<Song>
+
     suspend fun allAlbums(): List<Album>
 
     suspend fun allArtists(): List<Artist>
@@ -162,6 +166,10 @@ interface Repository {
     suspend fun deleteSongs(songs: List<Song>)
 
     suspend fun deleteMissingContent()
+
+    suspend fun findMissingSongs(): List<Song>
+
+    suspend fun removeMissingSongs(songs: List<Song>): MissingSongsCleanupResult
 
     suspend fun albumById(albumId: Long): Album
 
@@ -363,6 +371,10 @@ class RealRepository(
 ) : Repository {
     override suspend fun allSongs(): List<Song> = songRepository.songs()
 
+    override suspend fun ghostSongs(): List<Song> = songRepository.ghostSongs()
+
+    override suspend fun ghostSongs(query: String): List<Song> = songRepository.ghostSongs(query)
+
     override suspend fun allAlbums(): List<Album> = albumRepository.albums()
 
     override suspend fun allArtists(): List<Artist> = artistRepository.artists()
@@ -488,6 +500,39 @@ class RealRepository(
                 }
             playlistRepository.deleteSongsFromPlaylist(missingSongs)
         }
+    }
+
+    override suspend fun findMissingSongs(): List<Song> = songRepository.songs().filterNot { File(it.data).exists() }.distinctBy { it.id }
+
+    override suspend fun removeMissingSongs(songs: List<Song>): MissingSongsCleanupResult {
+        val missing = songs.filter { it.id != Song.emptySong.id }.distinctBy { it.id }
+        if (missing.isEmpty()) {
+            return MissingSongsCleanupResult(
+                missingSongs = 0,
+                playlistEntries = 0,
+                playCountEntries = 0,
+                playEventEntries = 0,
+                historyEntries = 0,
+            )
+        }
+        val ids = missing.map { it.id }
+        val playlistEntries = playlistRepository.countSongsInAllPlaylists(ids)
+        val playCountEntries = smartRepository.findSongsInPlayCount(missing).size
+        val playEventEntries = smartRepository.countSongsInPlayEvents(ids)
+        val historyEntries = smartRepository.countSongsInHistory(ids)
+
+        playlistRepository.deleteSongsFromAllPlaylists(ids)
+        smartRepository.deleteSongsInPlayCount(ids)
+        smartRepository.deleteSongsInPlayEvents(ids)
+        smartRepository.deleteSongsInHistory(ids)
+
+        return MissingSongsCleanupResult(
+            missingSongs = missing.size,
+            playlistEntries = playlistEntries,
+            playCountEntries = playCountEntries,
+            playEventEntries = playEventEntries,
+            historyEntries = historyEntries,
+        )
     }
 
     override suspend fun albumById(albumId: Long): Album = albumRepository.album(albumId)

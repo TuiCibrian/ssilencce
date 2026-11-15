@@ -10,6 +10,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,6 +24,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -81,6 +84,8 @@ data class SleepTimerUiState(
     val timerMode: SleepTimerMode,
     val endAtHour: Int,
     val endAtMinute: Int,
+    val songCount: Int,
+    val history: List<SleepTimerHistoryEntry>,
 )
 
 sealed class SleepTimerWaitingFor {
@@ -89,6 +94,10 @@ sealed class SleepTimerWaitingFor {
     ) : SleepTimerWaitingFor()
 
     object PendingQuit : SleepTimerWaitingFor()
+
+    class SongCount(
+        val songsRemaining: Int,
+    ) : SleepTimerWaitingFor()
 }
 
 sealed class SleepTimerEvent {
@@ -146,6 +155,8 @@ fun SleepTimerBottomSheet(
     var selectedMode by remember(uiState.timerMode) { mutableStateOf(uiState.timerMode) }
     var endAtHour by remember(uiState.endAtHour) { mutableIntStateOf(uiState.endAtHour) }
     var endAtMinute by remember(uiState.endAtMinute) { mutableIntStateOf(uiState.endAtMinute) }
+    var songCount by remember(uiState.songCount) { mutableIntStateOf(uiState.songCount) }
+    var stopOnlyMusicInForeground by remember { mutableStateOf(Preferences.sleepTimerStopMusicOnlyInForeground) }
     var showTimePicker by remember { mutableStateOf(false) }
 
     BottomSheetDialogSurface {
@@ -175,7 +186,7 @@ fun SleepTimerBottomSheet(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Row(
+                FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     modifier =
                         Modifier
@@ -200,6 +211,15 @@ fun SleepTimerBottomSheet(
                         enabled = uiState.isRunning.not(),
                         label = { Text(stringResource(R.string.sleep_timer_end_at)) },
                     )
+                    FilterChip(
+                        selected = selectedMode == SleepTimerMode.Songs,
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            selectedMode = SleepTimerMode.Songs
+                        },
+                        enabled = uiState.isRunning.not(),
+                        label = { Text(stringResource(R.string.sleep_timer_songs)) },
+                    )
                 }
 
                 Column(
@@ -216,14 +236,30 @@ fun SleepTimerBottomSheet(
                                     stringResource(R.string.sleep_timer_waiting_pending_quit)
                                 }
 
+                                is SleepTimerWaitingFor.SongCount -> {
+                                    pluralStringResource(
+                                        R.plurals.sleep_timer_songs_remaining,
+                                        waitingFor.songsRemaining,
+                                        waitingFor.songsRemaining,
+                                    )
+                                }
+
                                 else -> {
-                                    if (selectedMode == SleepTimerMode.EndAt) {
-                                        stringResource(
-                                            R.string.sleep_timer_ends_at,
-                                            SleepTimerEndTime.format(endAtHour, endAtMinute),
-                                        )
-                                    } else {
-                                        stringResource(R.string.sleep_timer_x_mins, sliderPosition.toInt())
+                                    when (selectedMode) {
+                                        SleepTimerMode.EndAt -> {
+                                            stringResource(
+                                                R.string.sleep_timer_ends_at,
+                                                SleepTimerEndTime.format(endAtHour, endAtMinute),
+                                            )
+                                        }
+
+                                        SleepTimerMode.Songs -> {
+                                            pluralStringResource(R.plurals.x_songs, songCount, songCount)
+                                        }
+
+                                        SleepTimerMode.Duration -> {
+                                            stringResource(R.string.sleep_timer_x_mins, sliderPosition.toInt())
+                                        }
                                     }
                                 }
                             },
@@ -369,6 +405,127 @@ fun SleepTimerBottomSheet(
                             Text(SleepTimerEndTime.format(endAtHour, endAtMinute))
                         }
                     }
+                    if (selectedMode == SleepTimerMode.Songs) {
+                        Slider(
+                            value = songCount.toFloat(),
+                            onValueChange = { songCount = round(it).toInt().coerceIn(1, 20) },
+                            onValueChangeFinished = {
+                                hapticFeedback.performHapticFeedback(
+                                    HapticFeedbackType.SegmentFrequentTick,
+                                )
+                                viewModel.setTimerState(songCount = songCount)
+                            },
+                            valueRange = 1f..20f,
+                            steps = 18,
+                            track = { sliderState ->
+                                SliderDefaults.Track(
+                                    sliderState = sliderState,
+                                    modifier = Modifier.height(SliderTokens.MediumTrackHeight),
+                                )
+                            },
+                            enabled = uiState.isRunning.not(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        OutlinedButton(
+                            onClick = {
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                viewModel.startStopAfterThisSong()
+                            },
+                            enabled = uiState.isRunning.not(),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_stop_circle_24dp),
+                                contentDescription = null,
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(stringResource(R.string.sleep_timer_stop_after_this_song))
+                        }
+                    }
+                }
+
+                if (selectedMode != SleepTimerMode.Songs) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                        modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                    ) {
+                        SwitchButton(
+                            enabled = uiState.isRunning.not(),
+                            checked = uiState.isFinishMusic,
+                            text = stringResource(R.string.sleep_timer_finish_current_music),
+                            onValueChange = { isChecked ->
+                                if (isChecked) {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ToggleOn,
+                                    )
+                                } else {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ToggleOff,
+                                    )
+                                }
+                                viewModel.setTimerState(isFinishMusic = isChecked)
+                            },
+                        )
+
+                        SwitchButton(
+                            enabled = uiState.isRunning.not() && uiState.isFinishMusic.not(),
+                            checked = uiState.isFadeOut,
+                            text = stringResource(R.string.sleep_timer_music_fades_out),
+                            onValueChange = { isChecked ->
+                                if (isChecked) {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ToggleOn,
+                                    )
+                                } else {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ToggleOff,
+                                    )
+                                }
+                                viewModel.setTimerState(isFadeOut = isChecked)
+                            },
+                            expandableContent = {
+                                Column(
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    modifier =
+                                        Modifier
+                                            .padding(horizontal = 16.dp)
+                                            .padding(top = 8.dp, bottom = 16.dp),
+                                ) {
+                                    Slider(
+                                        value = fadeOutDuration,
+                                        onValueChange = { fadeOutDuration = it },
+                                        onValueChangeFinished = {
+                                            hapticFeedback.performHapticFeedback(
+                                                HapticFeedbackType.SegmentFrequentTick,
+                                            )
+                                            viewModel.setTimerState(fadeOutDuration = fadeOutDuration)
+                                        },
+                                        valueRange = 1f..10f,
+                                        track = { sliderState ->
+                                            SliderDefaults.Track(
+                                                sliderState = sliderState,
+                                                modifier = Modifier.height(SliderTokens.MediumTrackHeight),
+                                            )
+                                        },
+                                        steps = 8,
+                                        enabled = uiState.isRunning.not(),
+                                        modifier = Modifier.fillMaxWidth(),
+                                    )
+
+                                    SleepTimerText(
+                                        text = stringResource(R.string.sleep_timer_x_secs, fadeOutDuration.toInt()),
+                                        modifier =
+                                            Modifier
+                                                .padding(end = 8.dp)
+                                                .align(Alignment.End),
+                                    )
+                                }
+                            },
+                        )
+                    }
                 }
 
                 Column(
@@ -377,76 +534,26 @@ fun SleepTimerBottomSheet(
                 ) {
                     SwitchButton(
                         enabled = uiState.isRunning.not(),
-                        checked = uiState.isFinishMusic,
-                        text = stringResource(R.string.sleep_timer_finish_current_music),
+                        checked = stopOnlyMusicInForeground,
+                        text = stringResource(R.string.sleep_timer_stop_only_music_in_foreground_title),
                         onValueChange = { isChecked ->
                             if (isChecked) {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ToggleOn,
-                                )
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOn)
                             } else {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ToggleOff,
-                                )
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.ToggleOff)
                             }
-                            viewModel.setTimerState(isFinishMusic = isChecked)
+                            stopOnlyMusicInForeground = isChecked
+                            viewModel.setStopMusicOnlyInForeground(isChecked)
                         },
                     )
+                }
 
-                    SwitchButton(
-                        enabled = uiState.isRunning.not() && uiState.isFinishMusic.not(),
-                        checked = uiState.isFadeOut,
-                        text = stringResource(R.string.sleep_timer_music_fades_out),
-                        onValueChange = { isChecked ->
-                            if (isChecked) {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ToggleOn,
-                                )
-                            } else {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ToggleOff,
-                                )
-                            }
-                            viewModel.setTimerState(isFadeOut = isChecked)
-                        },
-                        expandableContent = {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier =
-                                    Modifier
-                                        .padding(horizontal = 16.dp)
-                                        .padding(top = 8.dp, bottom = 16.dp),
-                            ) {
-                                Slider(
-                                    value = fadeOutDuration,
-                                    onValueChange = { fadeOutDuration = it },
-                                    onValueChangeFinished = {
-                                        hapticFeedback.performHapticFeedback(
-                                            HapticFeedbackType.SegmentFrequentTick,
-                                        )
-                                        viewModel.setTimerState(fadeOutDuration = fadeOutDuration)
-                                    },
-                                    valueRange = 1f..10f,
-                                    track = { sliderState ->
-                                        SliderDefaults.Track(
-                                            sliderState = sliderState,
-                                            modifier = Modifier.height(SliderTokens.MediumTrackHeight),
-                                        )
-                                    },
-                                    steps = 8,
-                                    enabled = uiState.isRunning.not(),
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
-
-                                SleepTimerText(
-                                    text = stringResource(R.string.sleep_timer_x_secs, fadeOutDuration.toInt()),
-                                    modifier =
-                                        Modifier
-                                            .padding(end = 8.dp)
-                                            .align(Alignment.End),
-                                )
-                            }
-                        },
+                if (uiState.history.isNotEmpty()) {
+                    SleepTimerHistory(
+                        history = uiState.history,
+                        enabled = uiState.isRunning.not(),
+                        onReuse = viewModel::reuseHistory,
+                        onClear = viewModel::clearHistory,
                     )
                 }
 
@@ -457,7 +564,7 @@ fun SleepTimerBottomSheet(
                         if (uiState.isRunning) {
                             viewModel.cancelTimer()
                         } else {
-                            viewModel.startTimer(selectedMode, endAtHour, endAtMinute)
+                            viewModel.startTimer(selectedMode, endAtHour, endAtMinute, songCount)
                         }
                     },
                     colors =
@@ -506,6 +613,63 @@ fun SleepTimerBottomSheet(
         }
     }
 }
+
+@Composable
+private fun SleepTimerHistory(
+    history: List<SleepTimerHistoryEntry>,
+    enabled: Boolean,
+    onReuse: (SleepTimerHistoryEntry) -> Unit,
+    onClear: () -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.sleep_timer_recent),
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(
+                onClick = onClear,
+            ) {
+                Text(stringResource(R.string.sleep_timer_clear_recent))
+            }
+        }
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            history.forEach { entry ->
+                AssistChip(
+                    onClick = { onReuse(entry) },
+                    enabled = enabled,
+                    label = { Text(entry.historyLabel()) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SleepTimerHistoryEntry.historyLabel(): String =
+    when (this) {
+        is SleepTimerHistoryEntry.Duration -> {
+            stringResource(R.string.sleep_timer_x_mins, minutes)
+        }
+
+        is SleepTimerHistoryEntry.EndAt -> {
+            stringResource(
+                R.string.sleep_timer_ends_at,
+                SleepTimerEndTime.format(hour, minute),
+            )
+        }
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

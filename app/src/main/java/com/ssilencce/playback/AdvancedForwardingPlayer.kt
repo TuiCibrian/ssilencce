@@ -16,7 +16,41 @@ class AdvancedForwardingPlayer(
     private val listeners = mutableListOf<Player.Listener>()
     var onPlaybackIntent: ((Boolean) -> Boolean)? = null
 
+    /** Invoked before a play command is applied; the player may still be playing when a pause fade is pending. */
+    var onPlayRequested: ((isStillPlaying: Boolean) -> Unit)? = null
+
+    /**
+     * Gate checked before a play request reaches the audio-focus controller or the wrapped
+     * player. Returning false rejects the request (for example while the output is muted).
+     */
+    var canStartPlayback: (() -> Boolean)? = null
+
+    /** Invoked when [canStartPlayback] rejected a play request. */
+    var onPlaybackBlocked: (() -> Unit)? = null
+
+    /**
+     * Invoked before a "next" command is applied. Returning true means the callback owns the
+     * command and will perform the transition itself (crossfade on manual skip); false falls
+     * through to the default behavior.
+     */
+    var onSeekToNextRequested: (() -> Boolean)? = null
+
+    /** Invoked before a "previous" command is applied, so an in-flight crossfade can be dropped. */
+    var onSeekToPreviousRequested: (() -> Unit)? = null
+
+    /**
+     * Invoked before a pause command is applied. Returning true means the callback owns the
+     * commit action and will call it later (or has already committed it).
+     */
+    var onPauseRequested: ((commit: () -> Unit) -> Boolean)? = null
+
     private var sequentialTimelineEnabled = false
+
+    /**
+     * Makes "previous item" commands (notification, Android Auto) follow the same
+     * restart-vs-previous preference as the legacy [seekToPrevious] command.
+     */
+    var previousButtonRestartsTrack = true
 
     private val internalListener =
         object : Player.Listener {
@@ -48,15 +82,82 @@ class AdvancedForwardingPlayer(
     val exoPlayer get() = wrappedPlayer as ExoPlayer
 
     override fun play() {
-        if (onPlaybackIntent?.invoke(true) != false) super.play()
+        if (canStartPlayback?.invoke() == false) {
+            onPlaybackBlocked?.invoke()
+            return
+        }
+        if (onPlaybackIntent?.invoke(true) == false) return
+        onPlayRequested?.invoke(wrappedPlayer.isPlaying)
+        super.play()
     }
 
     override fun pause() {
-        if (onPlaybackIntent?.invoke(false) != false) super.pause()
+        if (onPlaybackIntent?.invoke(false) == false) return
+        if (requestDelayedPause(::applyPause)) return
+        applyPause()
     }
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
-        if (onPlaybackIntent?.invoke(playWhenReady) != false) super.setPlayWhenReady(playWhenReady)
+        if (playWhenReady && canStartPlayback?.invoke() == false) {
+            onPlaybackBlocked?.invoke()
+            return
+        }
+        if (onPlaybackIntent?.invoke(playWhenReady) == false) return
+        if (!playWhenReady &&
+            wrappedPlayer.playWhenReady &&
+            requestDelayedPause(::applyPauseWhenReady)
+        ) {
+            return
+        }
+        if (playWhenReady) onPlayRequested?.invoke(wrappedPlayer.isPlaying)
+        super.setPlayWhenReady(playWhenReady)
+    }
+
+    /**
+     * Pauses without running the fade-on-pause hook. Used by callers that already faded the
+     * volume out (sleep timer) so the pause is not delayed twice.
+     */
+    fun pauseWithoutFade() {
+        if (onPlaybackIntent?.invoke(false) == false) return
+        applyPause()
+    }
+
+    override fun seekToNext() {
+        if (onSeekToNextRequested?.invoke() == true) return
+        performSeekToNext()
+    }
+
+    override fun seekToNextMediaItem() {
+        if (onSeekToNextRequested?.invoke() == true) return
+        performSeekToNextMediaItem()
+    }
+
+    private fun performSeekToNext() = super.seekToNext()
+
+    private fun performSeekToNextMediaItem() = super.seekToNextMediaItem()
+
+    override fun seekToPrevious() {
+        onSeekToPreviousRequested?.invoke()
+        super.seekToPrevious()
+    }
+
+    override fun seekToPreviousMediaItem() {
+        onSeekToPreviousRequested?.invoke()
+        if (previousButtonRestartsTrack) {
+            super.seekToPrevious()
+        } else {
+            super.seekToPreviousMediaItem()
+        }
+    }
+
+    private fun requestDelayedPause(commit: () -> Unit): Boolean = wrappedPlayer.playWhenReady && onPauseRequested?.invoke(commit) == true
+
+    private fun applyPause() {
+        super.pause()
+    }
+
+    private fun applyPauseWhenReady() {
+        super.setPlayWhenReady(false)
     }
 
     init {

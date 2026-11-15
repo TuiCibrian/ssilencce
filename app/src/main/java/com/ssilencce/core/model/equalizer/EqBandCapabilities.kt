@@ -1,6 +1,7 @@
 package com.ssilencce.core.model.equalizer
 
 import androidx.compose.runtime.Immutable
+import kotlin.math.abs
 
 @Immutable
 class EqBandCapabilities(
@@ -23,10 +24,28 @@ class EqBandCapabilities(
         bandConfigurations
             .filter { it.bandCount <= maxBandCountInNormalMode || isProMode }
             .map { it.bandCount }
+            .sorted()
 
     fun isBandCountSupported(bandCount: Int) = bandConfigurations.any { it.bandCount == bandCount }
 
-    fun getFrequencies(bandCount: Int): IntArray = bandConfigurations.first { it.bandCount == bandCount }.bandFrequenciesInHz
+    fun getConfiguration(bandCount: Int): BandConfiguration? = bandConfigurations.firstOrNull { it.bandCount == bandCount }
+
+    fun getFrequenciesOrNull(bandCount: Int): IntArray? = getConfiguration(bandCount)?.bandFrequenciesInHz
+
+    fun getFrequencies(bandCount: Int): IntArray =
+        requireNotNull(getFrequenciesOrNull(bandCount)) {
+            "Unsupported band count: $bandCount"
+        }
+
+    /**
+     * The device-fixed count is authoritative for single-configuration engines (Legacy Equalizer).
+     */
+    fun getClosestBandCount(
+        bandCount: Int,
+        isProMode: Boolean,
+    ): Int? =
+        getAvailableBandCounts(isProMode).minByOrNull { abs(it - bandCount) }
+            ?: bandConfigurations.minByOrNull { abs(it.bandCount - bandCount) }?.bandCount
 
     fun getBands(
         profile: EqProfile,
@@ -36,19 +55,28 @@ class EqBandCapabilities(
             return emptyList()
         }
 
-        val freqInHz = bandConfigurations.first { it.bandCount == bandCount }.bandFrequenciesInHz
+        val configuration =
+            getConfiguration(bandCount)
+                ?: bandConfigurations.minByOrNull { abs(it.bandCount - bandCount) }
+                ?: return emptyList()
         val levels =
-            if (profile.isValid && profile.levels.size == bandCount) {
+            if (profile.isValid && profile.numberOfBands == configuration.bandCount) {
                 profile.levels
+            } else if (profile.isValid) {
+                EqBandResampler.resample(
+                    levels = profile.levels,
+                    sourceFrequenciesInHz = EqBandResampler.sourceFrequencies(profile.numberOfBands, this),
+                    targetFrequenciesInHz = configuration.bandFrequenciesInHz,
+                )
             } else {
-                FloatArray(bandCount)
+                FloatArray(configuration.bandCount)
             }
-        return (0 until bandCount).map {
+        return (0 until configuration.bandCount).map {
             EqBand(
                 index = it,
                 value = levels[it],
                 valueRange = bandRange,
-                frequencyInHz = freqInHz[it],
+                frequencyInHz = configuration.bandFrequenciesInHz[it],
             )
         }
     }

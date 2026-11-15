@@ -33,11 +33,22 @@ data class FileWriteReport(
     val detail: String? = null,
     /** Explicit per-file operations, including [FieldOperation.Keep] overrides. */
     val overrides: Map<TagEditField, FieldOperation> = emptyMap(),
-)
+    /** Result of the explicitly requested cover operation, if any. */
+    val coverStatus: CoverWriteStatus = CoverWriteStatus.KEPT,
+) {
+    /** True when this file may still hold changes that a session undo can revert. */
+    val holdsChanges: Boolean
+        get() =
+            status == FileWriteStatus.SUCCEEDED ||
+                status == FileWriteStatus.PARTIAL ||
+                coverStatus == CoverWriteStatus.WRITTEN ||
+                coverStatus == CoverWriteStatus.DELETED
+}
 
 data class BatchWriteReport(
     val files: List<FileWriteReport>,
     val requestedFields: Set<TagEditField>,
+    val coverRequested: Boolean = false,
 ) {
     val succeededFiles: Int
         get() = files.count { it.status == FileWriteStatus.SUCCEEDED }
@@ -57,11 +68,21 @@ data class BatchWriteReport(
     val cancelledFiles: Int
         get() = files.count { it.status == FileWriteStatus.CANCELLED }
 
+    val coverWrittenFiles: Int
+        get() = files.count { it.coverStatus == CoverWriteStatus.WRITTEN }
+
+    val coverDeletedFiles: Int
+        get() = files.count { it.coverStatus == CoverWriteStatus.DELETED }
+
+    val coverFailedFiles: Int
+        get() = files.count { it.coverStatus == CoverWriteStatus.MISMATCH }
+
     val isFullSuccess: Boolean
         get() =
-            requestedFields.isNotEmpty() &&
+            (requestedFields.isNotEmpty() || coverRequested) &&
                 files.any { it.status != FileWriteStatus.UNCHANGED } &&
                 files.all {
-                    it.status == FileWriteStatus.SUCCEEDED || it.status == FileWriteStatus.UNCHANGED
+                    (it.status == FileWriteStatus.SUCCEEDED || it.status == FileWriteStatus.UNCHANGED) &&
+                        it.coverStatus != CoverWriteStatus.MISMATCH
                 }
 }

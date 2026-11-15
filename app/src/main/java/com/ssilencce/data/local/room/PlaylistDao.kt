@@ -115,6 +115,9 @@ interface PlaylistDao {
     @Query("DELETE FROM SongEntity WHERE id IN (:songIds)")
     suspend fun deleteSongsFromAllPlaylists(songIds: List<Long>)
 
+    @Query("SELECT COUNT(*) FROM SongEntity WHERE id IN (:songIds)")
+    suspend fun countSongsInAllPlaylists(songIds: List<Long>): Int
+
     @RewriteQueriesToDropUnusedColumns
     @Query(
         """

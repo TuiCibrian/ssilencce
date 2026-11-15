@@ -24,6 +24,25 @@
         </menu>
     </item>
     <item
+        android:id="@+id/menu_folder_actions"
+        android:title="@string/action_file_actions"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_folder_info"
+                android:title="@string/folder_info_title"/>
+            <item
+                android:id="@+id/action_rename_folder"
+                android:title="@string/action_rename_folder"/>
+            <item
+                android:id="@+id/action_exclude_folder"
+                android:title="@string/action_exclude_folder"/>
+            <item
+                android:id="@+id/action_ghost_folder"
+                android:title="@string/ghost_folder_action"/>
+        </menu>
+    </item>
+    <item
         android:id="@+id/action_add_to_home"
         android:title="@string/add_to_home"
         app:showAsAction="never"/>

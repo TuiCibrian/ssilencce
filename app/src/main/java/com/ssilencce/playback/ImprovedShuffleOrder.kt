@@ -15,6 +15,7 @@ import kotlin.random.Random
 class ImprovedShuffleOrder private constructor(
     private val shuffled: IntArray,
     private val random: Random,
+    private val keepPrefix: Boolean = false,
 ) : ShuffleOrder {
     private val indexInShuffled = IntArray(shuffled.size)
 
@@ -28,16 +29,30 @@ class ImprovedShuffleOrder private constructor(
     private constructor(shuffled: IntArray, seed: Long) :
         this(shuffled.copyOf(), Random(seed))
 
-    private constructor(firstIndex: Int, length: Int, random: Random) :
-        this(calculateListWithFirstIndex(calculateShuffledList(0, length, random), firstIndex), random)
+    private constructor(firstIndex: Int, length: Int, random: Random, keepPrefix: Boolean) :
+        this(
+            if (keepPrefix) {
+                calculateListWithOrderedPrefix(firstIndex, length, random)
+            } else {
+                calculateListWithFirstIndex(calculateShuffledList(0, length, random), firstIndex)
+            },
+            random,
+            keepPrefix,
+        )
 
-    private constructor(playerIndex: Int, firstIndex: Int, length: Int, random: Random) :
-        this(firstIndex, length, random) {
+    private constructor(firstIndex: Int, length: Int, random: Random) :
+        this(firstIndex, length, random, keepPrefix = false)
+
+    private constructor(playerIndex: Int, firstIndex: Int, length: Int, random: Random, keepPrefix: Boolean) :
+        this(firstIndex, length, random, keepPrefix) {
         this.playerIndex = playerIndex
     }
 
-    constructor(firstIndex: Int, length: Int, randomSeed: Long) :
-        this(firstIndex, length, Random(randomSeed))
+    private constructor(playerIndex: Int, firstIndex: Int, length: Int, random: Random) :
+        this(playerIndex, firstIndex, length, random, keepPrefix = false)
+
+    constructor(firstIndex: Int, length: Int, randomSeed: Long, keepPrefix: Boolean = false) :
+        this(firstIndex, length, Random(randomSeed), keepPrefix)
 
     init {
         for (i in shuffled.indices) {
@@ -70,7 +85,7 @@ class ImprovedShuffleOrder private constructor(
             if (startIndex == C.INDEX_UNSET) {
                 startIndex = random.nextInt(insertionCount)
             }
-            return ImprovedShuffleOrder(startIndex, insertionCount, Random(random.nextLong()))
+            return ImprovedShuffleOrder(startIndex, insertionCount, Random(random.nextLong()), keepPrefix)
         }
         val newShuffled = IntArray(shuffled.size + insertionCount)
         val pivot: Int =
@@ -100,7 +115,7 @@ class ImprovedShuffleOrder private constructor(
                 newShuffled[pivot + i] = insertionIndex + i
             }
         }
-        return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()))
+        return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()), keepPrefix)
     }
 
     override fun cloneAndRemove(
@@ -109,7 +124,7 @@ class ImprovedShuffleOrder private constructor(
     ): ShuffleOrder {
         val numberOfElementsToRemove = indexToExclusive - indexFrom
         if (numberOfElementsToRemove == shuffled.size) {
-            return ImprovedShuffleOrder(playerIndex, 0, 0, Random(random.nextLong()))
+            return ImprovedShuffleOrder(playerIndex, 0, 0, Random(random.nextLong()), keepPrefix)
         }
         val newShuffled = IntArray(shuffled.size - numberOfElementsToRemove)
         var foundElementsCount = 0
@@ -125,7 +140,7 @@ class ImprovedShuffleOrder private constructor(
                     }
             }
         }
-        return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()))
+        return ImprovedShuffleOrder(newShuffled, Random(random.nextLong()), keepPrefix)
     }
 
     override fun cloneAndMove(
@@ -143,7 +158,7 @@ class ImprovedShuffleOrder private constructor(
         newShuffled.replaceAll { if (it > indexFrom) it - 1 else it }
         newShuffled.replaceAll { if (it >= newIndexFrom) it + 1 else it }
         newShuffled.add(indexInShuffled[newIndexFrom], newIndexFrom)
-        return ImprovedShuffleOrder(newShuffled.toIntArray(), random)
+        return ImprovedShuffleOrder(newShuffled.toIntArray(), random, keepPrefix)
     }
 
     override fun cloneAndClear(): ShuffleOrder = cloneAndRemove(0, shuffled.size)
@@ -233,6 +248,28 @@ class ImprovedShuffleOrder private constructor(
             val before = shuffled.slice(0..<fi)
             val inclAndAfter = shuffled.slice(fi..<shuffled.size)
             return (inclAndAfter + before).toIntArray()
+        }
+
+        /**
+         * Keeps every item up to and including [firstIndex] in timeline order and shuffles only the
+         * remaining ones. Used by the "only shuffle songs below the current song" behavior.
+         */
+        private fun calculateListWithOrderedPrefix(
+            firstIndex: Int,
+            length: Int,
+            random: Random,
+        ): IntArray {
+            if (length == 0) return IntArray(0)
+            val prefixEnd = firstIndex.coerceIn(0, length - 1)
+            val remaining = (prefixEnd + 1 until length).toMutableList()
+            val result = IntArray(length)
+            for (index in 0..prefixEnd) {
+                result[index] = index
+            }
+            for (index in prefixEnd + 1 until length) {
+                result[index] = remaining.removeAt(random.nextInt(remaining.size))
+            }
+            return result
         }
     }
 }

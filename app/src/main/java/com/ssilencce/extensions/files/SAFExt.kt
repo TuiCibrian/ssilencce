@@ -21,6 +21,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.provider.OpenableColumns
 import android.util.Log
 import androidx.documentfile.provider.DocumentFile
 import com.ssilencce.R
@@ -54,11 +55,62 @@ fun Context.getWritablePersistedUris(): List<Uri> =
 
 fun Context.isSAFAccessGranted(): Boolean = getWritablePersistedUris().isNotEmpty()
 
+fun Context.getDocumentDisplayName(uri: Uri): String? =
+    runCatching {
+        contentResolver
+            .query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
+            ?.use { cursor ->
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+            }
+    }.getOrNull()
+
 fun Context.findSAFDocument(path: String): Uri? {
     val segments = path.split("/").toMutableList()
     return getWritablePersistedUris().firstNotNullOfOrNull { root ->
         DocumentFile.fromTreeUri(this, root)?.findDocument(segments)
     }
+}
+
+/**
+ * Resolves an absolute path to a [DocumentFile] inside one of the persisted writable trees.
+ * Unlike [findSAFDocument], this is safe to use for directories (creating or renaming) and
+ * resolves the path as an ordered chain of names.
+ */
+fun Context.findSAFDocumentFile(path: String): DocumentFile? {
+    val segments = path.trim('/').split('/').filter { it.isNotEmpty() }
+    if (segments.isEmpty()) return null
+    return getWritablePersistedUris().firstNotNullOfOrNull { root ->
+        val rootDocument = DocumentFile.fromTreeUri(this, root) ?: return@firstNotNullOfOrNull null
+        rootDocument.resolvePath(segments)
+    }
+}
+
+private fun DocumentFile.resolvePath(segments: List<String>): DocumentFile? {
+    // A persisted tree may be the target folder itself or any of its ancestors, so try every
+    // possible start segment. Matching is ordered from that start, which avoids the false
+    // positives of the unordered search used for deletion.
+    val rootName = name
+    for (start in segments.indices) {
+        var current: DocumentFile = this
+        var index = start
+        if (rootName != null && segments[start] == rootName) {
+            // The persisted tree root itself is the first matching path segment.
+            index++
+        }
+        var matched = true
+        while (index < segments.size) {
+            val next = current.findFile(segments[index])
+            if (next == null) {
+                matched = false
+                break
+            }
+            current = next
+            index++
+        }
+        if (matched) return current
+    }
+    return null
 }
 
 private fun DocumentFile.findDocument(segments: MutableList<String>): Uri? {

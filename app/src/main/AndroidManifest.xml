@@ -32,6 +32,10 @@
         android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
         android:minSdkVersion="34"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
+    <uses-permission
+        android:name="android.permission.WRITE_SETTINGS"
+        tools:ignore="ProtectedPermissions"/>
+    <uses-permission android:name="android.permission.SET_WALLPAPER"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WAKE_LOCK"/>
@@ -61,6 +65,47 @@
             android:theme="@style/Theme.Ssilencce.SplashScreen"/>
 
         <activity
+            android:name=".ui.screen.miniplayer.MiniPlayerActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:label="@string/mini_player_popup_title"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.Ssilencce.Dialog">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+
+                <data android:scheme="content"/>
+                <data android:mimeType="audio/*"/>
+                <data android:mimeType="application/ogg"/>
+                <data android:mimeType="application/x-ogg"/>
+                <data android:mimeType="application/itunes"/>
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+
+                <data android:scheme="file"/>
+                <data android:mimeType="audio/*"/>
+                <data android:mimeType="application/ogg"/>
+                <data android:mimeType="application/x-ogg"/>
+                <data android:mimeType="application/itunes"/>
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".ui.screen.lockscreen.LockScreenPlayerActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:theme="@style/Theme.Ssilencce.LockScreen"/>
+
+        <activity
             android:label="@string/action_tag_editor"
             android:name=".ui.screen.tageditor.SongTagEditorActivity"/>
 
@@ -81,7 +126,17 @@
             android:label="@string/action_calculate_replay_gain"
             android:name=".ui.screen.replaygain.ReplayGainScanActivity"/>
 
+        <activity
+            android:exported="false"
+            android:label="@string/audio_cutter_title"
+            android:name=".ui.screen.audiocutter.AudioCutterActivity"/>
+
         <activity android:name=".ui.screen.permissions.PermissionsActivity"/>
+
+        <activity
+            android:exported="false"
+            android:label="@string/setup_wizard_title"
+            android:name=".ui.screen.setup.SetupWizardActivity"/>
 
         <activity
             android:name=".ui.screen.error.ErrorActivity"
@@ -110,30 +165,6 @@
                 <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
-            </intent-filter>
-
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-
-                <category android:name="android.intent.category.DEFAULT"/>
-
-                <data android:scheme="content"/>
-                <data android:mimeType="audio/*"/>
-                <data android:mimeType="application/ogg"/>
-                <data android:mimeType="application/x-ogg"/>
-                <data android:mimeType="application/itunes"/>
-            </intent-filter>
-
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW"/>
-
-                <category android:name="android.intent.category.DEFAULT"/>
-
-                <data android:scheme="file"/>
-                <data android:mimeType="audio/*"/>
-                <data android:mimeType="application/ogg"/>
-                <data android:mimeType="application/x-ogg"/>
-                <data android:mimeType="application/itunes"/>
             </intent-filter>
 
             <intent-filter>

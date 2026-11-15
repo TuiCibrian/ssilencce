@@ -44,13 +44,14 @@
   `C5212774A021B286885AF84A99CE7000B4A020BC833B7E69D2935AB97D187C64` (53,443,056 bytes, mtime
   `2026-11-03T03:02:09.3868717Z`), copied to `artifact/` with `SHA256.txt`. Five warning-level
   increases are the expected main-only multi-drag `MissingTranslation` warnings.
-- [ ] 5.6 Device runtime on C521: **FAIL — row-0 downward block**. qa26 / `emulator-5556`
+- [x] 5.6 Device runtime on C521: **FAIL — row-0 downward block**. qa26 / `emulator-5556`
   installed the exact hash. `input swipe` now proves the injection path: single-item drag passed,
   block-above passed, block-down from row 1 passed, but block-down from row 0 consistently left
   `QueueEntity` unchanged with `2 selected` still visible. Root cause: reorder callback mapped
   `LazyListItemInfo.index` through `currentQueueContentOffset`. Evidence:
   `gesture-diagnosis/C521-GESTURE-DIAGNOSIS-FAIL.md`,
-  `runs/simple-*`, `runs/block-*`, `runs/block-source-*`.
+  `runs/simple-*`, `runs/block-*`, `runs/block-source-*`. Closed by `queue-drag-fix`: 5.10
+  removed that mapping from the block path and 5.12 passed block-down from row 0.
 - [x] 5.7 Apply key-based reorder resolution (`QueueSong.key` via `playQueue.indexOfFirst`);
   ktlint PASS, static probe **21/21 PASS**, `git diff --check` PASS. No build at patch time.
 - [x] 5.8 JDK 21 combined build `:app:assembleGithubDebug :app:lintGithubDebug`:
@@ -58,9 +59,10 @@
   `A9E620CF33287A527306D15D68C70E7FFE646FA2F3977711740A68996EF70DD7`,
   53,451,588 bytes, mtime `2026-11-02T20:46:01.4708605-08:00`, frozen in
   `artifact-patched/` with `SHA256.txt`.
-- [ ] 5.9 A9E key-based-patch retest: single, above and row-1 down passed, but row-0 down still
+- [x] 5.9 A9E key-based-patch retest: single, above and row-1 down passed, but row-0 down still
   failed (order unchanged, `2 selected` remained). Reorderable did not report an outside target
-  for the first selected row. Superseded by 5.10.
+  for the first selected row. Superseded by 5.10. Closed by `queue-drag-fix`: block drags use
+  the 5.10 key-resolved pointer path, and 5.12 passed block-down from row 0 on CB06.
 - [x] 5.10 Add block-only custom pointer/drag path: selection mode with >=2 selected uses
   `detectDragGestures` on the selected row handle, source/item center from
   `listState.layoutInfo` by key, accumulated delta -> row under center -> key-resolved
@@ -77,6 +79,12 @@
   `gesture-diagnosis/runs/patched-20261102-211440/`, `CB06-PASS.md`.
 - [x] 5.13 Cleanup: app and test package removed, task media and QA temp files removed,
   `emulator-5556` shut down, `adb devices` empty; `emulator-5554` untouched.
+- [x] 5.15 Final integrated-build emulator retest (2026-11-14): selected rows 1–2 in the queue,
+  dragged the row-0 handle downward, and verified `QueueEntity` order changed
+  `[24,25,26] -> [26,24,25]` with the selection cleared. Evidence:
+  `runtime/verify/results/evidence/24-selection2.*`, `25-after-drag-row0.*`. API 26
+  `input` long-press injection was unreliable, so the pass is recorded on the API 30
+  session; the row-0 block behavior is API-independent.
 - [x] 5.14 Regenerate the CB06 freeze: `SOURCE_MANIFEST.csv` (14 entries incl. QueueScreen,
   strings, docs and this tasks file), `PROBE_MANIFEST.csv` (15 entries incl. the
   key-resolution probe/log, policy/source logs and ktlint log), `APK.txt` and `VERIFY.txt`;

@@ -11,11 +11,15 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.source.ShuffleOrder
 import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
+import com.ssilencce.core.model.shuffle.ShuffleBehavior
+import com.ssilencce.core.model.shuffle.ShuffleModeState
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.local.room.NamedQueueDao
 import com.ssilencce.data.local.room.QueueDao
 import com.ssilencce.playback.ImprovedShuffleOrder.SerializedOrder
+import com.ssilencce.playback.notification.NotificationArtworkPolicy
 import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
@@ -193,7 +197,7 @@ class PersistentStorage(
                         repository
                             .songsByMediaItems(savedMediaItems)
                             .let { (songs, missingMediaItems) ->
-                                songs.toMediaItems() to missingMediaItems
+                                NotificationArtworkPolicy.apply(songs.toMediaItems()) to missingMediaItems
                             }
 
                     // Restored items keep saved order minus unresolved entries. Map every
@@ -246,7 +250,13 @@ class PersistentStorage(
                         }
 
                     val repeatMode = preferences.getInt(REPEAT_MODE, Player.REPEAT_MODE_OFF)
-                    val shuffleModeEnabled = preferences.getBoolean(SHUFFLE_MODE, false)
+                    val shuffleState =
+                        ShuffleModeState.fromValue(preferences.getString(SHUFFLE_STATE, null))
+                            ?: if (preferences.getBoolean(SHUFFLE_MODE, false)) {
+                                ShuffleModeState.Shuffle
+                            } else {
+                                ShuffleModeState.Off
+                            }
 
                     // Load serialized shuffle order
                     var shuffleOrderDecodeFailed = false
@@ -263,7 +273,18 @@ class PersistentStorage(
                         }
 
                     val shuffleOrder =
-                        if (shuffleModeEnabled) {
+                        if (shuffleState == ShuffleModeState.Randomize) {
+                            // Randomize has no fixed order to restore; the saved improved order is
+                            // stale and must not come back when the user later selects Shuffle.
+                            if (serializedOrder != null) {
+                                Log.i(TAG, "Discarding fixed shuffle order while randomize is active")
+                                preferences.edit(commit = true) { putString(SHUFFLE_ORDER, null) }
+                            }
+                            RandomizeShuffleOrder(
+                                length = items.mediaItems.size,
+                                belowCurrentOnly = Preferences.shuffleBehavior == ShuffleBehavior.BelowCurrent,
+                            )
+                        } else if (shuffleState == ShuffleModeState.Shuffle) {
                             if (shuffleOrderDecodeFailed) {
                                 null
                             } else if (items.mediaItems.isEmpty()) {
@@ -309,7 +330,7 @@ class PersistentStorage(
                     withContext(Dispatchers.Main) {
                         // Apply repeat/shuffle modes on main thread
                         player.repeatMode = repeatMode
-                        player.shuffleModeEnabled = shuffleModeEnabled && shuffleOrder != null
+                        player.shuffleModeEnabled = shuffleState.isEnabled && shuffleOrder != null
 
                         dispatchItems(callback, items, shuffleOrder)
                     }
@@ -432,6 +453,7 @@ class PersistentStorage(
             preferences.edit {
                 putInt(REPEAT_MODE, snapshot.repeatMode)
                 putBoolean(SHUFFLE_MODE, snapshot.shuffleEnabled)
+                putString(SHUFFLE_STATE, currentShuffleState().value)
                 putString(SHUFFLE_ORDER, shuffleOrder)
                 putInt(LAST_INDEX, snapshot.resumeIndex)
                 putLong(POSITION_IN_TRACK, snapshot.resumePositionMs)
@@ -441,6 +463,17 @@ class PersistentStorage(
         PlaybackStateWriter.persist(queueDao, namedQueueDao, snapshot)
         if (savePlaylist) pendingPlaylistSave = false
     }
+
+    /**
+     * The state implied by the live player: a randomize order means randomize, any other enabled
+     * shuffle mode is the standard fixed shuffle order.
+     */
+    private fun currentShuffleState(): ShuffleModeState =
+        when {
+            !player.shuffleModeEnabled -> ShuffleModeState.Off
+            player.exoPlayer.shuffleOrder is RandomizeShuffleOrder -> ShuffleModeState.Randomize
+            else -> ShuffleModeState.Shuffle
+        }
 
     private suspend fun dispatchItems(
         callback: RestorationListener,
@@ -468,6 +501,7 @@ class PersistentStorage(
 
         const val REPEAT_MODE = "repeat_mode"
         const val SHUFFLE_MODE = "shuffle_mode"
+        const val SHUFFLE_STATE = "shuffle_state"
         const val SHUFFLE_ORDER = "shuffle_order"
         const val POSITION_IN_TRACK = "position_in_track"
         const val LAST_INDEX = "last_index"

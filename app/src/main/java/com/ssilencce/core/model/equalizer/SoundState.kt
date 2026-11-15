@@ -63,6 +63,10 @@ data class VolumeState(
                 0f
             }
 
+    /** True when the stream is silent because its volume reached the zero step. */
+    val isMuted: Boolean
+        get() = !isFixed && currentVolume <= 0f
+
     companion object {
         val Unspecified = VolumeState(0f, 0f..1f)
     }
@@ -73,6 +77,10 @@ data class ReplayGainState(
     val mode: ReplayGainMode,
     val preamp: Float,
     val preampWithoutGain: Float,
+    val useEmbeddedTags: Boolean = true,
+    val preventClipping: Boolean = true,
+    val headroomDb: Float = 0f,
+    val constantVolume: Boolean = false,
 ) {
     val availableModes = ReplayGainMode.entries.toTypedArray()
 

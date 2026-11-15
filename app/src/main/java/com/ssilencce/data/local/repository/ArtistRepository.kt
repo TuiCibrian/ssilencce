@@ -22,6 +22,7 @@ import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
 import android.provider.MediaStore.MediaColumns
 import androidx.annotation.RequiresApi
+import com.ssilencce.core.model.ArtistNamePolicy
 import com.ssilencce.core.model.ComposerNamePolicy
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.ArtistSortMode
@@ -31,6 +32,7 @@ import com.ssilencce.data.model.Artist
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.utilities.collapseSpaces
 import com.ssilencce.util.Preferences
+import java.util.concurrent.ConcurrentHashMap
 
 interface ArtistRepository {
     fun artists(): List<Artist>
@@ -58,6 +60,8 @@ class RealArtistRepository(
     private val songRepository: RealSongRepository,
     private val albumRepository: RealAlbumRepository,
 ) : ArtistRepository {
+    private val fallbackArtistNames = ConcurrentHashMap<Long, String>()
+
     private val filterSingles: Boolean
         get() = Preferences.ignoreSingles
 
@@ -75,6 +79,9 @@ class RealArtistRepository(
     }
 
     override fun artist(artistId: Long): Artist {
+        fallbackArtistNames[artistId]?.let { albumArtistName ->
+            return albumArtist(albumArtistName)
+        }
         if (artistId == Artist.VARIOUS_ARTISTS_ID) {
             // Get Various Artists
             val songs =
@@ -117,12 +124,31 @@ class RealArtistRepository(
     }
 
     override fun artists(query: String): List<Artist> {
+        val useAlbumArtistFallback = Preferences.useAlbumArtistIfArtistMissing
+        val selection =
+            if (useAlbumArtistFallback) {
+                "(${AudioColumns.ARTIST} LIKE ? OR ${AudioColumns.ALBUM_ARTIST} LIKE ?)"
+            } else {
+                "${AudioColumns.ARTIST} LIKE ?"
+            }
+        val selectionValues =
+            if (useAlbumArtistFallback) {
+                arrayOf("%$query%", "%$query%")
+            } else {
+                arrayOf("%$query%")
+            }
         val songs =
             songRepository.songs(
-                songRepository.makeSongCursor(AudioColumns.ARTIST + " LIKE ?", arrayOf("%$query%"), DEFAULT_SORT_ORDER),
+                songRepository.makeSongCursor(selection, selectionValues, DEFAULT_SORT_ORDER),
             )
         val artists = splitIntoArtists(albumRepository.splitIntoAlbums(songs))
-        return sortArtists(artists)
+        val matchingArtists =
+            if (useAlbumArtistFallback) {
+                artists.filter { it.name.contains(query, ignoreCase = true) }
+            } else {
+                artists
+            }
+        return sortArtists(matchingArtists)
     }
 
     override fun albumArtists(): List<Artist> {
@@ -266,15 +292,43 @@ class RealArtistRepository(
 
     private fun splitIntoArtists(albums: List<Album>): List<Artist> {
         val filterSingles = this.filterSingles
+        val useAlbumArtistFallback = Preferences.useAlbumArtistIfArtistMissing
+        if (!useAlbumArtistFallback) {
+            fallbackArtistNames.clear()
+        }
         return albums
-            .groupBy { it.artistId }
-            .map {
+            .groupBy { it.artistGroupId(useAlbumArtistFallback) }
+            .map { (artistId, groupedAlbums) ->
+                val fallbackName =
+                    if (useAlbumArtistFallback) {
+                        groupedAlbums.firstNotNullOfOrNull { it.albumArtistFallbackName() }
+                    } else {
+                        null
+                    }
+                if (fallbackName != null) {
+                    fallbackArtistNames[artistId] = fallbackName
+                }
                 Artist(
-                    id = it.key,
-                    albums = with(AlbumSortMode.ArtistAlbums) { it.value.sorted() },
+                    id = artistId,
+                    albums = with(AlbumSortMode.ArtistAlbums) { groupedAlbums.sorted() },
                     filterSingles = filterSingles,
+                    isAlbumArtist = fallbackName != null,
+                    nameOverride = fallbackName,
                 )
             }
+    }
+
+    private fun Album.artistGroupId(useAlbumArtistFallback: Boolean): Long {
+        val fallbackName = if (useAlbumArtistFallback) albumArtistFallbackName() else null
+        return if (fallbackName == null) artistId else Artist.albumArtistFallbackId(fallbackName.lowercase())
+    }
+
+    private fun Album.albumArtistFallbackName(): String? {
+        val fallbackName = albumArtistName?.trim() ?: return null
+        return fallbackName.takeIf {
+            ArtistNamePolicy.isMissing(safeGetFirstSong().artistName) &&
+                !ArtistNamePolicy.isMissing(it)
+        }
     }
 
     fun splitIntoAlbumArtists(albums: List<Album>): List<Artist> {

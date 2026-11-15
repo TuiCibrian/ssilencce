@@ -1,17 +1,23 @@
 package com.ssilencce.ui.screen.tageditor
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ssilencce.core.model.tag.BatchTagEditPlan
 import com.ssilencce.core.model.tag.BatchWriteReport
+import com.ssilencce.core.model.tag.CoverOperation
+import com.ssilencce.core.model.tag.CoverWriteStatus
 import com.ssilencce.core.model.tag.FieldOperation
 import com.ssilencce.core.model.tag.FieldWriteResult
 import com.ssilencce.core.model.tag.FieldWriteStatus
 import com.ssilencce.core.model.tag.FileWriteReport
 import com.ssilencce.core.model.tag.FileWriteStatus
 import com.ssilencce.core.model.tag.TagEditField
+import com.ssilencce.data.local.BatchWriteJournal
 import com.ssilencce.data.local.EditTarget
 import com.ssilencce.data.local.MetadataReader
 import com.ssilencce.data.local.MetadataWriter
@@ -26,7 +32,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.thread
 
 sealed interface FieldAggregate {
     data class Common(
@@ -68,6 +76,22 @@ data class BatchSkippedFile(
     val reason: BatchSkipReason,
 )
 
+enum class BatchCoverAction {
+    KEEP,
+    REPLACE,
+    DELETE,
+}
+
+data class BatchCoverState(
+    val action: BatchCoverAction = BatchCoverAction.KEEP,
+    /** Cover shown in the editor: the current common cover or the picked replacement. */
+    val preview: Bitmap? = null,
+    val loadFailed: Boolean = false,
+) {
+    val hasChange: Boolean
+        get() = action != BatchCoverAction.KEEP
+}
+
 sealed interface BatchTagEditorUiState {
     data class Loading(
         val completed: Int = 0,
@@ -85,6 +109,7 @@ sealed interface BatchTagEditorUiState {
         val fields: List<BatchFieldState>,
         val perSong: Map<Long, Map<TagEditField, FieldOperation>> = emptyMap(),
         val perFileField: TagEditField? = null,
+        val cover: BatchCoverState = BatchCoverState(),
     ) : BatchTagEditorUiState {
         val changedFieldCount: Int
             get() = BatchTagEditPlan(fields.associate { it.field to it.operation }, perSong).changedFields.size
@@ -99,8 +124,11 @@ sealed interface BatchTagEditorUiState {
         val perFileOverrideCount: Int
             get() = perSong.values.sumOf { operations -> operations.size }
 
+        val hasChanges: Boolean
+            get() = changedFieldCount > 0 || cover.hasChange
+
         val canSave: Boolean
-            get() = readableCount > 0 && changedFieldCount > 0 && !hasBlankSet
+            get() = readableCount > 0 && hasChanges && !hasBlankSet
     }
 
     data class Writing(
@@ -111,6 +139,17 @@ sealed interface BatchTagEditorUiState {
 
     data class Result(
         val report: BatchWriteReport,
+        val canUndo: Boolean = false,
+    ) : BatchTagEditorUiState
+
+    data class Undoing(
+        val completed: Int,
+        val total: Int,
+    ) : BatchTagEditorUiState
+
+    data class Undone(
+        val restored: Int,
+        val failed: Int,
     ) : BatchTagEditorUiState
 
     data class Error(
@@ -142,6 +181,10 @@ class BatchTagEditorViewModel(
     private var prepared = false
     private var prepareJob: Job? = null
     private var writeJob: Job? = null
+    private var undoJob: Job? = null
+    private var journal: BatchWriteJournal? = null
+    private var originalCoverPreview: Bitmap? = null
+    private val albumIdBySongId = mutableMapOf<Long, Long>()
 
     @Volatile
     private var stopRequested = false
@@ -175,6 +218,7 @@ class BatchTagEditorViewModel(
                         readableFiles = selection.readable
                         unreadableSongs = selection.unreadableSongs
                         missingIds = selection.missingIds
+                        originalCoverPreview = selection.coverPreview
                         _state.value =
                             BatchTagEditorUiState.Ready(
                                 selectedCount = ids.size,
@@ -184,6 +228,7 @@ class BatchTagEditorViewModel(
                                 files = selection.readable.map { it.toInfo() },
                                 skippedFiles = selection.skippedFiles,
                                 fields = selection.fields,
+                                cover = BatchCoverState(preview = selection.coverPreview),
                             )
                     }
                 } catch (cancellation: CancellationException) {
@@ -200,6 +245,55 @@ class BatchTagEditorViewModel(
 
     fun cancelPrepare() {
         prepareJob?.cancel()
+    }
+
+    fun setCoverImage(
+        context: Context,
+        uri: Uri,
+    ) {
+        viewModelScope.launch {
+            val bitmap = withContext(Dispatchers.IO) { decodeCoverBitmap(context.applicationContext, uri) }
+            val ready = _state.value as? BatchTagEditorUiState.Ready ?: return@launch
+            _state.value =
+                ready.copy(
+                    cover =
+                        if (bitmap != null) {
+                            ready.cover.copy(
+                                action = BatchCoverAction.REPLACE,
+                                preview = bitmap,
+                                loadFailed = false,
+                            )
+                        } else {
+                            ready.cover.copy(loadFailed = true)
+                        },
+                )
+        }
+    }
+
+    fun keepCover() {
+        val ready = _state.value as? BatchTagEditorUiState.Ready ?: return
+        _state.value =
+            ready.copy(
+                cover =
+                    ready.cover.copy(
+                        action = BatchCoverAction.KEEP,
+                        preview = originalCoverPreview,
+                        loadFailed = false,
+                    ),
+            )
+    }
+
+    fun deleteCover() {
+        val ready = _state.value as? BatchTagEditorUiState.Ready ?: return
+        _state.value =
+            ready.copy(
+                cover =
+                    ready.cover.copy(
+                        action = BatchCoverAction.DELETE,
+                        preview = null,
+                        loadFailed = false,
+                    ),
+            )
     }
 
     fun setOperation(
@@ -284,6 +378,20 @@ class BatchTagEditorViewModel(
             _state.value = BatchTagEditorUiState.Error(BatchTagEditorError.NO_READABLE_FILES)
             return
         }
+        val cover =
+            when (ready.cover.action) {
+                BatchCoverAction.KEEP -> {
+                    CoverOperation.Keep
+                }
+
+                BatchCoverAction.DELETE -> {
+                    CoverOperation.Delete
+                }
+
+                BatchCoverAction.REPLACE -> {
+                    CoverOperation.Replace(ready.cover.preview ?: return)
+                }
+            }
         val plan =
             BatchTagEditPlan(
                 common = ready.fields.associate { it.field to it.operation },
@@ -292,6 +400,7 @@ class BatchTagEditorViewModel(
         if (!plan.isValid) {
             return
         }
+        val journal = journal ?: BatchWriteJournal(context.applicationContext).also { journal = it }
 
         stopRequested = false
         writeJob =
@@ -308,6 +417,9 @@ class BatchTagEditorViewModel(
                             context = context.applicationContext,
                             contents = files.map { it.content },
                             plan = plan,
+                            cover = cover,
+                            journal = journal,
+                            albumIdBySongId = albumIdBySongId,
                             onProgress = { done, total ->
                                 _state.value =
                                     BatchTagEditorUiState.Writing(
@@ -319,9 +431,11 @@ class BatchTagEditorViewModel(
                             },
                             shouldContinue = { !stopRequested },
                         )
+                    val fullReport = report.copy(files = report.files + buildSkippedReports(plan, cover.hasChange))
                     _state.value =
                         BatchTagEditorUiState.Result(
-                            report.copy(files = report.files + buildSkippedReports(plan)),
+                            report = fullReport,
+                            canUndo = journal.hasEntries() && fullReport.files.any { it.holdsChanges },
                         )
                 } catch (cancellation: CancellationException) {
                     throw cancellation
@@ -341,6 +455,71 @@ class BatchTagEditorViewModel(
 
     fun onWritePermissionDenied() {
         _state.value = BatchTagEditorUiState.Error(BatchTagEditorError.PERMISSION_DENIED)
+    }
+
+    /** Uris whose original bytes a session undo would restore; used for the write request. */
+    fun undoUris(): List<Uri> = undoEntries().map { it.uri }
+
+    fun undo(context: Context) {
+        val result = _state.value as? BatchTagEditorUiState.Result ?: return
+        if (undoJob?.isActive == true) {
+            return
+        }
+        val journal = journal ?: return
+        val entries = undoEntries()
+        if (entries.isEmpty()) {
+            _state.value = result.copy(canUndo = false)
+            return
+        }
+        undoJob =
+            viewModelScope.launch {
+                _state.value = BatchTagEditorUiState.Undoing(completed = 0, total = entries.size)
+                var restored = 0
+                var failed = 0
+                val restoredAlbumIds = mutableSetOf<Long>()
+                entries.forEachIndexed { index, entry ->
+                    currentCoroutineContext().ensureActive()
+                    if (journal.restore(entry)) {
+                        journal.discard(entry)
+                        restored++
+                        albumIdBySongId[entry.songId]?.let { restoredAlbumIds.add(it) }
+                    } else {
+                        failed++
+                    }
+                    _state.value = BatchTagEditorUiState.Undoing(completed = index + 1, total = entries.size)
+                }
+                withContext(Dispatchers.IO) {
+                    metadataWriter.refreshAlbumArtwork(restoredAlbumIds, null)
+                }
+                _state.value = BatchTagEditorUiState.Undone(restored = restored, failed = failed)
+            }
+    }
+
+    fun onUndoUnavailable() {
+        val result = _state.value as? BatchTagEditorUiState.Result ?: return
+        _state.value = result.copy(canUndo = false)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        val activeJournal = journal
+        journal = null
+        if (activeJournal != null) {
+            thread(name = "tag-write-journal-cleanup", isDaemon = true) {
+                runBlocking {
+                    runCatching { writeJob?.join() }
+                    runCatching { undoJob?.join() }
+                }
+                runCatching { activeJournal.close() }
+            }
+        }
+    }
+
+    private fun undoEntries(): List<BatchWriteJournal.Entry> {
+        val result = _state.value as? BatchTagEditorUiState.Result ?: return emptyList()
+        return journal?.entries().orEmpty().filter { entry ->
+            result.report.files.any { file -> file.songId == entry.songId && file.holdsChanges }
+        }
     }
 
     private suspend fun readSelection(ids: List<Long>): PreparedSelection =
@@ -381,6 +560,7 @@ class BatchTagEditorViewModel(
                         values = values,
                     ),
                 )
+                albumIdBySongId[song.id] = song.albumId
                 _state.value = BatchTagEditorUiState.Loading(index + 1, ids.size, song.title)
             }
 
@@ -391,16 +571,26 @@ class BatchTagEditorViewModel(
                         aggregate = accumulators.getValue(field).result(),
                     )
                 }
-            PreparedSelection(readable, unreadable, missing, skipped, fields)
+            val coverPreview =
+                readable.firstOrNull()?.let { file ->
+                    MetadataReader(file.song.uri, readPictures = true)
+                        .frontCover()
+                        ?.data
+                        ?.let { decodeCoverBytes(it) }
+                }
+            PreparedSelection(readable, unreadable, missing, skipped, fields, coverPreview)
         }
 
-    private fun buildSkippedReports(plan: BatchTagEditPlan): List<FileWriteReport> =
+    private fun buildSkippedReports(
+        plan: BatchTagEditPlan,
+        coverRequested: Boolean,
+    ): List<FileWriteReport> =
         buildList {
             missingIds.forEach { id ->
-                add(skippedReport(id, "#$id", plan, "missing"))
+                add(skippedReport(id, "#$id", plan, "missing", coverRequested))
             }
             unreadableSongs.forEach { song ->
-                add(skippedReport(song.id, song.fileName, plan, "unreadable"))
+                add(skippedReport(song.id, song.fileName, plan, "unreadable", coverRequested))
             }
         }
 
@@ -409,6 +599,7 @@ class BatchTagEditorViewModel(
         fileName: String,
         plan: BatchTagEditPlan,
         detail: String,
+        coverRequested: Boolean,
     ): FileWriteReport {
         val filePlan = plan.planFor(songId)
         return FileWriteReport(
@@ -421,6 +612,7 @@ class BatchTagEditorViewModel(
                 },
             detail = detail,
             overrides = plan.perSong[songId].orEmpty(),
+            coverStatus = if (coverRequested) CoverWriteStatus.NOT_ATTEMPTED else CoverWriteStatus.KEPT,
         )
     }
 
@@ -444,6 +636,7 @@ class BatchTagEditorViewModel(
         val missingIds: List<Long>,
         val skippedFiles: List<BatchSkippedFile>,
         val fields: List<BatchFieldState>,
+        val coverPreview: Bitmap?,
     )
 
     private class FieldAccumulator {
@@ -470,7 +663,45 @@ class BatchTagEditorViewModel(
             }
     }
 
+    private fun decodeCoverBitmap(
+        context: Context,
+        uri: Uri,
+    ): Bitmap? {
+        return try {
+            val bytes =
+                context.contentResolver.openInputStream(uri)?.use { input ->
+                    input.readBytes()
+                } ?: return null
+            decodeCoverBytes(bytes)
+        } catch (throwable: Throwable) {
+            Log.e(TAG, "Failed to decode the picked cover $uri", throwable)
+            null
+        }
+    }
+
+    private fun decodeCoverBytes(bytes: ByteArray): Bitmap? {
+        if (bytes.isEmpty() || bytes.size > MAX_COVER_BYTES) {
+            return null
+        }
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) {
+            return null
+        }
+        var sampleSize = 1
+        while (bounds.outWidth / (sampleSize * 2) >= MAX_COVER_DIMENSION ||
+            bounds.outHeight / (sampleSize * 2) >= MAX_COVER_DIMENSION
+        ) {
+            sampleSize *= 2
+        }
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
+    }
+
     companion object {
         const val MAX_BATCH_SONGS = 500
+        private const val MAX_COVER_DIMENSION = 1200
+        private const val MAX_COVER_BYTES = 32 * 1024 * 1024
+        private const val TAG = "BatchTagEditor"
     }
 }

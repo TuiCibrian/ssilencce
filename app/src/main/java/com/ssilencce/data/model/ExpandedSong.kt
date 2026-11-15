@@ -20,6 +20,7 @@ class ExpandedSong(
     override val albumArtistName: String?,
     override val genreName: String?,
     override val composerName: String? = null,
+    override val discNumber: Int = 0,
     val playCount: Int,
     val skipCount: Int,
     val lastPlayedAt: Long,
@@ -43,6 +44,7 @@ class ExpandedSong(
         genreName = genreName,
         volumeName = volumeName,
         composerName = composerName,
+        discNumber = discNumber,
     ) {
     constructor(
         song: Song,
@@ -68,6 +70,7 @@ class ExpandedSong(
         genreName = song.genreName,
         volumeName = song.volumeName,
         composerName = song.composerName,
+        discNumber = song.discNumber,
         playCount = playCount,
         skipCount = skipCount,
         lastPlayedAt = lastPlayedAt,

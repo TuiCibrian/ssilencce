@@ -6,6 +6,7 @@ import androidx.annotation.RequiresApi
 import com.ssilencce.core.model.equalizer.CompressorState
 import com.ssilencce.core.model.equalizer.EqBandCapabilities
 import com.ssilencce.core.model.equalizer.EqBandCapabilities.BandConfiguration
+import com.ssilencce.core.model.equalizer.EqBandFrequencies
 import com.ssilencce.core.model.equalizer.EqProfile
 import com.ssilencce.core.model.equalizer.LimiterState
 
@@ -30,10 +31,10 @@ class DynamicsProcessingEngine(
             EqBandCapabilities(
                 bandRange = BAND_RANGE,
                 bandConfigurations =
-                    arrayOf(5, 10, 15, 32).mapTo(mutableSetOf()) {
-                        BandConfiguration(it, getFreqInHzByBandCount(it))
+                    EqBandFrequencies.SUPPORTED_BAND_COUNTS.mapTo(linkedSetOf()) {
+                        BandConfiguration(it, EqBandFrequencies.requireForBandCount(it))
                     },
-                maxBandCountInNormalMode = 15,
+                maxBandCountInNormalMode = EqBandFrequencies.SUPPORTED_BAND_COUNTS.max(),
             )
 
     override fun setEnabled(isEnabled: Boolean) {
@@ -233,7 +234,7 @@ class DynamicsProcessingEngine(
                 for (channelIndex in 0 until dp.channelCount) {
                     val preEq = dp.getPreEqByChannelIndex(channelIndex)
                     val mbc = dp.getMbcByChannelIndex(channelIndex)
-                    val freqInHz = getFreqInHzByBandCount(bandCount)
+                    val freqInHz = EqBandFrequencies.requireForBandCount(bandCount)
                     for (bandIndex in 0 until bandCount) {
                         preEq.getBand(bandIndex).apply {
                             isEnabled = true
@@ -256,91 +257,9 @@ class DynamicsProcessingEngine(
             }
         }
 
-    private fun getFreqInHzByBandCount(bandCount: Int) =
-        when (bandCount) {
-            32 -> BAND_FREQUENCIES_IN_HZ_32
-            15 -> BAND_FREQUENCIES_IN_HZ_15
-            10 -> BAND_FREQUENCIES_IN_HZ_10
-            else -> BAND_FREQUENCIES_IN_HZ_5
-        }
-
     companion object {
         private const val CHANNEL_COUNT = 2
 
         private val BAND_RANGE = -15f..15f
-        private val BAND_FREQUENCIES_IN_HZ_5 =
-            intArrayOf(
-                60,
-                230,
-                910,
-                3600,
-                14000,
-            )
-        private val BAND_FREQUENCIES_IN_HZ_10 =
-            intArrayOf(
-                31,
-                63,
-                125,
-                250,
-                500,
-                1000,
-                2000,
-                4000,
-                8000,
-                16000,
-            )
-        private val BAND_FREQUENCIES_IN_HZ_15 =
-            intArrayOf(
-                25,
-                40,
-                63,
-                100,
-                160,
-                250,
-                400,
-                630,
-                1000,
-                1600,
-                2500,
-                4000,
-                6300,
-                10000,
-                16000,
-            )
-        private val BAND_FREQUENCIES_IN_HZ_32 =
-            intArrayOf(
-                16,
-                20,
-                25,
-                31,
-                40,
-                50,
-                63,
-                80,
-                100,
-                125,
-                160,
-                200,
-                250,
-                315,
-                400,
-                500,
-                630,
-                800,
-                1000,
-                1250,
-                1600,
-                2000,
-                2500,
-                3150,
-                4000,
-                5000,
-                6300,
-                8000,
-                10000,
-                12500,
-                16000,
-                20000,
-            )
     }
 }

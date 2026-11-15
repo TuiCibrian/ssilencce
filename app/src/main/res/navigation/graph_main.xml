@@ -70,6 +70,11 @@
     </fragment>
 
     <fragment
+        android:id="@+id/nav_ghost_search"
+        android:name="com.ssilencce.ui.screen.ghost.GhostSearchFragment"
+        android:label="@string/ghost_search_title"/>
+
+    <fragment
         android:id="@+id/nav_queues"
         android:name="com.ssilencce.ui.screen.queue.QueuesFragment"
         android:label="QueuesFragment"/>
@@ -162,6 +167,19 @@
         <argument
             android:name="extraSong"
             app:argType="com.ssilencce.data.model.Song" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_song_notes"
+        android:name="com.ssilencce.ui.screen.notes.SongNotesFragment"
+        android:label="SongNotesFragment">
+        <argument
+            android:name="extraSong"
+            app:argType="com.ssilencce.data.model.Song" />
+        <argument
+            android:name="fromPlayer"
+            app:argType="boolean"
+            android:defaultValue="false" />
     </fragment>
 
     <dialog

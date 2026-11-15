@@ -39,6 +39,7 @@ import com.ssilencce.extensions.media.songCountStr
 import com.ssilencce.extensions.media.songsDurationStr
 import com.ssilencce.extensions.navigation.searchArgs
 import com.ssilencce.extensions.setSupportActionBar
+import com.ssilencce.extensions.showToast
 import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
@@ -50,6 +51,7 @@ import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.component.menu.showAddShortcutDialog
+import com.ssilencce.util.GhostMode
 import com.ssilencce.util.ShortcutEntityType
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
@@ -210,6 +212,48 @@ class FolderDetailFragment :
                 }
             }
 
+            item.itemId == R.id.action_folder_info -> {
+                if (folder == Folder.empty) {
+                    false
+                } else {
+                    FolderInfoDialog.show(this, folder.filePath)
+                    true
+                }
+            }
+
+            item.itemId == R.id.action_rename_folder -> {
+                if (folder == Folder.empty) {
+                    false
+                } else {
+                    FolderNameDialog.showRename(this, folder.filePath, folder.fileName)
+                    true
+                }
+            }
+
+            item.itemId == R.id.action_ghost_folder -> {
+                if (folder == Folder.empty) {
+                    false
+                } else {
+                    if (GhostMode.addFolder(folder.filePath)) {
+                        showToast(R.string.ghost_folder_added)
+                        libraryViewModel.reloadAll()
+                        findNavController().navigateUp()
+                    } else {
+                        showToast(R.string.ghost_folder_already_added)
+                    }
+                    true
+                }
+            }
+
+            item.itemId == R.id.action_exclude_folder -> {
+                if (folder == Folder.empty) {
+                    false
+                } else {
+                    ExcludeFolderDialog.show(this, folder.filePath, folder.fileName)
+                    true
+                }
+            }
+
             item.itemId == android.R.id.home -> {
                 findNavController().navigateUp()
                 true
@@ -219,6 +263,16 @@ class FolderDetailFragment :
                 songAdapter.dataSet.onSongsMenu(this, item)
             }
         }
+
+    override fun onMediaContentChanged() {
+        super.onMediaContentChanged()
+        detailViewModel.loadDetail()
+    }
+
+    /** Called by [FolderNameDialog] when this screen's folder was renamed; its path is now stale. */
+    fun onFolderRenamed() {
+        findNavController().navigateUp()
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         QuickSearchState.save(outState, quickSearchQuery)

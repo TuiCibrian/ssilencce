@@ -31,9 +31,14 @@ class SleepTimer(
     private var nextElapsedTimeRealTime: Long = -1
     private var shouldConsumePendingQuit: Boolean = false
 
+    // Song-based timer: the number of songs still to play, including the one playing now.
+    // Zero means that no song-based timer is armed.
+    private var songsRemaining: Int = 0
+
     private var sleepParams = SleepParams()
 
     private val listeners = LinkedHashSet<(SleepParams) -> Unit>()
+    private val stopAtEndListeners = LinkedHashSet<(Boolean) -> Unit>()
 
     private val _waitingFor = MutableStateFlow<SleepTimerWaitingFor?>(null)
     val waitingFor = _waitingFor.asStateFlow()
@@ -48,6 +53,7 @@ class SleepTimer(
             shouldConsumePendingQuit = sleepParams.pendingQuit
             setRunning(shouldConsumePendingQuit)
             if (shouldConsumePendingQuit) {
+                notifyStopAtEnd(true)
                 setWaitingFor(SleepTimerWaitingFor.PendingQuit)
             } else {
                 setWaitingFor(null)
@@ -65,6 +71,10 @@ class SleepTimer(
             if (nextElapsedTimeRealTime > -1) {
                 am.cancel(this)
             }
+            songsRemaining = 0
+            shouldConsumePendingQuit = false
+            cancelTimerUpdater()
+            notifyStopAtEnd(false)
             this.sleepParams =
                 SleepParams(
                     pendingQuit = allowPendingQuit,
@@ -77,24 +87,100 @@ class SleepTimer(
         }
     }
 
-    fun consumePendingQuit() {
+    /**
+     * Stops playback after [songs] songs, counting the track that is playing now as the first
+     * one. The last track is stopped through the same pause-at-end-of-media-items path used by
+     * the queue's "Stop after this track" action, so no alarm is scheduled.
+     */
+    fun setSongCount(
+        songs: Int,
+        fadeOut: Boolean,
+        fadeDuration: Long,
+    ) {
         synchronized(lock) {
-            if (nextElapsedTimeRealTime == -1L && shouldConsumePendingQuit) {
-                sleepParams = sleepParams.copy(pendingQuit = false)
-                shouldConsumePendingQuit = false
-                setWaitingFor(null)
-                setRunning(false)
+            if (nextElapsedTimeRealTime > -1) {
+                am.cancel(this)
+            }
+            nextElapsedTimeRealTime = -1
+            shouldConsumePendingQuit = false
+            sleepParams =
+                SleepParams(
+                    pendingQuit = false,
+                    fadeOut = fadeOut,
+                    fadeDuration = fadeDuration,
+                )
+            songsRemaining = songs.coerceAtLeast(1)
+            cancelTimerUpdater()
+            notifyStopAtEnd(false)
+            setRunning(true)
+            if (songsRemaining == 1) {
+                armPendingQuitLocked()
+            } else {
+                setWaitingFor(SleepTimerWaitingFor.SongCount(songsRemaining))
             }
         }
     }
 
+    /**
+     * Notifies a song-based timer that a track finished on its own. Skipped transitions must not
+     * call this: only songs that actually played to their end count towards the limit.
+     */
+    fun onSongCompleted() {
+        synchronized(lock) {
+            if (songsRemaining <= 0 || sleepParams.pendingQuit) return
+            songsRemaining -= 1
+            if (songsRemaining <= 1) {
+                armPendingQuitLocked()
+            } else {
+                setWaitingFor(SleepTimerWaitingFor.SongCount(songsRemaining))
+            }
+        }
+    }
+
+    /** Clears a song-based timer when the queue ends before reaching its limit. */
+    fun onQueueEnded() {
+        synchronized(lock) {
+            if (songsRemaining <= 0) return
+            // A pending quit is completed by consumePendingQuit() so the stop/quit policy still runs.
+            if (shouldConsumePendingQuit) return
+            songsRemaining = 0
+            sleepParams = sleepParams.copy(pendingQuit = false)
+            notifyStopAtEnd(false)
+            setWaitingFor(null)
+            setRunning(false)
+        }
+    }
+
+    /**
+     * Consumes a pending quit once the current track has ended.
+     *
+     * @return true when a pending quit was actually consumed.
+     */
+    fun consumePendingQuit(): Boolean =
+        synchronized(lock) {
+            if (nextElapsedTimeRealTime == -1L && shouldConsumePendingQuit) {
+                sleepParams = sleepParams.copy(pendingQuit = false)
+                shouldConsumePendingQuit = false
+                songsRemaining = 0
+                notifyStopAtEnd(false)
+                setWaitingFor(null)
+                setRunning(false)
+                true
+            } else {
+                false
+            }
+        }
+
     fun cancel(): Boolean =
         synchronized(lock) {
-            val active = nextElapsedTimeRealTime > -1 || sleepParams.pendingQuit
+            val active = nextElapsedTimeRealTime > -1 || sleepParams.pendingQuit || songsRemaining > 0
             if (active) {
                 nextElapsedTimeRealTime = -1
+                songsRemaining = 0
                 sleepParams = sleepParams.copy(pendingQuit = false)
+                shouldConsumePendingQuit = false
                 am.cancel(this)
+                notifyStopAtEnd(false)
                 setWaitingFor(null)
                 setRunning(false)
             }
@@ -106,6 +192,7 @@ class SleepTimer(
         synchronized(lock) {
             setRunning(false)
             listeners.clear()
+            stopAtEndListeners.clear()
         }
     }
 
@@ -132,6 +219,16 @@ class SleepTimer(
         }
     }
 
+    /**
+     * Notifies whether the timer requests a stop at the end of the currently playing item.
+     * The service combines this with its queue stop position before writing the player flag.
+     */
+    fun addStopAtEndListener(listener: (Boolean) -> Unit) {
+        synchronized(lock) {
+            stopAtEndListeners.add(listener)
+        }
+    }
+
     fun canScheduleExactAlarm(): Boolean = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -144,6 +241,22 @@ class SleepTimer(
             )
         } catch (_: ActivityNotFoundException) {
         }
+    }
+
+    private fun armPendingQuitLocked() {
+        songsRemaining = 1
+        sleepParams = sleepParams.copy(pendingQuit = true)
+        shouldConsumePendingQuit = true
+        setWaitingFor(SleepTimerWaitingFor.PendingQuit)
+        setRunning(true)
+        notifyStopAtEnd(true)
+        // Timers can be started from a background coroutine; player calls must stay on main.
+        val params = sleepParams
+        uiHandler.post { listeners.forEach { it(params) } }
+    }
+
+    private fun notifyStopAtEnd(armed: Boolean) {
+        stopAtEndListeners.forEach { it(armed) }
     }
 
     private fun setRunning(isRunning: Boolean) {
@@ -167,9 +280,13 @@ class SleepTimer(
 
     private inner class TimerUpdater : CountDownTimer(nextElapsedTimeRealTime - SystemClock.elapsedRealtime(), 1000) {
         override fun onTick(millisUntilFinished: Long) {
-            setWaitingFor(
-                SleepTimerWaitingFor.Countdown(millisUntilFinished.asReadableDuration()),
-            )
+            synchronized(lock) {
+                // A song-count timer or a completed alarm may have superseded this updater.
+                if (nextElapsedTimeRealTime <= -1) return
+                setWaitingFor(
+                    SleepTimerWaitingFor.Countdown(millisUntilFinished.asReadableDuration()),
+                )
+            }
         }
 
         override fun onFinish() {}

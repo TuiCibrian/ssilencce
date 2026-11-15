@@ -3,6 +3,27 @@
       xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_shuffle_play"
+        android:icon="@drawable/ic_shuffle_24dp"
+        android:title="@string/action_shuffle_play"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_shuffle_and_then"
+        android:icon="@drawable/ic_shuffle_24dp"
+        android:title="@string/action_shuffle_and_then"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_shuffle_play_next"
+                android:title="@string/action_shuffle_play_next" />
+            <item
+                android:id="@+id/action_shuffle_add_to_queue"
+                android:title="@string/action_shuffle_add_to_queue" />
+        </menu>
+    </item>
+
+    <item
         android:id="@+id/action_play_next"
         android:icon="@drawable/ic_queue_play_next_24dp"
         android:title="@string/action_queue_next"
@@ -38,11 +59,33 @@
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/action_trim_audio"
+        android:title="@string/action_trim_audio"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_remove_from_history"
         android:icon="@drawable/ic_delete_24dp"
         android:title="@string/remove_from_history"
         android:visible="false"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_file_actions"
+        android:title="@string/action_file_actions"
+        app:showAsAction="never">
+        <menu>
+            <item
+                android:id="@+id/action_move_to_folder"
+                android:title="@string/action_move_to_folder"/>
+            <item
+                android:id="@+id/action_copy_to_folder"
+                android:title="@string/action_copy_to_folder"/>
+            <item
+                android:id="@+id/action_hide_songs"
+                android:title="@string/action_hide_songs"/>
+        </menu>
+    </item>
 
     <item
         android:id="@+id/action_delete_from_device"

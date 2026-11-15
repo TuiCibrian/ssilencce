@@ -21,6 +21,7 @@ import android.content.Context
 import android.text.SpannableString
 import androidx.core.text.buildSpannedString
 import com.ssilencce.R
+import com.ssilencce.core.model.ArtistNamePolicy
 import com.ssilencce.core.model.WebSearchEngine
 import com.ssilencce.data.local.ReplayGainTagExtractor
 import com.ssilencce.data.local.room.PlaylistEntity
@@ -33,6 +34,7 @@ import com.ssilencce.extensions.resources.textColorSecondary
 import com.ssilencce.extensions.resources.toForegroundColorSpan
 import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
 import com.ssilencce.extensions.utilities.buildInfoString
+import com.ssilencce.util.Preferences
 import java.text.DateFormat
 import java.util.Locale
 
@@ -92,9 +94,16 @@ fun List<Song>.songCountStr(context: Context) = size.asNumberOfSongs(context)
 
 fun List<Song>.indexOfSong(songId: Long): Int = indexOfFirst { song -> song.id == songId }
 
-fun Song.isArtistNameUnknown() = artistName.isArtistNameUnknown()
+fun Song.isArtistNameUnknown() = resolvedArtistName().isArtistNameUnknown()
 
-fun Song.displayArtistName() = artistName.displayArtistName()
+fun Song.resolvedArtistName(): String =
+    ArtistNamePolicy.resolve(
+        artistName = artistName,
+        albumArtistName = albumArtistName,
+        useAlbumArtistFallback = Preferences.useAlbumArtistIfArtistMissing,
+    )
+
+fun Song.displayArtistName() = resolvedArtistName().displayArtistName()
 
 fun Song.albumArtistName() = if (albumArtistName.isNullOrBlank()) artistName else albumArtistName!!
 
@@ -104,14 +113,14 @@ fun Song.searchQuery(engine: WebSearchEngine): String {
     val searchQuery =
         when (engine) {
             WebSearchEngine.Google, WebSearchEngine.YouTube -> {
-                if (isArtistNameUnknown()) title else "$artistName $title"
+                if (isArtistNameUnknown()) title else "${resolvedArtistName()} $title"
             }
 
             WebSearchEngine.LastFm, WebSearchEngine.Wikipedia -> {
                 if (isArtistNameUnknown()) {
                     title
                 } else if (albumArtistName.isNullOrEmpty()) {
-                    artistName.extractMainArtistName()
+                    resolvedArtistName().extractMainArtistName()
                 } else {
                     albumArtistName!!
                 }

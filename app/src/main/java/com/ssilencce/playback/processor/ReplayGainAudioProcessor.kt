@@ -18,6 +18,10 @@ class ReplayGainAudioProcessor(
     var mode: ReplayGainMode = ReplayGainMode.Off,
     var preAmpGain: Float = 0f,
     var preAmpGainWithoutTag: Float = 0f,
+    @Volatile var useEmbeddedTags: Boolean = true,
+    @Volatile var constantVolume: Boolean = false,
+    @Volatile var preventClipping: Boolean = true,
+    @Volatile var headroomDb: Float = 0f,
 ) : BaseAudioProcessor() {
     var currentGain: ReplayGain? = null
         @Synchronized get
@@ -25,30 +29,43 @@ class ReplayGainAudioProcessor(
         @Synchronized set
 
     private val gain: Float
-        get() =
-            currentGain?.let { rg ->
-                val adjustDB =
-                    when (mode) {
-                        ReplayGainMode.Album -> rg.albumGain ?: rg.trackGain
-                        ReplayGainMode.Track -> rg.trackGain ?: rg.albumGain
-                        ReplayGainMode.Off -> return 0f
-                    }
-                if (adjustDB == null) {
-                    return preAmpGainWithoutTag.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
-                }
+        get() {
+            if (mode == ReplayGainMode.Off) return 0f
 
-                var value = adjustDB + preAmpGain
+            val headroom = headroomDb.coerceIn(0f, MAX_HEADROOM_DB)
+            if (constantVolume) {
+                return (preAmpGain - headroom).coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+            }
+
+            val replayGain = if (useEmbeddedTags) currentGain else null
+            if (replayGain == null) {
+                return (preAmpGainWithoutTag - headroom).coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+            }
+
+            val adjustDB =
+                when (mode) {
+                    ReplayGainMode.Album -> replayGain.albumGain ?: replayGain.trackGain
+                    ReplayGainMode.Track -> replayGain.trackGain ?: replayGain.albumGain
+                    ReplayGainMode.Off -> null
+                }
+            if (adjustDB == null) {
+                return (preAmpGainWithoutTag - headroom).coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+            }
+
+            var value = adjustDB + preAmpGain - headroom
+            if (preventClipping) {
                 val peak =
                     when (mode) {
-                        ReplayGainMode.Album -> rg.albumPeak ?: rg.trackPeak
-                        ReplayGainMode.Track -> rg.trackPeak ?: rg.albumPeak
+                        ReplayGainMode.Album -> replayGain.albumPeak ?: replayGain.trackPeak
+                        ReplayGainMode.Track -> replayGain.trackPeak ?: replayGain.albumPeak
                         ReplayGainMode.Off -> null
                     }
                 if (peak != null) {
                     value = ReplayGainMath.limitByPeak(value, peak)
                 }
-                value.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
-            } ?: 0f
+            }
+            return value.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
+        }
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
         if (inputAudioFormat.encoding != C.ENCODING_PCM_16BIT &&
@@ -105,5 +122,6 @@ class ReplayGainAudioProcessor(
     private companion object {
         const val MIN_GAIN_DB = -24f
         const val MAX_GAIN_DB = 24f
+        const val MAX_HEADROOM_DB = 24f
     }
 }

@@ -46,6 +46,14 @@
         app:widgetLayout="@layout/preference_switch"
         app:key="black_theme"/>
 
+    <Preference
+        app:icon="@drawable/ic_palette_24dp"
+        app:title="@string/accent_color_title"
+        app:summary="@string/accent_color_summary_default"
+        app:persistent="false"
+        app:layout="@layout/list_item_view"
+        app:key="accent_color"/>
+
     <SwitchPreferenceCompat
         app:icon="@drawable/ic_text_fields_24dp"
         app:title="@string/use_custom_font_title"
@@ -183,6 +191,60 @@
             app:persistent="false"
             app:layout="@layout/list_item_view"
             app:key="widget_third_line_content" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:title="@string/menu_actions_header"
+        app:layout="@layout/preference_category_title">
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:icon="@drawable/ic_music_note_24dp"
+            app:title="@string/menu_customization_song_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_song"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/menu_customization_album_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_album"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/menu_customization_artist_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_artist"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/menu_customization_genre_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_genre"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/menu_customization_playlist_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_playlist"/>
+
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/menu_customization_folder_title"
+            app:summary="@string/menu_customization_all_shown"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="menu_customization_folder"/>
 
     </PreferenceCategory>
 

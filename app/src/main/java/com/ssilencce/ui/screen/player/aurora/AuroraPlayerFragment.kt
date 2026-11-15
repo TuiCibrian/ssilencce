@@ -23,10 +23,12 @@ import com.ssilencce.extensions.media.albumArtistName
 import com.ssilencce.extensions.media.displayArtistName
 import com.ssilencce.extensions.navigation.findActivityNavController
 import com.ssilencce.extensions.navigation.songDetailArgs
+import com.ssilencce.playback.cast.CastPlaybackProvider
 import com.ssilencce.ui.component.base.AbsPlayerFragment
 import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
 import com.ssilencce.ui.screen.MainActivity
 import com.ssilencce.ui.screen.other.ShuffleModeFragment
+import com.ssilencce.ui.screen.player.SeekToDialogFragment
 import com.ssilencce.ui.theme.SsilencceTheme
 import com.ssilencce.util.Preferences
 
@@ -63,9 +65,13 @@ class AuroraPlayerFragment : AbsPlayerFragment(R.layout.fragment_ribbon_player) 
                     artistName = { song -> if (Preferences.preferAlbumArtistName) song.albumArtistName().displayArtistName() else song.displayArtistName() },
                     nextSongInfo = ::getNextSongInfo,
                     onAction = { onQuickActionEvent(it) },
+                    onQuickAccess = { onQuickAccessAction(it) },
+                    onSeekTo = { SeekToDialogFragment.show(childFragmentManager) },
                     onCollapse = { (activity as? MainActivity)?.collapsePanel() },
                     onEqualizer = { onMenuItemClick(PopupMenu(requireContext(), binding.playerChrome).menu.apply { add(0, R.id.action_equalizer, 0, R.string.equalizer_label) }.findItem(R.id.action_equalizer)) },
                     onDetails = { findActivityNavController(R.id.fragment_container).navigate(R.id.nav_song_details, songDetailArgs(playerViewModel.currentSong)) },
+                    castAvailable = CastPlaybackProvider.get(requireContext()).isAvailable,
+                    onCast = { CastPlaybackProvider.get(requireContext()).showDeviceChooser(requireActivity()) },
                     onOverflowItem = { id ->
                         val popupMenu =
                             PopupMenu(requireContext(), binding.playerChrome).apply {

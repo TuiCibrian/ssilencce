@@ -47,19 +47,22 @@ reports failures per file and per field.
 the selection; explicit `Clear`; sequential per-file write with progress and a final report; a
 selection cap that keeps memory and the write request bounded.
 
-**Out of scope:** cover editing (replace/delete) for batches; per-file distinct values;
-MusicBrainz or online autofill for batches; undo/rollback; cancellation mid-write; new
-dependencies; Room schema/entities/DAOs/migrations; app version changes; translated strings;
-semantic remapping of the legacy `PRODUCER`/`COPYRIGHT` fields; changing the single-song editor;
-routing the single-entity album/artist actions to the batch editor (the aggregation guard is in
-scope).
+**Out of scope for milestone 1:** MusicBrainz or online autofill for batches; new dependencies;
+Room schema/entities/DAOs/migrations; app version changes; translated strings; semantic remapping
+of the legacy `PRODUCER`/`COPYRIGHT` fields; changing the single-song editor.
 
-**Legacy guard:** the album/artist editors remain entity-scoped and are not routed to the batch
-editor yet, but the 2026-11-07 follow-up applies the aggregation guard: `LegacyTagAggregator` reads
-every selected file, both editors show common values/`Varies` and write only dirty fields,
-destructive totals/disc writes require confirmation, and the conditional `ARTIST` clear is
-removed. They still broadcast one dirty map to every song in the entity; per-file values and
-single-entity routing remain open, so AA-07 remains partially open in `MISSING_FEATURES`.
+Batch cover replace/delete, per-file distinct values, cancellation mid-write, undo/rollback,
+in-place write backup/restore and routing the single-entity album/artist actions were originally out
+of scope. Per-file values and cooperative stop landed in the 2026-11-08 follow-up; covers, session
+undo/rollback, in-place backup/restore and single-entity routing are delivered by the 2026-11-14
+follow-up (`openspec/changes/tag-editor-finish`). The runtime format matrix is still deferred.
+
+**Legacy guard:** the 2026-11-07 follow-up applies the aggregation guard to the album/artist
+editors: `LegacyTagAggregator` reads every selected file, both editors show common values/`Varies`
+and write only dirty fields, destructive totals/disc writes require confirmation, and the
+conditional `ARTIST` clear is removed. Since the 2026-11-14 follow-up the single-entity album/artist
+tag actions launch the batch editor instead, so the legacy editors remain declared but are no longer
+reachable from menus. AA-07 remains partially open only for the runtime format matrix.
 
 ## Impact
 
@@ -67,10 +70,12 @@ single-entity routing remain open, so AA-07 remains partially open in `MISSING_F
   `ui/screen/tageditor/BatchTagEditorActivity.kt`, `BatchTagEditorViewModel.kt`,
   `BatchTagEditorScreen.kt`, `ui/screen/tageditor/LegacyTagAggregator.kt`, optional
   `data/local/TagWriteVerifier.kt`, OpenSpec change and static probe plan.
-- Modified: `data/local/MetadataWriter.kt`, `res/menu/menu_media_selection.xml`,
-  `ui/component/menu/MenuItemClickExt.kt`, `MainModule.kt`, `AndroidManifest.xml`, main English
-  `strings.xml`, `ui/screen/tageditor/AlbumTagEditorActivity.kt`,
+- Modified: `data/local/MetadataWriter.kt`, `core/model/tag/TagEditReport.kt`,
+  `res/menu/menu_media_selection.xml`, `ui/component/menu/MenuItemClickExt.kt`, `MainModule.kt`,
+  `AndroidManifest.xml`, main English `strings.xml`, `ui/screen/tageditor/AlbumTagEditorActivity.kt`,
   `ui/screen/tageditor/ArtistTagEditorActivity.kt`, `FEATURES`, `MISSING_FEATURES`, `CODE_MAP`.
+  The 2026-11-14 follow-up additionally adds `core/model/tag/TagEditCover.kt`,
+  `data/local/BatchWriteJournal.kt`, `ui/screen/tageditor/BatchTagEditorCover.kt` and routes the
+  single-entity album/artist actions to the batch editor.
 - Unchanged: Room schema/version, Gradle dependencies, app version, translated resources, existing
-  single-song editor behavior, cover write path. The album/artist editors are guard-modified, not
-  routed.
+  single-song editor behavior, legacy `write()` cover path.

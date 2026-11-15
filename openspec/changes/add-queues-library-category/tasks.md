@@ -44,6 +44,11 @@
 - [x] 4.7 P3 handback: duplicate save/rename wording now describes the repository keep-both/suffix
   policy (`QueueNamePolicy.uniqueName`) and the final-name messages; the switch waits for success,
   disables rows while switching and opens `nav_queue` only on success.
-- [ ] 4.8 Build/freeze the post-review source. The 3994F4F4 APK predates the Aurora
+- [x] 4.8 Build/freeze the post-review source. The 3994F4F4 APK predates the Aurora
   start/last-page and switch/duplicate corrections; no new candidate is claimed until a fresh
-  freeze/build.
+  freeze/build. **emulator-qa 2026-11-14**: frozen the final-gate artifacts — x86_64
+  `E5FC0E1B1F81F180F16E1463FC71E2AE56298A1E98432FCDB019E1331F48D01A`, universal
+  `72F502C80D7529902A3AAF6F64FA9DF7FF52076012227A5D868D29FD343C7EB0`. Runtime API 26:
+  `Queues` is present in Appearance > Library categories and absent from the Aurora drawer;
+  the five-slot classic navigation was not reconfigured in this pass. Evidence:
+  `runtime/verify/results/evidence/255..258`.

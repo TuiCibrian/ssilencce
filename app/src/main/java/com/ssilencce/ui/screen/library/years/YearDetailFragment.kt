@@ -29,6 +29,7 @@ import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ssilencce.R
+import com.ssilencce.core.model.menu.MenuCustomizationGroup
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.mapper.searchFilter
@@ -49,6 +50,7 @@ import com.ssilencce.ui.component.base.QuickSearchHost
 import com.ssilencce.ui.component.base.QuickSearchPolicy
 import com.ssilencce.ui.component.base.QuickSearchState
 import com.ssilencce.ui.component.base.matchesDetailQuery
+import com.ssilencce.ui.component.menu.MenuCustomizationFilter
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -177,6 +179,7 @@ class YearDetailFragment :
         inflater: MenuInflater,
     ) {
         inflater.inflate(R.menu.menu_genre_detail, menu)
+        MenuCustomizationFilter.apply(menu, MenuCustomizationGroup.Genre)
         SongSortMode.YearSongs.createMenu(menu)
     }
 

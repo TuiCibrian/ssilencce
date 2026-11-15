@@ -26,12 +26,15 @@ import android.provider.MediaStore
 import android.provider.MediaStore.Audio.Genres
 import com.ssilencce.core.sort.GenreSortMode
 import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.local.SongDurationFilterPolicy
 import com.ssilencce.data.model.Genre
 import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.utilities.getLongSafe
 import com.ssilencce.extensions.utilities.getStringSafe
 import com.ssilencce.extensions.utilities.mapIfValid
 import com.ssilencce.extensions.utilities.takeOrDefault
+import com.ssilencce.util.GhostMode
+import com.ssilencce.util.Preferences
 
 interface GenreRepository {
     suspend fun genres(query: String): List<Genre>
@@ -110,20 +113,34 @@ class RealGenreRepository(
         }
     }
 
-    override fun song(genreId: Long): Song = songRepository.song(makeGenreSongCursor(genreId))
+    override fun song(genreId: Long): Song = songRepository.song(makeGenreSongCursor(genreId, skipDurationFilter = true))
 
     private fun getSongCount(genreId: Long): Int {
+        val ghostSelection = GhostMode.exclusionSelection()
+        val selection =
+            (
+                listOf(RealSongRepository.BASE_SELECTION) +
+                    durationSelection() +
+                    listOfNotNull(ghostSelection?.selection)
+            ).joinToString(" AND ")
         contentResolver
             .query(
                 Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, genreId),
-                null,
-                null,
-                null,
+                arrayOf(BaseColumns._ID),
+                selection,
+                ghostSelection?.arguments,
                 null,
             ).use {
                 return it?.count ?: 0
             }
     }
+
+    private fun durationSelection(): List<String> =
+        SongDurationFilterPolicy.selectionFragments(
+            column = MediaStore.Audio.AudioColumns.DURATION,
+            minSeconds = Preferences.minimumSongDuration,
+            maxSeconds = Preferences.maximumSongDuration,
+        )
 
     private fun getGenreFromCursor(cursor: Cursor): Genre {
         val id = cursor.getLongSafe(Genres._ID)
@@ -136,7 +153,7 @@ class RealGenreRepository(
         val selection = "${BaseColumns._ID} NOT IN (SELECT ${Genres.Members.AUDIO_ID} FROM audio_genres_map)"
         return with(SongSortMode.GenreSongs) {
             songRepository
-                .songs(songRepository.makeSongCursor(selection, null, skipDurationFilter = true))
+                .songs(songRepository.makeSongCursor(selection, null))
                 .sorted()
         }
     }
@@ -170,13 +187,25 @@ class RealGenreRepository(
         genreId: Long,
         selection: String = RealSongRepository.BASE_SELECTION,
         selectionValues: Array<String>? = null,
+        skipDurationFilter: Boolean = false,
     ): Cursor? {
+        val ghostSelection = GhostMode.exclusionSelection()
+        val fullSelection =
+            buildList {
+                add(selection)
+                if (!skipDurationFilter) {
+                    addAll(durationSelection())
+                }
+                ghostSelection?.let { add(it.selection) }
+            }.joinToString(" AND ")
+        val fullSelectionValues =
+            (selectionValues ?: emptyArray()) + (ghostSelection?.arguments ?: emptyArray())
         return try {
             contentResolver.query(
                 Genres.Members.getContentUri(MediaStore.VOLUME_EXTERNAL, genreId),
                 RealSongRepository.getBaseProjection(),
-                selection,
-                selectionValues,
+                fullSelection,
+                fullSelectionValues.ifEmpty { null },
                 Genres.Members.DEFAULT_SORT_ORDER,
             )
         } catch (e: SecurityException) {

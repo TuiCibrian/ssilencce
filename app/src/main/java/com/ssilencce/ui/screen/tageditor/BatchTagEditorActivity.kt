@@ -5,16 +5,21 @@ import android.Manifest.permission.READ_MEDIA_AUDIO
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.ssilencce.R
 import com.ssilencce.extensions.hasR
 import com.ssilencce.extensions.hasT
+import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.component.base.AbsBaseActivity
 import com.ssilencce.ui.theme.SsilencceTheme
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -27,25 +32,56 @@ class BatchTagEditorActivity : AbsBaseActivity() {
 
     private var permissionRequested = false
     private var prepared = false
-    private var writePermissionRequested = false
+    private var writeRequestPurpose: WriteRequestPurpose? = null
+
+    private enum class WriteRequestPurpose {
+        SAVE,
+        UNDO,
+    }
+
+    private val imagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+            if (uri != null) {
+                viewModel.setCoverImage(this, uri)
+            }
+        }
 
     private val writeRequestLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            writePermissionRequested = false
-            if (result.resultCode == RESULT_OK) {
-                viewModel.write(this)
-            } else {
-                viewModel.onWritePermissionDenied()
+            val purpose = writeRequestPurpose
+            writeRequestPurpose = null
+            when (purpose) {
+                WriteRequestPurpose.SAVE -> {
+                    if (result.resultCode == RESULT_OK) {
+                        viewModel.write(this)
+                    } else {
+                        viewModel.onWritePermissionDenied()
+                    }
+                }
+
+                WriteRequestPurpose.UNDO -> {
+                    if (result.resultCode == RESULT_OK) {
+                        viewModel.undo(this)
+                    } else {
+                        viewModel.onUndoUnavailable()
+                        showToast(R.string.batch_tag_editor_undo_permission_denied)
+                    }
+                }
+
+                null -> {
+                    Unit
+                }
             }
         }
 
     private val backCallback =
         object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (viewModel.state.value is BatchTagEditorUiState.Writing) {
+                val state = viewModel.state.value
+                if (state is BatchTagEditorUiState.Writing || state is BatchTagEditorUiState.Undoing) {
                     return
                 }
-                if (viewModel.state.value is BatchTagEditorUiState.Loading) {
+                if (state is BatchTagEditorUiState.Loading) {
                     viewModel.cancelPrepare()
                 }
                 isEnabled = false
@@ -64,8 +100,12 @@ class BatchTagEditorActivity : AbsBaseActivity() {
                     onPerFileOperation = viewModel::setPerFileOperation,
                     onOpenPerFile = viewModel::openPerFile,
                     onClosePerFile = viewModel::closePerFile,
+                    onPickCover = ::pickCover,
+                    onDeleteCover = viewModel::deleteCover,
+                    onKeepCover = viewModel::keepCover,
                     onSave = ::requestSave,
                     onStop = viewModel::stopWriting,
+                    onUndo = ::requestUndo,
                     onClose = ::finish,
                 )
             }
@@ -101,6 +141,10 @@ class BatchTagEditorActivity : AbsBaseActivity() {
         viewModel.prepare()
     }
 
+    private fun pickCover() {
+        imagePickerLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
     private fun requestSave() {
         val state = viewModel.state.value as? BatchTagEditorUiState.Ready ?: return
         if (!state.canSave) {
@@ -115,17 +159,48 @@ class BatchTagEditorActivity : AbsBaseActivity() {
             viewModel.write(this)
             return
         }
-        if (writePermissionRequested) {
+        if (!requestWriteAccess(uris, WriteRequestPurpose.SAVE)) {
+            viewModel.onWritePermissionDenied()
+        }
+    }
+
+    private fun requestUndo() {
+        if (viewModel.state.value !is BatchTagEditorUiState.Result) {
             return
         }
-        writePermissionRequested = true
-        runCatching { MediaStore.createWriteRequest(contentResolver, uris) }
+        val uris = viewModel.undoUris()
+        if (uris.isEmpty()) {
+            viewModel.onUndoUnavailable()
+            showToast(R.string.batch_tag_editor_undo_unavailable)
+            return
+        }
+        if (!hasR()) {
+            viewModel.undo(this)
+            return
+        }
+        if (!requestWriteAccess(uris, WriteRequestPurpose.UNDO)) {
+            viewModel.onUndoUnavailable()
+            showToast(R.string.batch_tag_editor_undo_permission_denied)
+        }
+    }
+
+    private fun requestWriteAccess(
+        uris: List<Uri>,
+        purpose: WriteRequestPurpose,
+    ): Boolean {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            return false
+        }
+        if (writeRequestPurpose != null) {
+            return true
+        }
+        writeRequestPurpose = purpose
+        return runCatching { MediaStore.createWriteRequest(contentResolver, uris) }
             .onSuccess { pendingIntent ->
                 writeRequestLauncher.launch(IntentSenderRequest.Builder(pendingIntent).build())
             }.onFailure {
-                writePermissionRequested = false
-                viewModel.onWritePermissionDenied()
-            }
+                writeRequestPurpose = null
+            }.isSuccess
     }
 
     companion object {

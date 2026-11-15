@@ -6,7 +6,9 @@ Add a true multi-song tag editor for the existing multi-select song menu: show c
 per-field variation, default every field to `Keep`, apply explicit `Set`/`Clear` operations per
 file through the existing `MetadataWriter` merge, and report persistence failures per file and per
 field. This is the bounded first milestone of AA-07 plus the 2026-11-07 legacy aggregation/guard
-follow-up and the 2026-11-08 per-file/cancellation follow-up; single-entity routing, batch covers, session undo and runtime evidence remain out of scope.
+follow-up and the 2026-11-08 per-file/cancellation follow-up. Batch covers, session undo/rollback,
+in-place backup/restore and single-entity routing are added by the 2026-11-14 follow-up
+(`openspec/changes/tag-editor-finish`); runtime evidence remains deferred.
 
 ## ADDED Requirements
 

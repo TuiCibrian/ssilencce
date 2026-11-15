@@ -23,12 +23,15 @@ import com.ssilencce.data.local.lyrics.InstrumentalDetector
 import com.ssilencce.data.local.repository.LyricsRepository
 import com.ssilencce.data.model.Song
 import com.ssilencce.data.model.lyrics.LyricsSource
+import com.ssilencce.data.model.lyrics.LyricsSourceChoice
+import com.ssilencce.data.model.lyrics.LyricsSourceSelection
 import com.ssilencce.data.model.lyrics.RawLyrics
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.data.model.network.NetworkFeature.Lyrics.BetterLyrics
 import com.ssilencce.data.model.network.NetworkFeature.Lyrics.LRCLib
 import com.ssilencce.data.model.network.NetworkFeature.Lyrics.Lyrically
 import com.ssilencce.extensions.media.isArtistNameUnknown
+import com.ssilencce.extensions.media.resolvedArtistName
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -56,6 +59,9 @@ class LyricsViewModel(
 
     private val _lyricsUiState = MutableStateFlow<LyricsUiState>(LyricsUiState.Empty(-1))
     val lyricsUiState = _lyricsUiState.asStateFlow()
+
+    private val _lyricsSourceSelection = MutableStateFlow(LyricsSourceSelection.Automatic)
+    val lyricsSourceSelection = _lyricsSourceSelection.asStateFlow()
 
     private val _lyricsEditorUiState = MutableStateFlow<LyricsEditorUiState>(LyricsEditorUiState.Disposed)
     val lyricsEditorUiState = _lyricsEditorUiState.asStateFlow()
@@ -97,7 +103,7 @@ class LyricsViewModel(
             if (song.isArtistNameUnknown()) {
                 song.title
             } else {
-                "${song.artistName} ${song.title}"
+                "${song.resolvedArtistName()} ${song.title}"
             }
         return url + Uri.encode(query)
     }
@@ -249,26 +255,42 @@ class LyricsViewModel(
         lyricsJob =
             viewModelScope.launch {
                 if (song == Song.emptySong) {
+                    _lyricsSourceSelection.value = LyricsSourceSelection.Automatic
                     _lyricsUiState.value = LyricsUiState.Empty(song.id)
                 } else {
                     _lyricsUiState.value = LyricsUiState.Loading(song.id)
 
-                    val lyricsState =
-                        getBestLyricsFromSources(
-                            song = song,
-                            sources =
-                                listOf(
-                                    LyricsSource.File,
-                                    LyricsSource.Embedded,
-                                    LyricsSource.Downloaded,
-                                ),
-                        )
+                    val selection = repository.lyricsSourceSelection(song.id)
+                    _lyricsSourceSelection.value = selection
+
+                    val lyricsState = getBestLyricsFromSources(song, selection)
                     if (isActive) {
                         _lyricsUiState.value = lyricsState
                     }
                 }
             }
     }
+
+    fun setLyricsSourceSelection(
+        song: Song,
+        selection: LyricsSourceSelection,
+    ) = viewModelScope.launch(IO) {
+        if (song.id == Song.emptySong.id) return@launch
+        repository.setLyricsSourceSelection(song.id, selection)
+        if (lyricsUiState.value.id == song.id) {
+            _lyricsSourceSelection.value = selection
+            updateSong(song)
+        }
+    }
+
+    fun onLyricsFileSaved(song: Song) =
+        viewModelScope.launch(IO) {
+            if (song.id == Song.emptySong.id) return@launch
+            repository.invalidateFileLyricsCache(song.id)
+            if (lyricsUiState.value.id == song.id) {
+                updateSong(song)
+            }
+        }
 
     private suspend fun getEditorLyricsBySources(
         song: Song,
@@ -277,19 +299,41 @@ class LyricsViewModel(
         when (source) {
             LyricsSource.Downloaded -> repository.storedLyrics(song, false)
             LyricsSource.Embedded -> repository.embeddedLyrics(song)
-            LyricsSource.File -> repository.fileLyrics(song)
+            LyricsSource.File -> repository.userFileLyrics(song) ?: repository.fileLyrics(song)
         }
     }
 
     private suspend fun getBestLyricsFromSources(
         song: Song,
-        sources: List<LyricsSource>,
+        selection: LyricsSourceSelection,
     ): LyricsUiState =
         withContext(IO) {
             var plainLyrics: String? = null
             if (instrumentalDetector.byTitle(song.title)) {
                 return@withContext LyricsUiState.Instrumental(song.id)
             }
+
+            // A document explicitly chosen by the user always wins over automatic discovery.
+            if (selection.source == LyricsSourceChoice.File) {
+                val userFileLyrics = repository.userFileLyrics(song)
+                if (userFileLyrics != null) {
+                    val lyrics = repository.parseRawLyrics(song, userFileLyrics)
+                    if (lyrics?.hasContent == true) {
+                        return@withContext LyricsUiState.Synced(song.id, lyrics)
+                    }
+                }
+            }
+
+            val sources =
+                when (selection.source) {
+                    LyricsSourceChoice.Automatic,
+                    LyricsSourceChoice.File,
+                    -> listOf(LyricsSource.File, LyricsSource.Embedded, LyricsSource.Downloaded)
+
+                    LyricsSourceChoice.Embedded -> listOf(LyricsSource.Embedded)
+
+                    LyricsSourceChoice.Downloaded -> listOf(LyricsSource.Downloaded)
+                }
             for (source in sources) {
                 when (source) {
                     LyricsSource.File -> {
