@@ -23,7 +23,9 @@ import android.provider.MediaStore
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
+import androidx.room.withTransaction
 import com.ssilencce.R
+import com.ssilencce.core.SsilencceDatabase
 import com.ssilencce.core.sort.PlaylistSortMode
 import com.ssilencce.data.local.room.PlaylistDao
 import com.ssilencce.data.local.room.PlaylistEntity
@@ -49,6 +51,18 @@ interface PlaylistRepository {
     fun devicePlaylistSongs(playlistId: Long): List<Song>
 
     suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long
+
+    suspend fun createPlaylistWithSongsIfNameFree(
+        playlist: PlaylistEntity,
+        songs: List<Song>,
+    ): Long
+
+    suspend fun replacePlaylistContentsIfEligible(
+        playlistId: Long,
+        expectedName: String,
+        favoritesName: String,
+        songs: List<Song>,
+    ): Boolean
 
     suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity>
 
@@ -126,6 +140,7 @@ class RealPlaylistRepository(
     private val context: Context,
     private val songRepository: SongRepository,
     private val playlistDao: PlaylistDao,
+    private val database: SsilencceDatabase,
 ) : PlaylistRepository {
     override fun devicePlaylists(): List<Playlist> =
         makePlaylistCursor().use {
@@ -148,6 +163,45 @@ class RealPlaylistRepository(
     }
 
     override suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long = playlistDao.createPlaylist(playlistEntity)
+
+    override suspend fun createPlaylistWithSongsIfNameFree(
+        playlist: PlaylistEntity,
+        songs: List<Song>,
+    ): Long =
+        database.withTransaction {
+            if (playlistDao.countPlaylistsByName(playlist.playlistName) > 0) {
+                return@withTransaction -1L
+            }
+            val playlistId = playlistDao.createPlaylist(playlist)
+            if (playlistId == -1L) {
+                return@withTransaction -1L
+            }
+            if (songs.isNotEmpty()) {
+                playlistDao.insertSongsToPlaylist(songs.map { it.toSongEntity(playlistId) })
+            }
+            playlistId
+        }
+
+    override suspend fun replacePlaylistContentsIfEligible(
+        playlistId: Long,
+        expectedName: String,
+        favoritesName: String,
+        songs: List<Song>,
+    ): Boolean =
+        database.withTransaction {
+            val target = playlistDao.playlistById(playlistId) ?: return@withTransaction false
+            if (target.playlistName != expectedName || expectedName == favoritesName) {
+                return@withTransaction false
+            }
+            if (playlistDao.countPlaylistsByName(expectedName) != 1) {
+                return@withTransaction false
+            }
+            playlistDao.deleteAllSongsFromPlaylists(listOf(playlistId))
+            if (songs.isNotEmpty()) {
+                playlistDao.insertSongsToPlaylist(songs.map { it.toSongEntity(playlistId) })
+            }
+            true
+        }
 
     override suspend fun checkPlaylistExists(playlistName: String): List<PlaylistEntity> = playlistDao.playlist(playlistName)
 

@@ -155,6 +155,7 @@ fun AuroraLibraryDrawer(
                     AuroraDrawerGroup(R.string.aurora_drawer_group_library) {
                         val referenceOrder = listOf(R.id.nav_songs, R.id.nav_albums, R.id.nav_artists, R.id.nav_folders, R.id.nav_playlists)
                         categories
+                            .filterNot { it.category == CategoryInfo.Category.Queues }
                             .sortedBy { info -> referenceOrder.indexOf(info.category.id).let { if (it < 0) Int.MAX_VALUE else it } }
                             .forEach { info ->
                                 AuroraDrawerTabItem(

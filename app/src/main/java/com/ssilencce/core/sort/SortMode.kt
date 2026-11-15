@@ -15,7 +15,6 @@ import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.model.*
 import com.ssilencce.extensions.media.albumArtistName
 import com.ssilencce.extensions.media.asReadableTrackNumber
-import com.ssilencce.extensions.media.normalizeForSorting
 import com.ssilencce.util.Preferences
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.get
@@ -31,6 +30,9 @@ sealed class SortMode(
 
     val ignoreArticles: Boolean
         get() = Preferences.ignoreArticlesWhenSorting
+
+    val ignoreKeywords: Set<String>
+        get() = if (ignoreArticles) Preferences.sortingIgnoreKeywords else emptySet()
 
     private val key = "${id}_sort_order"
     open var selectedKey: SortKey
@@ -115,7 +117,17 @@ sealed class SortMode(
         }
     }
 
-    protected fun String.normalize(language: String = Locale.getDefault().language): String = normalizeForSorting(ignoreArticles, language)
+    protected fun normalizer(): (String) -> String {
+        val ignore = ignoreArticles
+        val keywords = if (ignore) Preferences.sortingIgnoreKeywords else emptySet()
+        val normalizer =
+            IgnoreKeywordPolicy.normalizer(
+                ignore,
+                Locale.getDefault().language,
+                keywords,
+            )
+        return { value -> normalizer.normalize(value) }
+    }
 
     private fun SharedPreferences.getSortKey(
         key: String,
@@ -142,6 +154,7 @@ sealed class SongSortMode(
         items =
             listOf(
                 KeySortItem.Name,
+                KeySortItem.Track,
                 KeySortItem.Artist,
                 KeySortItem.Album,
                 KeySortItem.Duration,
@@ -149,6 +162,7 @@ sealed class SongSortMode(
                 KeySortItem.DateAdded,
                 KeySortItem.DateModified,
                 KeySortItem.FileName,
+                KeySortItem.Path,
                 DescendingItem,
             ),
     )
@@ -211,12 +225,14 @@ sealed class SongSortMode(
         items =
             listOf(
                 KeySortItem.Name,
+                KeySortItem.Track,
                 KeySortItem.Artist,
                 KeySortItem.Album,
                 KeySortItem.Duration,
                 KeySortItem.DateAdded,
                 KeySortItem.DateModified,
                 KeySortItem.FileName,
+                KeySortItem.Path,
                 DescendingItem,
             ),
     )
@@ -228,7 +244,8 @@ sealed class SongSortMode(
     ) : SongSortMode("dynamic_song", selectedKey to selectedDescending, items)
 
     fun List<Song>.sorted(): List<Song> {
-        val byTitle: Comparator<Song> = compareBy(collator) { it.title.normalize() }
+        val normalize = normalizer()
+        val byTitle: Comparator<Song> = compareBy(collator) { normalize(it.title) }
         val songs =
             when (selectedKey) {
                 SortKey.Name -> {
@@ -237,13 +254,13 @@ sealed class SongSortMode(
 
                 SortKey.Artist -> {
                     sortedWith(
-                        compareBy<Song, String>(collator) { it.artistName.normalize() }.then(byTitle),
+                        compareBy<Song, String>(collator) { normalize(it.artistName) }.then(byTitle),
                     )
                 }
 
                 SortKey.Album -> {
                     sortedWith(
-                        compareBy<Song, String>(collator) { it.albumName.normalize() }
+                        compareBy<Song, String>(collator) { normalize(it.albumName) }
                             .thenBy { if (it.trackNumber > 0) it.trackNumber else Int.MAX_VALUE },
                     )
                 }
@@ -270,6 +287,10 @@ sealed class SongSortMode(
 
                 SortKey.FileName -> {
                     sortedWith(compareBy(collator) { it.fileName })
+                }
+
+                SortKey.Path -> {
+                    sortedWith(compareBy(collator) { it.filePath })
                 }
 
                 else -> {
@@ -325,8 +346,23 @@ sealed class AlbumSortMode(
             ),
     )
 
+    object GenreAlbums : AlbumSortMode(
+        id = "genre_album",
+        defaults = SortKey.Name to false,
+        items =
+            listOf(
+                KeySortItem.Name,
+                KeySortItem.Artist,
+                KeySortItem.Year,
+                KeySortItem.SongCount,
+                KeySortItem.DateAdded,
+                DescendingItem,
+            ),
+    )
+
     fun List<Album>.sorted(): List<Album> {
-        val byName: Comparator<Album> = compareBy(collator) { it.name.normalize() }
+        val normalize = normalizer()
+        val byName: Comparator<Album> = compareBy(collator) { normalize(it.name) }
         val albums =
             when (selectedKey) {
                 SortKey.Name -> {
@@ -335,7 +371,7 @@ sealed class AlbumSortMode(
 
                 SortKey.Artist -> {
                     sortedWith(
-                        compareBy<Album, String>(collator) { it.albumArtistName().normalize() }.then(byName),
+                        compareBy<Album, String>(collator) { normalize(it.albumArtistName()) }.then(byName),
                     )
                 }
 
@@ -376,8 +412,21 @@ sealed class ArtistSortMode(
             ),
     )
 
+    object GenreArtists : ArtistSortMode(
+        id = "genre_artist",
+        defaults = SortKey.Name to false,
+        items =
+            listOf(
+                KeySortItem.Name,
+                KeySortItem.SongCount,
+                KeySortItem.AlbumCount,
+                DescendingItem,
+            ),
+    )
+
     fun List<Artist>.sorted(): List<Artist> {
-        val byName: Comparator<Artist> = compareBy(collator) { it.name.normalize() }
+        val normalize = normalizer()
+        val byName: Comparator<Artist> = compareBy(collator) { normalize(it.name) }
         val artists =
             when (selectedKey) {
                 SortKey.Name -> sortedWith(byName)
@@ -406,7 +455,8 @@ sealed class GenreSortMode(
     )
 
     fun List<Genre>.sorted(): List<Genre> {
-        val byName: Comparator<Genre> = compareBy(collator) { it.name.normalize() }
+        val normalize = normalizer()
+        val byName: Comparator<Genre> = compareBy(collator) { normalize(it.name) }
         val genres =
             when (selectedKey) {
                 SortKey.Name -> sortedWith(byName)
@@ -461,9 +511,10 @@ sealed class PlaylistSortMode(
     )
 
     fun List<PlaylistWithSongs>.sorted(): List<PlaylistWithSongs> {
+        val normalize = normalizer()
         val byName: Comparator<PlaylistWithSongs> =
             compareBy(collator) {
-                it.playlistEntity.playlistName.normalize()
+                normalize(it.playlistEntity.playlistName)
             }
         val playlists =
             when (selectedKey) {
@@ -503,13 +554,15 @@ sealed class FileSortMode(
                 KeySortItem.DateAdded,
                 KeySortItem.DateModified,
                 KeySortItem.FileName,
+                KeySortItem.Path,
                 DescendingItem,
             ),
     )
 
     fun List<FileSystemItem>.sorted(): List<FileSystemItem> {
+        val normalize = normalizer()
         val byFolderName: Comparator<Folder> = compareBy(collator) { it.fileName }
-        val byTitle: Comparator<Song> = compareBy(collator) { it.title.normalize() }
+        val byTitle: Comparator<Song> = compareBy(collator) { normalize(it.title) }
 
         val sortedFolders =
             filterIsInstance<Folder>()
@@ -519,6 +572,7 @@ sealed class FileSortMode(
                         SortKey.SongCount -> folders.sortedWithTiebreak(byFolderName) { it.songCount }
                         SortKey.DateAdded -> folders.sortedWithTiebreak(byFolderName) { it.fileDateAdded }
                         SortKey.DateModified -> folders.sortedWithTiebreak(byFolderName) { it.fileDateModified }
+                        SortKey.Path -> folders.sortedWith(compareBy(collator) { it.filePath })
                         else -> folders
                     }
                 }.let { folders ->
@@ -549,6 +603,10 @@ sealed class FileSortMode(
 
                         SortKey.FileName -> {
                             songs.sortedWith(compareBy(collator) { it.fileName })
+                        }
+
+                        SortKey.Path -> {
+                            songs.sortedWith(compareBy(collator) { it.filePath })
                         }
 
                         else -> {

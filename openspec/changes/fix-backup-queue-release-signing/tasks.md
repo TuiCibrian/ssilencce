@@ -1,5 +1,7 @@
 # Tasks — fix-backup-queue-release-signing
 
+> Status 2026-10-21: 24/26 tasks complete. Open: 3.4 production-signed Release (no keystore), 6.1 physical-device profiling. Keep the change active; do not treat emulator/helper evidence as production or physical acceptance.
+
 ## 1. Backup and restore
 
 - [x] 1.1 Write the lyrics JSON without closing the ZIP (byte write + closeEntry) and reject nothing based on declared sizes; enforce real-byte limits (10 MB lyrics / 100 MB entry / 100 MB total / 1000 entries) with a counting stream view.
@@ -31,7 +33,7 @@
 - [x] 3.1 Refuse `assemble*Release` / `bundle*Release` / `install*Release` without keystore configuration unless `-PallowDebugSigning=true` / `SSILENCCE_ALLOW_DEBUG_SIGNING=true`; add the `releaseUnconfigured` validate-signing backstop; require an existing `storeFile` when configured.
 - [x] 3.2 Verify refusals (`assembleGithubRelease`, `bundleGithubRelease`, `installGithubRelease`, abbreviated `aGR`, configuration-cache repeat) and the backstop (`validateSigningGithubRelease`); verify debug/lint usable without keystore (`assembleGithubDebug`, `lintGithubRelease`, `help`).
 - [x] 3.3 Opt-in Release build succeeds with the NON-PRODUCTION warning; `apksigner verify --print-certs` shows `CN=Android Debug` (verified locally, artifact hashes recorded in the receipt).
-- [ ] 3.4 Production-signed Release — blocked: no release keystore available locally (`keystore.properties` absent); CI injects it from repository secrets.
+- [ ] 3.4 Production-signed Release — blocked: no release keystore available locally (`keystore.properties` absent); CI injects it from repository secrets. Rechecked 2026-10-23: no `keystore.properties`, no `.jks`/`.keystore` under the repo, no signing env vars; no replacement key generated and debug signing is not counted (`runtime/verify/results/BATCH2-AVAILABILITY.md`).
 
 ## 4. Documentation and tracking
 
@@ -44,9 +46,9 @@
 
 - [x] 5.1 Track ZIP entries, recognized entries and actually imported content; reject empty/non-ZIP archives; warn when no recognized or no selected content was restored; keep the success message only for a non-empty restore.
 - [x] 5.2 Add strings for the new warnings in `values/strings.xml` only; preserve byte limits, cancellation and unsafe-name handling.
-- [ ] 5.3 Verify with an external JVM probe for the summary logic and emulator checks for empty, non-backup, unrelated-ZIP and valid archives.
+- [x] 5.3 Verify with an external JVM probe for the summary logic and emulator checks for empty, non-backup, unrelated-ZIP and valid archives. Evidence: summary probes `PROBE_OK 31 checks` (`ssilencce-restore-probe/probe-output.txt`) plus `PLAYLIST_PROBE_OK 20 checks` (`ssilencce-restore-probe/playlist-probe-output.txt`); gate-5 real-UI matrix **PASS 4/4** (empty ZIP, non-backup ZIP, unrelated non-ZIP, valid app-generated archive restoring the changed rotation-lock setting) with per-case UI/log/data evidence and five-file cleanup hashes in `followup-2026-10-21/runtime/verify/results/RESULTS.md`.
 - [x] 5.4 Update this change's spec/tasks and the affected feature documentation.
 
 ## 6. Physical acceptance (open)
 
-- [ ] 6.1 Physical-device Release frame-timing/battery profiling (implement-native-aurora-reference task 4.4) — blocked: only an emulator is connected; emulator evidence cannot satisfy physical acceptance. No acceptance claimed.
+- [ ] 6.1 Physical-device Release frame-timing/battery profiling (implement-native-aurora-reference task 4.4) — blocked: only an emulator is connected; emulator evidence cannot satisfy physical acceptance. No acceptance claimed. Rechecked 2026-10-23: no physical USB device was present, only task-owned emulators; remains externally blocked (`runtime/verify/results/BATCH2-AVAILABILITY.md`).

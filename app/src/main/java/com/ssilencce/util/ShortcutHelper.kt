@@ -17,13 +17,13 @@
 
 package com.ssilencce.util
 
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.pm.ShortcutInfoCompat
 import androidx.core.content.pm.ShortcutManagerCompat
 import androidx.core.graphics.drawable.IconCompat
 import com.ssilencce.R
-import com.ssilencce.ui.screen.MainActivity
 
 enum class ShortcutEntityType {
     Album,
@@ -33,6 +33,10 @@ enum class ShortcutEntityType {
 }
 
 object ShortcutHelper {
+    // Only the compatibility alias is exported; shortcuts must target it so launchers can deliver
+    // the entity intent and extras instead of starting an unexported activity.
+    private const val LAUNCHER_ACTIVITY_ALIAS = "com.ssilencce.activities.MainActivity"
+
     const val ACTION_ENTITY = "com.ssilencce.shortcut.ENTITY"
     const val EXTRA_TYPE = "shortcut_type"
     const val EXTRA_ID = "shortcut_id"
@@ -47,7 +51,8 @@ object ShortcutHelper {
         path: String? = null,
     ): Boolean {
         val intent =
-            Intent(context, MainActivity::class.java)
+            Intent()
+                .setComponent(ComponentName(context.packageName, LAUNCHER_ACTIVITY_ALIAS))
                 .setAction(ACTION_ENTITY)
                 .putExtra(EXTRA_TYPE, type.name)
                 .putExtra(EXTRA_ID, id)

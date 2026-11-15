@@ -310,12 +310,18 @@ class EqualizerViewModel(
         profileName: String,
         canReplace: Boolean,
         associatedDevices: Set<AudioDeviceType>,
+        associatedDeviceKeys: Set<String> = emptySet(),
     ) = viewModelScope.launch(Dispatchers.IO) {
         val result =
             if (!canReplace && !equalizerManager.isProfileNameAvailable(profileName)) {
                 ProfileOpResult(false, R.string.that_name_is_already_in_use, canDismiss = false)
             } else {
-                val newProfile = equalizerManager.getNewProfileFromCustom(profileName, associatedDevices)
+                val newProfile =
+                    equalizerManager.getNewProfileFromCustom(
+                        profileName,
+                        associatedDevices,
+                        associatedDeviceKeys,
+                    )
                 if (equalizerManager.addProfile(newProfile, canReplace, useProfile = true)) {
                     ProfileOpResult(true, R.string.profile_saved_successfully)
                 } else {
@@ -329,12 +335,13 @@ class EqualizerViewModel(
         profile: EqProfile,
         newName: String?,
         newAssociations: Set<AudioDeviceType>,
+        newDeviceKeys: Set<String> = emptySet(),
     ) = viewModelScope.launch(Dispatchers.IO) {
         val result =
             if (newName.isNullOrBlank()) {
                 ProfileOpResult(false, canDismiss = false)
             } else {
-                if (equalizerManager.editProfile(profile, newName, newAssociations.toSet())) {
+                if (equalizerManager.editProfile(profile, newName, newAssociations.toSet(), newDeviceKeys)) {
                     ProfileOpResult(true, R.string.profile_saved_successfully)
                 } else {
                     ProfileOpResult(false, R.string.the_profile_could_not_be_saved)

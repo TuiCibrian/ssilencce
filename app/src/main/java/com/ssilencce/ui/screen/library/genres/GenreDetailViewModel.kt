@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.model.Genre
-import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.GenreContent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -14,17 +14,16 @@ class GenreDetailViewModel(
     private val repository: Repository,
     private val genre: Genre,
 ) : ViewModel() {
-    private val _genreSongs = MutableLiveData<List<Song>>()
+    private val _genreContent = MutableLiveData<GenreContent>()
 
-    fun getSongs(): LiveData<List<Song>> = _genreSongs
+    fun getContent(): LiveData<GenreContent> = _genreContent
 
     init {
-        loadGenreSongs()
+        loadGenreContent()
     }
 
-    fun loadGenreSongs() =
+    fun loadGenreContent() =
         viewModelScope.launch(Dispatchers.IO) {
-            val songs = repository.songsByGenre(genre.id)
-            _genreSongs.postValue(songs)
+            _genreContent.postValue(repository.genreContent(genre.id))
         }
 }

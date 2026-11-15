@@ -22,7 +22,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.core.view.updatePadding
+import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.DefaultItemAnimator
@@ -36,7 +36,6 @@ import com.ssilencce.data.model.ReleaseYear
 import com.ssilencce.data.model.Song
 import com.ssilencce.databinding.FragmentDetailListBinding
 import com.ssilencce.extensions.applyHorizontalWindowInsets
-import com.ssilencce.extensions.isNullOrEmpty
 import com.ssilencce.extensions.materialSharedAxis
 import com.ssilencce.extensions.media.songCountStr
 import com.ssilencce.extensions.media.songsDurationStr
@@ -46,6 +45,10 @@ import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchPolicy
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -63,6 +66,9 @@ class YearDetailFragment :
     private val binding get() = _binding!!
 
     private lateinit var songAdapter: SongAdapter
+    private var allSongs: List<Song> = emptyList()
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
 
     private val year: ReleaseYear
         get() = detailViewModel.getYear().value ?: ReleaseYear.Empty
@@ -78,12 +84,25 @@ class YearDetailFragment :
         materialSharedAxis(view)
         view.applyHorizontalWindowInsets()
 
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
-        }
-
         setupButtons()
         setupRecyclerView()
+
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
+
         detailViewModel.getYear().observe(viewLifecycleOwner) { year ->
             binding.collapsingAppBarLayout.title = year.name
             binding.title.text = year.name
@@ -111,22 +130,33 @@ class YearDetailFragment :
             object : RecyclerView.AdapterDataObserver() {
                 override fun onChanged() {
                     super.onChanged()
-                    checkIsEmpty()
+                    updateEmptyState()
                 }
             },
         )
     }
 
     fun songs(songs: List<Song>) {
+        allSongs = songs
         binding.progressIndicator.hide()
         binding.subtitle.text = buildInfoString(songs.songCountStr(requireContext()), songs.songsDurationStr())
-        songAdapter.dataSet = songs
+        if (songs.isEmpty()) {
+            findNavController().navigateUp()
+            return
+        }
+        applyQuickSearch()
     }
 
-    private fun checkIsEmpty() {
-        if (songAdapter.isNullOrEmpty) {
-            findNavController().navigateUp()
-        }
+    private fun applyQuickSearch() {
+        songAdapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+        updateEmptyState()
+    }
+
+    private fun updateEmptyState() {
+        val visibleCount = songAdapter.dataSet.size
+        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, allSongs.size, visibleCount)
+        binding.empty.setText(if (noMatches) R.string.quick_search_empty else R.string.empty_label)
+        binding.empty.isVisible = visibleCount == 0
     }
 
     override fun songMenuItemClick(
@@ -172,7 +202,13 @@ class YearDetailFragment :
             }
         }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
+        quickSearchHost = null
         super.onDestroyView()
         _binding = null
     }

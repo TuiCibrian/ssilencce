@@ -7,6 +7,10 @@
         android:title="@string/search_label"
         app:showAsAction="ifRoom"/>
     <item
+        android:id="@+id/action_genre_subcategory"
+        android:title="@string/action_genre_subcategory"
+        app:showAsAction="never"/>
+    <item
         android:id="@+id/action_play_next"
         android:title="@string/action_queue_next"
         app:showAsAction="never"/>

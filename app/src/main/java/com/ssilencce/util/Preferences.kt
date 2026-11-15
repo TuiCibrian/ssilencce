@@ -27,16 +27,20 @@ import com.google.android.material.navigation.NavigationBarView.LabelVisibility
 import com.ssilencce.R
 import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.Cutoff
+import com.ssilencce.core.model.NotPlayedDaysPolicy
 import com.ssilencce.core.model.action.FolderAction
+import com.ssilencce.core.model.action.HeadsetButtonAction
 import com.ssilencce.core.model.action.NowPlayingAction
 import com.ssilencce.core.model.action.QueueClearingBehavior
 import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.list.SongTitleMode
 import com.ssilencce.core.model.player.MetadataField
 import com.ssilencce.core.model.player.PlayerColorSchemeMode
 import com.ssilencce.core.model.player.PlayerTransition
 import com.ssilencce.core.model.shuffle.GroupShuffleMode
 import com.ssilencce.core.model.theme.AppTheme
 import com.ssilencce.core.model.theme.NowPlayingScreen
+import com.ssilencce.core.sort.IgnoreKeywordPolicy
 import com.ssilencce.extensions.files.getCanonicalPathSafe
 import com.ssilencce.extensions.hasQ
 import com.ssilencce.extensions.hasS
@@ -46,6 +50,7 @@ import com.ssilencce.extensions.utilities.deserialize
 import com.ssilencce.extensions.utilities.getCutoffTimeMillis
 import com.ssilencce.extensions.utilities.serialize
 import com.ssilencce.extensions.utilities.toEnum
+import com.ssilencce.playback.HeadsetButtonPolicy
 import com.ssilencce.ui.component.views.TopAppBarLayout
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -133,16 +138,27 @@ object Preferences : KoinComponent {
             }
 
     var libraryCategories: List<CategoryInfo>
-        get() =
-            preferences.nullString(LIBRARY_CATEGORIES).deserialize(
-                getDefaultLibraryCategoryInfos(),
-            )
+        get() {
+            val stored =
+                preferences.nullString(LIBRARY_CATEGORIES).deserialize(
+                    getDefaultLibraryCategoryInfos(),
+                )
+            val available = stored.filter { it.category.isAvailable }
+            val present = available.map { it.category }.toSet()
+            val missing =
+                CategoryInfo.Category.entries
+                    .filter { it.isAvailable && it !in present }
+                    .map { CategoryInfo(it, false) }
+            return available + missing
+        }
         set(categories) = preferences.edit { putString(LIBRARY_CATEGORIES, categories.serialize()) }
 
     fun getDefaultLibraryCategoryInfos() =
-        CategoryInfo.Category.entries.mapIndexed { index, category ->
-            CategoryInfo(category, index < CategoryInfo.MAX_VISIBLE_CATEGORIES)
-        }
+        CategoryInfo.Category.entries
+            .filter { it.isAvailable }
+            .mapIndexed { index, category ->
+                CategoryInfo(category, index < CategoryInfo.MAX_VISIBLE_CATEGORIES)
+            }
 
     val isRememberLastPage: Boolean
         get() = preferences.getBoolean(REMEMBER_LAST_PAGE, true)
@@ -166,6 +182,19 @@ object Preferences : KoinComponent {
 
     val ignoreArticlesWhenSorting: Boolean
         get() = preferences.getBoolean(IGNORE_ARTICLES_WHEN_SORTING, false)
+
+    var sortingIgnoreKeywords: Set<String>
+        get() =
+            IgnoreKeywordPolicy
+                .sanitize(preferences.getStringSet(SORTING_IGNORE_KEYWORDS, emptySet()).orEmpty())
+                .toSet()
+        set(value) =
+            preferences.edit {
+                putStringSet(
+                    SORTING_IGNORE_KEYWORDS,
+                    IgnoreKeywordPolicy.sanitize(value).toSet(),
+                )
+            }
 
     var lockedPlaylists: Boolean
         get() = preferences.getBoolean(LOCKED_PLAYLISTS, false)
@@ -315,6 +344,13 @@ object Preferences : KoinComponent {
     val displayExtraInfo: Boolean
         get() = preferences.getBoolean(DISPLAY_EXTRA_INFO, false)
 
+    var songTitleMode: SongTitleMode
+        get() = preferences.enumValue(SONG_TITLE_MODE, SongTitleMode.FollowSort)
+        set(value) = preferences.edit { putString(SONG_TITLE_MODE, value.name) }
+
+    val showListDateModified: Boolean
+        get() = preferences.getBoolean(SHOW_LIST_DATE_MODIFIED, false)
+
     fun getExtraInfoContent(
         key: String,
         defaultContent: List<MetadataField>,
@@ -403,6 +439,47 @@ object Preferences : KoinComponent {
             else -> preferences.getBoolean(PAUSE_ON_DISCONNECT, false)
         }
 
+    var headsetSingleClickAction: HeadsetButtonAction
+        get() = preferences.enumValue(HEADSET_SINGLE_CLICK_ACTION, HeadsetButtonAction.PlayPause)
+        set(value) = preferences.edit { putString(HEADSET_SINGLE_CLICK_ACTION, value.name) }
+
+    var headsetDoubleClickAction: HeadsetButtonAction
+        get() = preferences.enumValue(HEADSET_DOUBLE_CLICK_ACTION, HeadsetButtonAction.Next)
+        set(value) = preferences.edit { putString(HEADSET_DOUBLE_CLICK_ACTION, value.name) }
+
+    var headsetTripleClickAction: HeadsetButtonAction
+        get() = preferences.enumValue(HEADSET_TRIPLE_CLICK_ACTION, HeadsetButtonAction.Previous)
+        set(value) = preferences.edit { putString(HEADSET_TRIPLE_CLICK_ACTION, value.name) }
+
+    var headsetLongPressAction: HeadsetButtonAction
+        get() = preferences.enumValue(HEADSET_LONG_PRESS_ACTION, HeadsetButtonAction.PlayPause)
+        set(value) = preferences.edit { putString(HEADSET_LONG_PRESS_ACTION, value.name) }
+
+    var headsetFourPlusSeekForward: Boolean
+        get() = preferences.getBoolean(HEADSET_FOUR_PLUS_SEEK_FORWARD, false)
+        set(value) = preferences.edit { putBoolean(HEADSET_FOUR_PLUS_SEEK_FORWARD, value) }
+
+    var headsetClickDelayMs: Int
+        get() = HeadsetButtonPolicy.normalizeDelay(preferences.nullString(HEADSET_CLICK_DELAY_MS))
+        set(value) =
+            preferences.edit {
+                putString(
+                    HEADSET_CLICK_DELAY_MS,
+                    HeadsetButtonPolicy.normalizeDelay(value.toString()).toString(),
+                )
+            }
+
+    fun resetHeadsetButtonMapping() {
+        preferences.edit {
+            putString(HEADSET_SINGLE_CLICK_ACTION, HeadsetButtonAction.PlayPause.name)
+            putString(HEADSET_DOUBLE_CLICK_ACTION, HeadsetButtonAction.Next.name)
+            putString(HEADSET_TRIPLE_CLICK_ACTION, HeadsetButtonAction.Previous.name)
+            putString(HEADSET_LONG_PRESS_ACTION, HeadsetButtonAction.PlayPause.name)
+            putBoolean(HEADSET_FOUR_PLUS_SEEK_FORWARD, false)
+            putString(HEADSET_CLICK_DELAY_MS, HeadsetButtonPolicy.DEFAULT_DELAY_MS.toString())
+        }
+    }
+
     var onlyAlbumArtists: Boolean
         get() = preferences.getBoolean(ONLY_ALBUM_ARTISTS, true)
         set(value) = preferences.edit { putBoolean(ONLY_ALBUM_ARTISTS, value) }
@@ -424,6 +501,25 @@ object Preferences : KoinComponent {
     fun getLastAddedCutoff(context: Context): Cutoff = getCutoff(context, LAST_ADDED_CUTOFF, true)
 
     fun getHistoryCutoff(context: Context): Cutoff = getCutoff(context, HISTORY_CUTOFF)
+
+    var notPlayedDays: Int
+        get() =
+            NotPlayedDaysPolicy.normalizeDays(
+                preferences.getInt(NOT_PLAYED_DAYS, NotPlayedDaysPolicy.USE_HISTORY_INTERVAL),
+            )
+        set(value) =
+            preferences.edit {
+                putInt(NOT_PLAYED_DAYS, NotPlayedDaysPolicy.normalizeDays(value))
+            }
+
+    fun getNotPlayedCutoff(context: Context): Cutoff {
+        val days = notPlayedDays
+        if (days == NotPlayedDaysPolicy.USE_HISTORY_INTERVAL) {
+            return getHistoryCutoff(context)
+        }
+        val description = context.resources.getQuantityString(R.plurals.not_played_days, days, days)
+        return Cutoff(description, NotPlayedDaysPolicy.cutoffMillis(System.currentTimeMillis(), days))
+    }
 
     private fun getCutoff(
         context: Context,
@@ -471,6 +567,9 @@ object Preferences : KoinComponent {
 
     val minimumSongDuration: Int
         get() = preferences.getInt(MINIMUM_SONG_DURATION, 15)
+
+    val maximumSongDuration: Int
+        get() = preferences.getInt(MAXIMUM_SONG_DURATION, 0)
 
     val rotationLockEnabled: Boolean
         get() = preferences.getBoolean(ENABLE_ROTATION_LOCK, false)
@@ -615,6 +714,7 @@ const val REMEMBER_LAST_PAGE = "remember_last_page"
 const val TAB_TITLES_MODE = "tab_titles_mode"
 const val HOLD_TAB_TO_SEARCH = "hold_tab_to_search"
 const val IGNORE_ARTICLES_WHEN_SORTING = "ignore_articles_when_sorting"
+const val SORTING_IGNORE_KEYWORDS = "sorting_ignore_keywords"
 const val LAST_PAGE = "last_page"
 const val LARGER_HEADER_IMAGE = "larger_header_image"
 const val HORIZONTAL_ARTIST_ALBUMS = "horizontal_artist_albums"
@@ -642,6 +742,8 @@ const val ANIMATE_PLAYER_CONTROL = "animate_player_control"
 const val CIRCLE_PLAY_BUTTON = "circle_play_button"
 const val ENABLE_SCROLLING_TEXT = "enable_scrolling_text"
 const val DISPLAY_ALBUM_TITLE = "display_album_title"
+const val SONG_TITLE_MODE = "song_title_mode"
+const val SHOW_LIST_DATE_MODIFIED = "show_list_date_modified"
 const val DISPLAY_EXTRA_INFO = "display_extra_info"
 const val NOW_PLAYING_EXTRA_INFO = "now_playing_extra_info"
 const val WIDGET_DYNAMIC_COLORS = "widget_dynamic_colors"
@@ -667,6 +769,13 @@ const val RESUME_ON_CONNECT = "resume_on_connect"
 const val PAUSE_ON_DISCONNECT = "pause_on_disconnect"
 const val RESUME_ON_BLUETOOTH_CONNECT = "resume_on_bluetooth_connect"
 const val PAUSE_ON_BLUETOOTH_DISCONNECT = "pause_on_bluetooth_disconnect"
+const val HEADSET_SINGLE_CLICK_ACTION = "headset_single_click_action"
+const val HEADSET_DOUBLE_CLICK_ACTION = "headset_double_click_action"
+const val HEADSET_TRIPLE_CLICK_ACTION = "headset_triple_click_action"
+const val HEADSET_LONG_PRESS_ACTION = "headset_long_press_action"
+const val HEADSET_FOUR_PLUS_SEEK_FORWARD = "headset_four_plus_seek_forward"
+const val HEADSET_CLICK_DELAY_MS = "headset_click_delay_ms"
+const val HEADSET_BUTTON_MAPPING = "headset_button_mapping"
 const val IGNORE_AUDIO_FOCUS = "ignore_audio_focus"
 const val PAUSE_ON_ZERO_VOLUME = "pause_on_zero_volume"
 const val MP3_INDEX_SEEKING = "mp3_index_seeking"
@@ -679,6 +788,7 @@ const val RECURSIVE_FOLDER_ACTIONS = "recursive_folder_actions"
 const val ENABLE_HISTORY = "enable_history_playlist"
 const val HISTORY_CUTOFF = "history_interval"
 const val LAST_ADDED_CUTOFF = "last_added_interval"
+const val NOT_PLAYED_DAYS = "not_played_days"
 const val IGNORE_SINGLES = "ignore_singles"
 const val SHOW_TOTAL_DURATION = "show_total_duration"
 const val WHITELIST_ENABLED = "whitelist_enabled"
@@ -686,6 +796,7 @@ const val BLACKLIST_ENABLED = "blacklist_enabled"
 const val ARTIST_MINIMUM_SONGS = "artist_minimum_songs"
 const val ALBUM_MINIMUM_SONGS = "album_minimum_songs"
 const val MINIMUM_SONG_DURATION = "minimum_song_duration"
+const val MAXIMUM_SONG_DURATION = "maximum_song_duration"
 const val ENABLE_ROTATION_LOCK = "enable_rotation_lock"
 const val STOP_WHEN_CLOSED_FROM_RECENTS = "stop_when_closed_from_recents"
 const val LANGUAGE_NAME = "language_name"

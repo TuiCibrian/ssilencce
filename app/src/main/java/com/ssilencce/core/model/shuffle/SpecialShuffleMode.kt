@@ -6,6 +6,7 @@ enum class SpecialShuffleMode(
     val iconRes: Int,
     val titleRes: Int,
     val descriptionRes: Int,
+    val composerDependent: Boolean = false,
 ) {
     PureRandom(
         R.drawable.ic_shuffle_24dp,
@@ -26,6 +27,17 @@ enum class SpecialShuffleMode(
         R.drawable.ic_album_24dp,
         R.string.shuffle_mode_most_played_albums,
         R.string.shuffle_mode_most_played_albums_description,
+    ),
+    MostPlayedAlbumArtists(
+        R.drawable.ic_artist_24dp,
+        R.string.shuffle_mode_most_played_album_artists,
+        R.string.shuffle_mode_most_played_album_artists_description,
+    ),
+    MostPlayedComposers(
+        R.drawable.ic_person_24dp,
+        R.string.shuffle_mode_most_played_composers,
+        R.string.shuffle_mode_most_played_composers_description,
+        composerDependent = true,
     ),
     FavoriteSongs(
         R.drawable.ic_favorite_outline_24dp,

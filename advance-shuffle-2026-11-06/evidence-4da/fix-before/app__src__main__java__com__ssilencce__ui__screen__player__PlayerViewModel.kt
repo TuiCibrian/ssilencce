@@ -1,0 +1,1366 @@
+package com.ssilencce.ui.screen.player
+
+import android.content.Context
+import android.content.SharedPreferences
+import android.os.Bundle
+import android.util.Log
+import androidx.annotation.StringRes
+import androidx.core.content.edit
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.liveData
+import androidx.lifecycle.viewModelScope
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
+import androidx.media3.common.Player.REPEAT_MODE_OFF
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
+import androidx.media3.session.SessionResult
+import com.ssilencce.R
+import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.core.model.PaletteColor
+import com.ssilencce.core.model.action.QueueClearingBehavior
+import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.core.model.player.PlayerColorScheme
+import com.ssilencce.core.model.player.PlayerColorSchemeMode
+import com.ssilencce.core.model.shuffle.GroupShuffleMode
+import com.ssilencce.core.model.shuffle.OpenShuffleMode
+import com.ssilencce.core.model.shuffle.ShuffleOperationState
+import com.ssilencce.core.model.shuffle.SpecialShuffleMode
+import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.data.SongProvider
+import com.ssilencce.data.local.repository.NamedQueueLimitException
+import com.ssilencce.data.local.repository.NamedQueueNameException
+import com.ssilencce.data.local.repository.NamedQueueRepository
+import com.ssilencce.data.local.repository.NamedQueueSnapshot
+import com.ssilencce.data.local.repository.QueueNamePolicy
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.room.PlaylistEntity
+import com.ssilencce.data.mapper.toSongs
+import com.ssilencce.data.model.QueuePosition
+import com.ssilencce.data.model.QueueSong
+import com.ssilencce.data.model.Song
+import com.ssilencce.playback.Playback
+import com.ssilencce.playback.ProgressObserver
+import com.ssilencce.playback.QueueBatchMovePolicy
+import com.ssilencce.playback.QueueReshufflePolicy
+import com.ssilencce.playback.getQueueItems
+import com.ssilencce.playback.shuffle.ShuffleManager
+import com.ssilencce.playback.toMediaItems
+import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
+import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.REMEMBER_SHUFFLE_MODE
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.guava.await
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.milliseconds
+
+const val QUEUE_DEBOUNCE = 100L
+
+data class NamedQueueMessage(
+    @StringRes val messageRes: Int,
+    val formatArgs: List<Any> = emptyList(),
+)
+
+@OptIn(FlowPreview::class)
+@androidx.annotation.OptIn(UnstableApi::class)
+class PlayerViewModel(
+    private val preferences: SharedPreferences,
+    private val repository: Repository,
+    private val namedQueueRepository: NamedQueueRepository,
+) : ViewModel(),
+    Player.Listener {
+    private val queueMutex = Mutex()
+    private val progressObserver = ProgressObserver(intervalMs = 100)
+    private val shuffleManager = ShuffleManager()
+    private var mediaController: MediaController? = null
+
+    private val _mediaEvent =
+        MutableSharedFlow<MediaEvent>(
+            replay = 0,
+            extraBufferCapacity = 1,
+            onBufferOverflow = BufferOverflow.DROP_OLDEST,
+        )
+    val mediaEvent = _mediaEvent.asSharedFlow()
+
+    private val _isPlayingFlow = MutableStateFlow(false)
+    val isPlayingFlow = _isPlayingFlow.asStateFlow()
+    val isPlaying get() = _isPlayingFlow.value
+
+    private val _isQueueEndedFlow = MutableStateFlow(false)
+    val isQueueEndedFlow = _isQueueEndedFlow.asStateFlow()
+    val isQueueEnded get() = _isQueueEndedFlow.value
+
+    private val _progressFlow = MutableStateFlow(C.TIME_UNSET)
+    val progressFlow = _progressFlow.asStateFlow()
+    val progress get() = progressFlow.value
+
+    private val _durationFlow = MutableStateFlow(C.TIME_UNSET)
+    val durationFlow = _durationFlow.asStateFlow()
+    val duration get() = durationFlow.value
+
+    private val _playbackSpeed = MutableStateFlow(1f)
+    val playbackSpeed = _playbackSpeed.asStateFlow()
+
+    private val _repeatModeFlow = MutableStateFlow(REPEAT_MODE_OFF)
+    val repeatModeFlow = _repeatModeFlow.asStateFlow()
+    val repeatMode get() = repeatModeFlow.value
+
+    private val _shuffleModeFlow = MutableStateFlow(false)
+    val shuffleModeFlow = _shuffleModeFlow.asStateFlow()
+    val shuffleModeEnabled get() = shuffleModeFlow.value
+
+    private val _queueFlow = MutableStateFlow(emptyList<QueueSong>())
+    val queueFlow = _queueFlow.asStateFlow()
+    val queue get() = queueFlow.value
+
+    private val _positionFlow = MutableStateFlow(QueuePosition.Undefined)
+    val positionFlow = _positionFlow.asStateFlow()
+    val position get() = positionFlow.value
+
+    private val _currentSongFlow = MutableStateFlow(Song.emptySong)
+    val currentSongFlow = _currentSongFlow.asStateFlow()
+    val currentSong get() = currentSongFlow.value
+
+    private val _nextSongFlow = MutableStateFlow(Song.emptySong)
+    val nextSongFlow = _nextSongFlow.asStateFlow()
+    val nextSong get() = nextSongFlow.value
+
+    private val _colorScheme = MutableStateFlow(PlayerColorScheme.Unspecified)
+    val colorSchemeFlow = _colorScheme.asStateFlow()
+    val colorScheme get() = colorSchemeFlow.value
+
+    private val _shuffleOperationState = MutableStateFlow(ShuffleOperationState())
+    val shuffleOperationState = _shuffleOperationState.asStateFlow()
+
+    private val _extraInfoFlow = MutableStateFlow<String?>(null)
+    val extraInfoFlow = _extraInfoFlow.asStateFlow()
+
+    private val _stopAfterPosition = Channel<Pair<String?, Boolean>>(Channel.BUFFERED)
+    val stopAfterPosition = _stopAfterPosition.receiveAsFlow()
+
+    private val _namedQueueMessage =
+        MutableSharedFlow<NamedQueueMessage>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val namedQueueMessage = _namedQueueMessage.asSharedFlow()
+
+    private val _queueMessage = MutableSharedFlow<Int>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val queueMessage = _queueMessage.asSharedFlow()
+
+    private fun emitNamedQueueMessage(
+        @StringRes messageRes: Int,
+        vararg formatArgs: Any,
+    ) {
+        _namedQueueMessage.tryEmit(NamedQueueMessage(messageRes, formatArgs.toList()))
+    }
+
+    val namedQueuesFlow = namedQueueRepository.summariesFlow()
+
+    private val _activeNamedQueueId = MutableStateFlow(preferences.getString(ACTIVE_NAMED_QUEUE_ID, null))
+    val activeNamedQueueIdFlow = _activeNamedQueueId.asStateFlow()
+
+    private val internalJobs = mutableListOf<Job>()
+
+    private data class PendingQueue(
+        val queue: List<Song>,
+        val position: Int,
+        val startPlaying: Boolean,
+        val shuffleMode: OpenShuffleMode,
+    )
+
+    private var pendingQueue: PendingQueue? = null
+    private var queueRequestSequence = 0L
+
+    override fun onCleared() {
+        progressObserver.stop()
+        cancelInternalJobs()
+    }
+
+    fun setMediaController(mediaController: MediaController?) {
+        if (this.mediaController == mediaController) return
+
+        this.mediaController = mediaController
+        cancelInternalJobs()
+
+        if (mediaController != null) {
+            _isPlayingFlow.value = mediaController.isPlaying
+            _repeatModeFlow.value = mediaController.repeatMode
+            _shuffleModeFlow.value = mediaController.shuffleModeEnabled
+
+            if (progress == C.TIME_UNSET || duration == C.TIME_UNSET) {
+                _progressFlow.value = mediaController.contentPosition
+                _durationFlow.value = mediaController.contentDuration
+            }
+
+            onGenerateQueue(mediaController)
+
+            internalJobs +=
+                mediaEvent
+                    .filter { it == MediaEvent.MediaContentChanged }
+                    .debounce(500.milliseconds)
+                    .onEach { _ -> onGenerateQueue(mediaController, mediaContentChanged = true) }
+                    .launchIn(viewModelScope)
+
+            internalJobs +=
+                combine(queueFlow, positionFlow)
+                    { queue, position -> Pair(queue, position) }
+                    .debounce(QUEUE_DEBOUNCE.milliseconds)
+                    .onEach { (queue, position) ->
+                        _currentSongFlow.value = queue.getOrElse(position.current) { Song.emptySong }
+                        _nextSongFlow.value = queue.getOrElse(position.next) { Song.emptySong }
+                    }.launchIn(viewModelScope)
+
+            internalJobs +=
+                currentSongFlow
+                    .debounce(500.milliseconds)
+                    .distinctUntilChangedBy { it.id }
+                    .onEach { song -> onGenerateExtraInfo(song) }
+                    .launchIn(viewModelScope)
+
+            internalJobs +=
+                isPlayingFlow
+                    .onEach { isPlaying -> onSetIsPlaying(isPlaying) }
+                    .launchIn(viewModelScope)
+
+            // A launcher shortcut can start a cold activity before the controller connects.
+            // Replay the deferred user action once the controller is available.
+            pendingQueue?.let { pending ->
+                pendingQueue = null
+                openQueue(pending.queue, pending.position, pending.startPlaying, pending.shuffleMode)
+            }
+        }
+    }
+
+    fun submitEvent(mediaEvent: MediaEvent) {
+        _mediaEvent.tryEmit(mediaEvent)
+    }
+
+    private fun cancelInternalJobs() {
+        internalJobs.forEach { it.cancel() }
+        internalJobs.clear()
+    }
+
+    private fun onSetIsPlaying(isPlaying: Boolean) {
+        if (isPlaying) {
+            progressObserver.start {
+                mediaController?.let { controller ->
+                    _progressFlow.value = controller.contentPosition
+                    _durationFlow.value = controller.contentDuration
+                }
+            }
+        } else {
+            progressObserver.stop()
+        }
+    }
+
+    private fun onGenerateQueue(
+        player: Player,
+        mediaContentChanged: Boolean = false,
+    ) = viewModelScope.launch {
+        queueMutex.withLock {
+            // Capture one timeline snapshot for this pass, immediately before reading
+            // the queue, so removals and published flows refer to the same timeline.
+            val queueTimeline = player.currentTimeline
+            if (queueTimeline.isEmpty) {
+                _queueFlow.value = emptyList()
+                return@launch
+            }
+
+            // Capture the player's current state.
+            val shuffle = player.shuffleModeEnabled
+            val playerIndex = player.currentMediaItemIndex
+
+            val queueItems = player.getQueueItems(shuffle)
+
+            val (mediaItems, indicesInTimeline, queuePositionIndex) =
+                withContext(Dispatchers.Default) {
+                    val mediaItems = ArrayList<MediaItem>(queueItems.size)
+                    val indices = IntArray(queueItems.size)
+                    var currentPos = -1
+
+                    for (i in queueItems.indices) {
+                        val (item, timelineIndex) = queueItems[i]
+                        mediaItems.add(item)
+                        indices[i] = timelineIndex
+                        if (timelineIndex == playerIndex) {
+                            currentPos = i
+                        }
+                    }
+                    Triple(mediaItems, indices, currentPos)
+                }
+
+            val queuePosition =
+                QueuePosition(
+                    current = queuePositionIndex,
+                    indicesInTimeline = indicesInTimeline,
+                )
+
+            // Retrieve existing songs for the given MediaItems and detect missing ones.
+            val (songs, missingMediaItems) =
+                withContext(IO) {
+                    val result = repository.songsByMediaItems(mediaItems)
+                    val occurrences = mutableMapOf<Long, Int>()
+
+                    val queueSongs =
+                        result.first.map { song ->
+                            val count = occurrences.getOrDefault(song.id, 0)
+                            occurrences[song.id] = count + 1
+                            QueueSong(key = song.id to count, song)
+                        }
+                    queueSongs to result.second
+                }
+
+            var stalePass = false
+            if (mediaContentChanged && missingMediaItems.isNotEmpty()) {
+                withContext(Dispatchers.Default) {
+                    // Build a set of IDs representing missing (deleted) MediaItems.
+                    val missingIds = missingMediaItems.mapTo(HashSet()) { it.mediaId }
+
+                    // queueItems follows shuffle order when shuffle is enabled, so group
+                    // missing items by their timeline index instead of their list position.
+                    val missingTimelineIndices = BooleanArray(queueTimeline.windowCount)
+                    for ((item, timelineIndex) in queueItems) {
+                        if (item.mediaId in missingIds && timelineIndex in missingTimelineIndices.indices) {
+                            missingTimelineIndices[timelineIndex] = true
+                        }
+                    }
+
+                    // Identify contiguous ranges of missing timeline indices to remove them in batches.
+                    val ranges = mutableListOf<IntRange>()
+                    var start = -1
+
+                    for (index in missingTimelineIndices.indices) {
+                        if (missingTimelineIndices[index]) {
+                            if (start == -1) {
+                                // Beginning of a new missing range.
+                                start = index
+                            }
+                        } else if (start != -1) {
+                            // End of the current missing range.
+                            ranges += (start until index)
+                            start = -1
+                        }
+                    }
+                    // If the last range extends to the end of the timeline, close it.
+                    if (start != -1) ranges += (start until missingTimelineIndices.size)
+
+                    withContext(Dispatchers.Main) {
+                        if (player.currentTimeline !== queueTimeline ||
+                            player.mediaItemCount != queueTimeline.windowCount
+                        ) {
+                            stalePass = true
+                        } else {
+                            // Remove ranges in reverse order to avoid index shifting issues.
+                            for (range in ranges.asReversed()) {
+                                player.removeMediaItems(range.first, range.last + 1)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // A timeline change during the IO lookup invalidated this pass; the queued
+            // timeline-event pass retries without publishing stale queue/position data.
+            if (stalePass) return@withLock
+
+            // Update the queue with the valid songs and current positions.
+            _queueFlow.value = songs
+            _positionFlow.value = queuePosition
+        }
+    }
+
+    private fun onGenerateExtraInfo(song: Song) =
+        viewModelScope.launch(IO) {
+            _extraInfoFlow.value =
+                if (Preferences.displayExtraInfo) {
+                    MetadataField.getMetadataValue(
+                        song = song,
+                        fields =
+                            Preferences.getExtraInfoContent(
+                                key = NOW_PLAYING_EXTRA_INFO,
+                                defaultContent = Preferences.getDefaultNowPlayingInfo(),
+                            ),
+                    )
+                } else {
+                    null
+                }
+        }
+
+    override fun onEvents(
+        player: Player,
+        events: Player.Events,
+    ) {
+        val isPlayStateEvent =
+            events.containsAny(
+                Player.EVENT_PLAYBACK_STATE_CHANGED,
+                Player.EVENT_IS_PLAYING_CHANGED,
+                Player.EVENT_PLAY_WHEN_READY_CHANGED,
+            )
+        val queueStructureChanged =
+            events.containsAny(
+                Player.EVENT_TIMELINE_CHANGED,
+                Player.EVENT_MEDIA_ITEM_TRANSITION,
+                Player.EVENT_POSITION_DISCONTINUITY,
+            )
+        if (isPlayStateEvent) {
+            _isPlayingFlow.value = player.playWhenReady && player.isPlaying
+            _isQueueEndedFlow.value =
+                QueueEndPolicy.isEnded(
+                    playbackStateEnded = player.playbackState == Player.STATE_ENDED,
+                    mediaItemCount = player.mediaItemCount,
+                )
+            if (player.playbackState == Player.STATE_READY && !player.playWhenReady) {
+                _progressFlow.value = player.contentPosition
+                _durationFlow.value = player.contentDuration
+            }
+        }
+        if (queueStructureChanged) {
+            _isQueueEndedFlow.value = false
+        }
+        if (events.contains(Player.EVENT_REPEAT_MODE_CHANGED)) {
+            _repeatModeFlow.value = player.repeatMode
+        }
+        if (events.contains(Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED)) {
+            if (!events.contains(Player.EVENT_TIMELINE_CHANGED)) {
+                onGenerateQueue(player)
+            }
+            _shuffleModeFlow.value = player.shuffleModeEnabled
+        }
+        if (events.contains(Player.EVENT_POSITION_DISCONTINUITY)) {
+            if (!events.contains(Player.EVENT_TIMELINE_CHANGED)) {
+                _positionFlow.value = position.setCurrentIndex(player.currentMediaItemIndex)
+            }
+            if (!player.playWhenReady) {
+                _progressFlow.value = player.contentPosition
+                _durationFlow.value = player.contentDuration
+            }
+        }
+        if (events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION)) {
+            if (!events.contains(Player.EVENT_TIMELINE_CHANGED)) {
+                _positionFlow.value = position.setCurrentIndex(player.currentMediaItemIndex)
+            }
+        }
+        if (events.contains(Player.EVENT_TIMELINE_CHANGED)) {
+            onGenerateQueue(player)
+        }
+    }
+
+    override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
+        _playbackSpeed.value = playbackParameters.speed
+    }
+
+    fun toggleFavorite() {
+        mediaController?.sendCustomCommand(SessionCommand(Playback.TOGGLE_FAVORITE, Bundle.EMPTY), Bundle.EMPTY)
+    }
+
+    fun cycleRepeatMode() {
+        mediaController?.sendCustomCommand(SessionCommand(Playback.CYCLE_REPEAT, Bundle.EMPTY), Bundle.EMPTY)
+    }
+
+    fun toggleShuffleMode() {
+        mediaController?.sendCustomCommand(SessionCommand(Playback.TOGGLE_SHUFFLE, Bundle.EMPTY), Bundle.EMPTY)
+    }
+
+    fun reshuffleQueue() =
+        viewModelScope.launch {
+            val controller = mediaController ?: return@launch
+            if (controller.mediaItemCount == 0) {
+                _queueMessage.tryEmit(R.string.reshuffle_queue_empty)
+                return@launch
+            }
+            if (!QueueReshufflePolicy.canReshuffle(controller.shuffleModeEnabled, controller.mediaItemCount)) {
+                _queueMessage.tryEmit(R.string.reshuffle_queue_shuffle_off)
+                return@launch
+            }
+            val resultFuture =
+                controller.sendCustomCommand(
+                    SessionCommand(Playback.RESHUFFLE_QUEUE, Bundle.EMPTY),
+                    Bundle.EMPTY,
+                )
+            val result =
+                try {
+                    resultFuture.await()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    SessionResult(SessionError.ERROR_UNKNOWN)
+                }
+            when (result.resultCode) {
+                SessionResult.RESULT_SUCCESS -> _queueMessage.tryEmit(R.string.reshuffle_queue_done)
+                SessionError.ERROR_INVALID_STATE -> _queueMessage.tryEmit(R.string.reshuffle_queue_shuffle_off)
+                else -> _queueMessage.tryEmit(R.string.reshuffle_queue_failed)
+            }
+        }
+
+    fun togglePlayPause() {
+        mediaController?.let { controller ->
+            if (isPlaying) {
+                controller.pause()
+            } else if (isAtEndedQueue(controller)) {
+                restartCurrentItem(controller)
+            } else {
+                controller.play()
+            }
+        }
+    }
+
+    fun play() {
+        mediaController?.let { controller ->
+            if (isAtEndedQueue(controller)) {
+                restartCurrentItem(controller)
+            } else {
+                controller.play()
+            }
+        }
+    }
+
+    fun replayQueue() {
+        mediaController?.let { controller ->
+            if (controller.mediaItemCount == 0) return
+            // Logical queue position 0: with shuffle enabled this is the first item in the
+            // current shuffled order, not necessarily timeline index 0.
+            val firstIndex =
+                QueueEndPolicy.replayTimelineIndex(
+                    mappedFirstIndex = position.getIndexForPosition(0),
+                    mediaItemCount = controller.mediaItemCount,
+                )
+            _isQueueEndedFlow.value = false
+            controller.seekToDefaultPosition(firstIndex)
+            controller.play()
+        }
+    }
+
+    private fun isAtEndedQueue(controller: MediaController): Boolean =
+        QueueEndPolicy.isEnded(
+            playbackStateEnded = controller.playbackState == Player.STATE_ENDED,
+            mediaItemCount = controller.mediaItemCount,
+        )
+
+    /**
+     * Generic Play/toggle at an ended queue restarts the current (default) item, not the whole
+     * queue. Footer Replay remains the action that restarts at logical queue position 0.
+     */
+    private fun restartCurrentItem(controller: MediaController) {
+        if (controller.currentTimeline.isEmpty) return
+        val index =
+            QueueEndPolicy.restartTimelineIndex(
+                mappedCurrentIndex = position.getIndexForPosition(position.current),
+                mediaItemCount = controller.mediaItemCount,
+                fallbackIndex = controller.currentMediaItemIndex,
+            )
+        if (!QueueEndPolicy.isValidTimelineIndex(index, controller.mediaItemCount)) return
+        _isQueueEndedFlow.value = false
+        controller.seekToDefaultPosition(index)
+        controller.play()
+    }
+
+    fun confirmAudioFocus(requestId: String) =
+        viewModelScope.launch {
+            mediaController?.sendCustomCommand(
+                SessionCommand(Playback.CONFIRM_AUDIO_FOCUS, Bundle.EMPTY),
+                Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) },
+            )
+        }
+
+    fun cancelAudioFocus(requestId: String) =
+        viewModelScope.launch {
+            mediaController?.sendCustomCommand(
+                SessionCommand(Playback.CANCEL_AUDIO_FOCUS, Bundle.EMPTY),
+                Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) },
+            )
+        }
+
+    fun seekToNext() {
+        mediaController?.let { controller ->
+            if (!controller.hasNextMediaItem()) return
+            _isQueueEndedFlow.value = false
+            controller.seekToNext()
+        }
+    }
+
+    fun seekToPrevious() {
+        mediaController?.let { controller ->
+            if (!controller.hasPreviousMediaItem()) return
+            _isQueueEndedFlow.value = false
+            controller.seekToPrevious()
+        }
+    }
+
+    fun seekForward() {
+        mediaController?.let { controller ->
+            if (controller.currentMediaItemIndex == C.INDEX_UNSET) return
+            if (controller.playbackState == Player.STATE_ENDED) return
+            val duration = controller.duration
+            if (duration != C.TIME_UNSET && controller.currentPosition >= duration) return
+            _isQueueEndedFlow.value = false
+            controller.seekForward()
+        }
+    }
+
+    fun seekBack() {
+        mediaController?.let { controller ->
+            if (controller.currentMediaItemIndex == C.INDEX_UNSET) return
+            _isQueueEndedFlow.value = false
+            controller.seekBack()
+        }
+    }
+
+    fun seekTo(positionMillis: Long) {
+        mediaController?.let { controller ->
+            if (controller.playbackState == Player.STATE_ENDED &&
+                controller.currentPosition == positionMillis
+            ) {
+                return
+            }
+            _isQueueEndedFlow.value = false
+            controller.seekTo(positionMillis)
+        }
+    }
+
+    fun generateExtraInfo() {
+        onGenerateExtraInfo(currentSong)
+    }
+
+    fun playSongAt(newPosition: Int) {
+        mediaController?.let { controller ->
+            if (controller.currentTimeline.isEmpty) return
+            val index = position.getIndexForPosition(newPosition)
+            if (!QueueEndPolicy.isValidTimelineIndex(index, controller.mediaItemCount)) return
+            _isQueueEndedFlow.value = false
+            controller.seekToDefaultPosition(index)
+            controller.play()
+        }
+    }
+
+    fun playMediaId(
+        mediaId: String,
+        shuffleMode: Boolean = false,
+    ) {
+        mediaController?.let { controller ->
+            // The timeline-change event drives the ended reset; do not clear it before an
+            // effective media-item change is issued.
+            controller.shuffleModeEnabled = shuffleMode
+            controller.setMediaItem(
+                MediaItem
+                    .Builder()
+                    .setMediaId(mediaId)
+                    .build(),
+                true,
+            )
+            controller.prepare()
+            controller.play()
+        }
+    }
+
+    fun openQueue(
+        queue: List<Song>,
+        position: Int = 0,
+        startPlaying: Boolean = true,
+        shuffleMode: OpenShuffleMode = OpenShuffleMode.Remember,
+    ) = viewModelScope.launch {
+        val requestSequence = ++queueRequestSequence
+        val controller = mediaController
+        if (controller == null) {
+            // Keep the last explicit request until setMediaController publishes a connection.
+            if (requestSequence == queueRequestSequence) {
+                pendingQueue = PendingQueue(queue, position, startPlaying, shuffleMode)
+            }
+            return@launch
+        }
+        var shuffleModeEnabled = controller.shuffleModeEnabled
+        if (!preferences.getBoolean(REMEMBER_SHUFFLE_MODE, true)) {
+            shuffleModeEnabled = false
+        }
+        val mediaItems = withContext(IO) { queue.toMediaItems() }
+        if (requestSequence != queueRequestSequence) return@launch
+        val shuffleMode =
+            when (shuffleMode) {
+                OpenShuffleMode.On -> true
+                OpenShuffleMode.Off -> false
+                OpenShuffleMode.Remember -> shuffleModeEnabled
+            }
+        if (mediaItems.isNotEmpty()) {
+            controller.shuffleModeEnabled = shuffleMode
+            controller.setMediaItems(mediaItems, position, C.TIME_UNSET)
+            controller.playWhenReady = startPlaying
+            controller.prepare()
+        }
+    }
+
+    fun openAndShuffleQueue(queue: List<Song>) =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                val mediaItems = withContext(IO) { queue.toMediaItems() }
+                if (mediaItems.isNotEmpty()) {
+                    controller.shuffleModeEnabled = true
+                    controller.setMediaItems(mediaItems, true)
+                    controller.prepare()
+                    controller.play()
+                }
+            }
+        }
+
+    fun saveCurrentQueueAs(
+        name: String,
+        replaceQueueId: String? = null,
+    ) = viewModelScope.launch {
+        val controller = mediaController
+        if (controller == null) {
+            emitNamedQueueMessage(R.string.named_queue_no_playback)
+            return@launch
+        }
+        val snapshot = controller.namedQueueSnapshot()
+        if (snapshot.isEmpty) {
+            emitNamedQueueMessage(R.string.named_queue_empty)
+            return@launch
+        }
+        try {
+            val entity =
+                withContext(IO) {
+                    if (replaceQueueId != null) {
+                        namedQueueRepository.replace(replaceQueueId, snapshot)
+                    } else {
+                        namedQueueRepository.create(name, snapshot)
+                    }
+                }
+            if (entity == null) {
+                emitNamedQueueMessage(R.string.named_queue_unavailable)
+                return@launch
+            }
+            preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, entity.id) }
+            _activeNamedQueueId.value = entity.id
+            if (replaceQueueId != null) {
+                emitNamedQueueMessage(R.string.named_queue_replaced, entity.name)
+            } else {
+                emitNamedQueueMessage(R.string.named_queue_saved_as, entity.name)
+            }
+        } catch (limit: NamedQueueLimitException) {
+            emitNamedQueueMessage(R.string.named_queue_limit_reached, limit.limit)
+        } catch (invalid: NamedQueueNameException) {
+            emitNamedQueueNameError(invalid)
+        }
+    }
+
+    fun switchToFirstNamedQueue() = chainToNamedQueue(NamedQueueChainPolicy.Direction.First)
+
+    fun switchToPreviousNamedQueue() = chainToNamedQueue(NamedQueueChainPolicy.Direction.Previous)
+
+    fun switchToNextNamedQueue() = chainToNamedQueue(NamedQueueChainPolicy.Direction.Next)
+
+    private fun chainToNamedQueue(direction: NamedQueueChainPolicy.Direction) =
+        viewModelScope.launch {
+            val activeId =
+                _activeNamedQueueId.value
+                    ?: preferences.getString(ACTIVE_NAMED_QUEUE_ID, null)
+            val controller = mediaController
+            if (activeId == null || controller == null || controller.mediaItemCount == 0) {
+                emitNamedQueueMessage(R.string.named_queue_chain_no_active)
+                return@launch
+            }
+            val (activeQueue, orderedIds) =
+                withContext(IO) {
+                    namedQueueRepository.queue(activeId) to
+                        namedQueueRepository.orderedQueueIds()
+                }
+            if (activeQueue == null) {
+                emitNamedQueueMessage(R.string.named_queue_unavailable)
+                return@launch
+            }
+            val namedMediaIds = activeQueue.orderedItems().map { it.mediaId }
+            val timelineMediaIds =
+                (0 until controller.mediaItemCount).map { index ->
+                    controller.getMediaItemAt(index).mediaId
+                }
+            if (!NamedQueueChainPolicy.matchesTimeline(namedMediaIds, timelineMediaIds)) {
+                emitNamedQueueMessage(R.string.named_queue_chain_not_current)
+                return@launch
+            }
+            when (val result = NamedQueueChainPolicy.resolve(orderedIds, activeId, direction)) {
+                is NamedQueueChainPolicy.Result.Target -> {
+                    switchToNamedQueue(result.queueId)
+                }
+
+                NamedQueueChainPolicy.Result.Boundary -> {
+                    emitNamedQueueMessage(
+                        if (direction == NamedQueueChainPolicy.Direction.Previous) {
+                            R.string.named_queue_chain_first_boundary
+                        } else {
+                            R.string.named_queue_chain_last_boundary
+                        },
+                    )
+                }
+
+                NamedQueueChainPolicy.Result.NoActive -> {
+                    emitNamedQueueMessage(R.string.named_queue_chain_no_active)
+                }
+            }
+        }
+
+    fun switchToNamedQueue(queueId: String) {
+        switchToNamedQueueInternal(queueId, null)
+    }
+
+    fun switchToNamedQueueWithResult(
+        queueId: String,
+        onResult: (Boolean) -> Unit,
+    ) {
+        switchToNamedQueueInternal(queueId, onResult)
+    }
+
+    private fun switchToNamedQueueInternal(
+        queueId: String,
+        onResult: ((Boolean) -> Unit)?,
+    ) = viewModelScope.launch {
+        fun finish(success: Boolean) {
+            onResult?.invoke(success)
+        }
+
+        try {
+            val controller = mediaController
+            if (controller == null) {
+                emitNamedQueueMessage(R.string.named_queue_no_playback)
+                finish(false)
+                return@launch
+            }
+            val target = withContext(IO) { namedQueueRepository.queue(queueId) }
+            if (target == null) {
+                emitNamedQueueMessage(R.string.named_queue_unavailable)
+                finish(false)
+                return@launch
+            }
+            val targetItems = target.orderedItems()
+            if (targetItems.isEmpty()) {
+                emitNamedQueueMessage(R.string.named_queue_empty)
+                finish(false)
+                return@launch
+            }
+
+            // The service performs the save/switch atomically against the live player timeline.
+            val resultFuture =
+                controller.sendCustomCommand(
+                    SessionCommand(
+                        Playback.SWITCH_NAMED_QUEUE,
+                        Bundle().apply {
+                            putString("queueId", queueId)
+                            putStringArrayList("mediaIds", ArrayList(targetItems.map { it.mediaId }))
+                            putInt("startIndex", target.queue.resumeIndex)
+                            putLong("startPositionMs", target.queue.resumePositionMs)
+                            putInt("repeatMode", target.queue.repeatMode)
+                            putBoolean("shuffleEnabled", target.queue.shuffleEnabled)
+                        },
+                    ),
+                    Bundle.EMPTY,
+                )
+            val result =
+                try {
+                    resultFuture.await()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    SessionResult(SessionError.ERROR_UNKNOWN)
+                }
+            if (result.resultCode == SessionResult.RESULT_SUCCESS &&
+                result.extras.getBoolean("switched", false)
+            ) {
+                _activeNamedQueueId.value = queueId
+                emitNamedQueueMessage(R.string.named_queue_loaded)
+                finish(true)
+            } else {
+                emitNamedQueueMessage(R.string.named_queue_unavailable)
+                finish(false)
+            }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            emitNamedQueueMessage(R.string.named_queue_unavailable)
+            finish(false)
+        }
+    }
+
+    fun renameNamedQueue(
+        queueId: String,
+        name: String,
+        replaceQueueId: String? = null,
+    ) = viewModelScope.launch {
+        try {
+            val result =
+                withContext(IO) {
+                    namedQueueRepository.rename(queueId, name, replaceQueueId)
+                }
+            if (result == null) {
+                emitNamedQueueMessage(R.string.named_queue_unavailable)
+            } else {
+                if (replaceQueueId != null && replaceQueueId == _activeNamedQueueId.value) {
+                    preferences.edit { remove(ACTIVE_NAMED_QUEUE_ID) }
+                    _activeNamedQueueId.value = null
+                }
+                emitNamedQueueMessage(R.string.named_queue_renamed_as, result.name)
+            }
+        } catch (invalid: NamedQueueNameException) {
+            emitNamedQueueNameError(invalid)
+        }
+    }
+
+    private fun emitNamedQueueNameError(error: NamedQueueNameException) {
+        when (error.error) {
+            QueueNamePolicy.Error.TooLong -> {
+                emitNamedQueueMessage(
+                    R.string.named_queue_name_too_long,
+                    QueueNamePolicy.MAX_NAME_LENGTH,
+                )
+            }
+
+            QueueNamePolicy.Error.Blank,
+            QueueNamePolicy.Error.Duplicate,
+            -> {
+                emitNamedQueueMessage(R.string.named_queue_name_invalid)
+            }
+        }
+    }
+
+    fun deleteNamedQueue(queueId: String) =
+        viewModelScope.launch {
+            withContext(IO) { namedQueueRepository.delete(queueId) }
+            if (preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) == queueId) {
+                preferences.edit { remove(ACTIVE_NAMED_QUEUE_ID) }
+                _activeNamedQueueId.value = null
+            }
+        }
+
+    fun deleteOtherNamedQueues() =
+        viewModelScope.launch {
+            val activeQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) ?: return@launch
+            withContext(IO) { namedQueueRepository.deleteOthers(activeQueueId) }
+        }
+
+    private fun MediaController.namedQueueSnapshot(): NamedQueueSnapshot =
+        NamedQueueSnapshot(
+            mediaIds = (0 until mediaItemCount).map { getMediaItemAt(it).mediaId },
+            resumeIndex = currentMediaItemIndex,
+            resumePositionMs = currentPosition.coerceAtLeast(0L),
+            repeatMode = repeatMode,
+            shuffleEnabled = shuffleModeEnabled,
+        )
+
+    fun openShuffle(
+        providers: List<SongProvider>,
+        mode: GroupShuffleMode,
+        sortMode: SongSortMode,
+    ) = liveData {
+        val mediaItems =
+            withContext(IO) {
+                shuffleManager.shuffleByProvider(providers, mode, sortMode).toMediaItems()
+            }
+        if (mediaItems.isNotEmpty()) {
+            mediaController?.let { controller ->
+                controller.shuffleModeEnabled = true
+                val resultFuture =
+                    controller.sendCustomCommand(
+                        SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
+                        Bundle.EMPTY,
+                    )
+                val result =
+                    runCatching { resultFuture.await() }
+                        .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                    controller.setMediaItems(mediaItems)
+                    controller.prepare()
+                    controller.play()
+                }
+            }
+            emit(true)
+        } else {
+            emit(false)
+        }
+    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    fun openSpecialShuffle(
+        songs: List<Song>,
+        mode: SpecialShuffleMode,
+    ) = viewModelScope.launch {
+        if (shuffleOperationState.value.isIdle) {
+            _shuffleOperationState.value = ShuffleOperationState(mode, ShuffleOperationState.Status.InProgress)
+            val mediaItems =
+                withContext(IO) {
+                    shuffleManager.applySmartShuffle(songs, mode).toMediaItems()
+                }
+            if (mediaItems.isNotEmpty()) {
+                mediaController?.let { controller ->
+                    val currentMediaId = controller.currentMediaItem?.mediaId
+                    val currentPosition = controller.currentPosition.coerceAtLeast(0L)
+                    val wasPlaying = controller.playWhenReady
+                    controller.shuffleModeEnabled = true
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                        val currentIndex =
+                            currentMediaId?.let { mediaId ->
+                                mediaItems.indexOfFirst { it.mediaId == mediaId }
+                            } ?: -1
+                        if (currentIndex >= 0) {
+                            controller.setMediaItems(mediaItems, currentIndex, currentPosition)
+                        } else {
+                            // The playing item is not in the new queue; start safely at 0 while
+                            // preserving the previous play/pause intent.
+                            controller.setMediaItems(mediaItems, 0, 0L)
+                        }
+                        controller.prepare()
+                        controller.playWhenReady = wasPlaying
+                    }
+                }
+            }
+            _shuffleOperationState.value = ShuffleOperationState()
+        }
+    }
+
+    fun openPlaylist(
+        playlist: PlaylistEntity,
+        startPlaying: Boolean = true,
+        shuffleMode: OpenShuffleMode = OpenShuffleMode.Off,
+    ) = viewModelScope.launch {
+        val songs =
+            withContext(IO) {
+                repository.playlistSongs(playlist.playListId).toSongs()
+            }
+        openQueue(songs, startPlaying = startPlaying, shuffleMode = shuffleMode)
+    }
+
+    fun openSongs(
+        position: Int,
+        songs: List<Song>,
+        behavior: SongClickBehavior,
+    ) = viewModelScope.launch {
+        when (behavior) {
+            SongClickBehavior.PlayWholeList -> {
+                openQueue(songs, position)
+            }
+
+            SongClickBehavior.PlayOnlyThisSong -> {
+                val selectedSong = songs.getOrNull(position)
+                if (selectedSong != null) {
+                    openQueue(listOf(selectedSong))
+                }
+            }
+
+            SongClickBehavior.QueueNext -> {
+                val selectedSong = songs.getOrNull(position)
+                if (selectedSong != null) {
+                    queueNext(selectedSong)
+                }
+            }
+
+            SongClickBehavior.EnqueueAtEnd -> {
+                val selectedSong = songs.getOrNull(position)
+                if (selectedSong != null) {
+                    enqueue(selectedSong)
+                }
+            }
+        }
+    }
+
+    fun queueNext(song: Song) {
+        mediaController?.let { controller ->
+            if (controller.currentTimeline.isEmpty) {
+                openQueue(listOf(song), startPlaying = false)
+            } else {
+                var nextIndex = position.getIndexForPosition(position.next)
+                if (nextIndex == C.INDEX_UNSET) {
+                    nextIndex = controller.mediaItemCount
+                }
+                controller.addMediaItem(nextIndex, song.toMediaItem())
+            }
+        }
+    }
+
+    fun queueNext(songs: List<Song>) {
+        mediaController?.let { controller ->
+            if (controller.currentTimeline.isEmpty) {
+                openQueue(songs, startPlaying = false)
+            } else {
+                var nextIndex = position.getIndexForPosition(position.next)
+                if (nextIndex == C.INDEX_UNSET) {
+                    nextIndex = controller.mediaItemCount
+                }
+                controller.addMediaItems(nextIndex, songs.toMediaItems())
+            }
+        }
+    }
+
+    fun enqueue(
+        song: Song,
+        toPosition: Int = -1,
+    ) {
+        mediaController?.let { controller ->
+            if (controller.currentTimeline.isEmpty) {
+                openQueue(listOf(song), startPlaying = false)
+            } else {
+                val toIndex = position.getIndexForPosition(toPosition)
+                if (toPosition >= 0 && toIndex >= 0) {
+                    controller.addMediaItem(toIndex, song.toMediaItem())
+                } else {
+                    controller.addMediaItem(song.toMediaItem())
+                }
+            }
+        }
+    }
+
+    fun enqueue(songs: List<Song>) {
+        mediaController?.let { controller ->
+            if (controller.currentTimeline.isEmpty) {
+                openQueue(songs, startPlaying = false)
+            } else {
+                controller.addMediaItems(songs.toMediaItems())
+            }
+        }
+    }
+
+    fun clearQueue(behavior: QueueClearingBehavior = Preferences.clearQueueAction) {
+        _isQueueEndedFlow.value = false
+        when (behavior) {
+            QueueClearingBehavior.RemoveAllSongs -> {
+                mediaController?.clearMediaItems()
+            }
+
+            QueueClearingBehavior.RemoveAllSongsExceptCurrentlyPlaying -> {
+                mediaController?.let { controller ->
+                    if (controller.mediaItemCount > 1) {
+                        val currentItem = controller.currentMediaItemIndex
+                        if (currentItem == C.INDEX_UNSET) return
+                        if (currentItem == 0) {
+                            controller.removeMediaItems(1, controller.mediaItemCount)
+                        } else {
+                            controller.removeMediaItems(0, currentItem)
+                            if (controller.mediaItemCount > 1) {
+                                controller.removeMediaItems(1, controller.mediaItemCount)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @androidx.annotation.OptIn(UnstableApi::class)
+    fun stopAt(stopPosition: Int) =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                if (stopPosition >= 0 && stopPosition < controller.mediaItemCount) {
+                    val stopIndex = position.getIndexForPosition(stopPosition)
+                    val mediaItem = controller.getMediaItemAt(stopIndex)
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(
+                                Playback.SET_STOP_POSITION,
+                                Bundle().apply {
+                                    putInt("index", stopIndex)
+                                },
+                            ),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                        val canceled = result.extras.getBoolean("canceled", false)
+                        _stopAfterPosition.send(mediaItem.mediaMetadata.title?.toString() to canceled)
+                    } else {
+                        _stopAfterPosition.send(null to false)
+                    }
+                }
+            }
+        }
+
+    fun moveSong(
+        fromPosition: Int,
+        toPosition: Int,
+    ) {
+        mediaController?.moveMediaItem(
+            position.getIndexForPosition(fromPosition),
+            position.getIndexForPosition(toPosition),
+        )
+    }
+
+    fun moveQueueBlock(
+        selectedKeys: Set<Pair<Long, Int>>,
+        targetEffectiveIndex: Int,
+    ) = viewModelScope.launch {
+        val controller = mediaController ?: return@launch
+        val currentQueue = queue
+        val selectedEffectiveIndices =
+            currentQueue.withIndex().filter { it.value.key in selectedKeys }.map { it.index }
+        if (selectedKeys.size < 2 ||
+            selectedEffectiveIndices.size != selectedKeys.size ||
+            targetEffectiveIndex !in currentQueue.indices ||
+            QueueBatchMovePolicy.isDropInsideSelection(
+                selectedEffectiveIndices,
+                targetEffectiveIndex,
+            )
+        ) {
+            _queueMessage.tryEmit(R.string.queue_move_failed)
+            return@launch
+        }
+
+        // Resolve every effective/shuffled position to its original timeline index through
+        // QueuePosition. Filtered visible positions are never used for the mutation.
+        val timelineKeys = arrayOfNulls<Pair<Long, Int>>(currentQueue.size)
+        currentQueue.forEachIndexed { effectiveIndex, song ->
+            val timelineIndex = position.getIndexForPosition(effectiveIndex)
+            if (timelineIndex in timelineKeys.indices) {
+                timelineKeys[timelineIndex] = song.key
+            }
+        }
+        if (timelineKeys.any { it == null }) {
+            _queueMessage.tryEmit(R.string.queue_move_failed)
+            return@launch
+        }
+        val selectedTimelineIndices =
+            selectedEffectiveIndices
+                .mapNotNull { effectiveIndex ->
+                    position.getIndexForPosition(effectiveIndex).takeIf { it >= 0 }
+                }.toSet()
+        val targetTimelineIndex = position.getIndexForPosition(targetEffectiveIndex)
+        if (selectedTimelineIndices.size < 2 || targetTimelineIndex < 0) {
+            _queueMessage.tryEmit(R.string.queue_move_failed)
+            return@launch
+        }
+
+        val plan =
+            QueueBatchMovePolicy.move(
+                timelineKeys = timelineKeys.map { requireNotNull(it) },
+                selectedTimelineIndices = selectedTimelineIndices,
+                targetTimelineIndex = targetTimelineIndex,
+                dropAfter =
+                    QueueBatchMovePolicy.isDropAfterSelection(
+                        selectedEffectiveIndices,
+                        targetEffectiveIndex,
+                    ),
+            )
+        if (plan.moves.isEmpty()) return@launch
+
+        val responseFuture =
+            controller.sendCustomCommand(
+                SessionCommand(
+                    Playback.MOVE_QUEUE_BLOCK,
+                    Bundle().apply {
+                        putIntArray(
+                            Playback.EXTRA_MOVE_FROM_INDICES,
+                            plan.moves.map { it.from }.toIntArray(),
+                        )
+                        putIntArray(
+                            Playback.EXTRA_MOVE_TO_INDICES,
+                            plan.moves.map { it.to }.toIntArray(),
+                        )
+                    },
+                ),
+                Bundle.EMPTY,
+            )
+        val response =
+            try {
+                responseFuture.await()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                SessionResult(SessionError.ERROR_UNKNOWN)
+            }
+        if (response.resultCode != SessionResult.RESULT_SUCCESS) {
+            _queueMessage.tryEmit(R.string.queue_move_failed)
+        }
+    }
+
+    fun moveToNextPosition(fromPosition: Int) {
+        moveSong(fromPosition, position.next)
+    }
+
+    fun removePosition(positionToRemove: Int) {
+        mediaController?.removeMediaItem(position.getIndexForPosition(positionToRemove))
+    }
+
+    fun restoreRemovedPosition(
+        positionToRestore: Int,
+        song: Song,
+    ) {
+        mediaController?.let { controller ->
+            val index = position.getIndexForPosition(positionToRestore)
+            if (index == C.INDEX_UNSET) {
+                controller.addMediaItem(song.toMediaItem())
+            } else {
+                controller.addMediaItem(index, song.toMediaItem())
+            }
+        }
+    }
+
+    fun restorePlayback() =
+        viewModelScope.launch {
+            mediaController?.let { controller ->
+                if (!controller.playWhenReady) {
+                    val resultFuture =
+                        controller.sendCustomCommand(
+                            SessionCommand(Playback.RESTORE_PLAYBACK, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        )
+                    val result =
+                        runCatching { resultFuture.await() }
+                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
+                    if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+                        controller.playWhenReady = true
+                    }
+                }
+            }
+        }
+
+    fun generatePlayerScheme(
+        context: Context,
+        mode: PlayerColorScheme.Mode,
+        color: PaletteColor,
+    ) = viewModelScope.launch(Dispatchers.Default) {
+        val currentScheme = colorScheme.mode.takeIf { it == PlayerColorSchemeMode.AppTheme }
+        if (currentScheme == mode && colorScheme.appThemeToken.isValid(context)) {
+            return@launch
+        }
+
+        val result =
+            runCatching {
+                PlayerColorScheme.autoColorScheme(context, color, mode)
+            }
+        if (result.isSuccess) {
+            _colorScheme.value = result.getOrThrow()
+        } else if (result.isFailure) {
+            Log.e(TAG, "Failed to load color scheme", result.exceptionOrNull())
+        }
+    }
+
+    companion object {
+        private const val TAG = "PlayerViewModel"
+    }
+}

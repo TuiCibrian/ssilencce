@@ -28,7 +28,9 @@ user-selected folder trees need persisted permissions.
   `.m3u` entries on API 29+, plain files in the app playlists directory before that.
 - Backup/restore with `BackupHelper`: a `.bmgbak` ZIP containing playlists as M3U, settings
   XML, lyrics JSON and custom artist images, restored through SAF pickers; system backups are
-  described by `backup_descriptor` + `data_extraction_rules`.
+  described by `backup_descriptor` + `data_extraction_rules`. ReplayGain WAV recovery copies use
+  the app-private `noBackupFilesDir`, so they are excluded from cloud and device-transfer backups
+  without a new rule.
 - Keep the FileProvider for sharing reports/APKs and the `CoverProvider` (ADR-025) for
   stable media URIs.
 
@@ -39,4 +41,7 @@ user-selected folder trees need persisted permissions.
 - Delete flows are inherently API-versioned and permission-dialog-heavy; the SAF dialog
   explains why a folder tree is needed before deletions on scoped storage.
 - Backups are portable (ZIP + M3U), but play counts/history are not backed up (ADR-018).
+- Legacy `cacheDir` ReplayGain recovery copies are not migrated or swept by the
+  `noBackupFilesDir` change; they may remain until cache eviction and are not found by the new
+  recovery path.
 - The pre-Q fallback paths are legacy debt that must remain until minSdk rises above 28.

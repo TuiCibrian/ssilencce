@@ -48,4 +48,17 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+        app:title="@string/automatic_statistics_csv_category"
+        app:layout="@layout/preference_category_title">
+
+        <com.ssilencce.ui.screen.settings.statistics.StatisticsCsvPreference
+            app:title="@string/automatic_statistics_csv_title"
+            app:summary="@string/automatic_statistics_csv_summary"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="automatic_statistics_csv"/>
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

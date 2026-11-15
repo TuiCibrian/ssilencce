@@ -26,12 +26,17 @@ enum class RestoreEntryKind {
     Lyrics,
     ArtistImages,
     Playlists,
+    Favorites,
+    PlayCounts,
+    Queues,
+    PerFileSettings,
     Unrecognized,
 }
 
 /**
  * Honest outcome of a restore attempt. [Success] means exactly one selected content item was
- * imported; [SuccessWithCount] means more than one was imported.
+ * imported; [SuccessWithCount] means more than one was imported; [Partial] means at least one
+ * selected entry failed while another selected entry was imported.
  */
 enum class RestoreOutcome {
     Success,
@@ -39,12 +44,13 @@ enum class RestoreOutcome {
     NothingSelected,
     NoRecognizedContent,
     NothingImported,
+    Partial,
 }
 
 /**
  * Pure bookkeeping for [BackupHelper.restoreBackup]. It counts every ZIP entry, the entries that
  * belong to a known backup category, the recognized entries whose category was selected, and the
- * content items that were actually written or inserted.
+ * content items that were actually written or inserted, and selected entries that failed.
  */
 class RestoreSummary(
     private val selectionRequested: Boolean,
@@ -61,6 +67,9 @@ class RestoreSummary(
     var importedItems: Int = 0
         private set
 
+    var failedSelectedEntries: Int = 0
+        private set
+
     fun recordEntry(
         kind: RestoreEntryKind,
         selected: Boolean,
@@ -73,6 +82,11 @@ class RestoreSummary(
 
     fun recordImport(count: Int = 1) {
         if (count > 0) importedItems += count
+    }
+
+    /** Records a selected entry that was recognized but could not be imported. */
+    fun recordFailure() {
+        failedSelectedEntries++
     }
 
     /**
@@ -94,6 +108,7 @@ class RestoreSummary(
             !selectionRequested -> RestoreOutcome.NothingSelected
             recognizedEntries == 0 -> RestoreOutcome.NoRecognizedContent
             importedItems == 0 -> RestoreOutcome.NothingImported
+            failedSelectedEntries > 0 -> RestoreOutcome.Partial
             importedItems == 1 -> RestoreOutcome.Success
             else -> RestoreOutcome.SuccessWithCount
         }

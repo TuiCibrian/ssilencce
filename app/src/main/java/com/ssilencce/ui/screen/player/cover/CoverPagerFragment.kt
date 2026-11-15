@@ -204,12 +204,15 @@ class CoverPagerFragment :
         sharedPreferences: SharedPreferences,
         key: String?,
     ) {
+        // A whole-map commit can enqueue a listener callback before teardown; the callback may
+        // run after onDestroyView. Do not touch the binding after the view is gone.
+        val binding = _binding ?: return
         if (Preferences.getNowPlayingColorSchemeKey(nps) == key) {
             requestColor(currentPosition)
         } else {
             when (key) {
                 SWIPE_ON_COVER -> {
-                    viewPager.setAllowSwiping(Preferences.swipeOnCover)
+                    binding.viewPager.setAllowSwiping(Preferences.swipeOnCover)
                 }
 
                 Preferences.getNowPlayingTransitionKey(nps) -> {
@@ -328,8 +331,9 @@ class CoverPagerFragment :
     }
 
     private fun requestColor(position: Int) {
+        val binding = _binding ?: return
         if (playerViewModel.queue.isNotEmpty()) {
-            (viewPager.adapter as? AlbumCoverPagerAdapter)
+            (binding.viewPager.adapter as? AlbumCoverPagerAdapter)
                 ?.receiveColor(colorReceiver, position)
         }
     }

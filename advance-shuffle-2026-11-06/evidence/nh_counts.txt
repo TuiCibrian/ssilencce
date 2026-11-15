@@ -1,0 +1,7 @@
+﻿QUEUE [(0, '78'), (1, '79')]
+COUNTS
+(70, 'AA05 B Composer Heavy 01', 6, 0)
+(71, 'AA05 B Composer Heavy 02', 6, 5)
+(72, 'AA05 B Composer Heavy 03', 5, 0)
+(78, 'AA05 B NoComposer Heavy 01', 13, 0)
+(79, 'AA05 B NoComposer Heavy 02', 9, 3)

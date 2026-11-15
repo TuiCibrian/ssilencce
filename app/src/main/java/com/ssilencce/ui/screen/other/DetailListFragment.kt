@@ -22,8 +22,11 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
@@ -36,6 +39,7 @@ import com.ssilencce.data.mapper.lastAddedSearchFilter
 import com.ssilencce.data.mapper.searchFilter
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Song
@@ -56,13 +60,24 @@ import com.ssilencce.ui.adapters.album.AlbumAdapter
 import com.ssilencce.ui.adapters.artist.ArtistAdapter
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchPolicy
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.component.menu.onArtistsMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
+import com.ssilencce.ui.dialogs.ComposeChoiceDialogFragment
+import com.ssilencce.ui.dialogs.NotPlayedDaysDialogFragment
+import com.ssilencce.ui.dialogs.showComposeChoice
 import com.ssilencce.util.Preferences
+import com.ssilencce.util.statistics.StatisticsCsvDocument
+import com.ssilencce.util.statistics.StatisticsCsvExporter
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class DetailListFragment :
     AbsMainActivityFragment(R.layout.fragment_detail_list),
@@ -77,12 +92,66 @@ class DetailListFragment :
     private lateinit var contentType: ContentType
 
     private var songList: List<Song> = arrayListOf()
+    private var allSongs: List<Song> = emptyList()
+    private var allArtists: List<Artist> = emptyList()
+    private var allAlbums: List<Album> = emptyList()
+    private var allArtistStats: List<ArtistPlayStat> = emptyList()
+    private var currentSongAdapter: SongAdapter? = null
+    private var currentArtistAdapter: ArtistAdapter? = null
+    private var currentAlbumAdapter: AlbumAdapter? = null
+    private var listEmptyMessageRes: Int = R.string.empty_label
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
 
     private var selectedPeriod: ListeningPeriod = ListeningPeriod.AllTime
     private val selectedPeriodFlow = MutableStateFlow(ListeningPeriod.AllTime)
+    private var pendingStatisticsCsv: StatisticsCsvDocument? = null
 
     private val isStatsContent: Boolean
         get() = contentType == ContentType.TopTracks || contentType == ContentType.TopArtists
+
+    private val createStatisticsCsv =
+        registerForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+            val document = pendingStatisticsCsv
+            if (uri == null) {
+                pendingStatisticsCsv = null
+            } else if (document != null) {
+                val appContext = context?.applicationContext ?: return@registerForActivityResult
+                lifecycleScope.launch {
+                    try {
+                        StatisticsCsvExporter.write(appContext.contentResolver, uri, document)
+                        Toast.makeText(appContext, R.string.statistics_exported_successfully, Toast.LENGTH_SHORT).show()
+                    } catch (cancellation: CancellationException) {
+                        throw cancellation
+                    } catch (_: Exception) {
+                        Toast.makeText(appContext, R.string.statistics_export_failed, Toast.LENGTH_SHORT).show()
+                    } finally {
+                        pendingStatisticsCsv = null
+                    }
+                }
+            }
+        }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        pendingStatisticsCsv =
+            savedInstanceState?.let { state ->
+                val name = state.getString(STATE_PENDING_STATISTICS_NAME) ?: return@let null
+                val content = state.getString(STATE_PENDING_STATISTICS_CONTENT) ?: return@let null
+                StatisticsCsvDocument(name, content)
+            }
+        parentFragmentManager.setFragmentResultListener(periodRequestKey, this) { _, result ->
+            val selected = result.getInt(ComposeChoiceDialogFragment.RESULT_SELECTED_INDEX, -1)
+            ListeningPeriod.entries.getOrNull(selected)?.let(::applyPeriod)
+        }
+        parentFragmentManager.setFragmentResultListener(NotPlayedDaysDialogFragment.RESULT_KEY, this) { _, result ->
+            if (args.type != ContentType.NotRecentlyPlayed) return@setFragmentResultListener
+            val days = result.getInt(NotPlayedDaysDialogFragment.RESULT_DAYS, Preferences.notPlayedDays)
+            if (days == Preferences.notPlayedDays) return@setFragmentResultListener
+            Preferences.notPlayedDays = days
+            libraryViewModel.loadNotRecentlyPlayedSongs()
+        }
+    }
 
     override fun onViewCreated(
         view: View,
@@ -103,14 +172,26 @@ class DetailListFragment :
         mainActivity.setSupportActionBar(binding.toolbar)
         binding.progressIndicator.hide()
 
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
+
         setupButtons()
         loadContent()
         binding.toolbar.setTitle(contentType.titleRes)
         binding.title.setText(contentType.titleRes)
-
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
-        }
     }
 
     private fun setupButtons() {
@@ -133,7 +214,20 @@ class DetailListFragment :
         songs: List<Song>,
         emptyMessageRes: Int = 0,
     ) {
-        this.songList = songs
+        allSongs = songs
+        allArtists = emptyList()
+        allAlbums = emptyList()
+        allArtistStats = emptyList()
+        listEmptyMessageRes = if (emptyMessageRes == 0) R.string.empty_label else emptyMessageRes
+        updateSongMetadata(songs)
+        if (songs.isEmpty() && emptyMessageRes == 0) {
+            findNavController().navigateUp()
+            return
+        }
+        applyQuickSearch()
+    }
+
+    private fun updateSongMetadata(songs: List<Song>) {
         binding.empty.setText(if (isStatsContent) R.string.no_play_stats_period else R.string.empty_label)
         binding.description.isVisible = isStatsContent
         if (isStatsContent) {
@@ -162,21 +256,66 @@ class DetailListFragment :
                     )
                 }
 
-                ContentType.Favorites,
-                ContentType.NotRecentlyPlayed,
-                -> {
+                ContentType.Favorites -> {
                     songs.playlistInfo(requireContext())
+                }
+
+                ContentType.NotRecentlyPlayed -> {
+                    buildInfoString(
+                        Preferences.getNotPlayedCutoff(requireContext()).description,
+                        songs.playlistInfo(requireContext()),
+                    )
                 }
 
                 else -> {
                     null
                 }
             }
-        if (songs.isEmpty() && emptyMessageRes == 0) {
-            findNavController().navigateUp()
-        } else {
-            binding.empty.isVisible = songs.isEmpty()
+    }
+
+    private fun applyQuickSearch() {
+        val query = quickSearchQuery
+        when (contentType) {
+            ContentType.TopArtists -> {
+                val filtered = allArtistStats.filter { it.matchesDetailQuery(query) }
+                currentArtistAdapter?.submitPlayStats(filtered)
+                songList = filtered.mapNotNull { it.artist }.flatMap { it.songs }
+                binding.playAction.isEnabled = songList.isNotEmpty()
+                updateListEmpty(filtered.size, allArtistStats.size)
+            }
+
+            ContentType.RecentArtists -> {
+                val filtered = allArtists.filter { it.matchesDetailQuery(query) }
+                currentArtistAdapter?.dataSet = filtered
+                songList = filtered.flatMap { it.songs }
+                updateListEmpty(filtered.size, allArtists.size)
+            }
+
+            ContentType.TopAlbums,
+            ContentType.RecentAlbums,
+            -> {
+                val filtered = allAlbums.filter { it.matchesDetailQuery(query) }
+                currentAlbumAdapter?.dataSet = filtered
+                songList = filtered.flatMap { it.songs }
+                updateListEmpty(filtered.size, allAlbums.size)
+            }
+
+            else -> {
+                val filtered = allSongs.filter { it.matchesDetailQuery(query) }
+                currentSongAdapter?.dataSet = filtered
+                songList = filtered
+                updateListEmpty(filtered.size, allSongs.size)
+            }
         }
+    }
+
+    private fun updateListEmpty(
+        visibleCount: Int,
+        sourceCount: Int,
+    ) {
+        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, sourceCount, visibleCount)
+        binding.empty.setText(if (noMatches) R.string.quick_search_empty else listEmptyMessageRes)
+        binding.empty.isVisible = visibleCount == 0
     }
 
     private fun loadContent() {
@@ -201,7 +340,6 @@ class DetailListFragment :
             createFastScroller(disablePopup = true)
         }
         libraryViewModel.lastAddedSongs().observe(viewLifecycleOwner) { songs ->
-            songAdapter.dataSet = songs
             songs(songs, R.string.playlist_empty_text)
         }
     }
@@ -216,7 +354,6 @@ class DetailListFragment :
         launchAndRepeatWithViewLifecycle {
             selectedPeriodFlow.collectLatest { period ->
                 libraryViewModel.playCountSongsFlow(period).collect { songs ->
-                    songAdapter.dataSet = songs
                     songs(songs, R.string.no_play_stats_period)
                 }
             }
@@ -232,7 +369,6 @@ class DetailListFragment :
         }
         launchAndRepeatWithViewLifecycle {
             libraryViewModel.historySongsFlow().collect { songs ->
-                songAdapter.dataSet = songs
                 songs(songs, R.string.playlist_empty_text)
             }
         }
@@ -246,7 +382,6 @@ class DetailListFragment :
             createFastScroller(disablePopup = true)
         }
         libraryViewModel.notRecentlyPlayedSongs().observe(viewLifecycleOwner) { songs ->
-            songAdapter.dataSet = songs
             songs(songs)
         }
     }
@@ -260,7 +395,6 @@ class DetailListFragment :
         }
         launchAndRepeatWithViewLifecycle {
             libraryViewModel.favoriteSongsFlow().collect { songs ->
-                songAdapter.dataSet = songs
                 songs(songs)
             }
         }
@@ -275,10 +409,19 @@ class DetailListFragment :
             updatePadding(left = padding, right = padding)
         }
         libraryViewModel.artists(type).observe(viewLifecycleOwner) { artists ->
-            artistAdapter.dataSet = artists
-            songs(artists.flatMap { it.songs })
+            allArtists = artists
+            allSongs = artists.flatMap { it.songs }
+            allAlbums = emptyList()
+            allArtistStats = emptyList()
+            listEmptyMessageRes = R.string.empty_label
+            binding.description.isVisible = false
             // Subtitle won't set automatically for albums and artists
             binding.subtitle.text = plurals(R.plurals.x_artists, artists.size)
+            if (artists.isEmpty()) {
+                findNavController().navigateUp()
+            } else {
+                applyQuickSearch()
+            }
         }
     }
 
@@ -293,16 +436,19 @@ class DetailListFragment :
         launchAndRepeatWithViewLifecycle {
             selectedPeriodFlow.collectLatest { period ->
                 libraryViewModel.artistPlayStatsFlow(period).collect { stats ->
-                    val artists = stats.mapNotNull { it.artist }
-                    artistAdapter.submitPlayStats(stats)
-                    songs(artists.flatMap { it.songs }, R.string.no_play_stats_period)
-                    binding.empty.isVisible = stats.isEmpty()
-                    binding.playAction.isEnabled = artists.isNotEmpty()
+                    allArtistStats = stats
+                    allArtists = stats.mapNotNull { it.artist }
+                    allSongs = allArtists.flatMap { it.songs }
+                    allAlbums = emptyList()
+                    listEmptyMessageRes = R.string.no_play_stats_period
+                    binding.description.isVisible = true
+                    binding.description.setText(R.string.stats_history_note)
                     binding.subtitle.text =
                         buildInfoString(
                             getString(selectedPeriod.titleRes()),
                             plurals(R.plurals.x_artists, stats.size),
                         )
+                    applyQuickSearch()
                 }
             }
         }
@@ -317,10 +463,19 @@ class DetailListFragment :
             updatePadding(left = padding, right = padding)
         }
         libraryViewModel.albums(type).observe(viewLifecycleOwner) { albums ->
-            albumAdapter.dataSet = albums
-            songs(albums.flatMap { it.songs })
+            allAlbums = albums
+            allSongs = albums.flatMap { it.songs }
+            allArtists = emptyList()
+            allArtistStats = emptyList()
+            listEmptyMessageRes = R.string.empty_label
+            binding.description.isVisible = false
             // Subtitle won't set automatically for albums and artists
             binding.subtitle.text = plurals(R.plurals.x_albums, albums.size)
+            if (albums.isEmpty()) {
+                findNavController().navigateUp()
+            } else {
+                applyQuickSearch()
+            }
         }
     }
 
@@ -331,11 +486,15 @@ class DetailListFragment :
             R.layout.item_list,
             callback = this,
             historyMode = contentType.isHistoryContent,
-        )
+        ).also { currentSongAdapter = it }
 
-    private fun artistAdapter(artists: List<Artist> = listOf()): ArtistAdapter = ArtistAdapter(requireActivity(), artists, R.layout.item_grid_circle_single_row, callback = this)
+    private fun artistAdapter(artists: List<Artist> = listOf()): ArtistAdapter =
+        ArtistAdapter(requireActivity(), artists, R.layout.item_grid_circle, callback = this)
+            .also { currentArtistAdapter = it }
 
-    private fun albumAdapter(albums: List<Album> = listOf()): AlbumAdapter = AlbumAdapter(requireActivity(), albums, R.layout.item_grid, callback = this)
+    private fun albumAdapter(albums: List<Album> = listOf()): AlbumAdapter =
+        AlbumAdapter(requireActivity(), albums, R.layout.item_grid, callback = this)
+            .also { currentAlbumAdapter = it }
 
     private fun linearLayoutManager(): LinearLayoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false)
 
@@ -349,6 +508,10 @@ class DetailListFragment :
     }
 
     override fun onDestroyView() {
+        quickSearchHost = null
+        currentSongAdapter = null
+        currentArtistAdapter = null
+        currentAlbumAdapter = null
         super.onDestroyView()
         _binding = null
     }
@@ -363,6 +526,8 @@ class DetailListFragment :
         }
         menu.findItem(R.id.action_clear_history).isVisible = contentType.isHistoryContent
         menu.findItem(R.id.action_most_played_period)?.isVisible = isStatsContent
+        menu.findItem(R.id.action_not_played_period)?.isVisible = contentType == ContentType.NotRecentlyPlayed
+        menu.findItem(R.id.action_export_statistics)?.isVisible = isStatsContent
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -394,6 +559,16 @@ class DetailListFragment :
                 true
             }
 
+            R.id.action_not_played_period -> {
+                showNotPlayedDaysDialog()
+                true
+            }
+
+            R.id.action_export_statistics -> {
+                exportStatistics()
+                true
+            }
+
             R.id.action_clear_history -> {
                 libraryViewModel.clearHistory()
                 val translationY = -(libraryViewModel.getMiniPlayerMargin().value?.getWithSpace() ?: 0)
@@ -409,16 +584,44 @@ class DetailListFragment :
             }
         }
 
+    private fun exportStatistics() {
+        val contentType = contentType
+        val period = selectedPeriod
+        val appContext = context?.applicationContext ?: return
+        lifecycleScope.launch {
+            try {
+                val document = StatisticsCsvExporter.prepare(contentType, period)
+                if (document == null) {
+                    Toast.makeText(appContext, R.string.no_play_stats_period, Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                pendingStatisticsCsv = document
+                createStatisticsCsv.launch(document.fileName)
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                pendingStatisticsCsv = null
+                Toast.makeText(appContext, R.string.statistics_export_failed, Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun showPeriodDialog() {
         val periods = ListeningPeriod.entries
-        val labels = Array<CharSequence>(periods.size) { index -> getString(periods[index].titleRes()) }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.most_played_period)
-            .setSingleChoiceItems(labels, periods.indexOf(selectedPeriod)) { dialog, which ->
-                dialog.dismiss()
-                applyPeriod(periods[which])
-            }.setNegativeButton(android.R.string.cancel, null)
-            .show()
+        showComposeChoice(
+            title = getString(R.string.most_played_period),
+            options = periods.map { getString(it.titleRes()) },
+            selectedIndex = periods.indexOf(selectedPeriod),
+            resultKey = periodRequestKey,
+        )
+    }
+
+    private fun showNotPlayedDaysDialog() {
+        NotPlayedDaysDialogFragment
+            .newInstance(
+                currentDays = Preferences.notPlayedDays,
+                historyDescription = Preferences.getHistoryCutoff(requireContext()).description,
+            ).show(parentFragmentManager, "not-played-days")
     }
 
     private fun applyPeriod(period: ListeningPeriod) {
@@ -539,11 +742,21 @@ class DetailListFragment :
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
         outState.putString(STATE_SELECTED_PERIOD, selectedPeriod.name)
+        pendingStatisticsCsv?.let { document ->
+            outState.putString(STATE_PENDING_STATISTICS_NAME, document.fileName)
+            outState.putString(STATE_PENDING_STATISTICS_CONTENT, document.content)
+        }
         super.onSaveInstanceState(outState)
     }
 
+    private val periodRequestKey: String
+        get() = "compose-period-${args.type.name}"
+
     companion object {
         private const val STATE_SELECTED_PERIOD = "selected_listening_period"
+        private const val STATE_PENDING_STATISTICS_NAME = "pending_statistics_csv_name"
+        private const val STATE_PENDING_STATISTICS_CONTENT = "pending_statistics_csv_content"
     }
 }

@@ -31,6 +31,12 @@ interface PlayCountDao {
     @Upsert
     suspend fun upsertSongInPlayCount(playCountEntity: PlayCountEntity)
 
+    @Upsert
+    suspend fun upsertSongsInPlayCount(playCountEntities: List<PlayCountEntity>)
+
+    @Query("SELECT * FROM PlayCountEntity")
+    suspend fun allPlayCounts(): List<PlayCountEntity>
+
     @Query("DELETE FROM PlayCountEntity WHERE id = :songId")
     suspend fun deleteSongInPlayCount(songId: Long)
 

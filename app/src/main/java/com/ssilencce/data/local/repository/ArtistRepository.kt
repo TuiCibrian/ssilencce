@@ -20,12 +20,15 @@ package com.ssilencce.data.local.repository
 import android.os.Build
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
+import android.provider.MediaStore.MediaColumns
 import androidx.annotation.RequiresApi
+import com.ssilencce.core.model.ComposerNamePolicy
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.ArtistSortMode
 import com.ssilencce.data.local.MediaQueryDispatcher
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
+import com.ssilencce.data.model.Song
 import com.ssilencce.extensions.utilities.collapseSpaces
 import com.ssilencce.util.Preferences
 
@@ -34,6 +37,8 @@ interface ArtistRepository {
 
     fun artists(query: String): List<Artist>
 
+    fun artistsForSongs(songs: List<Song>): List<Artist>
+
     fun artist(artistId: Long): Artist
 
     fun albumArtists(): List<Artist>
@@ -41,6 +46,10 @@ interface ArtistRepository {
     fun albumArtist(artistName: String): Artist
 
     fun albumArtists(query: String): List<Artist>
+
+    fun composers(): List<Artist>
+
+    fun composer(composerName: String): Artist
 
     fun similarAlbumArtists(artist: Artist): List<Artist>
 }
@@ -101,6 +110,12 @@ class RealArtistRepository(
         )
     }
 
+    override fun artistsForSongs(songs: List<Song>): List<Artist> {
+        val minimumSongCount = Preferences.minimumSongCountForArtist
+        val artists = splitIntoArtists(albumRepository.splitIntoAlbums(songs, sorted = false))
+        return sortArtists(artists.filter { it.songCount >= minimumSongCount })
+    }
+
     override fun artists(query: String): List<Artist> {
         val songs =
             songRepository.songs(
@@ -121,6 +136,37 @@ class RealArtistRepository(
                 it.songCount >= minimumSongCount
             }
         return sortArtists(albumArtists)
+    }
+
+    override fun composers(): List<Artist> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return emptyList()
+        val songs =
+            songRepository.songs(
+                songRepository.makeSongCursor(
+                    "${MediaColumns.COMPOSER} IS NOT NULL AND ${MediaColumns.COMPOSER} != ''",
+                    null,
+                    DEFAULT_SORT_ORDER,
+                ),
+            )
+        val minimumSongCount = Preferences.minimumSongCountForArtist
+        return sortArtists(
+            splitIntoComposers(songs).filter { it.songCount >= minimumSongCount },
+        )
+    }
+
+    override fun composer(composerName: String): Artist {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return Artist.empty
+        if (ComposerNamePolicy.key(composerName) == null) return Artist.empty
+        val songs =
+            songRepository
+                .songs(
+                    songRepository.makeSongCursor(
+                        "${MediaColumns.COMPOSER} IS NOT NULL AND ${MediaColumns.COMPOSER} != ''",
+                        null,
+                        DEFAULT_SORT_ORDER,
+                    ),
+                ).filter { ComposerNamePolicy.matches(it.composerName, composerName) }
+        return composerFromSongs(songs) ?: Artist.empty
     }
 
     override fun albumArtist(artistName: String): Artist {
@@ -196,6 +242,26 @@ class RealArtistRepository(
                     songRepository.songs(it)
                 }
         return splitIntoAlbumArtists(albumRepository.splitIntoAlbums(songs, sorted = false)).take(MAX_SIMILAR_ARTISTS)
+    }
+
+    private fun splitIntoComposers(songs: List<Song>): List<Artist> =
+        songs
+            .filter { !it.composerName.isNullOrBlank() }
+            .groupBy { ComposerNamePolicy.key(it.composerName) }
+            .mapNotNull { (_, group) -> composerFromSongs(group) }
+
+    private fun composerFromSongs(songs: List<Song>): Artist? {
+        if (songs.isEmpty()) return null
+        val name = songs.firstNotNullOfOrNull { ComposerNamePolicy.normalize(it.composerName) } ?: return null
+        return Artist(
+            id = ComposerNamePolicy.stableId(name),
+            albums =
+                with(AlbumSortMode.ArtistAlbums) {
+                    albumRepository.splitIntoAlbums(songs).sorted()
+                },
+            filterSingles = filterSingles,
+            composerName = name,
+        )
     }
 
     private fun splitIntoArtists(albums: List<Album>): List<Artist> {

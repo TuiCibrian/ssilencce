@@ -1,0 +1,116 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <boolean name="prefer_remaining_time" value="false" />
+    <boolean name="lyrics_text_shadow" value="false" />
+    <string name="preferred_image_size">medium</string>
+    <boolean name="remember_last_page" value="true" />
+    <boolean name="pause_on_disconnect" value="true" />
+    <string name="audio_focus_mode">Normal</string>
+    <string name="last_added_interval">this_month</string>
+    <boolean name="larger_header_image" value="false" />
+    <boolean name="carousel_effect" value="false" />
+    <string name="artist_shuffle_mode">shuffle_all</string>
+    <boolean name="enable_karaoke_style" value="false" />
+    <int name="widget_image_corner_radius" value="8" />
+    <boolean name="use_folder_art" value="false" />
+    <boolean name="aurora_appearance" value="true" />
+    <boolean name="widget_dynamic_colors" value="false" />
+    <boolean name="use_custom_font" value="false" />
+    <string name="history_interval">this_month</string>
+    <boolean name="squiggly_seek_bar" value="false" />
+    <int name="lyrics_line_spacing" value="40" />
+    <string name="lyrics_background_effect">none</string>
+    <string name="song_title_mode">FollowSort</string>
+    <boolean name="initialized_blacklist" value="true" />
+    <boolean name="lyrics_text_blur" value="false" />
+    <boolean name="hold_tab_to_search" value="true" />
+    <int name="unsynced_lyrics_font_size_player" value="16" />
+    <boolean name="listenbrainz_scrobbling_enabled" value="false" />
+    <string name="instrumental_track_identifiers">(Instrumental)</string>
+    <boolean name="now_playing_small_image" value="false" />
+    <boolean name="lyrics_use_custom_font" value="false" />
+    <boolean name="betterlyrics_enabled" value="false" />
+    <string name="tab_titles_mode">selected</string>
+    <boolean name="lyrics_show_translation" value="true" />
+    <boolean name="mp3_index_seeking" value="false" />
+    <boolean name="wifi_only_network" value="true" />
+    <int name="now_playing_corner_radius" value="16" />
+    <boolean name="listenbrainz_now_playing_enabled" value="false" />
+    <boolean name="circle_play_button" value="false" />
+    <boolean name="open_on_play" value="false" />
+    <boolean name="resume_on_bluetooth_connect" value="false" />
+    <string name="preferred_lyrics_file_format">ttml</string>
+    <boolean name="lastfm_scrobbling_enabled" value="false" />
+    <boolean name="network_features" value="true" />
+    <int name="last_page" value="2131362537" />
+    <int name="artist_minimum_songs" value="1" />
+    <boolean name="lastfm_info_enabled" value="true" />
+    <boolean name="lyrically_enabled" value="false" />
+    <boolean name="ignore_media_store" value="false" />
+    <string name="appbar_mode">compact</string>
+    <boolean name="ignore_blank_lines_in_lyrics" value="false" />
+    <boolean name="remember_track_position" value="false" />
+    <boolean name="show_list_date_modified" value="false" />
+    <boolean name="clear_queue_on_completion" value="false" />
+    <string name="update_search_mode">weekly</string>
+    <boolean name="pause_on_zero_volume" value="false" />
+    <string name="language_name">auto</string>
+    <boolean name="enable_rotation_lock" value="false" />
+    <boolean name="trash_music_files" value="false" />
+    <boolean name="lyrics_show_transliteration" value="false" />
+    <string name="play_on_startup_mode">never</string>
+    <boolean name="lyrics_resume_on_seek" value="false" />
+    <boolean name="play_option_whole_list" value="false" />
+    <boolean name="blacklist_enabled" value="true" />
+    <int name="synced_lyrics_font_size_player" value="20" />
+    <boolean name="whitelist_enabled" value="true" />
+    <boolean name="experimental_updates" value="true" />
+    <boolean name="swipe_down_to_dismiss" value="true" />
+    <boolean name="unsynced_lyrics_bold_font" value="false" />
+    <boolean name="lyrics_center_horizontally" value="false" />
+    <boolean name="rewind_with_back" value="true" />
+    <boolean name="swipe_on_cover" value="true" />
+    <string name="widget_small_layout_style">simplified</string>
+    <int name="unsynced_lyrics_font_size_full" value="20" />
+    <boolean name="enable_scrolling_text" value="false" />
+    <boolean name="stop_when_closed_from_recents" value="false" />
+    <boolean name="swipe_anywhere" value="false" />
+    <int name="minimum_song_duration" value="1" />
+    <string name="album_shuffle_mode">shuffle_albums</string>
+    <boolean name="lyrics_progressive_coloring" value="false" />
+    <boolean name="lastfm_now_playing_enabled" value="false" />
+    <boolean name="resume_on_connect" value="false" />
+    <boolean name="allow_online_artist_images" value="true" />
+    <boolean name="remember_shuffle_mode" value="true" />
+    <boolean name="mini_player_swipe_to_skip" value="true" />
+    <int name="player_blur_radius" value="25" />
+    <boolean name="lrclib_enabled" value="true" />
+    <long name="last_update_search" value="1794036340869" />
+    <boolean name="pause_on_bluetooth_disconnect" value="true" />
+    <boolean name="prefer_album_artist_name_on_np" value="false" />
+    <boolean name="swipe_up_queue" value="false" />
+    <boolean name="display_extra_info" value="false" />
+    <boolean name="lyrics_center_current_line" value="false" />
+    <boolean name="add_extra_controls" value="false" />
+    <string name="queue_next_mode">1</string>
+    <boolean name="allow_online_album_covers" value="false" />
+    <boolean name="display_next_song" value="true" />
+    <boolean name="adaptive_controls" value="false" />
+    <boolean name="force_utf8_encoding_for_lyrics" value="true" />
+    <boolean name="synced_lyrics_bold_font" value="false" />
+    <boolean name="aurora_ribbon_motion" value="true" />
+    <boolean name="display_album_title" value="true" />
+    <boolean name="animate_player_control" value="true" />
+    <int name="seek_interval" value="10" />
+    <boolean name="play_option_always_visible" value="false" />
+    <boolean name="material_you" value="false" />
+    <boolean name="mark_instrumental_tracks_by_title" value="false" />
+    <boolean name="enable_history_playlist" value="true" />
+    <boolean name="play_all_songs_when_searching" value="false" />
+    <boolean name="session_recovery" value="false" />
+    <int name="album_minimum_songs" value="1" />
+    <boolean name="ignore_articles_when_sorting" value="false" />
+    <boolean name="black_theme" value="false" />
+    <boolean name="enable_syllable_lyrics" value="false" />
+    <int name="synced_lyrics_font_size_full" value="24" />
+</map>

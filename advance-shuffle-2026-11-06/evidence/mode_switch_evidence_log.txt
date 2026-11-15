@@ -1,0 +1,12 @@
+﻿python : Traceback (most recent call last):
+At line:38 char:6
++ '@ | python - 2>&1 | Out-File -Encoding utf8 "C:\Users\geode\Document ...
++      ~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<stdin>", line 16, in <module>
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 82, in center
+    b = n.get("bounds", "")
+        ^^^^^
+AttributeError: 'NoneType' object has no attribute 'get'

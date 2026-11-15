@@ -18,6 +18,7 @@
 package com.ssilencce.ui.adapters.artist
 
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -41,7 +42,6 @@ import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
 import com.ssilencce.ui.component.base.MediaEntryViewHolder
 import com.ssilencce.ui.component.menu.OnClickMenu
 import com.ssilencce.ui.screen.player.PlayerViewModel
-import com.ssilencce.util.Preferences
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
@@ -54,10 +54,7 @@ class ArtistAdapter constructor(
     private val callback: IArtistCallback? = null,
 ) : AbsMultiSelectAdapter<ArtistAdapter.ViewHolder, Artist>(activity, R.menu.menu_media_selection),
     PopupTextProvider {
-    private var albumArtistsOnly = false
-
     var dataSet by Delegates.observable(dataSet) { _: KProperty<*>, _: List<Artist>, _: List<Artist> ->
-        albumArtistsOnly = Preferences.onlyAlbumArtists
         notifyDataSetChanged()
     }
 
@@ -97,7 +94,8 @@ class ArtistAdapter constructor(
         val transitionName =
             when {
                 artist == null -> "artist-stat-${getItemId(position)}"
-                stats == null && albumArtistsOnly -> artist.name
+                stats == null && artist.isAlbumArtist -> artist.name
+                stats == null && artist.isComposer -> artist.composerName ?: artist.name
                 else -> artist.id.toString()
             }
         if (holder.imageContainer != null) {
@@ -181,6 +179,12 @@ class ArtistAdapter constructor(
                 object : OnClickMenu() {
                     override val popupMenuRes: Int
                         get() = R.menu.menu_item_artist
+
+                    override fun onPreparePopup(menu: Menu) {
+                        val isComposer = artist?.isComposer == true
+                        menu.findItem(R.id.action_add_to_home)?.isVisible = !isComposer
+                        menu.findItem(R.id.action_tag_editor)?.isVisible = !isComposer
+                    }
 
                     override fun onMenuItemClick(item: MenuItem): Boolean = onArtistMenuItemClick(item)
                 },

@@ -59,7 +59,7 @@ class FoldersListFragment :
     override val isShuffleVisible: Boolean = false
 
     private var allFiles: List<FileSystemItem> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override val defaultGridSize: Int
         get() =

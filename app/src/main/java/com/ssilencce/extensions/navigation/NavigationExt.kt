@@ -96,10 +96,10 @@ fun albumDetailArgs(albumId: Long) =
         .toBundle()
 
 fun artistDetailArgs(artist: Artist) =
-    if (artist.isAlbumArtist) {
-        artistDetailArgs(-1, artist.name)
-    } else {
-        artistDetailArgs(artist.id, null)
+    when {
+        artist.isComposer -> artistDetailArgs(-1, null, artist.composerName)
+        artist.isAlbumArtist -> artistDetailArgs(-1, artist.name)
+        else -> artistDetailArgs(artist.id, null)
     }
 
 fun artistDetailArgs(album: Album) =
@@ -119,8 +119,9 @@ fun artistDetailArgs(song: Song) =
 fun artistDetailArgs(
     artistId: Long,
     artistName: String? = null,
+    composerName: String? = null,
 ) = ArtistDetailFragmentArgs
-    .Builder(artistId, artistName)
+    .Builder(artistId, artistName, composerName)
     .build()
     .toBundle()
 
@@ -136,7 +137,7 @@ fun Fragment.findActivityNavController(
     @IdRes id: Int,
 ): NavController = requireActivity().findNavController(id)
 
-fun NavGraph.isValidCategory(id: Int): Boolean = CategoryInfo.Category.entries.any { it.id == id } && this.contains(id)
+fun NavGraph.isValidCategory(id: Int): Boolean = CategoryInfo.Category.entries.any { it.id == id && it.isAvailable } && this.contains(id)
 
 fun <T : View> Array<Pair<T, String>>?.asFragmentExtras(): FragmentNavigator.Extras {
     if (isNullOrEmpty()) {

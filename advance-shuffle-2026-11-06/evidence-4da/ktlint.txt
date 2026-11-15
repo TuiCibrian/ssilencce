@@ -1,0 +1,13 @@
+﻿powershell : WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+At line:1 char:1
++ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Users\geode\Do ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (WARNING: A term...has been called:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+WARNING: sun.misc.Unsafe::objectFieldOffset has been called by 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe 
+(file:/C:/Users/geode/AppData/Local/ssilencce/ktlint/ktlint-cli-1.8.0-all.jar)
+WARNING: Please consider reporting this to the maintainers of class 
+org.jetbrains.kotlin.com.intellij.util.containers.Unsafe
+WARNING: sun.misc.Unsafe::objectFieldOffset will be removed in a future release

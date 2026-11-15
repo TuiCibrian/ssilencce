@@ -361,6 +361,7 @@ abstract class AbsPlayerControlsFragment(
         sharedPreferences: SharedPreferences,
         key: String?,
     ) {
+        if (view == null) return
         when (key) {
             ANIMATE_PLAYER_CONTROL -> {
                 isControlAnimationEnabled = sharedPreferences.getBoolean(key, true)

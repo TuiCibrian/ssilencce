@@ -19,6 +19,7 @@ class ArtistDetailViewModel(
     private val repository: Repository,
     private val artistId: Long,
     private val artistName: String?,
+    private val composerName: String?,
 ) : AndroidViewModel(application) {
     private val _artistDetail = MutableLiveData<Artist>()
 
@@ -28,12 +29,22 @@ class ArtistDetailViewModel(
 
     fun loadArtistDetail() =
         viewModelScope.launch(Dispatchers.IO) {
-            if (!artistName.isNullOrEmpty()) {
-                _artistDetail.postValue(repository.albumArtistByName(artistName))
-            } else if (artistId != -1L) {
-                _artistDetail.postValue(repository.artistById(artistId))
-            } else {
-                _artistDetail.postValue(Artist.empty)
+            when {
+                !composerName.isNullOrEmpty() -> {
+                    _artistDetail.postValue(repository.composerByName(composerName))
+                }
+
+                !artistName.isNullOrEmpty() -> {
+                    _artistDetail.postValue(repository.albumArtistByName(artistName))
+                }
+
+                artistId != -1L -> {
+                    _artistDetail.postValue(repository.artistById(artistId))
+                }
+
+                else -> {
+                    _artistDetail.postValue(Artist.empty)
+                }
             }
         }
 

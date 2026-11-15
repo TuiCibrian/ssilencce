@@ -22,11 +22,12 @@ import androidx.glance.layout.Spacer
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
-import androidx.glance.layout.size
 import androidx.glance.layout.wrapContentHeight
 import com.ssilencce.R
 import com.ssilencce.core.appwidgets.state.PlaybackState
 import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
+import com.ssilencce.core.appwidgets.state.WidgetSettings
+import com.ssilencce.core.appwidgets.state.WidgetSettingsStore
 import com.ssilencce.ui.screen.MainActivity
 
 class CardWidget : GlanceAppWidget() {
@@ -37,15 +38,32 @@ class CardWidget : GlanceAppWidget() {
         context: Context,
         id: GlanceId,
     ) {
+        val appWidgetId = WidgetSettingsStore.appWidgetIdKey(id)
+        val settings = WidgetSettingsStore.load(context, appWidgetId)
+        val wallpaperTheme = settings.resolveWallpaperTheme(context, appWidgetId)
+
         provideContent {
             val playbackState = currentState<PlaybackState>()
+            val widgetTheme = playbackState.widgetTheme.resolveTheme(settings.themeMode, wallpaperTheme)
 
             GlanceTheme(
-                colors = playbackState.widgetTheme.getColors(),
+                colors = widgetTheme.getColors(context, settings.themeMode, settings.transparencyPercent),
             ) {
-                CardWidgetContent(context, playbackState)
+                if (WidgetSettingsStore.isEmpty(playbackState.currentTitle, playbackState.artworkData)) {
+                    WidgetEmptyState(context = context, cornerRadius = playbackState.imageCornerRadius?.dp?.times(2) ?: 16.dp)
+                } else {
+                    CardWidgetContent(context, playbackState)
+                }
             }
         }
+    }
+
+    override suspend fun onDelete(
+        context: Context,
+        id: GlanceId,
+    ) {
+        WidgetSettingsStore.delete(context, WidgetSettingsStore.appWidgetIdKey(id))
+        super.onDelete(context, id)
     }
 
     @Composable
@@ -99,9 +117,9 @@ class CardWidget : GlanceAppWidget() {
                         resId = R.drawable.ic_previous_24dp,
                         tint = GlanceTheme.colors.onSurface,
                         contentDescription = "Previous",
+                        iconSize = 24.dp,
                         modifier =
                             GlanceModifier
-                                .size(24.dp)
                                 .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_PREVIOUS)),
                     )
 
@@ -131,9 +149,9 @@ class CardWidget : GlanceAppWidget() {
                         resId = R.drawable.ic_next_24dp,
                         tint = GlanceTheme.colors.onSurface,
                         contentDescription = "Next",
+                        iconSize = 24.dp,
                         modifier =
                             GlanceModifier
-                                .size(24.dp)
                                 .clickable(playbackAction(context, KeyEvent.KEYCODE_MEDIA_NEXT)),
                     )
                 }

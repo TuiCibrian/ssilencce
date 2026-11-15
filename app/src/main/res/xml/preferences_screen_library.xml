@@ -21,6 +21,15 @@
         app:widgetLayout="@layout/preference_switch"
         app:key="ignore_articles_when_sorting"/>
 
+    <com.ssilencce.ui.component.preferences.CustomDialogPreference
+        app:icon="@drawable/ic_sort_24dp"
+        app:title="@string/sorting_ignore_keywords_title"
+        app:summary="@string/sorting_ignore_keywords_summary"
+        app:persistent="false"
+        app:dependency="ignore_articles_when_sorting"
+        app:layout="@layout/list_item_view"
+        app:key="sorting_ignore_keywords"/>
+
     <PreferenceCategory
         app:title="@string/playlists_label"
         app:layout="@layout/preference_category_title">
@@ -105,6 +114,19 @@
             app:layout="@layout/list_item_view_bottom_widget"
             app:widgetLayout="@layout/preference_seekbar"
             app:key="minimum_song_duration"/>
+
+        <SeekBarPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/max_song_duration_title"
+            app:summary="@string/max_song_duration_summary"
+            android:max="7200"
+            app:min="0"
+            app:defaultValue="0"
+            app:seekBarIncrement="60"
+            app:showSeekBarValue="true"
+            app:layout="@layout/list_item_view_bottom_widget"
+            app:widgetLayout="@layout/preference_seekbar"
+            app:key="maximum_song_duration"/>
 
         <SeekBarPreference
             app:iconSpaceReserved="true"

@@ -1,0 +1,9 @@
+﻿{
+  "before": {
+    "state": 3,
+    "position": 38,
+    "index": 0,
+    "description": "AA05 A Fallback Control 01, AA05 Fallback Control, AA05 Fallback Control Album"
+  },
+  "error": "RuntimeError('uiautomator dump failed for go_songs: ')"
+}

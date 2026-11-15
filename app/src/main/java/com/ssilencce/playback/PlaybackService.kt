@@ -76,6 +76,7 @@ import com.ssilencce.core.appwidgets.WidgetTheme
 import com.ssilencce.core.appwidgets.state.PlaybackState
 import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
 import com.ssilencce.core.audio.AudioOutputObserver
+import com.ssilencce.core.model.action.HeadsetButtonAction
 import com.ssilencce.core.model.player.MetadataField
 import com.ssilencce.core.palette.PaletteProcessor
 import com.ssilencce.data.local.MediaStoreObserver
@@ -100,6 +101,12 @@ import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
 import com.ssilencce.util.AUDIO_FOCUS_MODE
 import com.ssilencce.util.CLEAR_QUEUE_ON_COMPLETION
 import com.ssilencce.util.ENABLE_HISTORY
+import com.ssilencce.util.HEADSET_CLICK_DELAY_MS
+import com.ssilencce.util.HEADSET_DOUBLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_FOUR_PLUS_SEEK_FORWARD
+import com.ssilencce.util.HEADSET_LONG_PRESS_ACTION
+import com.ssilencce.util.HEADSET_SINGLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_TRIPLE_CLICK_ACTION
 import com.ssilencce.util.IGNORE_AUDIO_FOCUS
 import com.ssilencce.util.MP3_INDEX_SEEKING
 import com.ssilencce.util.PAUSE_ON_ZERO_VOLUME
@@ -120,6 +127,7 @@ import com.ssilencce.util.WIDGET_SMALL_LAYOUT_STYLE
 import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.Job
@@ -197,18 +205,13 @@ class PlaybackService :
     private var suppressNextPerTrackRestore = false
     private var positionSeekGeneration = 0L
 
-    private var headsetClickCount = 0
-    private val headsetClickRunnable =
-        Runnable {
-            if (!::player.isInitialized) return@Runnable
-            val count = headsetClickCount
-            headsetClickCount = 0
-            when (count) {
-                1 -> if (player.isPlaying) pausePlayback() else player.play()
-                2 -> player.seekToNext()
-                3 -> player.seekToPrevious()
-            }
-        }
+    private val headsetButtonController = HeadsetButtonController()
+    private val headsetKeyCodes =
+        setOf(
+            KeyEvent.KEYCODE_HEADSETHOOK,
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        )
+    private val headsetClickRunnable = Runnable { dispatchScheduledHeadsetClick() }
 
     private var lastPlaybackState: PlaybackState? = null
     private var widgetUpdateJob: Job? = null
@@ -234,6 +237,56 @@ class PlaybackService :
             audioFocusController.onUserPause()
         }
         player.pause()
+    }
+
+    private fun currentHeadsetConfig(): HeadsetButtonConfig =
+        HeadsetButtonConfig(
+            single = Preferences.headsetSingleClickAction,
+            double = Preferences.headsetDoubleClickAction,
+            triple = Preferences.headsetTripleClickAction,
+            longPress = Preferences.headsetLongPressAction,
+            fourPlusSeekForward = Preferences.headsetFourPlusSeekForward,
+            delayMs = Preferences.headsetClickDelayMs,
+        )
+
+    private fun handleHeadsetDecision(decision: HeadsetButtonDecision) {
+        when (decision) {
+            is HeadsetButtonDecision.Dispatch -> {
+                uiHandler.removeCallbacks(headsetClickRunnable)
+                executeHeadsetAction(decision.action)
+            }
+
+            is HeadsetButtonDecision.Schedule -> {
+                uiHandler.removeCallbacks(headsetClickRunnable)
+                uiHandler.postDelayed(headsetClickRunnable, decision.delayMs)
+            }
+
+            HeadsetButtonDecision.Consumed -> {
+                Unit
+            }
+        }
+    }
+
+    private fun dispatchScheduledHeadsetClick() {
+        val config = currentHeadsetConfig()
+        handleHeadsetDecision(headsetButtonController.onScheduledDispatch(config))
+    }
+
+    private fun executeHeadsetAction(action: HeadsetButtonAction) {
+        if (!::player.isInitialized) return
+        when (action) {
+            HeadsetButtonAction.PlayPause -> if (player.isPlaying) pausePlayback() else player.play()
+            HeadsetButtonAction.Next -> player.seekToNext()
+            HeadsetButtonAction.Previous -> player.seekToPrevious()
+            HeadsetButtonAction.SeekForward -> player.seekForward()
+            HeadsetButtonAction.SeekBackward -> player.seekBack()
+            HeadsetButtonAction.Nothing -> Unit
+        }
+    }
+
+    private fun resetHeadsetClickState() {
+        uiHandler.removeCallbacks(headsetClickRunnable)
+        headsetButtonController.reset()
     }
 
     private val shuffleCommand: CommandButton
@@ -440,7 +493,7 @@ class PlaybackService :
             headsetReceiverRegistered = false
         }
         eqStateHandler?.removeCallbacksAndMessages(null)
-        uiHandler.removeCallbacks(headsetClickRunnable)
+        resetHeadsetClickState()
         serviceScope.cancel()
         preferences.unregisterOnSharedPreferenceChangeListener(this)
         audioOutputObserver.stopObserver()
@@ -512,19 +565,20 @@ class PlaybackService :
         intent: Intent,
     ): Boolean {
         val ke = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-        if (ke != null && (ke.keyCode == KeyEvent.KEYCODE_HEADSETHOOK || ke.keyCode == KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE)) {
-            if (ke.action == KeyEvent.ACTION_DOWN && ke.repeatCount == 0) {
-                headsetClickCount++
-                uiHandler.removeCallbacks(headsetClickRunnable)
-                if (headsetClickCount >= 3) {
-                    uiHandler.post(headsetClickRunnable)
-                } else {
-                    uiHandler.postDelayed(headsetClickRunnable, 300)
-                }
-            }
-            return true
+        if (ke == null || ke.keyCode !in headsetKeyCodes) {
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
         }
-        return super.onMediaButtonEvent(session, controllerInfo, intent)
+        if (ke.action == KeyEvent.ACTION_DOWN) {
+            val config = currentHeadsetConfig()
+            val decision =
+                if (ke.repeatCount > 0) {
+                    headsetButtonController.onRepeat(config)
+                } else {
+                    headsetButtonController.onDown(config)
+                }
+            handleHeadsetDecision(decision)
+        }
+        return true
     }
 
     override fun onAudioSessionIdChanged(audioSessionId: Int) {
@@ -671,28 +725,30 @@ class PlaybackService :
         }
         return serviceScope
             .future(IO) {
-                if (mediaSession.isAutomotiveController(controller) ||
-                    mediaSession.isAutoCompanionController(controller)
-                ) {
-                    runCatching { libraryProvider.getMediaItemsForAAOSPlayback(mediaItems) }
-                        .getOrNull()
-                        .let {
-                            MediaItemsWithStartPosition(
-                                it?.first ?: emptyList(),
-                                it?.second ?: C.INDEX_UNSET,
-                                startPositionMs,
+                val resolved =
+                    if (mediaSession.isAutomotiveController(controller) ||
+                        mediaSession.isAutoCompanionController(controller)
+                    ) {
+                        runCatching { libraryProvider.getMediaItemsForAAOSPlayback(mediaItems) }
+                            .getOrNull()
+                            .let {
+                                MediaItemsWithStartPosition(
+                                    it?.first ?: emptyList(),
+                                    it?.second ?: C.INDEX_UNSET,
+                                    startPositionMs,
+                                )
+                            }
+                    } else {
+                        runCatching {
+                            libraryProvider.getMediaItemsForPlayback(
+                                mediaItems = mediaItems,
+                                tryToResolveComplexPaths = true,
                             )
+                        }.getOrDefault(emptyList()).let {
+                            MediaItemsWithStartPosition(it, startIndex, startPositionMs)
                         }
-                } else {
-                    runCatching {
-                        libraryProvider.getMediaItemsForPlayback(
-                            mediaItems = mediaItems,
-                            tryToResolveComplexPaths = true,
-                        )
-                    }.getOrDefault(emptyList()).let {
-                        MediaItemsWithStartPosition(it, startIndex, startPositionMs)
                     }
-                }
+                resolved
             }.also { future ->
                 future.addListener({
                     val result = runCatching { future.get() }.getOrNull()
@@ -719,6 +775,72 @@ class PlaybackService :
             Playback.TOGGLE_SHUFFLE -> {
                 toggleShuffle()
                 Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+
+            Playback.RESHUFFLE_QUEUE -> {
+                if (!QueueReshufflePolicy.canReshuffle(player.shuffleModeEnabled, player.mediaItemCount)) {
+                    Futures.immediateFuture(SessionResult(SessionError.ERROR_INVALID_STATE))
+                } else {
+                    // Start the new order at the current item so the current media item and
+                    // position are retained; only the shuffle order changes.
+                    player.exoPlayer.shuffleOrder =
+                        ImprovedShuffleOrder(
+                            firstIndex = player.currentMediaItemIndex,
+                            length = player.mediaItemCount,
+                            randomSeed = Random.nextLong(),
+                        )
+                    persistentStorage.saveState()
+                    Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+
+            Playback.MOVE_QUEUE_BLOCK -> {
+                val fromIndices =
+                    customCommand.customExtras.getIntArray(Playback.EXTRA_MOVE_FROM_INDICES)
+                val toIndices =
+                    customCommand.customExtras.getIntArray(Playback.EXTRA_MOVE_TO_INDICES)
+                val itemCount = player.mediaItemCount
+                if (fromIndices == null ||
+                    toIndices == null ||
+                    fromIndices.isEmpty() ||
+                    fromIndices.size != toIndices.size ||
+                    fromIndices.any { it !in 0 until itemCount } ||
+                    toIndices.any { it !in 0 until itemCount }
+                ) {
+                    Futures.immediateFuture(SessionResult(SessionError.ERROR_INVALID_STATE))
+                } else {
+                    val oldCurrentIndex = player.currentMediaItemIndex
+                    val oldPosition = player.currentPosition
+                    val oldStopIndex = stopIndex
+                    val oldOrder = MutableList(itemCount) { it }
+                    for (index in fromIndices.indices) {
+                        val from = fromIndices[index]
+                        val to = toIndices[index]
+                        oldOrder.add(to, oldOrder.removeAt(from))
+                        player.moveMediaItem(from, to)
+                    }
+                    val newIndexByOld = IntArray(itemCount)
+                    oldOrder.forEachIndexed { newIndex, oldIndex ->
+                        newIndexByOld[oldIndex] = newIndex
+                    }
+                    val expectedCurrentIndex =
+                        newIndexByOld.getOrElse(oldCurrentIndex) { player.currentMediaItemIndex }
+                    if (player.currentMediaItemIndex != expectedCurrentIndex) {
+                        player.seekTo(expectedCurrentIndex, oldPosition)
+                    }
+                    QueueBatchMovePolicy
+                        .remapStopAfter(
+                            oldStopIndex = oldStopIndex,
+                            oldToNewIndex = newIndexByOld,
+                            currentMediaItemIndex = player.currentMediaItemIndex,
+                        )?.let { remap ->
+                            stopIndex = remap.stopIndex
+                            player.exoPlayer.pauseAtEndOfMediaItems =
+                                remap.pauseAtEndOfMediaItems
+                        }
+                    persistentStorage.saveState(true)
+                    Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
             }
 
             Playback.CYCLE_REPEAT -> {
@@ -1193,6 +1315,16 @@ class PlaybackService :
         key: String?,
     ) {
         when (key) {
+            HEADSET_SINGLE_CLICK_ACTION,
+            HEADSET_DOUBLE_CLICK_ACTION,
+            HEADSET_TRIPLE_CLICK_ACTION,
+            HEADSET_LONG_PRESS_ACTION,
+            HEADSET_FOUR_PLUS_SEEK_FORWARD,
+            HEADSET_CLICK_DELAY_MS,
+            -> {
+                resetHeadsetClickState()
+            }
+
             QUEUE_NEXT_MODE -> {
                 player.setSequentialTimelineEnabled(sequentialTimeline)
             }
@@ -1341,6 +1473,15 @@ class PlaybackService :
         }
     }
 
+    private data class OutgoingNamedQueueState(
+        val previousQueueId: String?,
+        val mediaIds: List<String>,
+        val resumeIndex: Int,
+        val repeatMode: Int,
+        val shuffleEnabled: Boolean,
+        val save: Deferred<Unit>?,
+    )
+
     private fun switchNamedQueue(extras: Bundle): ListenableFuture<SessionResult> {
         val targetQueueId = extras.getString("queueId")
         val mediaIds = extras.getStringArrayList("mediaIds")
@@ -1383,57 +1524,93 @@ class PlaybackService :
                     }
 
                     val targetMediaIds = restoredItems.map { it.mediaId }
-                    val departingSave =
-                        withContext(Main) {
-                            val previousQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null)
-                            // Resolve first, then capture the actual departing queue and replace the
-                            // timeline without suspension. Intervening user edits remain in its snapshot.
-                            val outgoing =
-                                if (previousQueueId != null && previousQueueId != targetQueueId) {
-                                    persistentStorage.saveNamedQueueState(previousQueueId)
-                                } else {
-                                    null
-                                }
-                            persistentStorage.expectNamedQueueSwitch(targetQueueId, targetMediaIds)
-                            // Bind the target before replacing the timeline: setMediaItems triggers
-                            // onTimelineChanged -> saveState(true) synchronously, and that save must not
-                            // attribute the target timeline to the previous queue.
-                            preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, targetQueueId) }
-                            var timelineApplied = false
-                            try {
-                                player.setMediaItems(restoredItems, startIndex, startPositionMs)
-                                timelineApplied = true
-                                player.repeatMode = extras.getInt("repeatMode", Player.REPEAT_MODE_OFF)
-                                player.shuffleModeEnabled = extras.getBoolean("shuffleEnabled", false)
-                                player.prepare()
-                                player.play()
-                            } catch (throwable: Throwable) {
-                                if (!timelineApplied) {
-                                    timelineApplied =
-                                        player.mediaItems.map { it.mediaId } == targetMediaIds
-                                }
-                                if (!timelineApplied) {
-                                    persistentStorage.cancelNamedQueueSwitch()
-                                    preferences.edit {
-                                        if (previousQueueId != null) {
-                                            putString(ACTIVE_NAMED_QUEUE_ID, previousQueueId)
-                                        } else {
-                                            remove(ACTIVE_NAMED_QUEUE_ID)
-                                        }
+                    var switched = false
+                    var attempts = 0
+                    while (!switched && attempts < MAX_OUTGOING_SAVE_ATTEMPTS) {
+                        attempts++
+                        val outgoing =
+                            withContext(Main) {
+                                val previousQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null)
+                                val mediaIds = player.mediaItems.map { it.mediaId }
+                                val resumeIndex = player.currentMediaItemIndex
+                                val repeatMode = player.repeatMode
+                                val shuffleEnabled = player.shuffleModeEnabled
+                                val save =
+                                    if (previousQueueId != null && previousQueueId != targetQueueId) {
+                                        persistentStorage.saveNamedQueueState(previousQueueId)
+                                    } else {
+                                        null
                                     }
-                                }
-                                throw throwable
+                                OutgoingNamedQueueState(
+                                    previousQueueId = previousQueueId,
+                                    mediaIds = mediaIds,
+                                    resumeIndex = resumeIndex,
+                                    repeatMode = repeatMode,
+                                    shuffleEnabled = shuffleEnabled,
+                                    save = save,
+                                )
                             }
-                            outgoing
+                        try {
+                            outgoing.save?.let { save -> withContext(IO) { save.await() } }
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (error: Exception) {
+                            Log.e(TAG, "Departing named queue was not saved before switch", error)
+                            future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+                            return@launch
                         }
-                    try {
-                        departingSave?.await()
-                    } catch (cancellation: CancellationException) {
-                        throw cancellation
-                    } catch (error: Exception) {
-                        // The target timeline and binding are already committed; a failed outgoing
-                        // snapshot must not turn that switch into a misleading UI failure.
-                        Log.e(TAG, "Departing named queue was not saved after switch", error)
+                        switched =
+                            withContext(Main) {
+                                if (preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) != outgoing.previousQueueId ||
+                                    player.mediaItems.map { it.mediaId } != outgoing.mediaIds ||
+                                    player.currentMediaItemIndex != outgoing.resumeIndex ||
+                                    player.repeatMode != outgoing.repeatMode ||
+                                    player.shuffleModeEnabled != outgoing.shuffleEnabled
+                                ) {
+                                    return@withContext false
+                                }
+                                persistentStorage.expectNamedQueueSwitch(targetQueueId, targetMediaIds)
+                                // Bind only after the departing snapshot is durably queued and
+                                // current; setMediaItems triggers a synchronous save.
+                                preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, targetQueueId) }
+                                var timelineApplied = false
+                                try {
+                                    player.setMediaItems(restoredItems, startIndex, startPositionMs)
+                                    timelineApplied = true
+                                    persistentStorage.markNamedQueueSwitchApplied()
+                                    player.repeatMode = extras.getInt("repeatMode", Player.REPEAT_MODE_OFF)
+                                    player.shuffleModeEnabled = extras.getBoolean("shuffleEnabled", false)
+                                    player.prepare()
+                                    player.play()
+                                } catch (throwable: Throwable) {
+                                    if (!timelineApplied) {
+                                        timelineApplied =
+                                            player.mediaItems.map { it.mediaId } == targetMediaIds
+                                        if (timelineApplied) persistentStorage.markNamedQueueSwitchApplied()
+                                    }
+                                    if (!timelineApplied) {
+                                        persistentStorage.cancelNamedQueueSwitch()
+                                        preferences.edit {
+                                            if (outgoing.previousQueueId != null) {
+                                                putString(ACTIVE_NAMED_QUEUE_ID, outgoing.previousQueueId)
+                                            } else {
+                                                remove(ACTIVE_NAMED_QUEUE_ID)
+                                            }
+                                        }
+                                        throw throwable
+                                    }
+                                    // The target timeline and binding are committed. A later setup
+                                    // failure must not turn the switch into a UI error or roll back
+                                    // the binding to the departing queue.
+                                    Log.e(TAG, "Named queue switched but setup failed", throwable)
+                                }
+                                true
+                            }
+                    }
+                    if (!switched) {
+                        Log.e(TAG, "Named queue switch aborted because departing state kept changing")
+                        future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+                        return@launch
                     }
                     future.set(
                         SessionResult(
@@ -1651,7 +1828,6 @@ class PlaybackService :
 
     private fun updateEqualizerSessionState(isPlaying: Boolean) {
         eqStateHandler?.removeCallbacksAndMessages(null)
-        uiHandler.removeCallbacks(headsetClickRunnable)
         if (isPlaying) {
             equalizerManager.setSessionIsActive(true)
         } else {
@@ -1770,6 +1946,8 @@ class PlaybackService :
                 Playback.CANCEL_AUDIO_FOCUS,
                 Playback.GET_AUDIO_FOCUS_STATE,
                 Playback.SWITCH_NAMED_QUEUE,
+                Playback.RESHUFFLE_QUEUE,
+                Playback.MOVE_QUEUE_BLOCK,
             )
 
         const val ACTION_TOGGLE_SHUFFLE = "$PACKAGE_NAME.action.ACTION_TOGGLE_SHUFFLE"
@@ -1780,6 +1958,7 @@ class PlaybackService :
         private const val CHANNEL_ID = "playing_notification"
 
         private const val MAX_RETRY_COUNT_AFTER_ERROR = 3
+        private const val MAX_OUTGOING_SAVE_ATTEMPTS = 3
         private const val WIDGET_UPDATE_DEBOUNCE = 300L
         private const val REWIND_INSTEAD_PREVIOUS_MILLIS = 5000L
 

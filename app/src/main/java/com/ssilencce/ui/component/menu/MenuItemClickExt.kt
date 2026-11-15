@@ -21,7 +21,6 @@ import android.content.Intent
 import android.view.MenuItem
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.ssilencce.R
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.local.EditTarget
@@ -43,16 +42,18 @@ import com.ssilencce.ui.component.base.AbsTagEditorActivity
 import com.ssilencce.ui.dialogs.playlists.AddToPlaylistDialog
 import com.ssilencce.ui.dialogs.playlists.DeletePlaylistDialog
 import com.ssilencce.ui.dialogs.playlists.EditPlaylistDialog
+import com.ssilencce.ui.dialogs.showExportFormatChoice
+import com.ssilencce.ui.dialogs.showShortcutConfirm
 import com.ssilencce.ui.dialogs.songs.DeleteSongsDialog
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.replaygain.ReplayGainScanActivity
 import com.ssilencce.ui.screen.tageditor.AlbumTagEditorActivity
 import com.ssilencce.ui.screen.tageditor.ArtistTagEditorActivity
+import com.ssilencce.ui.screen.tageditor.BatchTagEditorActivity
+import com.ssilencce.ui.screen.tageditor.BatchTagEditorViewModel
 import com.ssilencce.ui.screen.tageditor.SongTagEditorActivity
 import com.ssilencce.util.ShortcutEntityType
-import com.ssilencce.util.ShortcutHelper
-import com.ssilencce.util.m3u.M3UWriter
-import com.ssilencce.util.m3u.PlaylistExportFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -133,6 +134,13 @@ fun Song.onSongMenu(
             true
         }
 
+        R.id.action_calculate_replay_gain -> {
+            fragment.startActivity(
+                ReplayGainScanActivity.intent(fragment.requireContext(), longArrayOf(id)),
+            )
+            true
+        }
+
         R.id.action_delete_from_device -> {
             DeleteSongsDialog.create(this).show(fragment.childFragmentManager, "DELETE_SONGS")
             true
@@ -203,6 +211,41 @@ fun List<Song>.onSongsMenu(
             true
         }
 
+        R.id.action_tag_editor -> {
+            val ids = map { it.id }.filter { it != -1L }.distinct()
+            when {
+                ids.isEmpty() -> {
+                    fragment.showToast(R.string.batch_tag_editor_empty)
+                }
+
+                ids.size > BatchTagEditorViewModel.MAX_BATCH_SONGS -> {
+                    fragment.showToast(
+                        fragment.getString(
+                            R.string.batch_tag_editor_too_many,
+                            BatchTagEditorViewModel.MAX_BATCH_SONGS,
+                        ),
+                    )
+                }
+
+                else -> {
+                    fragment.startActivity(
+                        BatchTagEditorActivity.intent(fragment.requireContext(), ids.toLongArray()),
+                    )
+                }
+            }
+            true
+        }
+
+        R.id.action_calculate_replay_gain -> {
+            fragment.startActivity(
+                ReplayGainScanActivity.intent(
+                    fragment.requireContext(),
+                    map { it.id }.toLongArray(),
+                ),
+            )
+            true
+        }
+
         R.id.action_delete_from_device -> {
             DeleteSongsDialog.create(this).show(fragment.childFragmentManager, "DELETE_SONGS")
             true
@@ -263,15 +306,23 @@ fun Artist.onArtistMenu(
 ): Boolean =
     when (menuItem.itemId) {
         R.id.action_tag_editor -> {
-            val tagEditorIntent = Intent(fragment.requireContext(), ArtistTagEditorActivity::class.java)
-            tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.artist(this))
-            fragment.startActivity(tagEditorIntent)
-            true
+            if (composerName != null) {
+                false
+            } else {
+                val tagEditorIntent = Intent(fragment.requireContext(), ArtistTagEditorActivity::class.java)
+                tagEditorIntent.putExtra(AbsTagEditorActivity.EXTRA_TARGET, EditTarget.artist(this))
+                fragment.startActivity(tagEditorIntent)
+                true
+            }
         }
 
         R.id.action_add_to_home -> {
-            showAddShortcutDialog(fragment, ShortcutEntityType.Artist, id.toString(), name)
-            true
+            if (composerName != null) {
+                false
+            } else {
+                showAddShortcutDialog(fragment, ShortcutEntityType.Artist, id.toString(), name)
+                true
+            }
         }
 
         else -> {
@@ -316,11 +367,7 @@ fun PlaylistWithSongs.onPlaylistMenu(
         }
 
         R.id.action_export_playlist -> {
-            showExportFormatDialog(fragment) { format ->
-                fragment.lifecycleScope.launch {
-                    M3UWriter.export(fragment.requireContext(), this@onPlaylistMenu, format)
-                }
-            }
+            showExportFormatDialog(fragment, listOf(this))
             return true
         }
 
@@ -350,16 +397,7 @@ fun List<PlaylistWithSongs>.onPlaylistsMenu(
         }
 
         R.id.action_export_playlist -> {
-            showExportFormatDialog(fragment) { format ->
-                val playlistsToExport = this@onPlaylistsMenu
-                fragment.lifecycleScope.launch {
-                    if (playlistsToExport.size == 1) {
-                        M3UWriter.export(fragment.requireContext(), playlistsToExport.first(), format)
-                    } else {
-                        M3UWriter.export(fragment.requireContext(), playlistsToExport, format)
-                    }
-                }
-            }
+            showExportFormatDialog(fragment, this@onPlaylistsMenu)
             return true
         }
     }
@@ -368,14 +406,9 @@ fun List<PlaylistWithSongs>.onPlaylistsMenu(
 
 private fun showExportFormatDialog(
     fragment: Fragment,
-    onSelected: (PlaylistExportFormat) -> Unit,
+    playlists: List<PlaylistWithSongs>,
 ) {
-    val formats = PlaylistExportFormat.entries
-    MaterialAlertDialogBuilder(fragment.requireContext())
-        .setTitle(R.string.export_format_title)
-        .setItems(formats.map { fragment.getString(it.titleRes) }.toTypedArray()) { _, which ->
-            onSelected(formats[which])
-        }.show()
+    fragment.showExportFormatChoice(playlists.map { it.playlistEntity.playListId })
 }
 
 fun showAddShortcutDialog(
@@ -385,12 +418,5 @@ fun showAddShortcutDialog(
     name: String,
     path: String? = null,
 ) {
-    MaterialAlertDialogBuilder(fragment.requireContext())
-        .setTitle(R.string.shortcut_confirm_title)
-        .setMessage(fragment.getString(R.string.shortcut_confirm_message, name))
-        .setPositiveButton(R.string.add_to_home) { _, _ ->
-            val added = ShortcutHelper.add(fragment.requireContext(), type, id, name, path)
-            fragment.showToast(if (added) R.string.shortcut_added else R.string.shortcut_limit_reached)
-        }.setNegativeButton(R.string.action_cancel, null)
-        .show()
+    fragment.showShortcutConfirm(type, id, name, path)
 }

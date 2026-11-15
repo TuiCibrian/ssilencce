@@ -47,7 +47,7 @@ class GenresListFragment :
     override val emptyMessageRes: Int = R.string.no_genres_label
 
     private var allGenres: List<Genre> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,

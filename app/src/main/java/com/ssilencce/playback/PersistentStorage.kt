@@ -64,6 +64,7 @@ class PersistentStorage(
     // instead of being attributed to the newly bound queue.
     private var expectedNamedQueueMediaIds: List<String>? = null
     private var expectedNamedQueueId: String? = null
+    private var expectedNamedQueueTimelineApplied = false
 
     private val simpleListeners = LinkedHashSet<Runnable>()
     private val mediaItemsListeners = LinkedHashSet<RestorationListener>()
@@ -77,11 +78,17 @@ class PersistentStorage(
     ) {
         expectedNamedQueueId = queueId
         expectedNamedQueueMediaIds = mediaIds
+        expectedNamedQueueTimelineApplied = false
+    }
+
+    fun markNamedQueueSwitchApplied() {
+        if (expectedNamedQueueId != null) expectedNamedQueueTimelineApplied = true
     }
 
     fun cancelNamedQueueSwitch() {
         expectedNamedQueueId = null
         expectedNamedQueueMediaIds = null
+        expectedNamedQueueTimelineApplied = false
     }
 
     /**
@@ -391,12 +398,19 @@ class PersistentStorage(
         val mediaIds = player.mediaItems.map { it.mediaId }
         val expectedIds = expectedNamedQueueMediaIds
         val expectedQueueId = expectedNamedQueueId
-        // Clear the guard only when both the expected timeline and its target binding are current.
+        // Once the target binding is active, a committed target timeline may legitimately differ
+        // from the expected ids after an immediate user edit. Before that commit, a differing
+        // timeline is still the departing queue and must not be attributed to the target.
         val namedQueueIdsMatch =
-            expectedIds == null || (expectedQueueId == activeNamedQueueId && expectedIds == mediaIds)
+            expectedIds == null ||
+                (
+                    expectedQueueId == activeNamedQueueId &&
+                        (expectedNamedQueueTimelineApplied || expectedIds == mediaIds)
+                )
         if (expectedIds != null && namedQueueIdsMatch) {
             expectedNamedQueueId = null
             expectedNamedQueueMediaIds = null
+            expectedNamedQueueTimelineApplied = false
         }
         val snapshot =
             QueueStateSnapshot(

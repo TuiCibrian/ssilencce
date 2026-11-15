@@ -1,0 +1,21 @@
+﻿Row: 0 _id=60, title=AA05 A Fallback Control 01, composer=AA05 SetA Neutral, album_artist=NULL
+Row: 1 _id=61, title=AA05 A Fallback Control 02, composer=AA05 SetA Neutral, album_artist=NULL
+Row: 2 _id=62, title=AA05 A Fallback Heavy 01, composer=AA05 SetA Neutral, album_artist=NULL
+Row: 3 _id=63, title=AA05 A Fallback Heavy 02, composer=AA05 SetA Neutral, album_artist=NULL
+Row: 4 _id=64, title=AA05 A Heavy 01, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Heavy
+Row: 5 _id=65, title=AA05 A Heavy 02, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Heavy
+Row: 6 _id=66, title=AA05 A Heavy 03, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Heavy
+Row: 7 _id=67, title=AA05 A Light 01, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Light
+Row: 8 _id=68, title=AA05 A Light 02, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Light
+Row: 9 _id=69, title=AA05 A Light 03, composer=AA05 SetA Neutral, album_artist=AA05 AlbumArtist Light
+Row: 10 _id=70, title=AA05 B Composer Heavy 01, composer=AA05 Composer Heavy, album_artist=AA05 SetB Neutral
+Row: 11 _id=71, title=AA05 B Composer Heavy 02, composer=AA05 Composer Heavy, album_artist=AA05 SetB Neutral
+Row: 12 _id=72, title=AA05 B Composer Heavy 03, composer=AA05 Composer Heavy, album_artist=AA05 SetB Neutral
+Row: 13 _id=73, title=AA05 B Composer Light 01, composer=AA05 Composer Light, album_artist=AA05 SetB Neutral
+Row: 14 _id=74, title=AA05 B Composer Light 02, composer=AA05 Composer Light, album_artist=AA05 SetB Neutral
+Row: 15 _id=75, title=AA05 B Composer Light 03, composer=AA05 Composer Light, album_artist=AA05 SetB Neutral
+Row: 16 _id=76, title=AA05 B NoComposer Control 01, composer=NULL, album_artist=AA05 SetB Neutral
+Row: 17 _id=77, title=AA05 B NoComposer Control 02, composer=NULL, album_artist=AA05 SetB Neutral
+Row: 18 _id=78, title=AA05 B NoComposer Heavy 01, composer=NULL, album_artist=AA05 SetB Neutral
+Row: 19 _id=79, title=AA05 B NoComposer Heavy 02, composer=NULL, album_artist=AA05 SetB Neutral
+Row: 20 _id=180, title=AA05 Long Position, composer=AA05 Composer Heavy, album_artist=AA05 Long AlbumArtist

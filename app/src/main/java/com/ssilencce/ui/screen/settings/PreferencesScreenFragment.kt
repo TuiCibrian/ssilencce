@@ -17,6 +17,7 @@
 
 package com.ssilencce.ui.screen.settings
 
+import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import android.net.Uri
@@ -37,12 +38,14 @@ import androidx.navigation.fragment.findNavController
 import androidx.preference.ListPreference
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
+import androidx.preference.SeekBarPreference
 import coil3.SingletonImageLoader
 import com.google.android.material.color.DynamicColors
 import com.ssilencce.BuildConfig
 import com.ssilencce.R
 import com.ssilencce.coil.CoverProvider
 import com.ssilencce.core.model.lyrics.LyricsViewSettings
+import com.ssilencce.data.local.SongDurationFilterPolicy
 import com.ssilencce.data.local.room.InclExclDao
 import com.ssilencce.data.model.network.ScrobblingService
 import com.ssilencce.extensions.files.getFormattedFileName
@@ -62,15 +65,19 @@ import com.ssilencce.ui.component.preferences.dialog.ActionOnCoverPreferenceDial
 import com.ssilencce.ui.component.preferences.dialog.CategoriesPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.ClearQueueActionPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.ExtraInfoPreferenceDialog
+import com.ssilencce.ui.component.preferences.dialog.HeadsetButtonMappingDialog
+import com.ssilencce.ui.component.preferences.dialog.IgnoreKeywordsPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.NowPlayingScreenPreferenceDialog
 import com.ssilencce.ui.component.preferences.dialog.SingleSelectionDialog
 import com.ssilencce.ui.component.preferences.dialog.SongClickActionPreferenceDialog
+import com.ssilencce.ui.component.preferences.dialog.titleRes
 import com.ssilencce.ui.dialogs.MultiCheckDialog
 import com.ssilencce.ui.dialogs.library.BlacklistWhitelistDialog
 import com.ssilencce.ui.screen.library.LibraryViewModel
 import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.scrobbling.ScrobblingServiceLoginFragment
+import com.ssilencce.ui.screen.settings.backup.BackupShareDialogFragment
 import com.ssilencce.ui.screen.update.UpdateSearchResult
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import com.ssilencce.ui.theme.styleAuroraHierarchy
@@ -82,6 +89,7 @@ import com.ssilencce.util.BACKUP_DATA
 import com.ssilencce.util.BLACKLIST_ENABLED
 import com.ssilencce.util.BLACK_THEME
 import com.ssilencce.util.BackupContent
+import com.ssilencce.util.BackupCreationResult
 import com.ssilencce.util.BackupHelper
 import com.ssilencce.util.COVER_DOUBLE_TAP_ACTION
 import com.ssilencce.util.COVER_LEFT_DOUBLE_TAP_ACTION
@@ -90,6 +98,14 @@ import com.ssilencce.util.COVER_RIGHT_DOUBLE_TAP_ACTION
 import com.ssilencce.util.COVER_SINGLE_TAP_ACTION
 import com.ssilencce.util.ENABLE_ROTATION_LOCK
 import com.ssilencce.util.GENERAL_THEME
+import com.ssilencce.util.HEADSET_BUTTON_MAPPING
+import com.ssilencce.util.HEADSET_CLICK_DELAY_MS
+import com.ssilencce.util.HEADSET_DOUBLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_FOUR_PLUS_SEEK_FORWARD
+import com.ssilencce.util.HEADSET_LONG_PRESS_ACTION
+import com.ssilencce.util.HEADSET_SINGLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_TRIPLE_CLICK_ACTION
+import com.ssilencce.util.IGNORE_ARTICLES_WHEN_SORTING
 import com.ssilencce.util.IGNORE_AUDIO_FOCUS
 import com.ssilencce.util.IGNORE_MEDIA_STORE
 import com.ssilencce.util.LANGUAGE_NAME
@@ -98,6 +114,8 @@ import com.ssilencce.util.LAST_ADDED_CUTOFF
 import com.ssilencce.util.LIBRARY_CATEGORIES
 import com.ssilencce.util.LISTENBRAINZ_LOGIN
 import com.ssilencce.util.MATERIAL_YOU
+import com.ssilencce.util.MAXIMUM_SONG_DURATION
+import com.ssilencce.util.MINIMUM_SONG_DURATION
 import com.ssilencce.util.NOW_PLAYING_EXTRA_INFO
 import com.ssilencce.util.NOW_PLAYING_SCREEN
 import com.ssilencce.util.ON_CLEAR_QUEUE_ACTION
@@ -105,16 +123,19 @@ import com.ssilencce.util.ON_SONG_CLICK_ACTION
 import com.ssilencce.util.PREFERRED_IMAGE_SIZE
 import com.ssilencce.util.Preferences
 import com.ssilencce.util.RESTORE_DATA
+import com.ssilencce.util.SORTING_IGNORE_KEYWORDS
 import com.ssilencce.util.TRASH_MUSIC_FILES
 import com.ssilencce.util.USE_CUSTOM_FONT
 import com.ssilencce.util.USE_FOLDER_ART
 import com.ssilencce.util.WHITELIST_ENABLED
 import com.ssilencce.util.WIDGET_IMAGE_CORNER_RADIUS
 import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
+import com.ssilencce.util.backup.BackupShareStaging
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.activityViewModel
 
@@ -160,6 +181,26 @@ class LibraryPreferencesFragment : PreferenceScreenFragment() {
         rootKey: String?,
     ) {
         addPreferencesFromResource(R.xml.preferences_screen_library)
+
+        findPreference<SeekBarPreference>(MAXIMUM_SONG_DURATION)?.setOnPreferenceChangeListener { _, newValue ->
+            val maximum = newValue as? Int ?: return@setOnPreferenceChangeListener false
+            if (!SongDurationFilterPolicy.isValidRange(Preferences.minimumSongDuration, maximum)) {
+                showToast(R.string.duration_filter_range_invalid)
+                false
+            } else {
+                true
+            }
+        }
+
+        findPreference<SeekBarPreference>(MINIMUM_SONG_DURATION)?.setOnPreferenceChangeListener { _, newValue ->
+            val minimum = newValue as? Int ?: return@setOnPreferenceChangeListener false
+            if (!SongDurationFilterPolicy.isValidRange(minimum, Preferences.maximumSongDuration)) {
+                showToast(R.string.duration_filter_range_invalid)
+                false
+            } else {
+                true
+            }
+        }
     }
 }
 
@@ -207,8 +248,22 @@ open class PreferenceScreenFragment :
     private val createBackupLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.CreateDocument("application/*")) { uri ->
             if (uri != null) {
+                val appContext = requireContext().applicationContext
                 GlobalScope.launch {
-                    BackupHelper.createBackup(requireContext(), uri)
+                    when (val result = BackupHelper.createBackupFile(appContext, uri)) {
+                        BackupCreationResult.Success -> {
+                            val staged = BackupShareStaging.stageFromSaf(appContext, uri)
+                            withContext(Dispatchers.Main) {
+                                showManualBackupResult(appContext, staged)
+                            }
+                        }
+
+                        is BackupCreationResult.Failure -> {
+                            withContext(Dispatchers.Main) {
+                                appContext.showToast(R.string.backup_failed)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -231,8 +286,20 @@ open class PreferenceScreenFragment :
                                 BackupContent.entries.filterIndexed { i, _ ->
                                     whichPos.contains(i)
                                 }
+                            val context = requireContext()
+                            val hostActivity = activity
                             GlobalScope.launch {
-                                BackupHelper.restoreBackup(requireContext(), selection, content)
+                                val settingsRestored =
+                                    BackupHelper.restoreBackup(context, selection, content)
+                                if (settingsRestored) {
+                                    hostActivity?.let { activity ->
+                                        activity.runOnUiThread {
+                                            if (!activity.isFinishing && !activity.isDestroyed) {
+                                                activity.recreate()
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             true
                         }
@@ -467,8 +534,32 @@ open class PreferenceScreenFragment :
 
         onUpdateNowPlayingScreen()
         onUpdateCoverActions()
+        onUpdateHeadsetMapping()
         onUpdateLyricsPreferences()
         onUpdateQueuePreferences()
+        onUpdateSortingIgnoreKeywords()
+    }
+
+    private fun showManualBackupResult(
+        appContext: Context,
+        staged: BackupShareStaging.StagedBackup?,
+    ) {
+        if (staged == null) {
+            appContext.showToast(R.string.backup_saved_share_unavailable)
+            return
+        }
+        if (!isAdded || view == null || childFragmentManager.isStateSaved) {
+            appContext.showToast(R.string.backup_successful)
+            return
+        }
+        try {
+            BackupShareDialogFragment
+                .newInstance(staged.uri, staged.file, staged.displayName)
+                .show(childFragmentManager, BackupShareDialogFragment.TAG)
+        } catch (error: IllegalStateException) {
+            Log.e("Settings", "Could not show the backup share dialog", error)
+            appContext.showToast(R.string.backup_successful)
+        }
     }
 
     @Suppress("DEPRECATION")
@@ -491,6 +582,10 @@ open class PreferenceScreenFragment :
                     ON_SONG_CLICK_ACTION -> SongClickActionPreferenceDialog()
 
                     ON_CLEAR_QUEUE_ACTION -> ClearQueueActionPreferenceDialog()
+
+                    HEADSET_BUTTON_MAPPING -> HeadsetButtonMappingDialog()
+
+                    SORTING_IGNORE_KEYWORDS -> IgnoreKeywordsPreferenceDialog()
 
                     COVER_DOUBLE_TAP_ACTION,
                     COVER_SINGLE_TAP_ACTION,
@@ -536,6 +631,7 @@ open class PreferenceScreenFragment :
         preferences: SharedPreferences,
         key: String?,
     ) {
+        if (!isAdded || view == null) return
         when (key) {
             AURORA_APPEARANCE -> {
                 setDefaultNightMode(Preferences.getDayNightMode())
@@ -558,6 +654,22 @@ open class PreferenceScreenFragment :
             ON_CLEAR_QUEUE_ACTION,
             -> {
                 onUpdateQueuePreferences()
+            }
+
+            HEADSET_SINGLE_CLICK_ACTION,
+            HEADSET_DOUBLE_CLICK_ACTION,
+            HEADSET_TRIPLE_CLICK_ACTION,
+            HEADSET_LONG_PRESS_ACTION,
+            HEADSET_FOUR_PLUS_SEEK_FORWARD,
+            HEADSET_CLICK_DELAY_MS,
+            -> {
+                onUpdateHeadsetMapping()
+            }
+
+            IGNORE_ARTICLES_WHEN_SORTING,
+            SORTING_IGNORE_KEYWORDS,
+            -> {
+                onUpdateSortingIgnoreKeywords()
             }
 
             LyricsViewSettings.Key.BACKGROUND_EFFECT -> {
@@ -588,6 +700,17 @@ open class PreferenceScreenFragment :
             getString(Preferences.coverLongPressAction.titleRes)
     }
 
+    private fun onUpdateHeadsetMapping() {
+        findPreference<Preference>(HEADSET_BUTTON_MAPPING)?.summary =
+            getString(
+                R.string.headset_button_mapping_summary,
+                getString(Preferences.headsetSingleClickAction.titleRes),
+                getString(Preferences.headsetDoubleClickAction.titleRes),
+                getString(Preferences.headsetTripleClickAction.titleRes),
+                getString(Preferences.headsetLongPressAction.titleRes),
+            )
+    }
+
     private fun onUpdateLyricsPreferences() {
         val hasBackgroundEffects =
             preferences.getString(LyricsViewSettings.Key.BACKGROUND_EFFECT, "none") != "none"
@@ -602,6 +725,16 @@ open class PreferenceScreenFragment :
             ?.summary = getString(Preferences.songClickAction.titleRes)
         findPreference<Preference>(ON_CLEAR_QUEUE_ACTION)
             ?.summary = getString(Preferences.clearQueueAction.titleRes)
+    }
+
+    private fun onUpdateSortingIgnoreKeywords() {
+        val count = Preferences.sortingIgnoreKeywords.size
+        findPreference<Preference>(SORTING_IGNORE_KEYWORDS)?.summary =
+            if (count == 0) {
+                getString(R.string.sorting_ignore_keywords_summary)
+            } else {
+                getString(R.string.sorting_ignore_keywords_summary_count, count)
+            }
     }
 
     private fun showLibraryFolderSelector(type: Int) {

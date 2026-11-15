@@ -1,6 +1,6 @@
 # Tasks: Automatic scheduled backups
 
-> Status 2026-10-21: opt-in/cancel/unique-work and worker archive behavior are PASS on the API 36 emulator. A real WorkManager cadence crossing a DST transition was not executed; the 540-check helper remains the DST evidence.
+> Status 2026-10-21: opt-in/cancel/unique-work and worker archive behavior are PASS on the API 36 emulator. A real WorkManager cadence crossing a DST transition was not executed; the 540-check helper/interval audit remains the only DST evidence. The change stays active until that runtime gap is explicitly verified or accepted.
 
 ## 1. Dependencies and storage
 
@@ -26,3 +26,12 @@
 - [x] 4.1 Build `:app:assembleGithubDebug` and `:app:lintGithubDebug` on JDK 21 after integration.
 - [x] 4.2 Verify scheduling is opt-in, cancels cleanly, and a worker run produces a restorable archive in the chosen folder on the emulator.
 - [x] 4.3 Verify no work is enqueued while disabled and no duplicate unique work remains after repeated preference changes.
+- [ ] 4.4 Verify a real WorkManager cadence crossing a DST transition; the current 540-check helper/interval audit does not exercise a live clock/DST crossing. Keep this change active until the gap is verified or explicitly accepted.
+  - Batch-2 controlled simulation (`runtime/verify/results/BATCH2-DST-SIMULATION.md`): on an
+    isolated API 28 AVD, guest clock/timezone only (host clock untouched), Daily enabled to a SAF
+    folder. Fall-back repeated local 01:30 PDT/PST and a same-epoch timezone/date shift produced
+    no duplicate; the next epoch window produced exactly one new archive; a forced same-window
+    rerun and a real disable/re-enable first run (new WorkSpec, worker SUCCESS) produced none.
+    The post-fall-back forced job was deferred by WorkManager itself, so the re-enable run is the
+    stronger app-window proof. This is a **simulated** transition, not a real seasonal crossing;
+    the exact seasonal assertion remains open and the change stays active.

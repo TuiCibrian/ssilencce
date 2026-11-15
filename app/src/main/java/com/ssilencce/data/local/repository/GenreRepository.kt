@@ -135,7 +135,9 @@ class RealGenreRepository(
     private fun getSongsWithNoGenre(): List<Song> {
         val selection = "${BaseColumns._ID} NOT IN (SELECT ${Genres.Members.AUDIO_ID} FROM audio_genres_map)"
         return with(SongSortMode.GenreSongs) {
-            songRepository.songs(songRepository.makeSongCursor(selection, null)).sorted()
+            songRepository
+                .songs(songRepository.makeSongCursor(selection, null, skipDurationFilter = true))
+                .sorted()
         }
     }
 

@@ -17,6 +17,7 @@
 
 package com.ssilencce.ui.adapters
 
+import android.content.Context
 import android.view.*
 import android.widget.ImageView
 import android.widget.TextView
@@ -29,6 +30,7 @@ import com.ssilencce.coil.albumImage
 import com.ssilencce.coil.artistImage
 import com.ssilencce.coil.playlistImage
 import com.ssilencce.coil.songImage
+import com.ssilencce.core.model.list.SongListDisplayPolicy
 import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
@@ -38,6 +40,7 @@ import com.ssilencce.extensions.media.*
 import com.ssilencce.ui.ISearchCallback
 import com.ssilencce.ui.component.base.AbsMultiSelectAdapter
 import com.ssilencce.ui.component.menu.OnClickMenu
+import com.ssilencce.util.Preferences
 import kotlin.properties.Delegates
 import kotlin.reflect.KProperty
 
@@ -55,7 +58,7 @@ class SearchAdapter(
         return item as? Song
     }
 
-    override fun getName(item: Song): String = item.title
+    override fun getName(item: Song): String = getSongTitle(item)
 
     override fun onMultipleItemAction(
         menuItem: MenuItem,
@@ -115,8 +118,8 @@ class SearchAdapter(
                 val isChecked = isChecked(song)
                 holder.isActivated = isChecked
                 holder.menu?.isGone = isChecked
-                holder.title?.text = song.title
-                holder.text?.text = song.songInfo()
+                holder.title?.text = getSongTitle(song)
+                holder.text?.let { it.text = getSongText(song, it.context) }
                 holder.image?.songImage(song)
             }
 
@@ -137,6 +140,18 @@ class SearchAdapter(
                 holder.title?.text = dataSet[position].toString()
             }
         }
+    }
+
+    private fun getSongTitle(song: Song): String = SongListDisplayPolicy.title(song, null, Preferences.songTitleMode)
+
+    private fun getSongText(
+        song: Song,
+        context: Context,
+    ): String {
+        val baseText = song.songInfo()
+        if (!Preferences.showListDateModified) return baseText
+        val dateModified = context.getString(R.string.list_date_modified, song.listDateModified(context))
+        return SongListDisplayPolicy.appendDateModified(baseText, dateModified) ?: baseText
     }
 
     override fun getItemCount(): Int = dataSet.size

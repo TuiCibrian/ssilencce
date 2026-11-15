@@ -37,6 +37,7 @@ import com.ssilencce.core.model.equalizer.BassBoostState
 import com.ssilencce.core.model.equalizer.CompressorState
 import com.ssilencce.core.model.equalizer.EqBandCapabilities
 import com.ssilencce.core.model.equalizer.EqEngineMode
+import com.ssilencce.core.model.equalizer.EqOutputAssociationPolicy
 import com.ssilencce.core.model.equalizer.EqProfile
 import com.ssilencce.core.model.equalizer.EqSession
 import com.ssilencce.core.model.equalizer.EqSession.SessionType
@@ -363,9 +364,14 @@ class EqualizerManager(
             }.flowOn(Dispatchers.Main)
             .launchIn(eqScope)
 
-        audioOutputObserver.audioDevice
-            .onEach {
-                setCurrentDevice(it)
+        combine(
+            audioOutputObserver.audioDevice,
+            eqProfiles,
+            eqState.filterNot { it == EqState.Unspecified },
+        ) { device, profiles, state -> Triple(device, profiles, state) }
+            .debounce(100)
+            .onEach { (device, profiles, state) ->
+                setCurrentDevice(device, profiles, state)
             }.flowOn(IO)
             .launchIn(eqScope)
     }
@@ -425,10 +431,12 @@ class EqualizerManager(
     fun getNewProfileFromCustom(
         profileName: String,
         associatedDevices: Set<AudioDeviceType>,
+        associatedDeviceKeys: Set<String> = emptySet(),
     ): EqProfile =
         eqCustomProfile.value.copy(
             name = profileName,
             associations = associatedDevices,
+            associatedDeviceKeys = associatedDeviceKeys,
             isCustom = false,
             isAutoEq = false,
         )
@@ -437,6 +445,7 @@ class EqualizerManager(
         profile: EqProfile,
         newName: String,
         newAssociations: Set<AudioDeviceType>,
+        newDeviceKeys: Set<String> = emptySet(),
     ): Boolean {
         val trimmedName = newName.trim()
         if (trimmedName.isEmpty()) return false
@@ -458,24 +467,22 @@ class EqualizerManager(
                         oldProfile.copy(
                             name = trimmedName,
                             associations = newAssociations,
+                            associatedDeviceKeys = newDeviceKeys,
                         )
                     }
 
                     else -> {
-                        oldProfile.associations.intersect(newAssociations).let { intersect ->
-                            if (intersect.isNotEmpty()) {
-                                oldProfile.copy(associations = oldProfile.associations - intersect)
-                            } else {
-                                oldProfile
-                            }
-                        }
+                        oldProfile.copy(
+                            associations = oldProfile.associations - newAssociations,
+                            associatedDeviceKeys = oldProfile.associatedDeviceKeys - newDeviceKeys,
+                        )
                     }
                 }
             }
 
         setEqualizerProfiles(newProfiles)
         if (profile == eqCurrentProfile.value) {
-            setCurrentProfile(currentProfiles[targetIndex])
+            setCurrentProfile(newProfiles[targetIndex])
         }
         return true
     }
@@ -487,22 +494,32 @@ class EqualizerManager(
     ): Boolean {
         if (!profile.isValid) return false
 
-        val currentProfiles = eqProfiles.value.toMutableList()
+        val currentProfiles = eqProfiles.value
         val index = currentProfiles.indexOfFirst { it.name.equals(profile.name, ignoreCase = true) }
         if (index != -1) {
-            if (allowReplace) {
-                currentProfiles[index] = profile
-                setEqualizerProfiles(currentProfiles)
-                if (useProfile) {
-                    setCurrentProfile(profile)
+            if (!allowReplace) return false
+            val normalized =
+                currentProfiles.mapIndexed { itemIndex, oldProfile ->
+                    if (itemIndex == index) {
+                        profile
+                    } else {
+                        oldProfile.copy(
+                            associations = oldProfile.associations - profile.associations,
+                            associatedDeviceKeys = oldProfile.associatedDeviceKeys - profile.associatedDeviceKeys,
+                        )
+                    }
                 }
-                return true
-            }
-            return false
+            setEqualizerProfiles(normalized)
+        } else {
+            val normalized =
+                currentProfiles.map { oldProfile ->
+                    oldProfile.copy(
+                        associations = oldProfile.associations - profile.associations,
+                        associatedDeviceKeys = oldProfile.associatedDeviceKeys - profile.associatedDeviceKeys,
+                    )
+                } + profile
+            setEqualizerProfiles(normalized)
         }
-
-        currentProfiles.add(profile)
-        setEqualizerProfiles(currentProfiles)
         if (useProfile) {
             setCurrentProfile(profile)
         }
@@ -930,21 +947,42 @@ class EqualizerManager(
         _bandCapabilities.value = bandCapabilities
     }
 
-    private suspend fun setCurrentDevice(currentDevice: AudioDevice) {
-        val eqState = eqState.value
-        if (eqState == EqState.Unspecified || !eqState.supported ||
+    private suspend fun setCurrentDevice(
+        currentDevice: AudioDevice,
+        profiles: List<EqProfile>,
+        currentState: EqState,
+    ) {
+        if (currentState == EqState.Unspecified || !currentState.supported ||
             currentDevice == AudioDevice.UnknownDevice
         ) {
             return
         }
 
-        val profileByDevice =
-            eqProfiles.value.firstOrNull { profile ->
-                profile.associations.contains(currentDevice.type)
+        val associationProfiles =
+            profiles.map { profile ->
+                EqOutputAssociationPolicy.Profile(
+                    name = profile.name,
+                    association =
+                        EqOutputAssociationPolicy.Association(
+                            typeNames = profile.associations.mapTo(mutableSetOf()) { it.name },
+                            deviceKeys = profile.associatedDeviceKeys,
+                        ),
+                )
             }
-        if (profileByDevice != null) {
-            setCurrentProfile(profileByDevice)
+        val resolvedName =
+            EqOutputAssociationPolicy.resolve(
+                profiles = associationProfiles,
+                deviceTypeName = currentDevice.type.name,
+                deviceKey = currentDevice.deviceKey,
+            ) ?: return
+        val targetProfile = profiles.firstOrNull { it.name == resolvedName } ?: return
+        val currentProfile = eqCurrentProfile.value
+        if (currentProfile.name == targetProfile.name &&
+            currentProfile.levels.contentEquals(targetProfile.levels)
+        ) {
+            return
         }
+        setCurrentProfile(targetProfile)
     }
 
     suspend fun setAutoEqProfile(profile: AutoEqProfile) {

@@ -24,6 +24,9 @@
         android:id="@+id/action_tag_editor"
         android:title="@string/action_tag_editor"/>
     <item
+        android:id="@+id/action_calculate_replay_gain"
+        android:title="@string/action_calculate_replay_gain"/>
+    <item
         android:id="@+id/action_play_info"
         android:title="@string/play_info"/>
     <item

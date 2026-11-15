@@ -26,6 +26,7 @@ import android.provider.MediaStore.MediaColumns
 import androidx.core.content.contentValuesOf
 import androidx.core.net.toUri
 import com.ssilencce.R
+import com.ssilencce.core.sort.IgnoreKeywordPolicy
 import com.ssilencce.core.sort.SortMode
 import com.ssilencce.extensions.hasQ
 import com.ssilencce.extensions.plurals
@@ -107,34 +108,20 @@ fun String?.asSectionName(sortMode: SortMode? = null): String {
         return ""
     }
 
-    val title = normalizeForSorting(sortMode?.ignoreArticles == true)
+    val ignoreArticles = sortMode?.ignoreArticles == true
+    val title =
+        normalizeForSorting(
+            ignoreArticles,
+            customKeywords = sortMode?.ignoreKeywords.orEmpty(),
+        )
     return if (title.isEmpty()) "" else title[0].toString().lowercase()
 }
 
 fun String.normalizeForSorting(
     ignoreArticles: Boolean,
     language: String = Locale.getDefault().language,
-): String {
-    return if (ignoreArticles) {
-        val regex = ARTICLES_REGEX_BY_LANGUAGE[language] ?: return this
-        return trim().replace(regex, "")
-    } else {
-        this
-    }
-}
-
-private val ARTICLES_BY_LANGUAGE =
-    mapOf(
-        "en" to listOf("the", "a", "an"),
-        "es" to listOf("el", "la", "los", "las", "un", "una"),
-        "fr" to listOf("le", "la", "les", "un", "une"),
-        "de" to listOf("der", "die", "das", "ein", "eine"),
-        "it" to listOf("il", "lo", "la", "l’", "i", "gli", "un", "una"),
-        "pt" to listOf("o", "a", "os", "as", "um", "uma"),
-        "nl" to listOf("de", "het", "een"),
-    )
-
-private val ARTICLES_REGEX_BY_LANGUAGE =
-    ARTICLES_BY_LANGUAGE.mapValues { (_, articles) ->
-        Regex("^(${articles.joinToString("|")})\\s+", RegexOption.IGNORE_CASE)
-    }
+    customKeywords: Collection<String> = emptyList(),
+): String =
+    IgnoreKeywordPolicy
+        .normalizer(ignoreArticles, language, customKeywords)
+        .normalize(this)

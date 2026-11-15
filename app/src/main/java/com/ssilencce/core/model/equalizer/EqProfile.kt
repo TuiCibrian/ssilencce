@@ -15,6 +15,8 @@ data class EqProfile(
     val levels: FloatArray,
     @SerialName("associations")
     val associations: Set<AudioDeviceType> = emptySet(),
+    @SerialName("device_keys")
+    val associatedDeviceKeys: Set<String> = emptySet(),
     val isCustom: Boolean = false,
     val isAutoEq: Boolean = false,
 ) {
@@ -51,6 +53,7 @@ data class EqProfile(
         if (name != other.name) return false
         if (!levels.contentEquals(other.levels)) return false
         if (associations != other.associations) return false
+        if (associatedDeviceKeys != other.associatedDeviceKeys) return false
         if (isCustom != other.isCustom) return false
 
         return true
@@ -60,6 +63,7 @@ data class EqProfile(
         var result = name.hashCode()
         result = 31 * result + levels.contentHashCode()
         result = 31 * result + associations.hashCode()
+        result = 31 * result + associatedDeviceKeys.hashCode()
         result = 31 * result + isCustom.hashCode()
         return result
     }

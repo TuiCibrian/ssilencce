@@ -25,7 +25,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.doOnPreDraw
-import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ConcatAdapter
@@ -71,6 +70,9 @@ import com.ssilencce.ui.adapters.WikiAdapter
 import com.ssilencce.ui.adapters.album.AlbumAdapter
 import com.ssilencce.ui.adapters.song.SimpleSongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onAlbumMenu
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.component.menu.onSongMenu
@@ -106,6 +108,10 @@ class AlbumDetailFragment :
     private var lang: String? = null
     private var biography: String? = null
 
+    private var allSongs: List<Song> = emptyList()
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sharedElementEnterTransition =
@@ -131,6 +137,25 @@ class AlbumDetailFragment :
         binding.appBarLayout.setupStatusBarForeground()
 
         postponeEnterTransition()
+        setupRecyclerView()
+
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                extraBottomPadding = 16.dp(resources),
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
+
         detailViewModel.getAlbumDetail().observe(viewLifecycleOwner) { album ->
             view.doOnPreDraw {
                 startPostponedEnterTransition()
@@ -138,12 +163,6 @@ class AlbumDetailFragment :
             albumArtistExists = !album.albumArtistName.isNullOrEmpty()
             showAlbum(album)
         }
-
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(16.dp(resources), includeNavigation = true))
-        }
-
-        setupRecyclerView()
 
         detailViewModel.loadAlbumDetail()
     }
@@ -185,10 +204,10 @@ class AlbumDetailFragment :
                         getAlbum().duration.asReadableDuration(readableFormat = true).takeIf { Preferences.showAlbumDuration },
                     )
                 headerBinding.playAction.setOnClickListener {
-                    playerViewModel.openQueue(getAlbum().songs, shuffleMode = OpenShuffleMode.Off)
+                    playerViewModel.openQueue(visibleSongs(), shuffleMode = OpenShuffleMode.Off)
                 }
                 headerBinding.shuffleAction.setOnClickListener {
-                    playerViewModel.openAndShuffleQueue(getAlbum().songs)
+                    playerViewModel.openAndShuffleQueue(visibleSongs())
                 }
                 headerBinding.searchAction?.setOnClickListener { goToSearch() }
             }
@@ -255,17 +274,37 @@ class AlbumDetailFragment :
 
         headerAdapter.notifyItemChanged(0)
 
-        val songText = plurals(R.plurals.songs, album.songCount)
-        songHeaderAdapter.updateTitle(
-            buildInfoString(
-                songText,
-                album.songCount.takeIf { it > 1 }?.toString(),
-            ),
-        )
-
-        simpleSongAdapter.dataSet = album.songs
+        allSongs = album.songs
+        applyQuickSearch()
         loadSimilarContent(album)
         loadWiki(album)
+    }
+
+    private fun visibleSongs(): List<Song> =
+        if (quickSearchQuery.isBlank() || !::simpleSongAdapter.isInitialized) {
+            allSongs
+        } else {
+            simpleSongAdapter.dataSet
+        }
+
+    private fun applyQuickSearch() {
+        if (!::simpleSongAdapter.isInitialized) return
+        simpleSongAdapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+        updateSongHeader()
+    }
+
+    private fun updateSongHeader() {
+        val album = getAlbum()
+        songHeaderAdapter.updateTitle(
+            if (allSongs.isNotEmpty() && quickSearchQuery.isNotBlank() && simpleSongAdapter.dataSet.isEmpty()) {
+                getString(R.string.quick_search_empty)
+            } else {
+                buildInfoString(
+                    plurals(R.plurals.songs, album.songCount),
+                    album.songCount.takeIf { it > 1 }?.toString(),
+                )
+            },
+        )
     }
 
     private fun loadSimilarContent(album: Album) {
@@ -399,6 +438,7 @@ class AlbumDetailFragment :
                 menuItem.isChecked = isChecked
                 createSongAdapter()
                 updateConcatAdapter()
+                applyQuickSearch()
                 true
             }
 
@@ -436,7 +476,13 @@ class AlbumDetailFragment :
         detailViewModel.loadAlbumDetail()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
+        quickSearchHost = null
         binding.recyclerView.layoutManager = null
         binding.recyclerView.adapter = null
         super.onDestroyView()

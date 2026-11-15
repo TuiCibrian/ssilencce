@@ -14,4 +14,5 @@ enum class SortKey(
     SongCount("songs_key"),
     AlbumCount("albums_key"),
     FileName("file_name_key"),
+    Path("path_key"),
 }

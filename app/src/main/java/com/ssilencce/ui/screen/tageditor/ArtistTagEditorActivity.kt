@@ -23,18 +23,21 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import coil3.SingletonImageLoader
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.toBitmap
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputLayout
 import com.ssilencce.R
 import com.ssilencce.coil.DEFAULT_ARTIST_IMAGE
-import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.core.model.tag.TagEditField
 import com.ssilencce.databinding.TagEditorArtistFieldBinding
 import com.ssilencce.extensions.webSearch
 import com.ssilencce.ui.component.base.AbsTagEditorActivity
 import com.ssilencce.ui.component.views.getPlaceholderDrawable
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
@@ -51,22 +54,40 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
     }
 
     private lateinit var artistBinding: TagEditorArtistFieldBinding
-
-    private var albumArtistName: String? = null
     private var artistName: String? = null
+    private var initialValues: Map<TagEditField, String?> = emptyMap()
+    private var destructiveConfirmed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding.image.setImageDrawable(placeholderDrawable)
-        viewModel.tagResult.observe(this) {
-            artistName = it.artist
-            albumArtistName = it.albumArtist
-            artistBinding.albumArtist.setText(it.albumArtist)
-            artistBinding.genre.setText(it.genre)
-            artistBinding.discTotal.setText(it.discTotal)
-        }
-        viewModel.loadContent()
+        loadAggregatedContent()
         loadCurrentArtistImage()
+    }
+
+    private fun loadAggregatedContent() {
+        lifecycleScope.launch {
+            val result = aggregateTagValues(viewModel.uris, ARTIST_FIELDS)
+            viewModel.restrictWriteTarget(result.readableUris)
+            initialValues = result.common
+            artistName = result.value(TagEditField.ARTIST)
+            artistBinding.artist.setText(artistName.orEmpty())
+            artistBinding.albumArtist.setText(result.value(TagEditField.ALBUM_ARTIST).orEmpty())
+            artistBinding.genre.setText(result.value(TagEditField.GENRE).orEmpty())
+            artistBinding.discTotal.setText(result.value(TagEditField.DISC_TOTAL).orEmpty())
+            setVariesHint(artistBinding.artistTextInputLayout, result.isVaries(TagEditField.ARTIST))
+            setVariesHint(artistBinding.albumArtistTextInputLayout, result.isVaries(TagEditField.ALBUM_ARTIST))
+            setVariesHint(artistBinding.genreTextInputLayout, result.isVaries(TagEditField.GENRE))
+            setVariesHint(artistBinding.discTotalTextInputLayout, result.isVaries(TagEditField.DISC_TOTAL))
+        }
+    }
+
+    private fun setVariesHint(
+        layout: TextInputLayout,
+        varies: Boolean,
+    ) {
+        layout.helperText = if (varies) getString(R.string.tag_editor_varies) else null
+        layout.isHelperTextEnabled = varies
     }
 
     override fun onWrapFieldViews(
@@ -151,16 +172,57 @@ class ArtistTagEditorActivity : AbsTagEditorActivity() {
         }
     }
 
-    override val propertyMap: Map<String, String?>
-        get() =
-            buildMap {
-                val albumArtist = artistBinding.albumArtist.text?.toString()
-                val isSingleSong = viewModel.uris.size == 1
-                if (albumArtist.isNullOrEmpty() && !artistName.equals(albumArtistName, true) && isSingleSong) {
-                    put(MetadataReader.ARTIST, albumArtist)
-                }
-                put(MetadataReader.ALBUM_ARTIST, albumArtist)
-                put(MetadataReader.GENRE, artistBinding.genre.text?.toString())
-                put(MetadataReader.DISC_TOTAL, artistBinding.discTotal.text?.toString())
+    override fun save() {
+        val destructiveChanged =
+            dirtyPropertyMap().keys.any { key ->
+                DESTRUCTIVE_FIELDS.any { it.propertyKey == key }
             }
+        if (destructiveChanged && !destructiveConfirmed && viewModel.writableUris.size > 1) {
+            destructiveConfirmed = true
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.tag_editor_destructive_title)
+                .setMessage(getString(R.string.tag_editor_destructive_message, viewModel.writableUris.size))
+                .setPositiveButton(R.string.tag_editor_destructive_confirm) { _, _ -> save() }
+                .setNegativeButton(android.R.string.cancel) { _, _ -> destructiveConfirmed = false }
+                .setOnCancelListener { destructiveConfirmed = false }
+                .show()
+            return
+        }
+        destructiveConfirmed = false
+        super.save()
+    }
+
+    private fun dirtyPropertyMap(): Map<String, String?> =
+        buildMap {
+            addIfChanged(TagEditField.ARTIST, artistBinding.artist.text?.toString())
+            addIfChanged(TagEditField.ALBUM_ARTIST, artistBinding.albumArtist.text?.toString())
+            addIfChanged(TagEditField.GENRE, artistBinding.genre.text?.toString())
+            addIfChanged(TagEditField.DISC_TOTAL, artistBinding.discTotal.text?.toString())
+        }
+
+    private fun MutableMap<String, String?>.addIfChanged(
+        field: TagEditField,
+        value: String?,
+    ) {
+        val current = value?.trim()?.takeIf { it.isNotEmpty() }
+        val initial = initialValues[field]?.trim()?.takeIf { it.isNotEmpty() }
+        if (current != initial) {
+            put(field.propertyKey, current)
+        }
+    }
+
+    override val propertyMap: Map<String, String?>
+        get() = dirtyPropertyMap()
+
+    private companion object {
+        val ARTIST_FIELDS =
+            listOf(
+                TagEditField.ARTIST,
+                TagEditField.ALBUM_ARTIST,
+                TagEditField.GENRE,
+                TagEditField.DISC_TOTAL,
+            )
+
+        val DESTRUCTIVE_FIELDS = setOf(TagEditField.DISC_TOTAL)
+    }
 }

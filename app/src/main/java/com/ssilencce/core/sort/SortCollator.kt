@@ -2,7 +2,6 @@ package com.ssilencce.core.sort
 
 import android.icu.text.Collator
 import android.icu.text.RuleBasedCollator
-import com.ssilencce.extensions.media.normalizeForSorting
 import com.ssilencce.util.Preferences
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
@@ -23,7 +22,11 @@ fun sortingCollator(locale: Locale = Locale.getDefault()): Collator =
 fun <T> Iterable<T>.sortedByName(selector: (T) -> String): List<T> = sortedWith(compareBy(sortingCollator()) { selector(it) })
 
 fun <T> Iterable<T>.sortedByMediaName(selector: (T) -> String): List<T> {
-    val ignoreArticles = Preferences.ignoreArticlesWhenSorting
-    val language = Locale.getDefault().language
-    return sortedByName { selector(it).normalizeForSorting(ignoreArticles, language) }
+    val normalizer =
+        IgnoreKeywordPolicy.normalizer(
+            Preferences.ignoreArticlesWhenSorting,
+            Locale.getDefault().language,
+            Preferences.sortingIgnoreKeywords,
+        )
+    return sortedByName { normalizer.normalize(selector(it)) }
 }

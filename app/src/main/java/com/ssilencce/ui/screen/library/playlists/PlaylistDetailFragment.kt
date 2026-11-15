@@ -25,7 +25,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.core.view.isGone
 import androidx.core.view.isVisible
-import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -60,6 +59,10 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.PlaylistSongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchPolicy
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onPlaylistMenu
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
@@ -87,6 +90,10 @@ class PlaylistDetailFragment :
     private var playlistSongAdapter: PlaylistSongAdapter? = null
     private var wrappedAdapter: RecyclerView.Adapter<*>? = null
     private var recyclerViewDragDropManager: RecyclerViewDragDropManager? = null
+    private var allSongs: List<Song> = emptyList()
+    private var songsLoaded = false
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -117,9 +124,21 @@ class PlaylistDetailFragment :
         setSupportActionBar(binding.toolbar)
         // binding.collapsingAppBarLayout.setupStatusBarScrim(requireContext())
 
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
-        }
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
 
         detailViewModel.getPlaylist().observe(viewLifecycleOwner) { playlistWithSongs ->
             playlist = playlistWithSongs
@@ -138,7 +157,9 @@ class PlaylistDetailFragment :
         }
         detailViewModel.getSongs().observe(viewLifecycleOwner) {
             binding.progressIndicator.hide()
-            playlistSongAdapter?.dataSet = it.toSongs()
+            allSongs = it.toSongs()
+            songsLoaded = true
+            applyQuickSearch()
         }
         detailViewModel.playlistExists().observe(viewLifecycleOwner) {
             if (!it) {
@@ -147,8 +168,24 @@ class PlaylistDetailFragment :
         }
     }
 
-    private fun checkIsEmpty() {
-        binding.empty.isVisible = playlistSongAdapter?.isNullOrEmpty == true
+    private fun applyQuickSearch() {
+        val adapter = playlistSongAdapter ?: return
+        if (quickSearchQuery.isBlank()) {
+            adapter.dataSet = allSongs
+            adapter.setLockDrag(Preferences.lockedPlaylists)
+        } else {
+            recyclerViewDragDropManager?.cancelDrag()
+            adapter.setLockDrag(true)
+            adapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+        }
+        updateEmptyState()
+    }
+
+    private fun updateEmptyState() {
+        val visibleCount = playlistSongAdapter?.dataSet?.size ?: 0
+        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, allSongs.size, visibleCount)
+        binding.empty.setText(if (noMatches) R.string.quick_search_empty else R.string.empty_label)
+        binding.empty.isVisible = visibleCount == 0
     }
 
     private fun setupButtons() {
@@ -194,7 +231,7 @@ class PlaylistDetailFragment :
     private val adapterDataObserver =
         object : RecyclerView.AdapterDataObserver() {
             override fun onChanged() {
-                checkIsEmpty()
+                updateEmptyState()
             }
         }
 
@@ -250,7 +287,9 @@ class PlaylistDetailFragment :
                     menuItem.setIcon(R.drawable.ic_lock_open_24dp)
                     showToast(R.string.playlist_unlocked)
                 }
-                playlistSongAdapter?.setLockDrag(lockedPlaylists)
+                playlistSongAdapter?.setLockDrag(
+                    lockedPlaylists || quickSearchQuery.isNotBlank(),
+                )
                 true
             }
 
@@ -296,11 +335,20 @@ class PlaylistDetailFragment :
 
     override fun onPause() {
         recyclerViewDragDropManager?.cancelDrag()
-        playlistSongAdapter?.saveSongs(playlist.playlistEntity)
+        // Always persist the full playlist order, never the filtered adapter subset.
+        if (songsLoaded) {
+            playlistSongAdapter?.saveSongs(playlist.playlistEntity, allSongs)
+        }
         super.onPause()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
+        quickSearchHost = null
         playlistSongAdapter?.unregisterAdapterDataObserver(adapterDataObserver)
 
         recyclerViewDragDropManager?.release()

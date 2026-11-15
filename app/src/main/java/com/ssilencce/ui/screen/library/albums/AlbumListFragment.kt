@@ -26,11 +26,14 @@ import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.ssilencce.R
+import com.ssilencce.core.model.ComposerNamePolicy
 import com.ssilencce.core.model.GridViewType
 import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.core.sort.AlbumSortMode
 import com.ssilencce.core.sort.SongSortMode
+import com.ssilencce.core.sort.sortedByName
 import com.ssilencce.data.model.Album
+import com.ssilencce.extensions.hasR
 import com.ssilencce.extensions.navigation.albumDetailArgs
 import com.ssilencce.extensions.navigation.asFragmentExtras
 import com.ssilencce.extensions.showToast
@@ -41,6 +44,8 @@ import com.ssilencce.ui.component.base.QuickSearchable
 import com.ssilencce.ui.component.base.matchesQuickSearch
 import com.ssilencce.ui.component.menu.onAlbumMenu
 import com.ssilencce.ui.component.menu.onAlbumsMenu
+import com.ssilencce.ui.dialogs.ComposeChoiceDialogFragment
+import com.ssilencce.ui.dialogs.showComposeChoice
 import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.util.Preferences
 
@@ -54,15 +59,29 @@ class AlbumListFragment :
         get() = R.string.no_albums_label
 
     private var allAlbums: List<Album> = emptyList()
-    private var quickSearchQuery: String = ""
+    private var composerNames: List<String> = emptyList()
+    private var selectedComposerKey: String? = null
+    override var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
+        selectedComposerKey = savedInstanceState?.getString(STATE_SELECTED_COMPOSER)
+        parentFragmentManager.setFragmentResultListener(COMPOSER_RESULT_KEY, this) { _, result ->
+            val index = result.getInt(ComposeChoiceDialogFragment.RESULT_SELECTED_INDEX, -1)
+            selectedComposerKey =
+                if (index <= 0) {
+                    null
+                } else {
+                    composerNames.getOrNull(index - 1)?.let(ComposerNamePolicy::key)
+                }
+            applyQuickSearch()
+        }
         libraryViewModel.getAlbums().observe(viewLifecycleOwner) { albums ->
             allAlbums = albums
+            updateComposerNames()
             applyQuickSearch()
         }
     }
@@ -73,14 +92,51 @@ class AlbumListFragment :
     }
 
     private fun applyQuickSearch() {
+        val filteredByComposer =
+            selectedComposerKey?.let { composerKey ->
+                allAlbums.filter { album ->
+                    album.songs.any { ComposerNamePolicy.key(it.composerName) == composerKey }
+                }
+            } ?: allAlbums
         adapter?.dataSet =
             if (quickSearchQuery.isBlank()) {
-                allAlbums
+                filteredByComposer
             } else {
-                allAlbums.filter { album ->
+                filteredByComposer.filter { album ->
                     listOf(album.name, album.artistName, album.albumArtistName).matchesQuickSearch(quickSearchQuery)
                 }
             }
+    }
+
+    private fun updateComposerNames() {
+        composerNames =
+            allAlbums
+                .asSequence()
+                .flatMap { it.songs.asSequence() }
+                .mapNotNull { ComposerNamePolicy.normalize(it.composerName) }
+                .distinctBy { ComposerNamePolicy.key(it) }
+                .toList()
+                .sortedByName { it }
+        if (selectedComposerKey != null && composerNames.none { ComposerNamePolicy.key(it) == selectedComposerKey }) {
+            selectedComposerKey = null
+        }
+        activity?.invalidateOptionsMenu()
+    }
+
+    private fun showComposerChoice() {
+        if (!hasR() || composerNames.isEmpty()) return
+        val selectedIndex =
+            selectedComposerKey
+                ?.let { key -> composerNames.indexOfFirst { ComposerNamePolicy.key(it) == key } }
+                ?.takeIf { it >= 0 }
+                ?.plus(1)
+                ?: 0
+        showComposeChoice(
+            title = getString(R.string.filter_by_composer),
+            options = listOf(getString(R.string.all_composers)) + composerNames,
+            selectedIndex = selectedIndex,
+            resultKey = COMPOSER_RESULT_KEY,
+        )
     }
 
     override fun onShuffleClicked() {
@@ -172,20 +228,35 @@ class AlbumListFragment :
         adapter?.notifyDataSetChanged()
     }
 
+    override fun onPrepareMenu(menu: Menu) {
+        super.onPrepareMenu(menu)
+        menu.findItem(R.id.action_filter_composer)?.isVisible = hasR() && composerNames.isNotEmpty()
+    }
+
     override fun onCreateMenu(
         menu: Menu,
         inflater: MenuInflater,
     ) {
         super.onCreateMenu(menu, inflater)
+        menu.findItem(R.id.action_filter_composer)?.isVisible = hasR() && composerNames.isNotEmpty()
         AlbumSortMode.AllAlbums.createMenu(menu)
     }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == R.id.action_filter_composer) {
+            showComposerChoice()
+            return true
+        }
         if (AlbumSortMode.AllAlbums.sortItemSelected(item)) {
             libraryViewModel.forceReload(ReloadType.Albums)
             return true
         }
         return super.onMenuItemSelected(item)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.putString(STATE_SELECTED_COMPOSER, selectedComposerKey)
+        super.onSaveInstanceState(outState)
     }
 
     override fun onMediaContentChanged() {
@@ -196,5 +267,7 @@ class AlbumListFragment :
     companion object {
         private const val VIEW_TYPE = "albums_view_type"
         private const val GRID_SIZE = "albums_grid_size"
+        private const val COMPOSER_RESULT_KEY = "album_composer_filter"
+        private const val STATE_SELECTED_COMPOSER = "selected_composer"
     }
 }

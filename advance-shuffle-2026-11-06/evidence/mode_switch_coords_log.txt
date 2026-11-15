@@ -1,0 +1,26 @@
+﻿{
+  "before": {
+    "state": 1,
+    "position": 2048,
+    "index": 12,
+    "description": "AA05 B Composer Heavy 03, AA05 Soloist CH3, AA05 Composer Heavy Album"
+  },
+  "after_special": {
+    "state": 7,
+    "position": 0,
+    "index": 3,
+    "description": "AA05 A Light 03, AA05 Soloist L3, AA05 Light Album"
+  },
+  "toggle_before": {
+    "state": 7,
+    "position": 0,
+    "index": 3,
+    "description": "AA05 A Light 03, AA05 Soloist L3, AA05 Light Album"
+  },
+  "toggle_after": {
+    "state": 7,
+    "position": 0,
+    "index": 3,
+    "description": "AA05 A Light 03, AA05 Soloist L3, AA05 Light Album"
+  }
+}

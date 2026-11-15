@@ -68,6 +68,11 @@
         </menu>
     </item>
     <item
+        android:id="@+id/action_filter_composer"
+        android:title="@string/action_filter_composer"
+        android:visible="false"
+        app:showAsAction="never" />
+    <item
         android:id="@+id/action_sort_order"
         android:title="@string/action_sort_order"
         app:showAsAction="never">

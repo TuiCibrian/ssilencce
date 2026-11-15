@@ -37,6 +37,18 @@
         <item>expanded</item>
     </string-array>
 
+    <string-array name="pref_song_title_mode_entries">
+        <item>@string/song_title_mode_follow_sort</item>
+        <item>@string/song_title_mode_song_title</item>
+        <item>@string/song_title_mode_file_name</item>
+    </string-array>
+
+    <string-array name="pref_song_title_mode_values">
+        <item>FollowSort</item>
+        <item>Title</item>
+        <item>FileName</item>
+    </string-array>
+
     <string-array name="pref_tab_titles_mode_entries">
         <item>@string/selected</item>
         <item>@string/labeled</item>
@@ -248,7 +260,7 @@
         <item>nl</item>
         <item>en</item>
         <item>et</item>
-        <item>fa</item>
+        <item>fil</item>
         <item>fi</item>
         <item>fr</item>
         <item>gl</item>
@@ -263,7 +275,7 @@
         <item>ko</item>
         <item>bqi</item>
         <item>no</item>
-        <item>fil</item>
+        <item>fa</item>
         <item>pl</item>
         <item>pt</item>
         <item>pt-BR</item>

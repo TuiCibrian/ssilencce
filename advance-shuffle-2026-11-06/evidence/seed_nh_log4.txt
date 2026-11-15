@@ -1,0 +1,23 @@
+﻿python : Traceback (most recent call last):
+At line:1 char:1
++ python -c "import sys; sys.path.insert(0,r'C:\Users\geode\Documents\R ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    import sys; sys.path.insert(0,r'C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools'); 
+import aa05_runtime as r; r.seed_group_passes('AA05 B NoComposer Heavy',2,passes=12); print('N_H_DONE')
+                                                                                                                       
+                    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 365, in 
+seed_group_passes
+    tap_song_row(query, exact=False)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 238, in 
+tap_song_row
+    root = go_songs()
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 197, in 
+go_songs
+    raise RuntimeError("Songs drawer item not found")
+RuntimeError: Songs drawer item not found

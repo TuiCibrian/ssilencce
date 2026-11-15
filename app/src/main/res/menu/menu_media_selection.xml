@@ -27,6 +27,17 @@
         app:showAsAction="ifRoom"/>
 
     <item
+        android:id="@+id/action_tag_editor"
+        android:icon="@drawable/ic_edit_24dp"
+        android:title="@string/action_tag_editor"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_calculate_replay_gain"
+        android:title="@string/action_calculate_replay_gain"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_remove_from_history"
         android:icon="@drawable/ic_delete_24dp"
         android:title="@string/remove_from_history"

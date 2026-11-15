@@ -46,7 +46,7 @@ class YearsListFragment :
     override val isShuffleVisible: Boolean = false
 
     private var allYears: List<ReleaseYear> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,

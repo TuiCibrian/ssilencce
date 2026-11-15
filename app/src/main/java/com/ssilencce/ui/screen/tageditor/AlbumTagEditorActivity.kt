@@ -21,9 +21,12 @@ import android.graphics.drawable.Drawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputLayout
 import com.ssilencce.R
 import com.ssilencce.coil.DEFAULT_ALBUM_IMAGE
-import com.ssilencce.data.local.MetadataReader
+import com.ssilencce.core.model.tag.TagEditField
 import com.ssilencce.data.local.toBitmap
 import com.ssilencce.databinding.TagEditorAlbumFieldBinding
 import com.ssilencce.extensions.resources.getResized
@@ -31,6 +34,7 @@ import com.ssilencce.extensions.showToast
 import com.ssilencce.extensions.webSearch
 import com.ssilencce.ui.component.base.AbsTagEditorActivity
 import com.ssilencce.ui.component.views.getPlaceholderDrawable
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.core.parameter.parametersOf
 
@@ -47,24 +51,50 @@ class AlbumTagEditorActivity : AbsTagEditorActivity() {
     }
 
     private lateinit var albumBinding: TagEditorAlbumFieldBinding
+    private var initialValues: Map<TagEditField, String?> = emptyMap()
+    private var destructiveConfirmed = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         viewModel.artworkResult.observe(this) { artwork ->
             setImageBitmap(artwork?.toBitmap()?.getResized(1080))
         }
-        viewModel.tagResult.observe(this) { tagResult ->
-            albumBinding.album.setText(tagResult.album)
-            albumBinding.albumArtist.setText(tagResult.albumArtist)
-            albumBinding.conductor.setText(tagResult.conductor)
-            albumBinding.publisher.setText(tagResult.publisher)
-            albumBinding.genre.setText(tagResult.genre)
-            albumBinding.year.setText(tagResult.year)
-            albumBinding.trackTotal.setText(tagResult.trackTotal)
-            albumBinding.discNumber.setText(tagResult.discNumber)
-            albumBinding.discTotal.setText(tagResult.discTotal)
+        loadAggregatedContent()
+        viewModel.loadArtwork()
+    }
+
+    private fun loadAggregatedContent() {
+        lifecycleScope.launch {
+            val result = aggregateTagValues(viewModel.uris, ALBUM_FIELDS)
+            viewModel.restrictWriteTarget(result.readableUris)
+            initialValues = result.common
+            albumBinding.album.setText(result.value(TagEditField.ALBUM).orEmpty())
+            albumBinding.albumArtist.setText(result.value(TagEditField.ALBUM_ARTIST).orEmpty())
+            albumBinding.conductor.setText(result.value(TagEditField.CONDUCTOR).orEmpty())
+            albumBinding.publisher.setText(result.value(TagEditField.PUBLISHER).orEmpty())
+            albumBinding.genre.setText(result.value(TagEditField.GENRE).orEmpty())
+            albumBinding.year.setText(result.value(TagEditField.YEAR).orEmpty())
+            albumBinding.trackTotal.setText(result.value(TagEditField.TRACK_TOTAL).orEmpty())
+            albumBinding.discNumber.setText(result.value(TagEditField.DISC_NUMBER).orEmpty())
+            albumBinding.discTotal.setText(result.value(TagEditField.DISC_TOTAL).orEmpty())
+            setVariesHint(albumBinding.albumTextInputLayout, result.isVaries(TagEditField.ALBUM))
+            setVariesHint(albumBinding.albumArtistTextInputLayout, result.isVaries(TagEditField.ALBUM_ARTIST))
+            setVariesHint(albumBinding.conductorTextInputLayout, result.isVaries(TagEditField.CONDUCTOR))
+            setVariesHint(albumBinding.publisherTextInputLayout, result.isVaries(TagEditField.PUBLISHER))
+            setVariesHint(albumBinding.genreTextInputLayout, result.isVaries(TagEditField.GENRE))
+            setVariesHint(albumBinding.yearTextInputLayout, result.isVaries(TagEditField.YEAR))
+            setVariesHint(albumBinding.trackTotalTextInputLayout, result.isVaries(TagEditField.TRACK_TOTAL))
+            setVariesHint(albumBinding.discNumberTextInputLayout, result.isVaries(TagEditField.DISC_NUMBER))
+            setVariesHint(albumBinding.discTotalTextInputLayout, result.isVaries(TagEditField.DISC_TOTAL))
         }
-        viewModel.loadContent()
+    }
+
+    private fun setVariesHint(
+        layout: TextInputLayout,
+        varies: Boolean,
+    ) {
+        layout.helperText = if (varies) getString(R.string.tag_editor_varies) else null
+        layout.isHelperTextEnabled = varies
     }
 
     override fun onWrapFieldViews(
@@ -117,17 +147,72 @@ class AlbumTagEditorActivity : AbsTagEditorActivity() {
         viewModel.loadArtwork()
     }
 
+    override fun save() {
+        val destructiveChanged =
+            dirtyPropertyMap().keys.any { key ->
+                DESTRUCTIVE_FIELDS.any { it.propertyKey == key }
+            }
+        if (destructiveChanged && !destructiveConfirmed && viewModel.writableUris.size > 1) {
+            destructiveConfirmed = true
+            MaterialAlertDialogBuilder(this)
+                .setTitle(R.string.tag_editor_destructive_title)
+                .setMessage(getString(R.string.tag_editor_destructive_message, viewModel.writableUris.size))
+                .setPositiveButton(R.string.tag_editor_destructive_confirm) { _, _ -> save() }
+                .setNegativeButton(android.R.string.cancel) { _, _ -> destructiveConfirmed = false }
+                .setOnCancelListener { destructiveConfirmed = false }
+                .show()
+            return
+        }
+        destructiveConfirmed = false
+        super.save()
+    }
+
+    private fun dirtyPropertyMap(): Map<String, String?> =
+        buildMap {
+            addIfChanged(TagEditField.ALBUM, albumBinding.album.text?.toString())
+            addIfChanged(TagEditField.ALBUM_ARTIST, albumBinding.albumArtist.text?.toString())
+            addIfChanged(TagEditField.CONDUCTOR, albumBinding.conductor.text?.toString())
+            addIfChanged(TagEditField.PUBLISHER, albumBinding.publisher.text?.toString())
+            addIfChanged(TagEditField.GENRE, albumBinding.genre.text?.toString())
+            addIfChanged(TagEditField.YEAR, albumBinding.year.text?.toString())
+            addIfChanged(TagEditField.TRACK_TOTAL, albumBinding.trackTotal.text?.toString())
+            addIfChanged(TagEditField.DISC_NUMBER, albumBinding.discNumber.text?.toString())
+            addIfChanged(TagEditField.DISC_TOTAL, albumBinding.discTotal.text?.toString())
+        }
+
+    private fun MutableMap<String, String?>.addIfChanged(
+        field: TagEditField,
+        value: String?,
+    ) {
+        val current = value?.trim()?.takeIf { it.isNotEmpty() }
+        val initial = initialValues[field]?.trim()?.takeIf { it.isNotEmpty() }
+        if (current != initial) {
+            put(field.propertyKey, current)
+        }
+    }
+
     override val propertyMap: Map<String, String?>
-        get() =
-            hashMapOf(
-                MetadataReader.ALBUM to albumBinding.album.text?.toString(),
-                MetadataReader.ALBUM_ARTIST to albumBinding.albumArtist.text?.toString(),
-                MetadataReader.PRODUCER to albumBinding.conductor.text?.toString(),
-                MetadataReader.COPYRIGHT to albumBinding.publisher.text?.toString(),
-                MetadataReader.GENRE to albumBinding.genre.text?.toString(),
-                MetadataReader.YEAR to albumBinding.year.text?.toString(),
-                MetadataReader.TRACK_TOTAL to albumBinding.trackTotal.text?.toString(),
-                MetadataReader.DISC_NUMBER to albumBinding.discNumber.text?.toString(),
-                MetadataReader.DISC_TOTAL to albumBinding.discTotal.text?.toString(),
+        get() = dirtyPropertyMap()
+
+    private companion object {
+        val ALBUM_FIELDS =
+            listOf(
+                TagEditField.ALBUM,
+                TagEditField.ALBUM_ARTIST,
+                TagEditField.CONDUCTOR,
+                TagEditField.PUBLISHER,
+                TagEditField.GENRE,
+                TagEditField.YEAR,
+                TagEditField.TRACK_TOTAL,
+                TagEditField.DISC_NUMBER,
+                TagEditField.DISC_TOTAL,
             )
+
+        val DESTRUCTIVE_FIELDS =
+            setOf(
+                TagEditField.TRACK_TOTAL,
+                TagEditField.DISC_NUMBER,
+                TagEditField.DISC_TOTAL,
+            )
+    }
 }

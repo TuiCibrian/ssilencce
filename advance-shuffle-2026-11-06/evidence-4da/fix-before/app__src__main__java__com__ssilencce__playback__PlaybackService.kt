@@ -1,0 +1,1972 @@
+package com.ssilencce.playback
+
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+import android.animation.ValueAnimator
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.bluetooth.BluetoothA2dp
+import android.bluetooth.BluetoothDevice
+import android.bluetooth.BluetoothProfile
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.SharedPreferences
+import android.graphics.Bitmap
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
+import android.os.Process
+import android.util.Log
+import android.view.KeyEvent
+import androidx.annotation.OptIn
+import androidx.concurrent.futures.CallbackToFutureAdapter
+import androidx.core.content.ContextCompat
+import androidx.core.content.IntentCompat
+import androidx.core.content.edit
+import androidx.core.content.getSystemService
+import androidx.core.os.postDelayed
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.state.updateAppWidgetState
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.C
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
+import androidx.media3.common.Player
+import androidx.media3.common.Timeline
+import androidx.media3.common.TrackSelectionParameters.AudioOffloadPreferences
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
+import androidx.media3.exoplayer.source.ShuffleOrder.UnshuffledShuffleOrder
+import androidx.media3.extractor.DefaultExtractorsFactory
+import androidx.media3.extractor.mp3.Mp3Extractor
+import androidx.media3.session.CacheBitmapLoader
+import androidx.media3.session.CommandButton
+import androidx.media3.session.DefaultMediaNotificationProvider
+import androidx.media3.session.LibraryResult
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
+import androidx.media3.session.MediaSession
+import androidx.media3.session.MediaSession.MediaItemsWithStartPosition
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionError
+import androidx.media3.session.SessionResult
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.size.Scale
+import coil3.toBitmap
+import com.google.common.collect.ImmutableList
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
+import com.google.common.util.concurrent.SettableFuture
+import com.ssilencce.R
+import com.ssilencce.coil.CoilBitmapLoader
+import com.ssilencce.core.appwidgets.CardWidget
+import com.ssilencce.core.appwidgets.FullWidget
+import com.ssilencce.core.appwidgets.SsilencceGlanceWidget
+import com.ssilencce.core.appwidgets.WidgetTheme
+import com.ssilencce.core.appwidgets.state.PlaybackState
+import com.ssilencce.core.appwidgets.state.PlaybackStateDefinition
+import com.ssilencce.core.audio.AudioOutputObserver
+import com.ssilencce.core.model.action.HeadsetButtonAction
+import com.ssilencce.core.model.player.MetadataField
+import com.ssilencce.core.palette.PaletteProcessor
+import com.ssilencce.data.local.MediaStoreObserver
+import com.ssilencce.data.local.ReplayGainTagExtractor
+import com.ssilencce.data.local.repository.Repository
+import com.ssilencce.data.local.room.TrackPositionDao
+import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.network.NetworkFeature
+import com.ssilencce.data.model.network.ScrobblingService
+import com.ssilencce.extensions.isBluetoothA2dpConnected
+import com.ssilencce.extensions.isBluetoothA2dpDisconnected
+import com.ssilencce.extensions.showToast
+import com.ssilencce.playback.equalizer.EqualizerManager
+import com.ssilencce.playback.library.LibraryProvider
+import com.ssilencce.playback.library.MediaIDs
+import com.ssilencce.playback.processor.BalanceAudioProcessor
+import com.ssilencce.playback.processor.ReplayGainAudioProcessor
+import com.ssilencce.playback.renderer.AlacWorkaroundCodecSelector
+import com.ssilencce.playback.renderer.SsilencceRenderersFactory
+import com.ssilencce.ui.screen.MainActivity
+import com.ssilencce.util.ACTIVE_NAMED_QUEUE_ID
+import com.ssilencce.util.AUDIO_FOCUS_MODE
+import com.ssilencce.util.CLEAR_QUEUE_ON_COMPLETION
+import com.ssilencce.util.ENABLE_HISTORY
+import com.ssilencce.util.HEADSET_CLICK_DELAY_MS
+import com.ssilencce.util.HEADSET_DOUBLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_FOUR_PLUS_SEEK_FORWARD
+import com.ssilencce.util.HEADSET_LONG_PRESS_ACTION
+import com.ssilencce.util.HEADSET_SINGLE_CLICK_ACTION
+import com.ssilencce.util.HEADSET_TRIPLE_CLICK_ACTION
+import com.ssilencce.util.IGNORE_AUDIO_FOCUS
+import com.ssilencce.util.MP3_INDEX_SEEKING
+import com.ssilencce.util.PAUSE_ON_ZERO_VOLUME
+import com.ssilencce.util.PLAY_ON_STARTUP_MODE
+import com.ssilencce.util.PlayOnStartupMode
+import com.ssilencce.util.Preferences
+import com.ssilencce.util.Preferences.requireString
+import com.ssilencce.util.QUEUE_NEXT_MODE
+import com.ssilencce.util.REMEMBER_TRACK_POSITION
+import com.ssilencce.util.REWIND_WITH_BACK
+import com.ssilencce.util.SEEK_INTERVAL
+import com.ssilencce.util.SESSION_RECOVERY
+import com.ssilencce.util.STOP_WHEN_CLOSED_FROM_RECENTS
+import com.ssilencce.util.SongPlayCountHelper
+import com.ssilencce.util.WIDGET_DYNAMIC_COLORS
+import com.ssilencce.util.WIDGET_IMAGE_CORNER_RADIUS
+import com.ssilencce.util.WIDGET_SMALL_LAYOUT_STYLE
+import com.ssilencce.util.WIDGET_THIRD_LINE_CONTENT
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.guava.future
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import org.koin.android.ext.android.inject
+import java.io.ByteArrayOutputStream
+import kotlin.random.Random
+
+/**
+ * Process-wide one-shot guard for session recovery. A service recreation in the same process
+ * must not auto-resume again after the first recovery attempt.
+ */
+internal object SessionRecoveryGuard {
+    @Volatile
+    var consumed: Boolean = false
+}
+
+@OptIn(UnstableApi::class)
+class PlaybackService :
+    MediaLibraryService(),
+    MediaLibrarySession.Callback,
+    Player.Listener,
+    SharedPreferences.OnSharedPreferenceChangeListener {
+    private val serviceScope = CoroutineScope(Job() + Main)
+    private val namedQueueSwitchMutex = Mutex()
+    private val uiHandler = Handler(Looper.getMainLooper())
+
+    private val glanceManager by lazy { GlanceAppWidgetManager(applicationContext) }
+
+    private val preferences: SharedPreferences by inject()
+    private val sleepTimer: SleepTimer by inject()
+    private val equalizerManager: EqualizerManager by inject()
+    private val audioOutputObserver: AudioOutputObserver by inject()
+    private val repository: Repository by inject()
+    private val trackPositionDao: TrackPositionDao by inject()
+
+    private val libraryProvider = LibraryProvider(repository)
+    private val songPlayCountHelper = SongPlayCountHelper()
+    private val mediaStoreObserver =
+        MediaStoreObserver(uiHandler) {
+            mediaSession?.broadcastCustomCommand(
+                SessionCommand(Playback.EVENT_MEDIA_CONTENT_CHANGED, Bundle.EMPTY),
+                Bundle.EMPTY,
+            )
+        }
+
+    private val playerThread = HandlerThread("Ssilencce-ExoPlayer", Process.THREAD_PRIORITY_AUDIO)
+    private val balanceProcessor: BalanceAudioProcessor by inject()
+    private val replayGainProcessor: ReplayGainAudioProcessor by inject()
+
+    private lateinit var nm: NotificationManager
+    private lateinit var persistentStorage: PersistentStorage
+    private lateinit var audioFocusController: AudioFocusController
+    private lateinit var customCommands: List<CommandButton>
+    private lateinit var player: AdvancedForwardingPlayer
+    private var mediaSession: MediaLibrarySession? = null
+
+    private var eqStateHandler: Handler? = Handler(Looper.getMainLooper())
+
+    private var errorRecoveryRetryCount = 0
+    private var pausedByZeroVolume = false
+    private var hasSetUnshuffledOrder = false
+    private var stopIndex = -1
+
+    private var lastKnownPositionMs = 0L
+    private var lastKnownDurationMs = 0L
+    private var lastKnownMediaId: String? = null
+    private var lastPositionPersistedAt = 0L
+    private var suppressNextPerTrackRestore = false
+    private var positionSeekGeneration = 0L
+
+    private val headsetButtonController = HeadsetButtonController()
+    private val headsetKeyCodes =
+        setOf(
+            KeyEvent.KEYCODE_HEADSETHOOK,
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE,
+        )
+    private val headsetClickRunnable = Runnable { dispatchScheduledHeadsetClick() }
+
+    private var lastPlaybackState: PlaybackState? = null
+    private var widgetUpdateJob: Job? = null
+    private var fadeOutAnimator: ValueAnimator? = null
+
+    val isInTransientFocusLoss: Boolean
+        get() =
+            if (::audioFocusController.isInitialized) {
+                audioFocusController.isInTransientLoss
+            } else {
+                player.playbackSuppressionReason == Player.PLAYBACK_SUPPRESSION_REASON_TRANSIENT_AUDIO_FOCUS_LOSS
+            }
+
+    val isPlaying: Boolean
+        get() = player.isPlaying
+
+    /**
+     * Pauses playback for a user or policy action. This must disarm auto-resume even when the
+     * player is already paused, because no playWhenReady callback is emitted for a no-op pause.
+     */
+    private fun pausePlayback() {
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.onUserPause()
+        }
+        player.pause()
+    }
+
+    private fun currentHeadsetConfig(): HeadsetButtonConfig =
+        HeadsetButtonConfig(
+            single = Preferences.headsetSingleClickAction,
+            double = Preferences.headsetDoubleClickAction,
+            triple = Preferences.headsetTripleClickAction,
+            longPress = Preferences.headsetLongPressAction,
+            fourPlusSeekForward = Preferences.headsetFourPlusSeekForward,
+            delayMs = Preferences.headsetClickDelayMs,
+        )
+
+    private fun handleHeadsetDecision(decision: HeadsetButtonDecision) {
+        when (decision) {
+            is HeadsetButtonDecision.Dispatch -> {
+                uiHandler.removeCallbacks(headsetClickRunnable)
+                executeHeadsetAction(decision.action)
+            }
+
+            is HeadsetButtonDecision.Schedule -> {
+                uiHandler.removeCallbacks(headsetClickRunnable)
+                uiHandler.postDelayed(headsetClickRunnable, decision.delayMs)
+            }
+
+            HeadsetButtonDecision.Consumed -> {
+                Unit
+            }
+        }
+    }
+
+    private fun dispatchScheduledHeadsetClick() {
+        val config = currentHeadsetConfig()
+        handleHeadsetDecision(headsetButtonController.onScheduledDispatch(config))
+    }
+
+    private fun executeHeadsetAction(action: HeadsetButtonAction) {
+        if (!::player.isInitialized) return
+        when (action) {
+            HeadsetButtonAction.PlayPause -> if (player.isPlaying) pausePlayback() else player.play()
+            HeadsetButtonAction.Next -> player.seekToNext()
+            HeadsetButtonAction.Previous -> player.seekToPrevious()
+            HeadsetButtonAction.SeekForward -> player.seekForward()
+            HeadsetButtonAction.SeekBackward -> player.seekBack()
+            HeadsetButtonAction.Nothing -> Unit
+        }
+    }
+
+    private fun resetHeadsetClickState() {
+        uiHandler.removeCallbacks(headsetClickRunnable)
+        headsetButtonController.reset()
+    }
+
+    private val shuffleCommand: CommandButton
+        get() =
+            if (player.shuffleModeEnabled) {
+                customCommands[1]
+            } else {
+                customCommands[0]
+            }
+
+    private val repeatCommand: CommandButton
+        get() =
+            when (player.repeatMode) {
+                Player.REPEAT_MODE_ALL -> customCommands[3]
+                Player.REPEAT_MODE_ONE -> customCommands[4]
+                else -> customCommands[2]
+            }
+
+    private val pauseOnZeroVolume: Boolean
+        get() = preferences.getBoolean(PAUSE_ON_ZERO_VOLUME, false)
+    private val sequentialTimeline: Boolean
+        get() = preferences.getString(QUEUE_NEXT_MODE, "1") == "1"
+    private val handleAudioFocus: Boolean
+        get() = false
+    private val rememberTrackPosition: Boolean
+        get() = preferences.getBoolean(REMEMBER_TRACK_POSITION, false)
+    private val maxSeekToPreviousMs: Long
+        get() = if (preferences.getBoolean(REWIND_WITH_BACK, true)) REWIND_INSTEAD_PREVIOUS_MILLIS else 0
+    private val seekInterval: Long
+        get() = preferences.getInt(SEEK_INTERVAL, 10) * 1000L
+
+    override fun onCreate() {
+        super.onCreate()
+        nm = requireNotNull(getSystemService<NotificationManager>())
+        createNotificationChannel()
+
+        customCommands =
+            listOf(
+                CommandButton
+                    .Builder(CommandButton.ICON_SHUFFLE_OFF)
+                    .setDisplayName(getString(R.string.shuffle_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, true)
+                    .build(),
+                CommandButton
+                    .Builder(CommandButton.ICON_SHUFFLE_ON)
+                    .setDisplayName(getString(R.string.shuffle_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_SHUFFLE_MODE, false)
+                    .build(),
+                CommandButton
+                    .Builder(CommandButton.ICON_REPEAT_OFF)
+                    .setDisplayName(getString(R.string.repeat_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ALL)
+                    .build(),
+                CommandButton
+                    .Builder(CommandButton.ICON_REPEAT_ALL)
+                    .setDisplayName(getString(R.string.repeat_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_ONE)
+                    .build(),
+                CommandButton
+                    .Builder(CommandButton.ICON_REPEAT_ONE)
+                    .setDisplayName(getString(R.string.repeat_mode))
+                    .setPlayerCommand(Player.COMMAND_SET_REPEAT_MODE, Player.REPEAT_MODE_OFF)
+                    .build(),
+            )
+
+        playerThread.start()
+        player =
+            AdvancedForwardingPlayer(
+                ExoPlayer
+                    .Builder(this)
+                    .setWakeMode(C.WAKE_MODE_LOCAL)
+                    .setAudioAttributes(
+                        AudioAttributes
+                            .Builder()
+                            .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
+                            .setUsage(C.USAGE_MEDIA)
+                            .build(),
+                        handleAudioFocus,
+                    ).setRenderersFactory(
+                        SsilencceRenderersFactory(this, balanceProcessor, replayGainProcessor)
+                            .setEnableAudioFloatOutput(equalizerManager.audioFloatOutput.value)
+                            .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                            .setMediaCodecSelector(AlacWorkaroundCodecSelector())
+                            .setEnableDecoderFallback(true),
+                    ).setMediaSourceFactory(
+                        DefaultMediaSourceFactory(
+                            this,
+                            DefaultExtractorsFactory()
+                                .setConstantBitrateSeekingEnabled(true)
+                                .also {
+                                    if (preferences.getBoolean(MP3_INDEX_SEEKING, false)) {
+                                        it.setMp3ExtractorFlags(Mp3Extractor.FLAG_ENABLE_INDEX_SEEKING)
+                                    }
+                                },
+                        ),
+                    ).setSkipSilenceEnabled(equalizerManager.skipSilence.value)
+                    .setHandleAudioBecomingNoisy(true)
+                    .setMaxSeekToPreviousPositionMs(maxSeekToPreviousMs)
+                    .setSeekBackIncrementMs(seekInterval)
+                    .setSeekForwardIncrementMs(seekInterval)
+                    .setPlaybackLooper(playerThread.looper)
+                    .build(),
+            )
+
+        player.exoPlayer.shuffleOrder = ImprovedShuffleOrder(0, 0, Random.nextLong())
+        player.setSequentialTimelineEnabled(sequentialTimeline)
+        player.addListener(this)
+
+        audioFocusController =
+            AudioFocusController(
+                context = this,
+                player = player.exoPlayer,
+                preferences = preferences,
+                onPendingAskChanged = ::broadcastAudioFocusAsk,
+            )
+        player.onPlaybackIntent = audioFocusController::onPlaybackIntent
+
+        mediaSession =
+            with(MediaLibrarySession.Builder(this, player, this)) {
+                setId(packageName)
+                setSessionActivity(createSessionActivityIntent())
+                setBitmapLoader(CacheBitmapLoader(CoilBitmapLoader(this@PlaybackService)))
+                build()
+            }
+
+        setForegroundServiceTimeoutMs(FOREGROUND_SERVICE_TIMEOUT)
+        setMediaNotificationProvider(
+            DefaultMediaNotificationProvider(
+                this,
+                { _ -> NOTIFICATION_ID },
+                CHANNEL_ID,
+                R.string.playing_notification_description,
+            ).apply {
+                setSmallIcon(R.drawable.ic_stat_music_playback)
+            },
+        )
+
+        mediaStoreObserver.init(this)
+
+        persistentStorage = PersistentStorage(this, serviceScope, player)
+        persistentStorage.restoreState { items, shuffleOrder ->
+            val shouldResume =
+                !SessionRecoveryGuard.consumed &&
+                    preferences.getBoolean(SESSION_RECOVERY, false) &&
+                    persistentStorage.wasPlaying
+            suppressNextPerTrackRestore = items.mediaItems.isNotEmpty()
+            player.setMediaItems(items.mediaItems, items.startIndex, items.startPositionMs)
+            if (items.mediaItems.isEmpty()) {
+                suppressNextPerTrackRestore = false
+            }
+            player.prepare()
+            if (player.shuffleModeEnabled && shuffleOrder != null) {
+                player.exoPlayer.shuffleOrder = shuffleOrder
+            }
+            if (shouldResume && items.mediaItems.isNotEmpty()) {
+                SessionRecoveryGuard.consumed = true
+                player.play()
+            }
+        }
+        startTrackPositionObserver()
+
+        sleepTimer.addFinishListener { sleepParams ->
+            if (player.playWhenReady && player.isPlaying) {
+                if (sleepParams.pendingQuit) {
+                    player.exoPlayer.pauseAtEndOfMediaItems = true
+                } else {
+                    if (sleepParams.fadeOut) {
+                        launchMusicFadeOut(sleepParams.fadeDuration)
+                    } else {
+                        pausePlayback()
+                    }
+                }
+            }
+        }
+
+        preferences.registerOnSharedPreferenceChangeListener(this)
+        audioOutputObserver.startObserver()
+
+        prepareEqualizerAndSoundSettings()
+        registerReceivers()
+    }
+
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        if ((!isPlaybackOngoing && !isInTransientFocusLoss) ||
+            preferences.getBoolean(STOP_WHEN_CLOSED_FROM_RECENTS, false)
+        ) {
+            pauseAllPlayersAndStopSelf()
+        }
+    }
+
+    override fun onDestroy() {
+        if (!player.playWhenReady) {
+            persistentStorage.markNotPlaying()
+        }
+        persistentStorage.finish()
+        persistTrackPositionOnDestroy()
+        super.onDestroy()
+        if (bluetoothConnectedRegistered) {
+            unregisterReceiver(bluetoothReceiver)
+            bluetoothConnectedRegistered = false
+        }
+        if (headsetReceiverRegistered) {
+            unregisterReceiver(headsetReceiver)
+            headsetReceiverRegistered = false
+        }
+        eqStateHandler?.removeCallbacksAndMessages(null)
+        resetHeadsetClickState()
+        serviceScope.cancel()
+        preferences.unregisterOnSharedPreferenceChangeListener(this)
+        audioOutputObserver.stopObserver()
+        mediaStoreObserver.stop(this)
+        mediaSession?.release()
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.release()
+        }
+        player.removeListener(this)
+        player.release()
+        playerThread.quitSafely()
+        equalizerManager.release()
+        sleepTimer.release()
+    }
+
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
+        when (intent?.action) {
+            ACTION_TOGGLE_FAVORITE -> {
+                toggleFavorite()
+                return START_STICKY
+            }
+
+            ACTION_TOGGLE_SHUFFLE -> {
+                toggleShuffle()
+                return START_STICKY
+            }
+
+            ACTION_CYCLE_REPEAT -> {
+                cycleRepeat()
+                return START_STICKY
+            }
+        }
+        return super.onStartCommand(intent, flags, startId)
+    }
+
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? = mediaSession
+
+    override fun onConnect(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): MediaSession.ConnectionResult {
+        val connectionResult = super.onConnect(session, controller)
+        val availableCommands =
+            MediaSession.ConnectionResult.DEFAULT_SESSION_AND_LIBRARY_COMMANDS
+                .buildUpon()
+
+        availableCommands.add(SessionCommand(Playback.CYCLE_REPEAT, Bundle.EMPTY))
+        availableCommands.add(SessionCommand(Playback.TOGGLE_SHUFFLE, Bundle.EMPTY))
+        availableCommands.add(SessionCommand(Playback.TOGGLE_FAVORITE, Bundle.EMPTY))
+        if (controller.uid == Process.myUid()) {
+            APP_INTERNAL_COMMANDS.forEach { availableCommands.add(SessionCommand(it, Bundle.EMPTY)) }
+        }
+        availableCommands.add(SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY))
+        availableCommands.add(SessionCommand(Playback.SET_STOP_POSITION, Bundle.EMPTY))
+
+        return MediaSession.ConnectionResult.accept(
+            availableCommands.build(),
+            connectionResult.availablePlayerCommands,
+        )
+    }
+
+    override fun onMediaButtonEvent(
+        session: MediaSession,
+        controllerInfo: MediaSession.ControllerInfo,
+        intent: Intent,
+    ): Boolean {
+        val ke = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+        if (ke == null || ke.keyCode !in headsetKeyCodes) {
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
+        }
+        if (ke.action == KeyEvent.ACTION_DOWN) {
+            val config = currentHeadsetConfig()
+            val decision =
+                if (ke.repeatCount > 0) {
+                    headsetButtonController.onRepeat(config)
+                } else {
+                    headsetButtonController.onDown(config)
+                }
+            handleHeadsetDecision(decision)
+        }
+        return true
+    }
+
+    override fun onAudioSessionIdChanged(audioSessionId: Int) {
+        equalizerManager.setSessionId(audioSessionId)
+    }
+
+    override fun onGetLibraryRoot(
+        session: MediaLibraryService.MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<MediaItem>> {
+        val libraryParams =
+            LibraryParams
+                .Builder()
+                .setOffline(true)
+                .setRecent(true)
+                .setSuggested(false)
+                .build()
+        val mediaItem =
+            when {
+                params?.isRecent == true -> {
+                    MediaItem
+                        .Builder()
+                        .setMediaId(MediaIDs.RECENT_SONGS)
+                        .setMediaMetadata(
+                            MediaMetadata
+                                .Builder()
+                                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                                .setIsBrowsable(true)
+                                .setIsPlayable(false)
+                                .build(),
+                        ).build()
+                }
+
+                else -> {
+                    MediaItem
+                        .Builder()
+                        .setMediaId(MediaIDs.ROOT)
+                        .setMediaMetadata(
+                            MediaMetadata
+                                .Builder()
+                                .setMediaType(MediaMetadata.MEDIA_TYPE_FOLDER_MIXED)
+                                .setIsBrowsable(true)
+                                .setIsPlayable(false)
+                                .build(),
+                        ).build()
+                }
+            }
+        return Futures.immediateFuture(LibraryResult.ofItem(mediaItem, libraryParams))
+    }
+
+    override fun onGetChildren(
+        session: MediaLibraryService.MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        parentId: String,
+        page: Int,
+        pageSize: Int,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+        serviceScope.future(IO) {
+            val result =
+                runCatching {
+                    libraryProvider.getChildren(this@PlaybackService, parentId)
+                }
+            if (result.isSuccess) {
+                LibraryResult.ofItemList(result.getOrThrow(), params)
+            } else {
+                LibraryResult.ofError(SessionError.ERROR_UNKNOWN)
+            }
+        }
+
+    override fun onGetItem(
+        session: MediaLibraryService.MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        mediaId: String,
+    ): ListenableFuture<LibraryResult<MediaItem>> =
+        serviceScope.future(IO) {
+            val mediaItem =
+                runCatching { libraryProvider.getItem(mediaId) }
+                    .getOrDefault(MediaItem.EMPTY)
+            if (mediaItem != MediaItem.EMPTY) {
+                LibraryResult.ofItem(mediaItem, null)
+            } else {
+                LibraryResult.ofError(SessionError.ERROR_IO)
+            }
+        }
+
+    override fun onSearch(
+        session: MediaLibraryService.MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<Void>> =
+        serviceScope.future(IO) {
+            runCatching { libraryProvider.search(query) }
+                .onSuccess { session.notifySearchResultChanged(browser, query, it.size, params) }
+
+            LibraryResult.ofVoid()
+        }
+
+    override fun onGetSearchResult(
+        session: MediaLibraryService.MediaLibrarySession,
+        browser: MediaSession.ControllerInfo,
+        query: String,
+        page: Int,
+        pageSize: Int,
+        params: LibraryParams?,
+    ): ListenableFuture<LibraryResult<ImmutableList<MediaItem>>> =
+        Futures.immediateFuture(
+            LibraryResult.ofItemList(libraryProvider.searchResult, params),
+        )
+
+    override fun onAddMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>,
+    ): ListenableFuture<List<MediaItem>> =
+        serviceScope.future(IO) {
+            runCatching { libraryProvider.getMediaItemsForPlayback(mediaItems) }
+                .getOrDefault(emptyList())
+        }
+
+    override fun onSetMediaItems(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        mediaItems: List<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long,
+    ): ListenableFuture<MediaItemsWithStartPosition> {
+        player.exoPlayer.let { exoPlayer ->
+            if (exoPlayer.shuffleOrder !is ImprovedShuffleOrder && !hasSetUnshuffledOrder) {
+                exoPlayer.shuffleOrder =
+                    ImprovedShuffleOrder(
+                        firstIndex = player.currentMediaItemIndex,
+                        length = player.mediaItemCount,
+                        randomSeed = Random.nextLong(),
+                    )
+            }
+
+            (exoPlayer.shuffleOrder as? ImprovedShuffleOrder)
+                ?.playerIndex = startIndex
+
+            hasSetUnshuffledOrder = false
+        }
+        return serviceScope
+            .future(IO) {
+                if (mediaSession.isAutomotiveController(controller) ||
+                    mediaSession.isAutoCompanionController(controller)
+                ) {
+                    runCatching { libraryProvider.getMediaItemsForAAOSPlayback(mediaItems) }
+                        .getOrNull()
+                        .let {
+                            MediaItemsWithStartPosition(
+                                it?.first ?: emptyList(),
+                                it?.second ?: C.INDEX_UNSET,
+                                startPositionMs,
+                            )
+                        }
+                } else {
+                    runCatching {
+                        libraryProvider.getMediaItemsForPlayback(
+                            mediaItems = mediaItems,
+                            tryToResolveComplexPaths = true,
+                        )
+                    }.getOrDefault(emptyList()).let {
+                        MediaItemsWithStartPosition(it, startIndex, startPositionMs)
+                    }
+                }
+            }.also { future ->
+                future.addListener({
+                    val result = runCatching { future.get() }.getOrNull()
+                    if (result != null && result.mediaItems.isNotEmpty()) {
+                        this.mediaSession?.broadcastCustomCommand(
+                            SessionCommand(Playback.EVENT_PLAYBACK_STARTED, Bundle.EMPTY),
+                            Bundle.EMPTY,
+                        )
+                    }
+                }, ContextCompat.getMainExecutor(this))
+            }
+    }
+
+    override fun onCustomCommand(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        customCommand: SessionCommand,
+        args: Bundle,
+    ): ListenableFuture<SessionResult> {
+        if (customCommand.customAction in APP_INTERNAL_COMMANDS && controller.uid != Process.myUid()) {
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_PERMISSION_DENIED))
+        }
+        return when (customCommand.customAction) {
+            Playback.TOGGLE_SHUFFLE -> {
+                toggleShuffle()
+                Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+
+            Playback.RESHUFFLE_QUEUE -> {
+                if (!QueueReshufflePolicy.canReshuffle(player.shuffleModeEnabled, player.mediaItemCount)) {
+                    Futures.immediateFuture(SessionResult(SessionError.ERROR_INVALID_STATE))
+                } else {
+                    // Start the new order at the current item so the current media item and
+                    // position are retained; only the shuffle order changes.
+                    player.exoPlayer.shuffleOrder =
+                        ImprovedShuffleOrder(
+                            firstIndex = player.currentMediaItemIndex,
+                            length = player.mediaItemCount,
+                            randomSeed = Random.nextLong(),
+                        )
+                    persistentStorage.saveState()
+                    Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+
+            Playback.MOVE_QUEUE_BLOCK -> {
+                val fromIndices =
+                    customCommand.customExtras.getIntArray(Playback.EXTRA_MOVE_FROM_INDICES)
+                val toIndices =
+                    customCommand.customExtras.getIntArray(Playback.EXTRA_MOVE_TO_INDICES)
+                val itemCount = player.mediaItemCount
+                if (fromIndices == null ||
+                    toIndices == null ||
+                    fromIndices.isEmpty() ||
+                    fromIndices.size != toIndices.size ||
+                    fromIndices.any { it !in 0 until itemCount } ||
+                    toIndices.any { it !in 0 until itemCount }
+                ) {
+                    Futures.immediateFuture(SessionResult(SessionError.ERROR_INVALID_STATE))
+                } else {
+                    val oldCurrentIndex = player.currentMediaItemIndex
+                    val oldPosition = player.currentPosition
+                    val oldStopIndex = stopIndex
+                    val oldOrder = MutableList(itemCount) { it }
+                    for (index in fromIndices.indices) {
+                        val from = fromIndices[index]
+                        val to = toIndices[index]
+                        oldOrder.add(to, oldOrder.removeAt(from))
+                        player.moveMediaItem(from, to)
+                    }
+                    val newIndexByOld = IntArray(itemCount)
+                    oldOrder.forEachIndexed { newIndex, oldIndex ->
+                        newIndexByOld[oldIndex] = newIndex
+                    }
+                    val expectedCurrentIndex =
+                        newIndexByOld.getOrElse(oldCurrentIndex) { player.currentMediaItemIndex }
+                    if (player.currentMediaItemIndex != expectedCurrentIndex) {
+                        player.seekTo(expectedCurrentIndex, oldPosition)
+                    }
+                    QueueBatchMovePolicy
+                        .remapStopAfter(
+                            oldStopIndex = oldStopIndex,
+                            oldToNewIndex = newIndexByOld,
+                            currentMediaItemIndex = player.currentMediaItemIndex,
+                        )?.let { remap ->
+                            stopIndex = remap.stopIndex
+                            player.exoPlayer.pauseAtEndOfMediaItems =
+                                remap.pauseAtEndOfMediaItems
+                        }
+                    persistentStorage.saveState(true)
+                    Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+                }
+            }
+
+            Playback.CYCLE_REPEAT -> {
+                cycleRepeat()
+                Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+
+            Playback.TOGGLE_FAVORITE -> {
+                toggleFavorite()
+                Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+
+            Playback.RESTORE_PLAYBACK -> {
+                val playOnStartupMode = preferences.requireString(PLAY_ON_STARTUP_MODE, PlayOnStartupMode.NEVER)
+                if (playOnStartupMode != PlayOnStartupMode.NEVER) {
+                    CallbackToFutureAdapter.getFuture { completer ->
+                        persistentStorage.waitForRestoration {
+                            if (!player.currentTimeline.isEmpty) {
+                                mediaSession?.broadcastCustomCommand(
+                                    SessionCommand(
+                                        Playback.EVENT_PLAYBACK_RESTORED,
+                                        Bundle.EMPTY,
+                                    ),
+                                    Bundle.EMPTY,
+                                )
+                                completer.set(SessionResult(SessionResult.RESULT_SUCCESS))
+                            } else {
+                                completer.setException(IllegalStateException("Timeline is empty"))
+                            }
+                        }
+                    }
+                } else {
+                    Futures.immediateFuture(SessionResult(SessionError.ERROR_INVALID_STATE))
+                }
+            }
+
+            Playback.SET_UNSHUFFLED_ORDER -> {
+                hasSetUnshuffledOrder = true
+                player.exoPlayer.shuffleOrder = UnshuffledShuffleOrder(player.mediaItemCount)
+                Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+            }
+
+            Playback.SET_STOP_POSITION -> {
+                val newStopIndex = customCommand.customExtras.getInt("index", -1)
+                val canceled = newStopIndex > -1 && newStopIndex == stopIndex
+                if (canceled) {
+                    player.exoPlayer.pauseAtEndOfMediaItems = false
+                    stopIndex = -1
+                } else if (newStopIndex == player.currentMediaItemIndex) {
+                    player.exoPlayer.pauseAtEndOfMediaItems = true
+                    stopIndex = -1
+                } else {
+                    player.exoPlayer.pauseAtEndOfMediaItems = false
+                    stopIndex = newStopIndex
+                }
+                Futures.immediateFuture(
+                    SessionResult(
+                        SessionResult.RESULT_SUCCESS,
+                        Bundle().apply {
+                            putBoolean("canceled", canceled)
+                        },
+                    ),
+                )
+            }
+
+            Playback.CONFIRM_AUDIO_FOCUS -> {
+                val requestId = args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID)
+                val confirmed = requestId != null && audioFocusController.confirmPendingAsk(requestId)
+                Futures.immediateFuture(
+                    SessionResult(if (confirmed) SessionResult.RESULT_SUCCESS else SessionError.ERROR_INVALID_STATE),
+                )
+            }
+
+            Playback.CANCEL_AUDIO_FOCUS -> {
+                val requestId = args.getString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID)
+                val cancelled = requestId != null && audioFocusController.cancelPendingAsk(requestId)
+                Futures.immediateFuture(
+                    SessionResult(if (cancelled) SessionResult.RESULT_SUCCESS else SessionError.ERROR_INVALID_STATE),
+                )
+            }
+
+            Playback.GET_AUDIO_FOCUS_STATE -> {
+                Futures.immediateFuture(
+                    SessionResult(
+                        SessionResult.RESULT_SUCCESS,
+                        Bundle().apply {
+                            putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, audioFocusController.pendingAskId)
+                        },
+                    ),
+                )
+            }
+
+            Playback.SWITCH_NAMED_QUEUE -> {
+                switchNamedQueue(customCommand.customExtras)
+            }
+
+            else -> {
+                Futures.immediateFuture(SessionResult(SessionError.ERROR_NOT_SUPPORTED))
+            }
+        }
+    }
+
+    override fun onPlaybackResumption(
+        mediaSession: MediaSession,
+        controller: MediaSession.ControllerInfo,
+        isForPlayback: Boolean,
+    ): ListenableFuture<MediaItemsWithStartPosition> {
+        if (persistentStorage.restorationState.isRestored) {
+            return Futures.immediateFailedFuture(IllegalStateException("No MediaItems saved"))
+        } else {
+            val settableFuture = SettableFuture.create<MediaItemsWithStartPosition>()
+            persistentStorage.waitForMediaItems { items, shuffleOrder ->
+                if (items.mediaItems.isNotEmpty()) {
+                    if (player.shuffleModeEnabled && shuffleOrder != null) {
+                        player.exoPlayer.shuffleOrder = shuffleOrder
+                    }
+                    settableFuture.set(items)
+                } else {
+                    settableFuture.setException(IllegalStateException("No MediaItems saved"))
+                }
+            }
+            return settableFuture
+        }
+    }
+
+    override fun onPlaybackStateChanged(playbackState: Int) {
+        if (player.playbackState == Player.STATE_ENDED) {
+            forgetCurrentTrackPosition()
+        }
+        if (player.playbackState == Player.STATE_ENDED &&
+            preferences.getBoolean(CLEAR_QUEUE_ON_COMPLETION, false)
+        ) {
+            player.exoPlayer.clearMediaItems()
+        }
+        refreshMediaButtonCustomLayout()
+    }
+
+    override fun onTimelineChanged(
+        timeline: Timeline,
+        reason: Int,
+    ) {
+        persistentStorage.saveState(true)
+    }
+
+    override fun onPlayWhenReadyChanged(
+        playWhenReady: Boolean,
+        reason: Int,
+    ) {
+        if (::audioFocusController.isInitialized) {
+            audioFocusController.onPlayWhenReadyChanged(playWhenReady, reason)
+        }
+        if (reason == Player.PLAY_WHEN_READY_CHANGE_REASON_END_OF_MEDIA_ITEM) {
+            player.exoPlayer.pauseAtEndOfMediaItems = false
+            sleepTimer.consumePendingQuit()
+            if (stopIndex == player.currentMediaItemIndex) {
+                stopIndex = -1
+            }
+        }
+    }
+
+    override fun onIsPlayingChanged(isPlaying: Boolean) {
+        if (!isPlaying) {
+            rememberCurrentTrackPosition()
+            // Persist the inactive state immediately and again through the normal debounced path.
+            // If the service is destroyed before the debounce fires, recovery must not resume a
+            // queue that the user paused.
+            persistentStorage.markNotPlaying()
+            if (!player.currentTimeline.isEmpty) {
+                persistentStorage.saveState()
+            }
+        } else {
+            persistentStorage.saveState()
+        }
+        songPlayCountHelper.notifyPlayStateChanged(isPlaying)
+        updateWidgets()
+    }
+
+    override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+        updateWidgets()
+        refreshMediaButtonCustomLayout()
+        persistentStorage.saveState()
+    }
+
+    override fun onRepeatModeChanged(repeatMode: Int) {
+        updateWidgets()
+        refreshMediaButtonCustomLayout()
+        persistentStorage.saveState()
+    }
+
+    override fun onPositionDiscontinuity(
+        oldPosition: Player.PositionInfo,
+        newPosition: Player.PositionInfo,
+        reason: Int,
+    ) {
+        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+            // Any seek invalidates a bookmark lookup that was started for this item.
+            positionSeekGeneration++
+            // A same-item seek is not followed by onMediaItemTransition, so refresh the sample
+            // used when the user immediately skips to another track.
+            if (oldPosition.mediaItem?.mediaId == newPosition.mediaItem?.mediaId) {
+                lastKnownPositionMs = newPosition.positionMs.coerceAtLeast(0L)
+                val duration = player.duration
+                if (duration > 0) {
+                    lastKnownDurationMs = duration
+                }
+            }
+        }
+    }
+
+    override fun onMediaItemTransition(
+        mediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        handleTrackPositionTransition(mediaItem, reason)
+        val isPlaying = player.isPlaying
+
+        serviceScope.launch(IO) {
+            val newSong = repository.songByMediaItem(mediaItem)
+
+            val previousSong = songPlayCountHelper.song
+            val shouldBumpPlayCount = songPlayCountHelper.shouldBumpPlayCount()
+            songPlayCountHelper.notifySongChanged(newSong, isPlaying)
+
+            if (newSong != Song.emptySong) {
+                replayGainProcessor.currentGain = ReplayGainTagExtractor.getReplayGain(newSong)
+                if (preferences.getBoolean(ENABLE_HISTORY, true)) {
+                    repository.upsertSongInHistory(newSong)
+                }
+                if (NetworkFeature.Lastfm.NowPlaying.isAvailable) {
+                    launch { repository.updateNowPlaying(ScrobblingService.Lastfm, newSong) }
+                }
+                if (NetworkFeature.ListenBrainz.NowPlaying.isAvailable) {
+                    launch { repository.updateNowPlaying(ScrobblingService.ListenBrainz, newSong) }
+                }
+            }
+            if (previousSong != Song.emptySong) {
+                val timestampMillis = System.currentTimeMillis()
+                val timestampSeconds = (timestampMillis / 1000)
+                if (shouldBumpPlayCount) {
+                    repository.insertOrIncrementPlayCount(
+                        song = previousSong,
+                        timePlayed = timestampMillis,
+                    )
+                    if (NetworkFeature.Lastfm.Scrobbling.isAvailable) {
+                        launch { repository.scrobble(ScrobblingService.Lastfm, previousSong, timestampSeconds) }
+                    }
+                    if (NetworkFeature.ListenBrainz.Scrobbling.isAvailable) {
+                        launch { repository.scrobble(ScrobblingService.ListenBrainz, previousSong, timestampSeconds) }
+                    }
+                } else if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_SEEK) {
+                    repository.insertOrIncrementSkipCount(previousSong)
+                }
+            }
+        }
+
+        if (player.currentMediaItemIndex == stopIndex) {
+            player.exoPlayer.pauseAtEndOfMediaItems = true
+        }
+
+        persistentStorage.saveState()
+        updateWidgets(force = true)
+        applyRememberedTrackPosition(mediaItem, reason)
+    }
+
+    private fun persistTrackPositionOnDestroy() {
+        if (!rememberTrackPosition || !player.isPlaying) return
+        val mediaId = lastKnownMediaId ?: player.currentMediaItem?.mediaId ?: return
+        val duration = if (lastKnownDurationMs > 0) lastKnownDurationMs else player.duration
+        val position = player.currentPosition.coerceAtLeast(0L)
+        if (duration < LONG_TRACK_THRESHOLD_MS || position < TRACK_START_TOLERANCE_MS) return
+        TrackPositionWriter.persistFinalSnapshot(
+            dao = trackPositionDao,
+            snapshot = TrackPositionSnapshot(mediaId, position, duration),
+        )
+    }
+
+    private fun startTrackPositionObserver() =
+        serviceScope.launch {
+            while (true) {
+                delay(TRACK_POSITION_TICK_MS)
+                if (!player.isPlaying) continue
+                val mediaId = player.currentMediaItem?.mediaId ?: continue
+                val duration = player.duration
+                lastKnownMediaId = mediaId
+                lastKnownPositionMs = player.currentPosition
+                lastKnownDurationMs = duration
+                val now = System.currentTimeMillis()
+                if (rememberTrackPosition &&
+                    duration >= LONG_TRACK_THRESHOLD_MS &&
+                    now - lastPositionPersistedAt >= TRACK_POSITION_PERSIST_INTERVAL_MS
+                ) {
+                    persistTrackPosition(mediaId, lastKnownPositionMs)
+                    lastPositionPersistedAt = now
+                }
+            }
+        }
+
+    private fun handleTrackPositionTransition(
+        nextMediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        val previousMediaId = lastKnownMediaId
+        // At onMediaItemTransition the player already points at the next item, so currentPosition
+        // is not the previous track's position. lastKnown* is the last sample of the old track.
+        val previousPosition = lastKnownPositionMs.coerceAtLeast(0L)
+        val previousDuration = lastKnownDurationMs
+        if (previousMediaId != null && rememberTrackPosition) {
+            val completed =
+                reason == Player.MEDIA_ITEM_TRANSITION_REASON_AUTO ||
+                    reason == Player.MEDIA_ITEM_TRANSITION_REASON_REPEAT ||
+                    (
+                        previousDuration > 0 &&
+                            previousPosition >= previousDuration - TRACK_END_TOLERANCE_MS
+                    )
+            if (completed) {
+                TrackPositionWriter.delete(trackPositionDao, previousMediaId)
+            } else if (previousDuration >= LONG_TRACK_THRESHOLD_MS &&
+                previousPosition >= TRACK_START_TOLERANCE_MS
+            ) {
+                TrackPositionWriter.persist(trackPositionDao, previousMediaId, previousPosition)
+                TrackPositionWriter.prune(trackPositionDao, MAX_REMEMBERED_TRACKS)
+            }
+        }
+        lastKnownMediaId = nextMediaItem?.mediaId
+        lastKnownPositionMs = 0L
+        lastKnownDurationMs = 0L
+        lastPositionPersistedAt = 0L
+    }
+
+    private fun applyRememberedTrackPosition(
+        mediaItem: MediaItem?,
+        reason: Int,
+    ) {
+        // The first transition during a full-session restore must keep the queue-level
+        // position instead of applying a per-track position from another session. Consume the
+        // marker even when the feature is off or the item is null so it cannot suppress a later
+        // user transition.
+        if (suppressNextPerTrackRestore) {
+            suppressNextPerTrackRestore = false
+            return
+        }
+        if (mediaItem == null) return
+        if (!rememberTrackPosition) return
+        if (persistentStorage.restorationState != PersistentStorage.RestorationState.Restored) {
+            return
+        }
+        // The queue-level restore already seeks to the saved session position.
+        if (reason == Player.MEDIA_ITEM_TRANSITION_REASON_PLAYLIST_CHANGED &&
+            player.currentPosition >= TRACK_START_TOLERANCE_MS
+        ) {
+            return
+        }
+        val mediaId = mediaItem.mediaId
+        val generation = positionSeekGeneration
+        serviceScope.launch(IO) {
+            val saved = trackPositionDao.position(mediaId) ?: return@launch
+            val duration = withContext(Main) { player.duration }
+            val position = saved.positionMs
+            if (position < TRACK_START_TOLERANCE_MS) return@launch
+            if (duration > 0 && duration - position < TRACK_END_TOLERANCE_MS) return@launch
+            if (duration in 1 until LONG_TRACK_THRESHOLD_MS) return@launch
+            withContext(Main) {
+                if (generation == positionSeekGeneration &&
+                    player.currentMediaItem?.mediaId == mediaId
+                ) {
+                    player.seekTo(position)
+                }
+            }
+        }
+    }
+
+    private fun rememberCurrentTrackPosition() {
+        if (!rememberTrackPosition) return
+        val mediaId = player.currentMediaItem?.mediaId ?: lastKnownMediaId ?: return
+        val duration = if (lastKnownDurationMs > 0) lastKnownDurationMs else player.duration
+        // Pause must use the live player position and refresh the transition sample; otherwise
+        // a subsequent skip can persist an older observer sample over this accurate pause.
+        val position = player.currentPosition.coerceAtLeast(0L)
+        lastKnownMediaId = mediaId
+        lastKnownPositionMs = position
+        lastKnownDurationMs = duration
+        if (duration < LONG_TRACK_THRESHOLD_MS) return
+        if (position < TRACK_START_TOLERANCE_MS) {
+            TrackPositionWriter.delete(trackPositionDao, mediaId)
+            return
+        }
+        if (position >= duration - TRACK_END_TOLERANCE_MS) {
+            TrackPositionWriter.delete(trackPositionDao, mediaId)
+        } else {
+            persistTrackPosition(mediaId, position)
+        }
+    }
+
+    private fun persistTrackPosition(
+        mediaId: String,
+        positionMs: Long,
+    ) {
+        TrackPositionWriter.persist(trackPositionDao, mediaId, positionMs)
+        TrackPositionWriter.prune(trackPositionDao, MAX_REMEMBERED_TRACKS)
+    }
+
+    private fun forgetCurrentTrackPosition() {
+        val mediaId = player.currentMediaItem?.mediaId ?: lastKnownMediaId ?: return
+        lastKnownPositionMs = 0L
+        TrackPositionWriter.delete(trackPositionDao, mediaId)
+    }
+
+    override fun onPlayerError(error: PlaybackException) {
+        val nextMediaIndex = player.nextMediaItemIndex
+        if (nextMediaIndex != C.INDEX_UNSET &&
+            errorRecoveryRetryCount < MAX_RETRY_COUNT_AFTER_ERROR
+        ) {
+            errorRecoveryRetryCount++
+            player.seekToNextMediaItem()
+            player.prepare()
+        }
+        showToast(getString(R.string.playback_error_code, error.errorCodeName))
+    }
+
+    override fun onEvents(
+        player: Player,
+        events: Player.Events,
+    ) {
+        if (events.contains(Player.EVENT_IS_PLAYING_CHANGED) ||
+            events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION) ||
+            events.contains(Player.EVENT_TIMELINE_CHANGED)
+        ) {
+            if (player.isPlaying) errorRecoveryRetryCount = 0
+            cancelSleepTimerFadeOut()
+        }
+        if (events.contains(Player.EVENT_IS_PLAYING_CHANGED) &&
+            !events.contains(Player.EVENT_MEDIA_ITEM_TRANSITION)
+        ) {
+            updateEqualizerSessionState(player.isPlaying)
+        }
+        if (events.contains(Player.EVENT_SHUFFLE_MODE_ENABLED_CHANGED) &&
+            !events.contains(Player.EVENT_TIMELINE_CHANGED)
+        ) {
+            if (player.shuffleModeEnabled && persistentStorage.restorationState.isRestored) {
+                this.player.exoPlayer.shuffleOrder =
+                    ImprovedShuffleOrder(
+                        firstIndex = player.currentMediaItemIndex,
+                        length = player.mediaItemCount,
+                        randomSeed = Random.nextLong(),
+                    )
+            }
+        }
+    }
+
+    /*
+    override fun onTracksChanged(tracks: Tracks) {
+        var sampleRate = -1
+        var channelCount = -1
+        for (group in tracks.groups) {
+            if (group.type == C.TRACK_TYPE_AUDIO) {
+                for (i in 0 until group.length) {
+                    if (group.isTrackSelected(i)) {
+                        val format = group.getTrackFormat(i)
+                        sampleRate = format.sampleRate
+                        channelCount = format.channelCount
+                        break
+                    }
+                }
+            }
+        }
+        audioOutputObserver.updatePlaybackFormat(sampleRate, channelCount)
+    }
+     */
+
+    override fun onSharedPreferenceChanged(
+        preferences: SharedPreferences,
+        key: String?,
+    ) {
+        when (key) {
+            HEADSET_SINGLE_CLICK_ACTION,
+            HEADSET_DOUBLE_CLICK_ACTION,
+            HEADSET_TRIPLE_CLICK_ACTION,
+            HEADSET_LONG_PRESS_ACTION,
+            HEADSET_FOUR_PLUS_SEEK_FORWARD,
+            HEADSET_CLICK_DELAY_MS,
+            -> {
+                resetHeadsetClickState()
+            }
+
+            QUEUE_NEXT_MODE -> {
+                player.setSequentialTimelineEnabled(sequentialTimeline)
+            }
+
+            ENABLE_HISTORY -> {
+                if (!preferences.getBoolean(key, true)) {
+                    serviceScope.launch(IO) {
+                        repository.clearSongHistory()
+                    }
+                }
+            }
+
+            IGNORE_AUDIO_FOCUS -> {
+                if (::audioFocusController.isInitialized) {
+                    audioFocusController.onModeChanged()
+                }
+            }
+
+            AUDIO_FOCUS_MODE -> {
+                if (::audioFocusController.isInitialized) {
+                    audioFocusController.onModeChanged()
+                }
+            }
+
+            REWIND_WITH_BACK -> {
+                player.exoPlayer.setMaxSeekToPreviousPositionMs(maxSeekToPreviousMs)
+            }
+
+            SEEK_INTERVAL -> {
+                player.exoPlayer.setSeekBackIncrementMs(seekInterval)
+                player.exoPlayer.setSeekForwardIncrementMs(seekInterval)
+            }
+
+            WIDGET_DYNAMIC_COLORS,
+            WIDGET_SMALL_LAYOUT_STYLE,
+            WIDGET_IMAGE_CORNER_RADIUS,
+            WIDGET_THIRD_LINE_CONTENT,
+            -> {
+                updateWidgets()
+            }
+        }
+    }
+
+    private fun toggleShuffle() {
+        player.shuffleModeEnabled = !player.shuffleModeEnabled
+    }
+
+    private fun cycleRepeat() {
+        val currentRepeatMode = player.repeatMode
+        player.repeatMode =
+            when (currentRepeatMode) {
+                Player.REPEAT_MODE_OFF -> Player.REPEAT_MODE_ALL
+                Player.REPEAT_MODE_ALL -> Player.REPEAT_MODE_ONE
+                else -> Player.REPEAT_MODE_OFF
+            }
+    }
+
+    private fun toggleFavorite() =
+        serviceScope.launch {
+            val currentMediaItem =
+                player.currentMediaItem
+                    ?: return@launch
+
+            withContext(IO) {
+                val song = repository.songByMediaItem(currentMediaItem)
+                repository.toggleFavorite(song)
+            }
+
+            updateWidgets()
+
+            refreshMediaButtonCustomLayout()
+            mediaSession?.broadcastCustomCommand(
+                SessionCommand(Playback.EVENT_FAVORITE_CONTENT_CHANGED, Bundle.EMPTY),
+                Bundle.EMPTY,
+            )
+        }
+
+    private suspend fun buildPlaybackState(isForeground: Boolean): PlaybackState {
+        val mediaItem = player.currentMediaItem
+        val id = mediaItem?.mediaId?.toLongOrNull()
+        if (mediaItem == null || id == null) return PlaybackState.empty
+
+        val isPlaying = player.isPlaying
+        val isShuffleMode = player.shuffleModeEnabled
+        val repeatMode = player.repeatMode
+        return withContext(IO) {
+            val song = repository.songById(id)
+            val isFavorite = repository.isSongFavorite(song.id)
+            val result =
+                SingletonImageLoader.get(this@PlaybackService).execute(
+                    ImageRequest
+                        .Builder(this@PlaybackService)
+                        .data(song)
+                        .scale(Scale.FILL)
+                        .size(300)
+                        .build(),
+                )
+            val bitmap = result.image?.toBitmap(300, 300)
+            val artworkData =
+                bitmap?.let {
+                    val stream = ByteArrayOutputStream()
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        it.compress(Bitmap.CompressFormat.WEBP_LOSSY, 80, stream)
+                    } else {
+                        it.compress(Bitmap.CompressFormat.JPEG, 85, stream)
+                    }
+                    stream.toByteArray()
+                }
+            val widgetTheme =
+                if (preferences.getBoolean(WIDGET_DYNAMIC_COLORS, false)) {
+                    val paletteColor =
+                        bitmap?.let {
+                            PaletteProcessor.getPaletteColor(this@PlaybackService, bitmap)
+                        }
+                    if (paletteColor != null) {
+                        WidgetTheme(paletteColor.backgroundColor)
+                    } else {
+                        null
+                    }
+                } else {
+                    null
+                }
+            val additionalInfo =
+                MetadataField.getMetadataValue(
+                    song = song,
+                    fields =
+                        Preferences.getExtraInfoContent(
+                            key = WIDGET_THIRD_LINE_CONTENT,
+                            defaultContent = Preferences.getDefaultWidgetInfo(),
+                        ),
+                )
+            PlaybackState(
+                isSimplifiedSmallLayout = preferences.getString(WIDGET_SMALL_LAYOUT_STYLE, null) == "simplified",
+                isForeground = isForeground,
+                isPlaying = isPlaying,
+                isFavorite = isFavorite,
+                isShuffleMode = isShuffleMode,
+                repeatMode = repeatMode,
+                currentTitle = song.title,
+                currentArtist = song.artistName,
+                additionalInfo = additionalInfo,
+                artworkData = artworkData,
+                widgetTheme = widgetTheme,
+                imageCornerRadius = preferences.getInt(WIDGET_IMAGE_CORNER_RADIUS, 8).toFloat(),
+            )
+        }
+    }
+
+    private data class OutgoingNamedQueueState(
+        val previousQueueId: String?,
+        val mediaIds: List<String>,
+        val resumeIndex: Int,
+        val repeatMode: Int,
+        val shuffleEnabled: Boolean,
+        val save: Deferred<Unit>?,
+    )
+
+    private fun switchNamedQueue(extras: Bundle): ListenableFuture<SessionResult> {
+        val targetQueueId = extras.getString("queueId")
+        val mediaIds = extras.getStringArrayList("mediaIds")
+        if (targetQueueId == null || mediaIds.isNullOrEmpty()) {
+            return Futures.immediateFuture(SessionResult(SessionError.ERROR_BAD_VALUE))
+        }
+        val future = SettableFuture.create<SessionResult>()
+        serviceScope.launch {
+            try {
+                namedQueueSwitchMutex.withLock {
+                    val requestedItems =
+                        mediaIds.map { mediaId ->
+                            MediaItem.Builder().setMediaId(mediaId).build()
+                        }
+                    val (resolvedSongs, _) =
+                        withContext(IO) { repository.songsByMediaItems(requestedItems) }
+                    val restoredItems = withContext(IO) { resolvedSongs.toMediaItems() }
+                    if (restoredItems.isEmpty()) {
+                        future.set(SessionResult(SessionError.ERROR_BAD_VALUE))
+                        return@launch
+                    }
+
+                    val savedToRestored = IntArray(mediaIds.size) { -1 }
+                    var restoredPointer = 0
+                    mediaIds.forEachIndexed { savedIndex, mediaId ->
+                        if (resolvedSongs.getOrNull(restoredPointer)?.id?.toString() == mediaId) {
+                            savedToRestored[savedIndex] = restoredPointer
+                            restoredPointer++
+                        }
+                    }
+                    var startIndex = 0
+                    var startPositionMs = 0L
+                    val savedStartIndex = extras.getInt("startIndex", 0)
+                    if (savedStartIndex in savedToRestored.indices) {
+                        val mappedIndex = savedToRestored[savedStartIndex]
+                        if (mappedIndex >= 0) {
+                            startIndex = mappedIndex
+                            startPositionMs = extras.getLong("startPositionMs", 0L)
+                        }
+                    }
+
+                    val targetMediaIds = restoredItems.map { it.mediaId }
+                    var switched = false
+                    var attempts = 0
+                    while (!switched && attempts < MAX_OUTGOING_SAVE_ATTEMPTS) {
+                        attempts++
+                        val outgoing =
+                            withContext(Main) {
+                                val previousQueueId = preferences.getString(ACTIVE_NAMED_QUEUE_ID, null)
+                                val mediaIds = player.mediaItems.map { it.mediaId }
+                                val resumeIndex = player.currentMediaItemIndex
+                                val repeatMode = player.repeatMode
+                                val shuffleEnabled = player.shuffleModeEnabled
+                                val save =
+                                    if (previousQueueId != null && previousQueueId != targetQueueId) {
+                                        persistentStorage.saveNamedQueueState(previousQueueId)
+                                    } else {
+                                        null
+                                    }
+                                OutgoingNamedQueueState(
+                                    previousQueueId = previousQueueId,
+                                    mediaIds = mediaIds,
+                                    resumeIndex = resumeIndex,
+                                    repeatMode = repeatMode,
+                                    shuffleEnabled = shuffleEnabled,
+                                    save = save,
+                                )
+                            }
+                        try {
+                            outgoing.save?.let { save -> withContext(IO) { save.await() } }
+                        } catch (cancellation: CancellationException) {
+                            throw cancellation
+                        } catch (error: Exception) {
+                            Log.e(TAG, "Departing named queue was not saved before switch", error)
+                            future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+                            return@launch
+                        }
+                        switched =
+                            withContext(Main) {
+                                if (preferences.getString(ACTIVE_NAMED_QUEUE_ID, null) != outgoing.previousQueueId ||
+                                    player.mediaItems.map { it.mediaId } != outgoing.mediaIds ||
+                                    player.currentMediaItemIndex != outgoing.resumeIndex ||
+                                    player.repeatMode != outgoing.repeatMode ||
+                                    player.shuffleModeEnabled != outgoing.shuffleEnabled
+                                ) {
+                                    return@withContext false
+                                }
+                                persistentStorage.expectNamedQueueSwitch(targetQueueId, targetMediaIds)
+                                // Bind only after the departing snapshot is durably queued and
+                                // current; setMediaItems triggers a synchronous save.
+                                preferences.edit { putString(ACTIVE_NAMED_QUEUE_ID, targetQueueId) }
+                                var timelineApplied = false
+                                try {
+                                    player.setMediaItems(restoredItems, startIndex, startPositionMs)
+                                    timelineApplied = true
+                                    persistentStorage.markNamedQueueSwitchApplied()
+                                    player.repeatMode = extras.getInt("repeatMode", Player.REPEAT_MODE_OFF)
+                                    player.shuffleModeEnabled = extras.getBoolean("shuffleEnabled", false)
+                                    player.prepare()
+                                    player.play()
+                                } catch (throwable: Throwable) {
+                                    if (!timelineApplied) {
+                                        timelineApplied =
+                                            player.mediaItems.map { it.mediaId } == targetMediaIds
+                                        if (timelineApplied) persistentStorage.markNamedQueueSwitchApplied()
+                                    }
+                                    if (!timelineApplied) {
+                                        persistentStorage.cancelNamedQueueSwitch()
+                                        preferences.edit {
+                                            if (outgoing.previousQueueId != null) {
+                                                putString(ACTIVE_NAMED_QUEUE_ID, outgoing.previousQueueId)
+                                            } else {
+                                                remove(ACTIVE_NAMED_QUEUE_ID)
+                                            }
+                                        }
+                                        throw throwable
+                                    }
+                                    // The target timeline and binding are committed. A later setup
+                                    // failure must not turn the switch into a UI error or roll back
+                                    // the binding to the departing queue.
+                                    Log.e(TAG, "Named queue switched but setup failed", throwable)
+                                }
+                                true
+                            }
+                    }
+                    if (!switched) {
+                        Log.e(TAG, "Named queue switch aborted because departing state kept changing")
+                        future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+                        return@launch
+                    }
+                    future.set(
+                        SessionResult(
+                            SessionResult.RESULT_SUCCESS,
+                            Bundle().apply { putBoolean("switched", true) },
+                        ),
+                    )
+                }
+            } catch (cancellation: CancellationException) {
+                future.cancel(false)
+                throw cancellation
+            } catch (throwable: Throwable) {
+                Log.e(TAG, "Failed to switch named queue", throwable)
+                future.set(SessionResult(SessionError.ERROR_UNKNOWN))
+            }
+        }
+        return future
+    }
+
+    private fun broadcastAudioFocusAsk(requestId: String?) {
+        val session = mediaSession ?: return
+        val args = Bundle().apply { putString(Playback.EXTRA_AUDIO_FOCUS_REQUEST_ID, requestId) }
+        session.connectedControllers.filter { it.uid == Process.myUid() }.forEach {
+            session.sendCustomCommand(it, SessionCommand(Playback.EVENT_AUDIO_FOCUS_ASK, Bundle.EMPTY), args)
+        }
+    }
+
+    private fun updateWidgets(
+        force: Boolean = false,
+        isForeground: Boolean = isPlaybackOngoing,
+    ) {
+        widgetUpdateJob?.cancel()
+        widgetUpdateJob =
+            serviceScope.launch {
+                if (!force) delay(WIDGET_UPDATE_DEBOUNCE)
+
+                val state = buildPlaybackState(isForeground)
+                if (lastPlaybackState != state) {
+                    lastPlaybackState = state
+                    updateGlanceWidgets(state)
+                }
+            }
+    }
+
+    private suspend fun updateGlanceWidgets(playbackState: PlaybackState) =
+        withContext(IO) {
+            try {
+                val ssilencceWidget = SsilencceGlanceWidget()
+                val ssilencceWidgetIds = glanceManager.getGlanceIds(ssilencceWidget.javaClass)
+                if (ssilencceWidgetIds.isNotEmpty()) {
+                    ssilencceWidgetIds.forEach { id ->
+                        updateAppWidgetState(applicationContext, PlaybackStateDefinition, id) {
+                            playbackState
+                        }
+                        ssilencceWidget.update(applicationContext, id)
+                    }
+                }
+
+                val cardWidget = CardWidget()
+                val cardWidgetIds = glanceManager.getGlanceIds(cardWidget.javaClass)
+                if (cardWidgetIds.isNotEmpty()) {
+                    cardWidgetIds.forEach { id ->
+                        updateAppWidgetState(applicationContext, PlaybackStateDefinition, id) {
+                            playbackState
+                        }
+                        cardWidget.update(applicationContext, id)
+                    }
+                }
+
+                val fullWidget = FullWidget()
+                val fullWidgetIds = glanceManager.getGlanceIds(fullWidget.javaClass)
+                if (fullWidgetIds.isNotEmpty()) {
+                    fullWidgetIds.forEach { id ->
+                        updateAppWidgetState(applicationContext, PlaybackStateDefinition, id) {
+                            playbackState
+                        }
+                        fullWidget.update(applicationContext, id)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("PlaybackService", "Couldn't update Glance widgets", e)
+            }
+        }
+
+    private fun createSessionActivityIntent(): PendingIntent {
+        val intent =
+            Intent(this, MainActivity::class.java)
+                .setFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        return PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+    }
+
+    private fun createNotificationChannel() {
+        var notificationChannel = nm.getNotificationChannel(CHANNEL_ID)
+        if (notificationChannel == null) {
+            notificationChannel =
+                NotificationChannel(
+                    CHANNEL_ID,
+                    getString(R.string.playing_notification_name),
+                    NotificationManager.IMPORTANCE_LOW,
+                ).apply {
+                    description = getString(R.string.playing_notification_description)
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O_MR1) {
+                        setShowBadge(false)
+                    }
+                }
+            nm.createNotificationChannel(notificationChannel)
+        }
+    }
+
+    private fun refreshMediaButtonCustomLayout() {
+        val hasTimeline = !player.currentTimeline.isEmpty
+        mediaSession?.connectedControllers?.forEach { controllerInfo ->
+            if (mediaSession?.isRemoteController(controllerInfo) == true) {
+                val buttonLayout =
+                    if (hasTimeline) {
+                        ImmutableList.of(repeatCommand, shuffleCommand)
+                    } else {
+                        emptyList()
+                    }
+                mediaSession?.setMediaButtonPreferences(controllerInfo, buttonLayout)
+            }
+        }
+    }
+
+    private fun launchMusicFadeOut(durationMs: Long = 1000) {
+        cancelSleepTimerFadeOut()
+
+        fadeOutAnimator =
+            ValueAnimator.ofFloat(player.volume, 0f).apply {
+                duration = durationMs
+                addUpdateListener { animation ->
+                    player.volume = animation.animatedValue as Float
+                }
+                addListener(
+                    object : AnimatorListenerAdapter() {
+                        override fun onAnimationCancel(animation: Animator) {
+                            restorePlayerVolume()
+                        }
+
+                        override fun onAnimationEnd(animation: Animator) {
+                            pausePlayback()
+                            restorePlayerVolume()
+                        }
+                    },
+                )
+            }
+        fadeOutAnimator?.start()
+    }
+
+    private fun cancelSleepTimerFadeOut() {
+        fadeOutAnimator?.cancel()
+        fadeOutAnimator = null
+
+        restorePlayerVolume()
+    }
+
+    private fun restorePlayerVolume() {
+        player.volume = equalizerManager.volumeState.value.currentVolume
+    }
+
+    private fun prepareEqualizerAndSoundSettings() {
+        serviceScope.launch {
+            equalizerManager.initializeEqualizer()
+        }
+        serviceScope.launch {
+            equalizerManager.volumeState.collect { volume ->
+                cancelSleepTimerFadeOut()
+                player.volume = volume.currentVolume
+            }
+        }
+        serviceScope.launch {
+            equalizerManager.audioOffload.collect { audioOffloadingEnabled ->
+                player.trackSelectionParameters =
+                    player.trackSelectionParameters
+                        .buildUpon()
+                        .setAudioOffloadPreferences(
+                            AudioOffloadPreferences
+                                .Builder()
+                                .setAudioOffloadMode(
+                                    if (audioOffloadingEnabled) {
+                                        AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_ENABLED
+                                    } else {
+                                        AudioOffloadPreferences.AUDIO_OFFLOAD_MODE_DISABLED
+                                    },
+                                ).setIsSpeedChangeSupportRequired(true)
+                                .build(),
+                        ).build()
+            }
+        }
+        serviceScope.launch {
+            equalizerManager.skipSilence.collect {
+                player.exoPlayer.skipSilenceEnabled = it
+            }
+        }
+        serviceScope.launch {
+            equalizerManager.tempoState.collect {
+                player.playbackParameters = PlaybackParameters(it.speed, it.actualPitch)
+            }
+        }
+        serviceScope.launch {
+            audioOutputObserver.systemVolumeState.collect { systemVolume ->
+                if (pauseOnZeroVolume && persistentStorage.restorationState.isRestored) {
+                    // don't handle volume changes until our player is fully restored
+                    if (isPlaying && systemVolume.currentVolume <= 0f) {
+                        pausePlayback()
+                        pausedByZeroVolume = true
+                    } else if (pausedByZeroVolume && systemVolume.currentVolume >= 0.1f) {
+                        player.play()
+                        pausedByZeroVolume = false
+                    }
+                }
+            }
+        }
+    }
+
+    private fun updateEqualizerSessionState(isPlaying: Boolean) {
+        eqStateHandler?.removeCallbacksAndMessages(null)
+        if (isPlaying) {
+            equalizerManager.setSessionIsActive(true)
+        } else {
+            eqStateHandler?.postDelayed(500) {
+                equalizerManager.setSessionIsActive(false)
+            }
+        }
+    }
+
+    private fun registerReceivers() {
+        if (!bluetoothConnectedRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                bluetoothReceiver,
+                bluetoothConnectedIntentFilter,
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+            bluetoothConnectedRegistered = true
+        }
+
+        if (!headsetReceiverRegistered) {
+            ContextCompat.registerReceiver(
+                this,
+                headsetReceiver,
+                headsetReceiverIntentFilter,
+                ContextCompat.RECEIVER_EXPORTED,
+            )
+            headsetReceiverRegistered = true
+        }
+    }
+
+    private var bluetoothConnectedRegistered = false
+    private val bluetoothConnectedIntentFilter =
+        IntentFilter().apply {
+            addAction(BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+            addAction(BluetoothDevice.ACTION_ACL_CONNECTED)
+            addAction(BluetoothDevice.ACTION_ACL_DISCONNECTED)
+        }
+    private val bluetoothReceiver: BroadcastReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent?,
+            ) {
+                when (intent?.action) {
+                    BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED -> {
+                        when (intent.getIntExtra(BluetoothProfile.EXTRA_STATE, -1)) {
+                            BluetoothA2dp.STATE_CONNECTED -> {
+                                if (Preferences.isResumeOnConnect(true)) {
+                                    player.play()
+                                }
+                            }
+
+                            BluetoothA2dp.STATE_DISCONNECTED -> {
+                                if (Preferences.isPauseOnDisconnect(true)) {
+                                    pausePlayback()
+                                }
+                            }
+                        }
+                    }
+
+                    BluetoothDevice.ACTION_ACL_CONNECTED -> {
+                        if (context.isBluetoothA2dpConnected() && Preferences.isResumeOnConnect(true)) {
+                            player.play()
+                        }
+                    }
+
+                    BluetoothDevice.ACTION_ACL_DISCONNECTED -> {
+                        if (context.isBluetoothA2dpDisconnected() && Preferences.isPauseOnDisconnect(true)) {
+                            pausePlayback()
+                        }
+                    }
+                }
+            }
+        }
+
+    private var receivedHeadsetConnected = false
+    private var headsetReceiverRegistered = false
+    private val headsetReceiverIntentFilter = IntentFilter(Intent.ACTION_HEADSET_PLUG)
+    private val headsetReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent,
+            ) {
+                if (Intent.ACTION_HEADSET_PLUG == intent.action && !isInitialStickyBroadcast) {
+                    when (intent.getIntExtra("state", -1)) {
+                        0 -> {
+                            if (Preferences.isPauseOnDisconnect(false)) {
+                                pausePlayback()
+                            }
+                        }
+
+                        // Check whether the current song is empty which means the playing queue hasn't restored yet
+                        1 -> {
+                            if (Preferences.isResumeOnConnect(false)) {
+                                if (player.currentMediaItem != null) {
+                                    player.play()
+                                } else {
+                                    receivedHeadsetConnected = true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+    companion object {
+        private const val TAG = "PlaybackService"
+        private const val PACKAGE_NAME = "com.ssilencce"
+        private val APP_INTERNAL_COMMANDS =
+            setOf(
+                Playback.RESTORE_PLAYBACK,
+                Playback.CONFIRM_AUDIO_FOCUS,
+                Playback.CANCEL_AUDIO_FOCUS,
+                Playback.GET_AUDIO_FOCUS_STATE,
+                Playback.SWITCH_NAMED_QUEUE,
+                Playback.RESHUFFLE_QUEUE,
+                Playback.MOVE_QUEUE_BLOCK,
+            )
+
+        const val ACTION_TOGGLE_SHUFFLE = "$PACKAGE_NAME.action.ACTION_TOGGLE_SHUFFLE"
+        const val ACTION_CYCLE_REPEAT = "$PACKAGE_NAME.action.ACTION_CYCLE_REPEAT"
+        const val ACTION_TOGGLE_FAVORITE = "$PACKAGE_NAME.action.ACTION_TOGGLE_FAVORITE"
+
+        private const val NOTIFICATION_ID = 1
+        private const val CHANNEL_ID = "playing_notification"
+
+        private const val MAX_RETRY_COUNT_AFTER_ERROR = 3
+        private const val MAX_OUTGOING_SAVE_ATTEMPTS = 3
+        private const val WIDGET_UPDATE_DEBOUNCE = 300L
+        private const val REWIND_INSTEAD_PREVIOUS_MILLIS = 5000L
+
+        private const val FOREGROUND_SERVICE_TIMEOUT = (60 * 1000) * 2L
+
+        private const val LONG_TRACK_THRESHOLD_MS = 10 * 60 * 1000L
+        private const val TRACK_POSITION_TICK_MS = 5000L
+        private const val TRACK_POSITION_PERSIST_INTERVAL_MS = 15000L
+        private const val TRACK_START_TOLERANCE_MS = 5000L
+        private const val TRACK_END_TOLERANCE_MS = 5000L
+        private const val MAX_REMEMBERED_TRACKS = 500
+    }
+}

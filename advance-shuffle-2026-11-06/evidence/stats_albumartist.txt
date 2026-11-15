@@ -1,0 +1,15 @@
+﻿== albumartist ==
+runs 30 lengths [20]
+all runs are full 20-id permutations: True
+counts {60: 0, 61: 0, 62: 13, 63: 12, 64: 14, 65: 25, 66: 25, 67: 0, 68: 0, 69: 0, 70: 0, 71: 0, 72: 0, 73: 0, 74: 0, 75: 0, 76: 0, 77: 0, 78: 0, 79: 0}
+weights {60: 1.0, 61: 1.0, 62: 4.2581, 63: 4.2581, 64: 5.1744, 65: 5.1744, 66: 5.1744, 67: 1.0, 68: 1.0, 69: 1.0, 70: 1.0, 71: 1.0, 72: 1.0, 73: 1.0, 74: 1.0, 75: 1.0, 76: 1.0, 77: 1.0, 78: 1.0, 79: 1.0}
+observed mean rank AA_H: 6.611  simulated mean 5.311  sim sd 1.913
+observed mean rank AA_L: 14.511  simulated mean 12.120  sim sd 2.915
+observed mean rank F_H: 7.650  simulated mean 5.986  sim sd 2.629
+observed mean rank F_C: 14.033  simulated mean 12.125  sim sd 3.709
+compare AA_H vs AA_L: observed diff -7.900, sim mean -6.809, z=-0.298, model-fit p=0.41580
+  per-run sign test: 30/30 runs favor AA_H; one-sided sign p=9.313e-10; mean d=-7.900; sd=3.525
+compare F_H vs F_C: observed diff -6.383, sim mean -6.138, z=-0.052, model-fit p=0.51620
+  per-run sign test: 25/30 runs favor F_H; one-sided sign p=1.625e-04; mean d=-6.383; sd=5.462
+compare AA_H vs F_C: observed diff -7.422, sim mean -6.813, z=-0.141, model-fit p=0.47395
+  per-run sign test: 29/30 runs favor AA_H; one-sided sign p=2.887e-08; mean d=-7.422; sd=3.757

@@ -22,15 +22,18 @@ import android.content.ContentResolver
 import android.content.Context
 import android.database.Cursor
 import android.net.Uri
+import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.provider.MediaStore.Audio.AudioColumns
+import android.provider.MediaStore.MediaColumns
 import android.provider.OpenableColumns
 import android.util.Log
 import androidx.media3.common.MediaItem
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.local.MediaQueryDispatcher
+import com.ssilencce.data.local.SongDurationFilterPolicy
 import com.ssilencce.data.local.room.InclExclDao
 import com.ssilencce.data.local.room.InclExclEntity
 import com.ssilencce.data.model.Album
@@ -97,7 +100,14 @@ class RealSongRepository(
             it.takeOrDefault(Song.emptySong) { getSongFromCursorImpl(this) }
         }
 
-    override fun song(songId: Long): Song = song(makeSongCursor("${AudioColumns._ID}=?", arrayOf(songId.toString())))
+    override fun song(songId: Long): Song =
+        song(
+            makeSongCursor(
+                selection = "${AudioColumns._ID}=?",
+                selectionValues = arrayOf(songId.toString()),
+                skipDurationFilter = true,
+            ),
+        )
 
     override suspend fun songsByUri(uri: Uri): List<Song> {
         var songs: List<Song> = emptyList()
@@ -185,6 +195,7 @@ class RealSongRepository(
                                 selectionValues = selectionArgs,
                                 whitelistedPaths = whitelistedPaths,
                                 blacklistedPaths = blacklistedPaths,
+                                skipDurationFilter = true,
                             ),
                         ),
                     )
@@ -217,6 +228,7 @@ class RealSongRepository(
                         makeSongCursor(
                             selection = "${AudioColumns._ID}=?",
                             selectionValues = arrayOf(mediaItem.mediaId),
+                            skipDurationFilter = true,
                         ),
                     )
             }
@@ -234,6 +246,7 @@ class RealSongRepository(
                 selection = "${AudioColumns.DATA}=?",
                 selectionValues = arrayOf(filePath),
                 ignoreBlacklist = ignoreBlacklist,
+                skipDurationFilter = true,
             ),
         )
 
@@ -254,10 +267,15 @@ class RealSongRepository(
         ignoreBlacklist: Boolean = false,
         whitelistedPaths: List<String>? = null,
         blacklistedPaths: List<String>? = null,
+        skipDurationFilter: Boolean = false,
     ): Cursor? {
-        val minimumSongDuration = Preferences.minimumSongDuration
-        if (minimumSongDuration > 0) {
-            queryDispatcher.addSelection("${AudioColumns.DURATION} >= ${minimumSongDuration * 1000}")
+        if (!skipDurationFilter) {
+            SongDurationFilterPolicy
+                .selectionFragments(
+                    column = AudioColumns.DURATION,
+                    minSeconds = Preferences.minimumSongDuration,
+                    maxSeconds = Preferences.maximumSongDuration,
+                ).forEach { selection -> queryDispatcher.addSelection(selection) }
         }
 
         if (!ignoreBlacklist) {
@@ -295,6 +313,7 @@ class RealSongRepository(
         ignoreBlacklist: Boolean = false,
         whitelistedPaths: List<String>? = null,
         blacklistedPaths: List<String>? = null,
+        skipDurationFilter: Boolean = false,
     ): Cursor? {
         val queryDispatcher =
             MediaQueryDispatcher()
@@ -303,7 +322,13 @@ class RealSongRepository(
                 .setSelectionArguments(selectionValues)
                 .addSelection(selection)
                 .setSortOrder(sortOrder ?: MediaStore.Audio.Media.DEFAULT_SORT_ORDER)
-        return makeSongCursor(queryDispatcher, ignoreBlacklist, whitelistedPaths, blacklistedPaths)
+        return makeSongCursor(
+            queryDispatcher,
+            ignoreBlacklist,
+            whitelistedPaths,
+            blacklistedPaths,
+            skipDurationFilter,
+        )
     }
 
     private fun generateWhitelistSelection(pathCount: Int): String =
@@ -347,7 +372,13 @@ class RealSongRepository(
         val selection = "${AudioColumns.DISPLAY_NAME} = ? AND ${AudioColumns.SIZE} = ?"
         val selectionArgs = arrayOf(name, size.toString())
 
-        val cursor = makeSongCursor(selection, selectionArgs, ignoreBlacklist = true)
+        val cursor =
+            makeSongCursor(
+                selection,
+                selectionArgs,
+                ignoreBlacklist = true,
+                skipDurationFilter = true,
+            )
         return song(cursor)
     }
 
@@ -368,6 +399,12 @@ class RealSongRepository(
         val albumArtistName = cursor.getStringSafe(AudioColumns.ALBUM_ARTIST)
         val genreName = cursor.getStringSafe(AudioColumns.GENRE)
         val volumeName = cursor.getStringSafe(AudioColumns.VOLUME_NAME)
+        val composerName =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                cursor.getStringSafe(MediaColumns.COMPOSER)
+            } else {
+                null
+            }
         return Song(
             id,
             data,
@@ -385,6 +422,7 @@ class RealSongRepository(
             albumArtistName,
             genreName,
             volumeName,
+            composerName,
         )
     }
 
@@ -427,6 +465,9 @@ class RealSongRepository(
             }
             if (hasQ()) {
                 baseProjection += AudioColumns.VOLUME_NAME
+            }
+            if (hasR()) {
+                baseProjection += MediaColumns.COMPOSER
             }
             if (idColumn != AudioColumns._ID) {
                 return baseProjection.copyOf().apply { set(0, idColumn) }

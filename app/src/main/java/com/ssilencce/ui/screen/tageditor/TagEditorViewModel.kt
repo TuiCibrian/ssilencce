@@ -19,6 +19,7 @@ import com.ssilencce.data.model.Artist
 import com.ssilencce.data.remote.musicbrainz.artworkUrl
 import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRecording
 import com.ssilencce.extensions.utilities.capitalize
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,6 +49,23 @@ class TagEditorViewModel(
 
     val uris get() = target.contents.map { it.uri }
 
+    private val restrictsWrites = target.type != EditTarget.Type.Song
+
+    @Volatile
+    private var writableTarget = if (restrictsWrites) target.copy(contents = emptyList()) else target
+
+    @Volatile
+    private var skippedUnreadableCount = if (restrictsWrites) target.contents.size else 0
+
+    val writableUris get() = writableTarget.contents.map { it.uri }
+
+    fun restrictWriteTarget(readableUris: List<Uri>) {
+        val readable = readableUris.toSet()
+        val contents = target.contents.filter { it.uri in readable }
+        writableTarget = target.copy(contents = contents)
+        skippedUnreadableCount = target.contents.size - contents.size
+    }
+
     fun setPictureBitmap(pictureBitmap: Bitmap?) {
         metadataWriter.picture(pictureBitmap)
     }
@@ -61,23 +79,43 @@ class TagEditorViewModel(
         propertyMap: Map<String, String?>,
     ) = liveData(Dispatchers.IO) {
         emit(SaveTagsResult(isLoading = true, isSuccess = false))
-        val result =
-            runCatching {
-                metadataWriter.propertyMap(propertyMap)
-                metadataWriter.write(context, target)
+        val writeResult =
+            if (writableTarget.contents.isEmpty()) {
+                emit(
+                    SaveTagsResult(
+                        isLoading = false,
+                        isSuccess = false,
+                        failed = target.contents.size,
+                    ),
+                )
+                null
+            } else {
+                try {
+                    metadataWriter.propertyMap(propertyMap)
+                    metadataWriter.write(context, writableTarget)
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (throwable: Throwable) {
+                    Log.e(TAG, "Failed to write file tags", throwable)
+                    emit(
+                        SaveTagsResult(
+                            isLoading = false,
+                            isSuccess = false,
+                            failed = skippedUnreadableCount + writableTarget.contents.size,
+                        ),
+                    )
+                    null
+                }
             }
-        if (result.isSuccess) {
-            val writeResult = result.getOrThrow()
+        if (writeResult != null) {
             emit(
                 SaveTagsResult(
                     isLoading = false,
-                    isSuccess = writeResult.isSuccess,
+                    isSuccess = writeResult.isSuccess && skippedUnreadableCount == 0,
                     scanned = writeResult.scanned,
-                    failed = writeResult.failed,
+                    failed = writeResult.failed + skippedUnreadableCount,
                 ),
             )
-        } else {
-            emit(SaveTagsResult(isLoading = false, isSuccess = false))
         }
     }
 

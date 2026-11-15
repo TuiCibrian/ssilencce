@@ -28,7 +28,7 @@ import androidx.annotation.StringRes
 import androidx.appcompat.widget.Toolbar
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.core.view.doOnLayout
 import androidx.core.view.isVisible
@@ -93,6 +93,9 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         initAdapter()
         checkForMargins()
         setUpRecyclerView()
+        (this as? QuickSearchable)?.let { quickSearchable ->
+            savedInstanceState?.getString(STATE_QUICK_SEARCH)?.let { quickSearchable.quickSearchQuery = it }
+        }
         setupQuickSearch()
         setupToolbar()
 
@@ -193,15 +196,20 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         }
         binding.quickSearchBar.setContent {
             SsilencceTheme {
-                var query by rememberSaveable { mutableStateOf("") }
+                // The fragment owns the durable query; Compose mirrors it while the view exists.
+                var query by remember { mutableStateOf(quickSearchable.quickSearchQuery) }
                 QuickSearchBar(
                     query = query,
                     onQueryChange = {
                         query = it
+                        quickSearchable.quickSearchQuery = it
                         quickSearchable.onQuickSearch(it)
                     },
                 )
             }
+        }
+        if (quickSearchable.quickSearchQuery.isNotBlank()) {
+            quickSearchable.onQuickSearch(quickSearchable.quickSearchQuery)
         }
     }
 
@@ -301,7 +309,13 @@ abstract class AbsRecyclerViewFragment<A : RecyclerView.Adapter<*>, LM : Recycle
         (adapter as? AbsMultiSelectAdapter<*, *>)?.actionMode?.finish()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        (this as? QuickSearchable)?.let { outState.putString(STATE_QUICK_SEARCH, it.quickSearchQuery) }
+    }
+
     companion object {
         private const val QUICK_SEARCH_EXTRA_PADDING = 72
+        private const val STATE_QUICK_SEARCH = "quick_search_query"
     }
 }

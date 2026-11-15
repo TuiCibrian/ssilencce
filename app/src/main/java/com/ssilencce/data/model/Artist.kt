@@ -29,12 +29,16 @@ data class Artist(
     val albums: List<Album>,
     val filterSingles: Boolean,
     val isAlbumArtist: Boolean = false,
+    val composerName: String? = null,
 ) : SongProvider {
     constructor(artistName: String, albums: List<Album>, filterSingles: Boolean, isAlbumArtist: Boolean = true) :
         this(albums.firstOrNull()?.artistId ?: -1, albums, filterSingles, true)
 
     val name: String
-        get() = if (isAlbumArtist) getAlbumArtistName() ?: "-" else getArtistName()
+        get() = composerName ?: if (isAlbumArtist) getAlbumArtistName() ?: "-" else getArtistName()
+
+    val isComposer: Boolean
+        get() = composerName != null
 
     val albumCount: Int
         get() = if (filterSingles) albums.count { !it.isSingle } else albums.size
@@ -67,12 +71,13 @@ data class Artist(
         return id == artist.id &&
             songs == artist.songs &&
             isAlbumArtist == artist.isAlbumArtist &&
-            filterSingles == artist.filterSingles
+            filterSingles == artist.filterSingles &&
+            composerName == artist.composerName
     }
 
-    override fun hashCode(): Int = Objects.hash(id, songs, isAlbumArtist, filterSingles)
+    override fun hashCode(): Int = Objects.hash(id, songs, isAlbumArtist, filterSingles, composerName)
 
-    override fun toString(): String = "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles}"
+    override fun toString(): String = "Artist{id=$id, albums=$albums, isAlbumArtist=$isAlbumArtist, filterSingles=$filterSingles, composerName=$composerName}"
 
     companion object {
         const val UNKNOWN = "<unknown>"

@@ -1,0 +1,32 @@
+﻿  composer run 1/30: 20 items, first=79
+  composer run 2/30: 20 items, first=67
+  composer run 3/30: 20 items, first=76
+  composer run 4/30: 20 items, first=60
+  composer run 5/30: 20 items, first=78
+  composer run 6/30: 20 items, first=68
+  composer run 7/30: 20 items, first=72
+  composer run 8/30: 20 items, first=79
+  composer run 9/30: 20 items, first=71
+  composer run 10/30: 20 items, first=78
+  composer run 11/30: 20 items, first=64
+  composer run 12/30: 20 items, first=77
+  composer run 13/30: 20 items, first=72
+  composer run 14/30: 20 items, first=70
+  composer run 15/30: 20 items, first=60
+  composer run 16/30: 20 items, first=75
+  composer run 17/30: 20 items, first=76
+  composer run 18/30: 20 items, first=73
+  composer run 19/30: 20 items, first=79
+  composer run 20/30: 20 items, first=64
+  composer run 21/30: 20 items, first=72
+  composer run 22/30: 20 items, first=72
+  composer run 23/30: 20 items, first=73
+  composer run 24/30: 20 items, first=76
+  composer run 25/30: 20 items, first=64
+  composer run 26/30: 20 items, first=60
+  composer run 27/30: 20 items, first=77
+  composer run 28/30: 20 items, first=72
+  composer run 29/30: 20 items, first=79
+  composer run 30/30: 20 items, first=68
+COUNTS_BEFORE [(70, 'AA05 B Composer Heavy 01', 6, 0), (71, 'AA05 B Composer Heavy 02', 6, 5), (72, 'AA05 B Composer Heavy 03', 5, 0), (78, 'AA05 B NoComposer Heavy 01', 14, 0), (79, 'AA05 B NoComposer Heavy 02', 11, 3)]
+COUNTS_AFTER [(60, 'AA05 A Fallback Control 01', 0, 3), (64, 'AA05 A Heavy 01', 0, 5), (65, 'AA05 A Heavy 02', 0, 1), (67, 'AA05 A Light 01', 0, 2), (68, 'AA05 A Light 02', 0, 4), (70, 'AA05 B Composer Heavy 01', 6, 4), (71, 'AA05 B Composer Heavy 02', 6, 6), (72, 'AA05 B Composer Heavy 03', 5, 5), (73, 'AA05 B Composer Light 01', 0, 4), (74, 'AA05 B Composer Light 02', 0, 2), (75, 'AA05 B Composer Light 03', 0, 1), (76, 'AA05 B NoComposer Control 01', 8, 0), (77, 'AA05 B NoComposer Control 02', 7, 0), (78, 'AA05 B NoComposer Heavy 01', 22, 0), (79, 'AA05 B NoComposer Heavy 02', 19, 3)]

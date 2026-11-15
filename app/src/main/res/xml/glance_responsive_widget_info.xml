@@ -8,4 +8,6 @@
     android:targetCellHeight="1"
     android:previewLayout="@layout/glance_placeholder"
     android:resizeMode="horizontal|vertical"
+    android:configure="com.ssilencce.ui.screen.widgets.WidgetConfigActivity"
+    android:widgetFeatures="reconfigurable"
     android:widgetCategory="home_screen" />

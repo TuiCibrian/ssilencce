@@ -52,28 +52,31 @@ class SimpleSongAdapter(
         holder.time?.text = dataSet[position].duration.asReadableDuration()
     }
 
-    override fun getSongText(song: Song): String =
-        when (sortMode?.selectedKey) {
-            SortKey.Album -> {
-                buildInfoString(getTrackNumberString(song), song.albumName)
-            }
+    override fun getSongText(song: Song): String? =
+        appendListDateModified(
+            when (sortMode?.selectedKey) {
+                SortKey.Album -> {
+                    buildInfoString(getTrackNumberString(song), song.albumName)
+                }
 
-            SortKey.Track -> {
-                buildInfoString(getTrackNumberString(song), song.displayArtistName())
-            }
+                SortKey.Track -> {
+                    buildInfoString(getTrackNumberString(song), song.displayArtistName())
+                }
 
-            SortKey.Year -> {
-                if (song.year > 0) {
-                    buildInfoString(song.year.toString(), song.displayArtistName())
-                } else {
+                SortKey.Year -> {
+                    if (song.year > 0) {
+                        buildInfoString(song.year.toString(), song.displayArtistName())
+                    } else {
+                        song.displayArtistName()
+                    }
+                }
+
+                else -> {
                     song.displayArtistName()
                 }
-            }
-
-            else -> {
-                song.displayArtistName()
-            }
-        }
+            },
+            song,
+        )
 
     private fun getTrackNumberString(song: Song) =
         song.trackNumber

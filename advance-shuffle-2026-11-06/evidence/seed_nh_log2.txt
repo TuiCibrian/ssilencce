@@ -1,0 +1,32 @@
+﻿  pass 1/12 done
+  pass 2/12 done
+  pass 3/12 done
+  pass 4/12 done
+  pass 5/12 done
+  pass 6/12 done
+  pass 7/12 done
+  pass 8/12 done
+  pass 9/12 done
+  pass 10/12 done
+  pass 11/12 done
+  pass 12/12 done
+python : Traceback (most recent call last):
+At line:1 char:1
++ python -c "import sys; sys.path.insert(0,r'C:\Users\geode\Documents\R ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "<string>", line 1, in <module>
+    import sys; sys.path.insert(0,r'C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools'); 
+import aa05_runtime as r; r.seed_group_passes('AA05 B NoComposer Heavy',2,passes=12); print('N_H_DONE')
+                                                                                                                       
+                    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 383, in 
+seed_group_passes
+    go_songs()
+    ~~~~~~~~^^
+  File "C:\Users\geode\Documents\Repos\ssilencce\advance-shuffle-2026-11-06\tools\aa05_runtime.py", line 207, in 
+go_songs
+    raise RuntimeError("could not navigate to Songs")
+RuntimeError: could not navigate to Songs

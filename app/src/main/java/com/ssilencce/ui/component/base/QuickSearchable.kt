@@ -18,6 +18,8 @@
 package com.ssilencce.ui.component.base
 
 interface QuickSearchable {
+    var quickSearchQuery: String
+
     fun onQuickSearch(query: String)
 }
 

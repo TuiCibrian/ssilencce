@@ -2,7 +2,9 @@
 
 ## Status
 
-Accepted. Amends ADR-012, ADR-041 and ADR-042.
+Accepted. Amends ADR-012, ADR-041 and ADR-042. Partially superseded by ADR-047 only for the
+Settings-restore SharedPreferences cache/write-back contract; all ordered-state, session-consent
+and same-UID command decisions below remain in force.
 
 ## Context
 

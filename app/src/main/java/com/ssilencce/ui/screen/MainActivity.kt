@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import com.ssilencce.R
 import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.MediaEvent
+import com.ssilencce.core.model.navigation.AuroraStartDestinationPolicy
 import com.ssilencce.core.model.shuffle.OpenShuffleMode
 import com.ssilencce.data.model.network.NetworkFeature
 import com.ssilencce.extensions.currentFragment
@@ -38,6 +39,7 @@ import com.ssilencce.util.Preferences
 import com.ssilencce.util.ShortcutEntityType
 import com.ssilencce.util.ShortcutHelper
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.guava.await
 import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -50,6 +52,7 @@ class MainActivity :
     MediaController.Listener {
     private val updateViewModel: UpdateViewModel by viewModel()
     private var audioFocusStateRevision = 0L
+    private var entityShortcutJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -154,21 +157,29 @@ class MainActivity :
         val categoryInfo: CategoryInfo = Preferences.libraryCategories.first { it.visible }
         if (categoryInfo.visible) {
             val lastPage = Preferences.lastPage
-            if (!navGraph.isValidCategory(lastPage)) {
-                Preferences.lastPage = categoryInfo.category.id
-                navGraph.setStartDestination(categoryInfo.category.id)
+            val isAurora = Preferences.isAuroraAppearance
+            val defaultCategoryId =
+                if (isAurora) {
+                    AuroraStartDestinationPolicy.firstAllowedCategoryId(
+                        Preferences.libraryCategories.filter { it.visible }.map { it.category.id },
+                        queuesCategoryId = R.id.nav_queues,
+                        fallbackCategoryId = R.id.nav_home,
+                    )
+                } else {
+                    categoryInfo.category.id
+                }
+            val canRestoreLastPage =
+                navGraph.isValidCategory(lastPage) &&
+                    (!isAurora || AuroraStartDestinationPolicy.isAllowedTopLevel(lastPage, R.id.nav_queues))
+            if (!canRestoreLastPage) {
+                Preferences.lastPage = defaultCategoryId
+                navGraph.setStartDestination(defaultCategoryId)
             } else {
                 navGraph.setStartDestination(
                     if (Preferences.isRememberLastPage) {
-                        lastPage.let {
-                            if (it == 0) {
-                                categoryInfo.category.id
-                            } else {
-                                it
-                            }
-                        }
+                        if (lastPage == 0) defaultCategoryId else lastPage
                     } else {
-                        categoryInfo.category.id
+                        defaultCategoryId
                     },
                 )
             }
@@ -206,6 +217,9 @@ class MainActivity :
                 R.id.nav_songs,
                 R.id.nav_albums,
                 R.id.nav_artists,
+                R.id.nav_album_artists,
+                R.id.nav_composers,
+                R.id.nav_queues,
                 R.id.nav_folders,
                 R.id.nav_playlists,
                 R.id.nav_genres,
@@ -235,6 +249,11 @@ class MainActivity :
     }
 
     private fun saveTab(id: Int) {
+        if (Preferences.isAuroraAppearance &&
+            !AuroraStartDestinationPolicy.isAllowedTopLevel(id, R.id.nav_queues)
+        ) {
+            return
+        }
         if (Preferences.libraryCategories.firstOrNull { it.category.id == id }?.visible == true) {
             Preferences.lastPage = id
         }
@@ -301,20 +320,23 @@ class MainActivity :
         val type = intent.getStringExtra(ShortcutHelper.EXTRA_TYPE) ?: return
         val id = intent.getStringExtra(ShortcutHelper.EXTRA_ID) ?: ""
         val path = intent.getStringExtra(ShortcutHelper.EXTRA_PATH)
-        lifecycleScope.launch {
-            val songs = libraryViewModel.shortcutSongs(type, id, path)
-            if (songs.isEmpty()) {
-                val exists = libraryViewModel.shortcutTargetExists(type, id, path)
-                if (exists == false) {
-                    ShortcutEntityType.entries
-                        .firstOrNull { it.name == type }
-                        ?.let { ShortcutHelper.remove(this@MainActivity, it, id) }
+        // A newer shortcut launch supersedes an older async lookup so the last user action wins.
+        entityShortcutJob?.cancel()
+        entityShortcutJob =
+            lifecycleScope.launch {
+                val songs = libraryViewModel.shortcutSongs(type, id, path)
+                if (songs.isEmpty()) {
+                    val exists = libraryViewModel.shortcutTargetExists(type, id, path)
+                    if (exists == false) {
+                        ShortcutEntityType.entries
+                            .firstOrNull { it.name == type }
+                            ?.let { ShortcutHelper.remove(this@MainActivity, it, id) }
+                    }
+                    showToast(if (exists == true) R.string.shortcut_target_empty else R.string.shortcut_unavailable)
+                } else {
+                    playerViewModel.openQueue(songs, shuffleMode = OpenShuffleMode.Off)
                 }
-                showToast(if (exists == true) R.string.shortcut_target_empty else R.string.shortcut_unavailable)
-            } else {
-                playerViewModel.openQueue(songs, shuffleMode = OpenShuffleMode.Off)
             }
-        }
     }
 
     @OptIn(UnstableApi::class)

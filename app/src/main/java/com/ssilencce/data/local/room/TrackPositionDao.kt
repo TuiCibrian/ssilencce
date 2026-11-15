@@ -26,6 +26,12 @@ interface TrackPositionDao {
     @Upsert
     suspend fun upsert(position: TrackPositionEntity)
 
+    @Upsert
+    suspend fun upsertAll(positions: List<TrackPositionEntity>)
+
+    @Query("SELECT * FROM TrackPositionEntity")
+    suspend fun all(): List<TrackPositionEntity>
+
     @Query("SELECT * FROM TrackPositionEntity WHERE media_id = :mediaId LIMIT 1")
     suspend fun position(mediaId: String): TrackPositionEntity?
 

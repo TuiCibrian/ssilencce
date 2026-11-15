@@ -1,0 +1,14 @@
+﻿{
+  "before": {
+    "state": 3,
+    "position": 0,
+    "index": 12,
+    "description": "AA05 B Composer Heavy 03, AA05 Soloist CH3, AA05 Composer Heavy Album"
+  },
+  "after": {
+    "state": 7,
+    "position": 0,
+    "index": 3,
+    "description": "AA05 A Light 03, AA05 Soloist L3, AA05 Light Album"
+  }
+}

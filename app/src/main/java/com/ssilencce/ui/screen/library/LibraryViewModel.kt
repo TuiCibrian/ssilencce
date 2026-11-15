@@ -31,13 +31,17 @@ import androidx.core.net.toUri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.liveData
 import androidx.lifecycle.viewModelScope
+import com.ssilencce.R
 import com.ssilencce.coil.CustomPlaylistImageManager
+import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.LibraryMargin
 import com.ssilencce.core.model.filesystem.FileSystemItem
 import com.ssilencce.core.model.filesystem.FileSystemQuery
 import com.ssilencce.data.SongProvider
+import com.ssilencce.data.local.repository.PlaylistImportNameResolver
 import com.ssilencce.data.local.repository.Repository
 import com.ssilencce.data.local.room.InclExclDao
 import com.ssilencce.data.local.room.InclExclEntity
@@ -46,7 +50,6 @@ import com.ssilencce.data.local.room.PlaylistWithSongs
 import com.ssilencce.data.local.room.SongEntity
 import com.ssilencce.data.mapper.toSongEntity
 import com.ssilencce.data.mapper.toSongs
-import com.ssilencce.data.mapper.toSongsEntity
 import com.ssilencce.data.model.Album
 import com.ssilencce.data.model.Artist
 import com.ssilencce.data.model.ArtistPlayStat
@@ -73,6 +76,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.io.File
 import kotlin.coroutines.resume
@@ -93,6 +98,8 @@ class LibraryViewModel(
     private val songs = MutableLiveData<List<Song>>()
     private val albums = MutableLiveData<List<Album>>()
     private val artists = MutableLiveData<List<Artist>>()
+    private val albumArtists = MutableLiveData<List<Artist>>()
+    private val composers = MutableLiveData<List<Artist>>()
     private val playlists = MutableLiveData<List<PlaylistWithSongs>>()
     private val genres = MutableLiveData<List<Genre>>()
     private val years = MutableLiveData<List<ReleaseYear>>()
@@ -100,6 +107,7 @@ class LibraryViewModel(
     private val fabMargin = MutableLiveData(LibraryMargin(0))
     private val miniPlayerMargin = MutableLiveData(LibraryMargin(0))
     private val songHistory = MutableLiveData<List<Song>>()
+    private val notRecentlyPlayed = MutableLiveData<List<Song>>()
 
     fun getSuggestions(): LiveData<SuggestedResult> = suggestions
 
@@ -108,6 +116,10 @@ class LibraryViewModel(
     fun getAlbums(): LiveData<List<Album>> = albums
 
     fun getArtists(): LiveData<List<Artist>> = artists
+
+    fun getAlbumArtists(): LiveData<List<Artist>> = albumArtists
+
+    fun getComposers(): LiveData<List<Artist>> = composers
 
     fun getPlaylists(): LiveData<List<PlaylistWithSongs>> = playlists
 
@@ -177,6 +189,8 @@ class LibraryViewModel(
                 ReloadType.Songs -> fetchSongs()
                 ReloadType.Albums -> fetchAlbums()
                 ReloadType.Artists -> fetchArtists()
+                ReloadType.AlbumArtists -> fetchAlbumArtists()
+                ReloadType.Composers -> fetchComposers()
                 ReloadType.Playlists -> fetchPlaylists()
                 ReloadType.Genres -> fetchGenres()
                 ReloadType.Folders -> fetchFolders()
@@ -204,11 +218,23 @@ class LibraryViewModel(
     }
 
     private suspend fun fetchArtists() {
-        if (Preferences.onlyAlbumArtists) {
+        val hasAlbumArtistsTab =
+            Preferences.libraryCategories.any {
+                it.category == CategoryInfo.Category.AlbumArtists && it.visible
+            }
+        if (!hasAlbumArtistsTab && Preferences.onlyAlbumArtists) {
             artists.postValue(repository.allAlbumArtists())
         } else {
             artists.postValue(repository.allArtists())
         }
+    }
+
+    private suspend fun fetchAlbumArtists() {
+        albumArtists.postValue(repository.allAlbumArtists())
+    }
+
+    private suspend fun fetchComposers() {
+        composers.postValue(repository.allComposers())
     }
 
     private suspend fun fetchPlaylists() {
@@ -479,9 +505,14 @@ class LibraryViewModel(
             }
         }
 
-    fun notRecentlyPlayedSongs(): LiveData<List<Song>> =
-        liveData(IO) {
-            emit(repository.notRecentlyPlayedSongs())
+    fun notRecentlyPlayedSongs(): LiveData<List<Song>> {
+        loadNotRecentlyPlayedSongs()
+        return notRecentlyPlayed
+    }
+
+    fun loadNotRecentlyPlayedSongs() =
+        viewModelScope.launch(IO) {
+            notRecentlyPlayed.postValue(repository.notRecentlyPlayedSongs())
         }
 
     private val _addToPlaylistUiState = MutableStateFlow<AddToPlaylistUiState?>(null)
@@ -640,6 +671,14 @@ class LibraryViewModel(
         repository.deleteMissingContent()
     }
 
+    private val playlistImportMutex = Mutex()
+    private var pendingPlaylistImport: PendingPlaylistImport? = null
+    private val _playlistImportConflict = MutableStateFlow<PlaylistImportConflictState?>(null)
+    val playlistImportConflict = _playlistImportConflict.asStateFlow()
+    val playlistImportConflictLiveData = _playlistImportConflict.asLiveData()
+    private val _playlistImportResult = MutableLiveData<ImportResult?>()
+    val playlistImportResult: LiveData<ImportResult?> = _playlistImportResult
+
     fun getDevicePlaylists(): LiveData<List<ImportablePlaylistResult>> =
         liveData(IO) {
             val devicePlaylists = repository.devicePlaylists()
@@ -653,30 +692,299 @@ class LibraryViewModel(
             emit(importablePlaylists)
         }
 
-    fun importPlaylist(
+    fun startPlaylistImport(
         context: Context,
         playlist: ImportablePlaylistResult,
-    ): LiveData<ImportResult> =
-        liveData(IO) {
-            var count = 1
-            var playlistName = playlist.playlistName
-            while (repository.checkPlaylistExists(playlistName).isNotEmpty() && count <= 100) {
-                playlistName = "${playlist.playlistName} $count"
-                count++
+        selectedSongs: List<Song>,
+    ) = viewModelScope.launch(IO) {
+        val songs = selectedSongs.distinctBy { it.id }
+        if (songs.isEmpty()) return@launch
+        playlistImportMutex.withLock {
+            val pending = PendingPlaylistImport(playlist.playlistName, songs)
+            pendingPlaylistImport = pending
+            _playlistImportConflict.value = null
+            val exactMatches = repository.checkPlaylistExists(pending.sourceName)
+            if (exactMatches.isNotEmpty()) {
+                _playlistImportConflict.value = buildConflictState(context, pending, exactMatches)
+                return@withLock
             }
-            if (repository.checkPlaylistExists(playlistName).isEmpty()) {
-                val id = repository.createPlaylist(PlaylistEntity(playlistName = playlistName))
-                if (id != -1L) {
-                    repository.insertSongsInPlaylist(playlist.songs.toSongsEntity(id))
-                    emit(ImportResult.success(context, playlist))
-                    forceReload(ReloadType.Playlists)
-                } else {
-                    emit(ImportResult.error(context, playlist))
+            when (createImportedPlaylist(pending, pending.sourceName)) {
+                CreateResult.Created -> {
+                    finishCreated(context, pending, pending.sourceName)
                 }
-            } else {
-                emit(ImportResult.error(context, playlist))
+
+                CreateResult.NameTaken -> {
+                    val refreshed = repository.checkPlaylistExists(pending.sourceName)
+                    if (refreshed.isNotEmpty()) {
+                        _playlistImportConflict.value = buildConflictState(context, pending, refreshed)
+                    } else {
+                        failImport(context, pending.sourceName)
+                    }
+                }
+
+                CreateResult.Failed -> {
+                    failImport(context, pending.sourceName)
+                }
             }
         }
+    }
+
+    fun applyKeepBoth(context: Context) {
+        val pending = pendingPlaylistImport ?: return
+        val current = _playlistImportConflict.value ?: return
+        viewModelScope.launch(IO) {
+            playlistImportMutex.withLock {
+                _playlistImportConflict.value = current.copy(applying = true, renameError = null, generalError = null)
+                var attempts = 0
+                while (attempts <= PlaylistImportNameResolver.MAX_SUFFIX) {
+                    val names = repository.playlists().map { it.playlistName }
+                    val name = PlaylistImportNameResolver.resolveName(pending.sourceName, names)
+                    if (name == null) {
+                        _playlistImportConflict.value =
+                            current.copy(
+                                applying = false,
+                                defaultName = null,
+                                existingNames = names,
+                                generalError = PlaylistImportGeneralError.SuffixExhausted,
+                            )
+                        return@withLock
+                    }
+                    when (createImportedPlaylist(pending, name)) {
+                        CreateResult.Created -> {
+                            finishCreated(context, pending, name)
+                            return@withLock
+                        }
+
+                        CreateResult.NameTaken -> {
+                            attempts++
+                        }
+
+                        CreateResult.Failed -> {
+                            _playlistImportConflict.value =
+                                current.copy(
+                                    applying = false,
+                                    generalError = PlaylistImportGeneralError.DatabaseFailure,
+                                )
+                            return@withLock
+                        }
+                    }
+                }
+                val names = repository.playlists().map { it.playlistName }
+                _playlistImportConflict.value =
+                    current.copy(
+                        applying = false,
+                        defaultName = PlaylistImportNameResolver.resolveName(pending.sourceName, names),
+                        existingNames = names,
+                        generalError = PlaylistImportGeneralError.SuffixExhausted,
+                    )
+            }
+        }
+    }
+
+    fun applyReplace(context: Context) {
+        val pending = pendingPlaylistImport ?: return
+        val current = _playlistImportConflict.value ?: return
+        val target = current.existing.singleOrNull() ?: return
+        if (!current.canReplace) return
+        viewModelScope.launch(IO) {
+            playlistImportMutex.withLock {
+                _playlistImportConflict.value = current.copy(applying = true, renameError = null, generalError = null)
+                val replaced =
+                    try {
+                        repository.replacePlaylistContentsIfEligible(
+                            playlistId = target.playListId,
+                            expectedName = current.sourceName,
+                            favoritesName = context.getString(R.string.favorites_label),
+                            songs = pending.songs,
+                        )
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        null
+                    }
+                when (replaced) {
+                    true -> {
+                        finishReplaced(context, pending, target.playlistName)
+                    }
+
+                    false -> {
+                        val refreshed = repository.checkPlaylistExists(current.sourceName)
+                        if (refreshed.isEmpty()) {
+                            failImport(context, current.sourceName)
+                        } else {
+                            _playlistImportConflict.value =
+                                buildConflictState(context, pending, refreshed)
+                                    .copy(generalError = PlaylistImportGeneralError.ConflictChanged)
+                        }
+                    }
+
+                    null -> {
+                        _playlistImportConflict.value =
+                            current.copy(
+                                applying = false,
+                                generalError = PlaylistImportGeneralError.DatabaseFailure,
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+    fun applyRename(
+        context: Context,
+        rawName: String,
+    ) {
+        val pending = pendingPlaylistImport ?: return
+        val current = _playlistImportConflict.value ?: return
+        viewModelScope.launch(IO) {
+            playlistImportMutex.withLock {
+                _playlistImportConflict.value = current.copy(applying = true, renameError = null, generalError = null)
+                val names = repository.playlists().map { it.playlistName }
+                when (val validation = PlaylistImportNameResolver.validateRename(rawName, names)) {
+                    PlaylistImportNameResolver.RenameValidation.Blank -> {
+                        _playlistImportConflict.value =
+                            current.copy(
+                                applying = false,
+                                existingNames = names,
+                                renameError = PlaylistImportRenameError.Blank,
+                            )
+                    }
+
+                    is PlaylistImportNameResolver.RenameValidation.Duplicate -> {
+                        _playlistImportConflict.value =
+                            current.copy(
+                                applying = false,
+                                existingNames = names,
+                                renameError = PlaylistImportRenameError.Duplicate,
+                            )
+                    }
+
+                    is PlaylistImportNameResolver.RenameValidation.Valid -> {
+                        when (createImportedPlaylist(pending, validation.name)) {
+                            CreateResult.Created -> {
+                                finishCreated(context, pending, validation.name)
+                            }
+
+                            CreateResult.NameTaken -> {
+                                val refreshed = repository.playlists().map { it.playlistName }
+                                _playlistImportConflict.value =
+                                    current.copy(
+                                        applying = false,
+                                        existingNames = refreshed,
+                                        renameError = PlaylistImportRenameError.Duplicate,
+                                    )
+                            }
+
+                            CreateResult.Failed -> {
+                                _playlistImportConflict.value =
+                                    current.copy(
+                                        applying = false,
+                                        generalError = PlaylistImportGeneralError.DatabaseFailure,
+                                    )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun clearPlaylistImportRenameError() {
+        _playlistImportConflict.update { it?.copy(renameError = null) }
+    }
+
+    fun cancelPlaylistImport() {
+        pendingPlaylistImport = null
+        _playlistImportConflict.value = null
+    }
+
+    fun consumePlaylistImportResult() {
+        _playlistImportResult.value = null
+    }
+
+    private suspend fun createImportedPlaylist(
+        pending: PendingPlaylistImport,
+        name: String,
+    ): CreateResult =
+        try {
+            val playlistId =
+                repository.createPlaylistWithSongsIfNameFree(
+                    playlist = PlaylistEntity(playlistName = name),
+                    songs = pending.songs,
+                )
+            if (playlistId == -1L) CreateResult.NameTaken else CreateResult.Created
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            CreateResult.Failed
+        }
+
+    private suspend fun buildConflictState(
+        context: Context,
+        pending: PendingPlaylistImport,
+        existing: List<PlaylistEntity>,
+    ): PlaylistImportConflictState {
+        val names = repository.playlists().map { it.playlistName }
+        val single = existing.singleOrNull()
+        val favoritesName = context.getString(R.string.favorites_label)
+        val replaceBlock =
+            when {
+                existing.size > 1 -> PlaylistImportReplaceBlock.MultipleMatches
+                single?.playlistName == favoritesName -> PlaylistImportReplaceBlock.Favorites
+                else -> null
+            }
+        return PlaylistImportConflictState(
+            sourceName = pending.sourceName,
+            selectedSongCount = pending.songs.size,
+            existing = existing,
+            existingSongCount = single?.let { repository.playlistSongs(it.playListId).size } ?: 0,
+            defaultName = PlaylistImportNameResolver.resolveName(pending.sourceName, names),
+            existingNames = names,
+            replaceBlock = replaceBlock,
+        )
+    }
+
+    private fun finishCreated(
+        context: Context,
+        pending: PendingPlaylistImport,
+        actualName: String,
+    ) {
+        pendingPlaylistImport = null
+        _playlistImportConflict.value = null
+        _playlistImportResult.postValue(ImportResult.created(context, actualName, pending.songs.size))
+        forceReload(ReloadType.Playlists)
+    }
+
+    private fun finishReplaced(
+        context: Context,
+        pending: PendingPlaylistImport,
+        actualName: String,
+    ) {
+        pendingPlaylistImport = null
+        _playlistImportConflict.value = null
+        _playlistImportResult.postValue(ImportResult.replaced(context, actualName, pending.songs.size))
+        forceReload(ReloadType.Playlists)
+    }
+
+    private fun failImport(
+        context: Context,
+        sourceName: String,
+    ) {
+        pendingPlaylistImport = null
+        _playlistImportConflict.value = null
+        _playlistImportResult.postValue(ImportResult.error(context, sourceName))
+    }
+
+    private data class PendingPlaylistImport(
+        val sourceName: String,
+        val songs: List<Song>,
+    )
+
+    private enum class CreateResult {
+        Created,
+        NameTaken,
+        Failed,
+    }
 
     fun deleteSongs(songs: List<Song>) =
         viewModelScope.launch(IO) {
@@ -775,6 +1083,8 @@ enum class ReloadType {
     Songs,
     Albums,
     Artists,
+    AlbumArtists,
+    Composers,
     Playlists,
     Genres,
     Folders,

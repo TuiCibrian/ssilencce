@@ -1,0 +1,15 @@
+﻿== composer ==
+runs 30 lengths [20]
+all runs are full 20-id permutations: True
+counts {60: 0, 61: 0, 62: 0, 63: 0, 64: 0, 65: 0, 66: 0, 67: 0, 68: 0, 69: 0, 70: 6, 71: 6, 72: 5, 73: 0, 74: 0, 75: 0, 76: 0, 77: 0, 78: 14, 79: 11}
+weights {60: 1.0, 61: 1.0, 62: 1.0, 63: 1.0, 64: 1.0, 65: 1.0, 66: 1.0, 67: 1.0, 68: 1.0, 69: 1.0, 70: 3.8904, 71: 3.8904, 72: 3.8904, 73: 1.0, 74: 1.0, 75: 1.0, 76: 4.2581, 77: 4.2581, 78: 4.2581, 79: 4.2581}
+observed mean rank C_H: 7.767  simulated mean 6.787  sim sd 2.306
+observed mean rank C_L: 11.956  simulated mean 12.635  sim sd 2.898
+observed mean rank N_H: 5.700  simulated mean 6.429  sim sd 2.830
+observed mean rank N_C: 5.550  simulated mean 6.399  sim sd 2.775
+compare C_H vs C_L: observed diff -4.189, sim mean -5.848, z=0.422, model-fit p=0.67700
+  per-run sign test: 24/30 runs favor C_H; one-sided sign p=7.155e-04; mean d=-4.189; sd=4.736
+compare N_C vs C_L: observed diff -6.406, sim mean -6.236, z=-0.040, model-fit p=0.50840
+  per-run sign test: 28/30 runs favor N_C; one-sided sign p=4.340e-07; mean d=-6.406; sd=4.248
+compare N_H vs N_C: observed diff 0.150, sim mean 0.029, z=0.029, model-fit p=0.52465
+  per-run sign test: 14/30 runs favor N_H; one-sided sign p=7.077e-01; mean d=0.150; sd=3.289

@@ -1,0 +1,222 @@
+[
+  {
+    "file": "aa05_a_heavy_01.mp3",
+    "title": "AA05 A Heavy 01",
+    "artist": "AA05 Soloist H1",
+    "album": "AA05 Heavy Album",
+    "albumartist": "AA05 AlbumArtist Heavy",
+    "composer": "AA05 SetA Neutral",
+    "track": 1,
+    "group": "AA_H",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_heavy_02.mp3",
+    "title": "AA05 A Heavy 02",
+    "artist": "AA05 Soloist H2",
+    "album": "AA05 Heavy Album",
+    "albumartist": "AA05 AlbumArtist Heavy",
+    "composer": "AA05 SetA Neutral",
+    "track": 2,
+    "group": "AA_H",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_heavy_03.mp3",
+    "title": "AA05 A Heavy 03",
+    "artist": "AA05 Soloist H3",
+    "album": "AA05 Heavy Album",
+    "albumartist": "AA05 AlbumArtist Heavy",
+    "composer": "AA05 SetA Neutral",
+    "track": 3,
+    "group": "AA_H",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_light_01.mp3",
+    "title": "AA05 A Light 01",
+    "artist": "AA05 Soloist L1",
+    "album": "AA05 Light Album",
+    "albumartist": "AA05 AlbumArtist Light",
+    "composer": "AA05 SetA Neutral",
+    "track": 1,
+    "group": "AA_L",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_light_02.mp3",
+    "title": "AA05 A Light 02",
+    "artist": "AA05 Soloist L2",
+    "album": "AA05 Light Album",
+    "albumartist": "AA05 AlbumArtist Light",
+    "composer": "AA05 SetA Neutral",
+    "track": 2,
+    "group": "AA_L",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_light_03.mp3",
+    "title": "AA05 A Light 03",
+    "artist": "AA05 Soloist L3",
+    "album": "AA05 Light Album",
+    "albumartist": "AA05 AlbumArtist Light",
+    "composer": "AA05 SetA Neutral",
+    "track": 3,
+    "group": "AA_L",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_fallback_heavy_01.mp3",
+    "title": "AA05 A Fallback Heavy 01",
+    "artist": "AA05 Fallback Heavy",
+    "album": "AA05 Fallback Heavy Album",
+    "albumartist": null,
+    "composer": "AA05 SetA Neutral",
+    "track": 1,
+    "group": "F_H",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_fallback_heavy_02.mp3",
+    "title": "AA05 A Fallback Heavy 02",
+    "artist": "AA05 Fallback Heavy",
+    "album": "AA05 Fallback Heavy Album",
+    "albumartist": null,
+    "composer": "AA05 SetA Neutral",
+    "track": 2,
+    "group": "F_H",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_fallback_control_01.mp3",
+    "title": "AA05 A Fallback Control 01",
+    "artist": "AA05 Fallback Control",
+    "album": "AA05 Fallback Control Album",
+    "albumartist": "   ",
+    "composer": "AA05 SetA Neutral",
+    "track": 1,
+    "group": "F_C",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_a_fallback_control_02.mp3",
+    "title": "AA05 A Fallback Control 02",
+    "artist": "AA05 Fallback Control",
+    "album": "AA05 Fallback Control Album",
+    "albumartist": null,
+    "composer": "AA05 SetA Neutral",
+    "track": 2,
+    "group": "F_C",
+    "phase": "A"
+  },
+  {
+    "file": "aa05_b_comp_heavy_01.mp3",
+    "title": "AA05 B Composer Heavy 01",
+    "artist": "AA05 Soloist CH1",
+    "album": "AA05 Composer Heavy Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Heavy",
+    "track": 1,
+    "group": "C_H",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_comp_heavy_02.mp3",
+    "title": "AA05 B Composer Heavy 02",
+    "artist": "AA05 Soloist CH2",
+    "album": "AA05 Composer Heavy Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Heavy",
+    "track": 2,
+    "group": "C_H",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_comp_heavy_03.mp3",
+    "title": "AA05 B Composer Heavy 03",
+    "artist": "AA05 Soloist CH3",
+    "album": "AA05 Composer Heavy Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Heavy",
+    "track": 3,
+    "group": "C_H",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_comp_light_01.mp3",
+    "title": "AA05 B Composer Light 01",
+    "artist": "AA05 Soloist CL1",
+    "album": "AA05 Composer Light Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Light",
+    "track": 1,
+    "group": "C_L",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_comp_light_02.mp3",
+    "title": "AA05 B Composer Light 02",
+    "artist": "AA05 Soloist CL2",
+    "album": "AA05 Composer Light Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Light",
+    "track": 2,
+    "group": "C_L",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_comp_light_03.mp3",
+    "title": "AA05 B Composer Light 03",
+    "artist": "AA05 Soloist CL3",
+    "album": "AA05 Composer Light Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "AA05 Composer Light",
+    "track": 3,
+    "group": "C_L",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_nocomp_heavy_01.mp3",
+    "title": "AA05 B NoComposer Heavy 01",
+    "artist": "AA05 Soloist NH1",
+    "album": "AA05 NoComposer Heavy Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": null,
+    "track": 1,
+    "group": "N_H",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_nocomp_heavy_02.mp3",
+    "title": "AA05 B NoComposer Heavy 02",
+    "artist": "AA05 Soloist NH2",
+    "album": "AA05 NoComposer Heavy Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": null,
+    "track": 2,
+    "group": "N_H",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_nocomp_control_01.mp3",
+    "title": "AA05 B NoComposer Control 01",
+    "artist": "AA05 Soloist NC1",
+    "album": "AA05 NoComposer Control Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": "   ",
+    "track": 1,
+    "group": "N_C",
+    "phase": "B"
+  },
+  {
+    "file": "aa05_b_nocomp_control_02.mp3",
+    "title": "AA05 B NoComposer Control 02",
+    "artist": "AA05 Soloist NC2",
+    "album": "AA05 NoComposer Control Album",
+    "albumartist": "AA05 SetB Neutral",
+    "composer": null,
+    "track": 2,
+    "group": "N_C",
+    "phase": "B"
+  }
+]

@@ -48,6 +48,27 @@ class ImportPlaylistDialog : DialogFragment() {
     private var binding: DialogProgressRecyclerViewBinding? = null
     private val viewModel: LibraryViewModel by activityViewModel()
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        viewModel.playlistImportConflictLiveData.observe(this) { state ->
+            val conflictDialog = childFragmentManager.findFragmentByTag(CONFLICT_TAG)
+            if (state != null) {
+                if (conflictDialog == null) {
+                    PlaylistImportConflictDialogFragment()
+                        .show(childFragmentManager, CONFLICT_TAG)
+                }
+            } else if (conflictDialog is DialogFragment) {
+                conflictDialog.dismissAllowingStateLoss()
+            }
+        }
+        viewModel.playlistImportResult.observe(this) { result ->
+            if (result != null) {
+                showToast(result.resultMessage)
+                viewModel.consumePlaylistImportResult()
+            }
+        }
+    }
+
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog =
         MaterialAlertDialogBuilder(requireContext())
             .also {
@@ -88,12 +109,19 @@ class ImportPlaylistDialog : DialogFragment() {
                 if (importSongs.isEmpty()) {
                     showToast(getString(R.string.playlist_x_not_imported, selected.playlistName))
                 } else {
-                    viewModel.importPlaylist(requireContext(), selected).observe(this) { result ->
-                        showToast(result.resultMessage)
-                    }
+                    viewModel.startPlaylistImport(
+                        requireContext().applicationContext,
+                        selected,
+                        importSongs,
+                    )
                 }
             }.setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    override fun onCancel(dialog: DialogInterface) {
+        viewModel.cancelPlaylistImport()
+        super.onCancel(dialog)
     }
 
     private inner class Adapter(
@@ -133,5 +161,9 @@ class ImportPlaylistDialog : DialogFragment() {
         }
 
         override fun getItemCount(): Int = playlists.size
+    }
+
+    companion object {
+        private const val CONFLICT_TAG = "PLAYLIST_IMPORT_CONFLICT"
     }
 }

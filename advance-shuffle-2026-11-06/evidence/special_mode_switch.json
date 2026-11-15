@@ -1,0 +1,5 @@
+{
+  "steps": [],
+  "error": "RuntimeError('uiautomator dump failed for go_songs_list: ')",
+  "trace": "Traceback (most recent call last):\n  File \"<stdin>\", line 16, in <module>\n  File \"C:\\Users\\geode\\Documents\\Repos\\ssilencce\\advance-shuffle-2026-11-06\\tools\\aa05_runtime.py\", line 238, in tap_song_row\n    root = go_songs()\n  File \"C:\\Users\\geode\\Documents\\Repos\\ssilencce\\advance-shuffle-2026-11-06\\tools\\aa05_runtime.py\", line 200, in go_songs\n    return dump(\"go_songs_list\")\n  File \"C:\\Users\\geode\\Documents\\Repos\\ssilencce\\advance-shuffle-2026-11-06\\tools\\aa05_runtime.py\", line 56, in dump\n    raise RuntimeError(f\"uiautomator dump failed for {tag}: {out}\")\nRuntimeError: uiautomator dump failed for go_songs_list: \n"
+}

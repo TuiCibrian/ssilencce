@@ -1,0 +1,34 @@
+{
+  "checks": {
+    "vm_builds_weighted_queue": true,
+    "vm_enables_shuffle_before_order": true,
+    "vm_requests_plain_unshuffled_order": true,
+    "vm_installs_new_queue_at_first": true,
+    "vm_prepares_and_plays": true,
+    "vm_does_not_capture_current_item": true,
+    "vm_does_not_seek_or_restore": true,
+    "vm_has_no_aa05_diagnostics": true,
+    "service_plain_unshuffled_order": true,
+    "service_has_no_pending_order_state": true,
+    "service_has_no_aa05_diagnostics": true,
+    "service_onset_uses_original_shuffle_guard": true,
+    "service_timeline_only_persists": true,
+    "playback_has_no_preservation_extras": true,
+    "non_special_open_shuffle_unchanged": true,
+    "weighted_album_artist_mode_preserved": true,
+    "weighted_composer_mode_preserved": true,
+    "composer_availability_preserved": true,
+    "pure_restart_at_zero": true,
+    "pure_does_not_preserve_old_current": true,
+    "pure_uses_new_queue_count": true
+  },
+  "pure": {
+    "restart_id": 70,
+    "restart_index": 0,
+    "restart_position": 0,
+    "restart_play": true,
+    "old_queue_length": 20,
+    "new_queue_length": 21
+  },
+  "passed": true
+}

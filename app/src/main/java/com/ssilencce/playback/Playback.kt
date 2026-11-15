@@ -3,6 +3,7 @@ package com.ssilencce.playback
 object Playback {
     // Custom commands
     const val TOGGLE_SHUFFLE = "com.ssilencce.command.shuffle.toggle"
+    const val RESHUFFLE_QUEUE = "com.ssilencce.command.shuffle.reshuffle_queue"
     const val CYCLE_REPEAT = "com.ssilencce.command.repeat.cycle"
     const val TOGGLE_FAVORITE = "com.ssilencce.command.toggle_favorite"
     const val RESTORE_PLAYBACK = "com.ssilencce.command.restore_playback"
@@ -10,7 +11,10 @@ object Playback {
     const val CANCEL_AUDIO_FOCUS = "com.ssilencce.command.cancel_audio_focus"
     const val GET_AUDIO_FOCUS_STATE = "com.ssilencce.command.get_audio_focus_state"
     const val SWITCH_NAMED_QUEUE = "com.ssilencce.command.switch_named_queue"
+    const val MOVE_QUEUE_BLOCK = "com.ssilencce.command.move_queue_block"
     const val EXTRA_AUDIO_FOCUS_REQUEST_ID = "audio_focus_request_id"
+    const val EXTRA_MOVE_FROM_INDICES = "move_from_indices"
+    const val EXTRA_MOVE_TO_INDICES = "move_to_indices"
 
     const val SET_UNSHUFFLED_ORDER = "com.ssilencce.command.set.unshuffled_order"
     const val SET_STOP_POSITION = "com.ssilencce.command.set.stop_position"

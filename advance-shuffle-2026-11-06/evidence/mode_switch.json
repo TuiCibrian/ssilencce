@@ -1,0 +1,14 @@
+{
+  "before": {
+    "state": 3,
+    "position": 0,
+    "index": 3,
+    "description": "AA05 B NoComposer Control 02, AA05 Soloist NC2, AA05 NoComposer Control Album"
+  },
+  "after": {
+    "state": 3,
+    "position": 0,
+    "index": 0,
+    "description": "AA05 B NoComposer Heavy 02, AA05 Soloist NH2, AA05 NoComposer Heavy Album"
+  }
+}

@@ -56,15 +56,15 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### core/ — Base, models & widgets
 - `core/SsilencceDatabase.kt` — Room database (v8) with 11 entities, 9 DAOs and migrations through 7→8.
-- `core/appwidgets/` — 3 Glance widgets (SsilencceGlanceWidget/CardWidget/FullWidget) + receivers + serialized `PlaybackState` in DataStore.
+- `core/appwidgets/` — 3 Glance widgets (SsilencceGlanceWidget/CardWidget/FullWidget) + receivers + serialized `PlaybackState` in DataStore, per-widget System/AlbumArt/Wallpaper settings and config (`WidgetSettings`, `WallpaperThemeProvider`, `WidgetConfigActivity`).
 - `core/audio/` — `AudioOutputObserver` (audio device/volume/bit-perfect flows), `AutoEqTxtParser`.
-- `core/model/` — Domain models: action/, audiodevice/, equalizer/ (incl. AutoEq), filesystem/, lyrics/, player/, shuffle/, sort/, task/, theme/, plus CategoryInfo, MediaEvent, PaletteColor, GridViewType.
+- `core/model/` — Domain models: action/, audiodevice/, equalizer/ (incl. AutoEq), filesystem/, list/ (SongListDisplayPolicy), lyrics/, player/, shuffle/, sort/, task/, theme/, plus CategoryInfo, ComposerNamePolicy, GenreSubcategory, MediaEvent, NotPlayedDaysPolicy, PaletteColor, GridViewType.
 - `core/palette/PaletteProcessor.kt` — Cover color extraction (QuantizerCelebi + Palette).
 - `core/sort/` — Locale-aware sorting (SortCollator, SortMode).
 
 ### data/ — Data, repositories & network
-- `data/model/` — Song/Album/Artist/Genre/Playlist/Folder/ReleaseYear, ListeningPeriod/ArtistPlayStat + lyrics/, network/, replaygain/, search/ models.
-- `data/local/` — MediaStore layer (MediaQueryDispatcher, MediaStoreObserver/Writer), MetadataReader/Writer (TagLib), ReplayGainTagExtractor; lyrics parsers (LRC + TTML) and InstrumentalDetector.
+- `data/model/` — Song/Album/Artist/Genre/GenreContent/Playlist/Folder/ReleaseYear, ListeningPeriod/ArtistPlayStat + lyrics/, network/, replaygain/, search/ models.
+- `data/local/` - MediaStore layer (MediaQueryDispatcher, MediaStoreObserver/Writer), MetadataReader/Writer (TagLib), TagWriteVerifier (batch read-back field verifier), ReplayGainTagExtractor + `replaygain/` (BS.1770 analyzer, MediaExtractor/MediaCodec decoder with AAC encoder-delay handling, alias/malformed-safe tag resolver, album scanner with write-failure rollback, verified tag writer with explicit WAV RIFF ID3v2 codec and MP4 freeform support); lyrics parsers (LRC + TTML) and InstrumentalDetector.
 - `data/local/room/` — 11 entities + 9 DAOs (playlists, queue, play counts, history, lyrics cache, include/exclude, play events, track positions, named queues) and the PlaylistWithSongs relation.
 - `data/local/repository/` — `Repository` interface + implementations (Song/Album/Artist/Genre/Playlist/Search/Smart/Special/Lyrics/Network) + `NamedQueueRepository` for named-queue snapshots.
 - `data/local/search/` — Search filters (Smart/Basic/LastAdded) + mappers.
@@ -106,10 +106,10 @@ All paths are relative to `app/src/main/java/com/ssilencce/` unless stated other
 
 ### ui/screen/ — Screens
 - `MainActivity.kt` (NavHost, playback intents, shortcuts) + `PermissionsActivity.kt`.
-- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`; seven top-level lists implement inline quick search.
+- library/ — Home + list/detail fragments per entity (albums, artists, genres, playlists, years, folders, songs) + search + `LibraryViewModel`; seven top-level lists implement inline quick search; album list filters by composer on API 30+, genre detail offers Songs/Albums/Artists subcategories, and Not Recently Played exposes an arbitrary 1–3650-day threshold with history-interval fallback.
 - player/ — `PlayerViewModel`, gestures controller, cover pager + 7 player styles (Default, FullCover, Gradient, Plain, M3, Expressive, Peek), each with controls fragment; named-queue CRUD and audio-focus session commands.
 - player/aurora/ — Compose Aurora chrome for the same seven saved styles, reusing the native cover pager, gestures, ViewModel and inherited song actions; non-Aurora players remain available.
-- lyrics/, queue/ (named queues + queue-local search), settings/ (settings search, scheduled-backup sheet), equalizer/, tageditor/, sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes, detail lists with period stats/history removal), error/ (crash handler).
+- lyrics/, queue/ (named queues, queue-local search, configurable Queues category browser), settings/ (settings search, scheduled-backup sheet), equalizer/, replaygain/ (Compose calculation confirmation/progress/result), tageditor/ (single-song/album/artist editors, LegacyTagAggregator, and the multi-select batch tag editor with per-file values and cooperative stop), sleeptimer/, scrobbling/, sound/, update/, about/, info/, other/ (mini-player, shuffle modes, detail lists with period stats/history removal), error/ (crash handler).
 
 ### res/ (resources)
 - drawable/ (~170 XML icons, AVDs, shadows), layout/ (~100, incl. layout-land/), values/ (strings + ~40 locales, colors, dimens, styles), navigation/ (2 graphs), menu/ (23), xml/ (preferences, widgets info, shortcuts, automotive), font/anim/raw/.
@@ -144,7 +144,7 @@ Changes and specs are tracked with OpenSpec at `openspec/changes/`. See `docs/ag
 
 ### Domain docs
 
-Single-context; ADRs under `docs/architecture/` (ADR-001 through ADR-045) plus feature docs: `docs/FEATURES.md` (what
+Single-context; ADRs under `docs/architecture/` (ADR-001 through ADR-051) plus feature docs: `docs/FEATURES.md` (what
 exists), `docs/MISSING_FEATURES.md` (gaps vs Musicolet) and `docs/MUSICOLET_FEATURES.md`
 (reference snapshot of the other app). See `docs/agents/domain.md` and the
 [Documentation Maintenance](#documentation-maintenance) section.

@@ -211,8 +211,13 @@ abstract class AbsTagEditorActivity :
 
     protected open fun save() {
         hideSoftKeyboard()
+        val uris = viewModel.writableUris
+        if (uris.isEmpty()) {
+            showToast(com.ssilencce.R.string.could_not_save_some_changes)
+            return
+        }
         if (hasR()) {
-            val pendingIntent = MediaStore.createWriteRequest(contentResolver, viewModel.uris)
+            val pendingIntent = MediaStore.createWriteRequest(contentResolver, uris)
             writeRequestLauncher.launch(IntentSenderRequest.Builder(pendingIntent).build())
         } else {
             writeTags()

@@ -17,6 +17,7 @@
 
 package com.ssilencce.core.model
 
+import android.os.Build
 import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import androidx.annotation.IdRes
@@ -47,6 +48,13 @@ class CategoryInfo(
         Genres(R.id.nav_genres, R.string.genres_label, R.drawable.icon_genre),
         Years(R.id.nav_years, R.string.release_years_label, R.drawable.icon_year),
         Folders(R.id.nav_folders, R.string.folders_label, R.drawable.icon_folder),
+        AlbumArtists(R.id.nav_album_artists, R.string.album_artists_label, R.drawable.icon_artist),
+        Composers(R.id.nav_composers, R.string.composers_label, R.drawable.ic_text_fields_24dp),
+        Queues(R.id.nav_queues, R.string.queues_label, R.drawable.ic_queue_music_24dp),
+        ;
+
+        val isAvailable: Boolean
+            get() = this != Composers || Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
     }
 
     companion object {

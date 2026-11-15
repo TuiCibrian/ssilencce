@@ -25,6 +25,7 @@ import kotlinx.io.IOException
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import java.io.File
+import java.security.MessageDigest
 
 class CoverProvider :
     ContentProvider(),
@@ -49,7 +50,7 @@ class CoverProvider :
         val cacheDir = context?.cacheDir?.resolve(CACHE_DIR_NAME) ?: return null
         if (!cacheDir.isDirectory && !cacheDir.mkdirs()) return null
 
-        val cacheFile = File(cacheDir, "${matchCode}_$id.jpg")
+        val cacheFile = containedCacheFile(cacheDir, cacheFileName(matchCode, id)) ?: return null
         val cacheFileExpired = (System.currentTimeMillis() - cacheFile.lastModified()) > CACHE_FILE_EXPIRES
         if (cacheFile.isFile && cacheFile.length() > 0 && !cacheFileExpired) {
             try {
@@ -166,10 +167,46 @@ class CoverProvider :
         }
     }
 
-    override fun getType(uri: Uri): String {
-        check(uriMatcher.match(uri) == 1) { "Unknown URI: $uri" }
-        return "image/*"
+    // Album-artist ids are hashed to a flat cache name; legacy raw-name entries cold-miss and are
+    // regenerated on demand. Existing cache files are left to the normal cache lifecycle.
+    private fun cacheFileName(
+        matchCode: Int,
+        id: String,
+    ): String =
+        if (matchCode == ALBUM_ARTIST_COVER_CODE) {
+            "${matchCode}_${sha256Hex(id)}.jpg"
+        } else {
+            "${matchCode}_$id.jpg"
+        }
+
+    private fun containedCacheFile(
+        cacheDir: File,
+        name: String,
+    ): File? =
+        try {
+            val cacheRoot = cacheDir.canonicalFile
+            val file = File(cacheDir, name).canonicalFile
+            if (file.parentFile == cacheRoot) file else null
+        } catch (_: java.io.IOException) {
+            null
+        }
+
+    private fun sha256Hex(value: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest(value.toByteArray(Charsets.UTF_8))
+        return buildString(digest.size * 2) {
+            for (byte in digest) {
+                append(HEX_DIGITS[(byte.toInt() shr 4) and 0x0f])
+                append(HEX_DIGITS[byte.toInt() and 0x0f])
+            }
+        }
     }
+
+    override fun getType(uri: Uri): String? =
+        if (uriMatcher.match(uri) != UriMatcher.NO_MATCH) {
+            "image/*"
+        } else {
+            null
+        }
 
     override fun query(
         uri: Uri,
@@ -204,6 +241,7 @@ class CoverProvider :
         private const val CACHE_DIR_NAME = "covers"
         private const val CACHE_FILE_EXPIRES = (60 * 60 * 1000) * 24 * 7 // 7 days
         private const val MAX_BITMAP_DIMENSION = 1024
+        private const val HEX_DIGITS = "0123456789abcdef"
 
         const val SONG_COVER_PATH = "song"
         private const val SONG_COVER_CODE = 1

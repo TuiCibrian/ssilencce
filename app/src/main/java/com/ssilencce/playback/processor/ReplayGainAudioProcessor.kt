@@ -5,13 +5,12 @@ import androidx.media3.common.C
 import androidx.media3.common.audio.AudioProcessor
 import androidx.media3.common.audio.BaseAudioProcessor
 import androidx.media3.common.util.UnstableApi
+import com.ssilencce.data.local.replaygain.ReplayGainMath
 import com.ssilencce.data.model.replaygain.ReplayGain
 import com.ssilencce.data.model.replaygain.ReplayGainMode
 import com.ssilencce.playback.processor.ByteUtils.getInt24
 import com.ssilencce.playback.processor.ByteUtils.putInt24
 import java.nio.ByteBuffer
-import kotlin.math.log10
-import kotlin.math.min
 import kotlin.math.pow
 
 @OptIn(UnstableApi::class)
@@ -28,37 +27,27 @@ class ReplayGainAudioProcessor(
     private val gain: Float
         get() =
             currentGain?.let { rg ->
-                var adjustDB: Float
-                var peak: Float
-
-                when (mode) {
-                    ReplayGainMode.Album -> {
-                        adjustDB = if (rg.albumGain != 0f) rg.albumGain else rg.trackGain
-                        peak = if (rg.albumPeak != 1f) rg.albumPeak else rg.trackPeak
+                val adjustDB =
+                    when (mode) {
+                        ReplayGainMode.Album -> rg.albumGain ?: rg.trackGain
+                        ReplayGainMode.Track -> rg.trackGain ?: rg.albumGain
+                        ReplayGainMode.Off -> return 0f
                     }
-
-                    ReplayGainMode.Track -> {
-                        adjustDB = if (rg.trackGain != 0f) rg.trackGain else rg.albumGain
-                        peak = if (rg.trackPeak != 1f) rg.trackPeak else rg.albumPeak
-                    }
-
-                    ReplayGainMode.Off -> {
-                        return 0f
-                    }
+                if (adjustDB == null) {
+                    return preAmpGainWithoutTag.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
                 }
 
-                if (adjustDB == 0f) {
-                    adjustDB = preAmpGainWithoutTag
-                } else {
-                    adjustDB += preAmpGain
-
-                    if (peak in 0f..1f) {
-                        val peakDB = -20f * log10(peak.toDouble()).toFloat()
-                        adjustDB = min(adjustDB, peakDB)
+                var value = adjustDB + preAmpGain
+                val peak =
+                    when (mode) {
+                        ReplayGainMode.Album -> rg.albumPeak ?: rg.trackPeak
+                        ReplayGainMode.Track -> rg.trackPeak ?: rg.albumPeak
+                        ReplayGainMode.Off -> null
                     }
+                if (peak != null) {
+                    value = ReplayGainMath.limitByPeak(value, peak)
                 }
-
-                adjustDB
+                value.coerceIn(MIN_GAIN_DB, MAX_GAIN_DB)
             } ?: 0f
 
     override fun onConfigure(inputAudioFormat: AudioProcessor.AudioFormat): AudioProcessor.AudioFormat {
@@ -111,5 +100,10 @@ class ReplayGainAudioProcessor(
                 replaceOutputBuffer(remaining).put(inputBuffer).flip()
             }
         }
+    }
+
+    private companion object {
+        const val MIN_GAIN_DB = -24f
+        const val MAX_GAIN_DB = 24f
     }
 }

@@ -127,6 +127,7 @@ class DefaultPlayerFragment :
         sharedPreferences: SharedPreferences,
         key: String?,
     ) {
+        if (_binding == null) return
         if (key == DISPLAY_NEXT_SONG) {
             setupQueueMenuItem()
         }

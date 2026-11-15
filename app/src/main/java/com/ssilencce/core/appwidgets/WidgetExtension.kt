@@ -13,13 +13,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.glance.GlanceTheme
 import androidx.glance.action.Action
 import androidx.glance.appwidget.action.actionStartService
-import androidx.glance.color.ColorProvider
 import androidx.glance.color.ColorProviders
 import androidx.glance.color.colorProviders
+import com.ssilencce.core.appwidgets.state.WidgetSettings
+import com.ssilencce.core.appwidgets.state.WidgetSettingsStore
 import com.ssilencce.core.appwidgets.state.WidgetTheme
+import com.ssilencce.core.appwidgets.state.WidgetThemeMode
 import com.ssilencce.playback.PlaybackService
 import com.ssilencce.ui.theme.PaletteStyle
 import com.ssilencce.ui.theme.dynamicColorSchemes
+import androidx.glance.color.ColorProvider as colorProvider
+import androidx.glance.unit.ColorProvider as UnitColorProvider
 
 fun Dp.toPx(context: Context): Int =
     TypedValue
@@ -58,81 +62,174 @@ fun WidgetTheme(
         darkPrimaryContainerColor = colorSchemes.darkColorScheme.primaryContainer.toArgb(),
         darkOnPrimaryContainerColor = colorSchemes.darkColorScheme.onPrimaryContainer.toArgb(),
         darkTertiaryContainerColor = colorSchemes.darkColorScheme.tertiaryContainer.toArgb(),
-        darkOnTertiaryContainerColor = colorSchemes.lightColorScheme.onTertiaryContainer.toArgb(),
+        darkOnTertiaryContainerColor = colorSchemes.darkColorScheme.onTertiaryContainer.toArgb(),
+    )
+}
+
+suspend fun WidgetSettings.resolveWallpaperTheme(
+    context: Context,
+    appWidgetId: Int,
+): WidgetTheme? =
+    if (themeMode == WidgetThemeMode.Wallpaper) {
+        WallpaperThemeProvider.themeFor(context, appWidgetId, wallpaperColor)
+    } else {
+        null
+    }
+
+fun WidgetTheme?.resolveTheme(
+    themeMode: WidgetThemeMode,
+    wallpaperTheme: WidgetTheme?,
+): WidgetTheme? =
+    when (themeMode) {
+        WidgetThemeMode.System -> null
+        WidgetThemeMode.AlbumArt -> this
+        WidgetThemeMode.Wallpaper -> wallpaperTheme ?: this
+    }
+
+private fun UnitColorProvider.withAlpha(
+    context: Context,
+    alpha: Float,
+): UnitColorProvider {
+    val color = getColor(context).copy(alpha = alpha)
+    return androidx.glance.color.ColorProvider(day = color, night = color)
+}
+
+private fun systemColorsWithAlpha(
+    context: Context,
+    colors: ColorProviders,
+    alpha: Float,
+): ColorProviders =
+    colorProviders(
+        primary = colors.primary,
+        onPrimary = colors.onPrimary,
+        primaryContainer = colors.primaryContainer.withAlpha(context, alpha),
+        onPrimaryContainer = colors.onPrimaryContainer,
+        secondary = colors.secondary,
+        onSecondary = colors.onSecondary,
+        secondaryContainer = colors.secondaryContainer,
+        onSecondaryContainer = colors.onSecondaryContainer,
+        tertiary = colors.tertiary,
+        onTertiary = colors.onTertiary,
+        tertiaryContainer = colors.tertiaryContainer.withAlpha(context, alpha),
+        onTertiaryContainer = colors.onTertiaryContainer,
+        error = colors.error,
+        errorContainer = colors.errorContainer,
+        onError = colors.onError,
+        onErrorContainer = colors.onErrorContainer,
+        background = colors.background.withAlpha(context, alpha),
+        onBackground = colors.onBackground,
+        surface = colors.surface.withAlpha(context, alpha),
+        onSurface = colors.onSurface,
+        surfaceVariant = colors.surfaceVariant.withAlpha(context, alpha),
+        onSurfaceVariant = colors.onSurfaceVariant,
+        outline = colors.outline,
+        inverseOnSurface = colors.inverseOnSurface,
+        inverseSurface = colors.inverseSurface,
+        inversePrimary = colors.inversePrimary,
+        widgetBackground = colors.widgetBackground.withAlpha(context, alpha),
+    )
+
+@Composable
+fun WidgetTheme?.getColors(
+    context: Context,
+    themeMode: WidgetThemeMode,
+    transparencyPercent: Int,
+): ColorProviders {
+    val systemColors = GlanceTheme.colors
+    val surfaceAlpha = WidgetSettingsStore.surfaceAlpha(transparencyPercent)
+    if (themeMode == WidgetThemeMode.System || this == null) {
+        return if (transparencyPercent == 0) {
+            systemColors
+        } else {
+            systemColorsWithAlpha(context, systemColors, surfaceAlpha)
+        }
+    }
+
+    return colorProviders(
+        primary =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightPrimaryColor),
+                night = Color(darkPrimaryColor),
+            ),
+        onPrimary =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightOnPrimaryColor),
+                night = Color(darkOnPrimaryColor),
+            ),
+        primaryContainer =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightPrimaryContainerColor).copy(alpha = surfaceAlpha),
+                night = Color(darkPrimaryContainerColor).copy(alpha = surfaceAlpha),
+            ),
+        onPrimaryContainer =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightOnPrimaryContainerColor),
+                night = Color(darkOnPrimaryContainerColor),
+            ),
+        secondary = systemColors.secondary,
+        onSecondary = systemColors.onSecondary,
+        secondaryContainer = systemColors.secondaryContainer,
+        onSecondaryContainer = systemColors.onSecondaryContainer,
+        tertiary = systemColors.tertiary,
+        onTertiary = systemColors.onTertiary,
+        tertiaryContainer =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightTertiaryContainerColor).copy(alpha = surfaceAlpha),
+                night = Color(darkTertiaryContainerColor).copy(alpha = surfaceAlpha),
+            ),
+        onTertiaryContainer =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightOnTertiaryContainerColor),
+                night = Color(darkOnTertiaryContainerColor),
+            ),
+        error = systemColors.error,
+        errorContainer = systemColors.errorContainer,
+        onError = systemColors.onError,
+        onErrorContainer = systemColors.onErrorContainer,
+        background =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightSurfaceColor).copy(alpha = surfaceAlpha),
+                night = Color(darkSurfaceColor).copy(alpha = surfaceAlpha),
+            ),
+        onBackground = systemColors.onBackground,
+        surface =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightSurfaceColor).copy(alpha = surfaceAlpha),
+                night = Color(darkSurfaceColor).copy(alpha = surfaceAlpha),
+            ),
+        onSurface =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightOnSurfaceColor),
+                night = Color(darkOnSurfaceColor),
+            ),
+        surfaceVariant = systemColors.surfaceVariant.withAlpha(context, surfaceAlpha),
+        onSurfaceVariant =
+            androidx.glance.color.ColorProvider(
+                day = Color(lightOnSurfaceVariantColor),
+                night = Color(darkOnSurfaceVariantColor),
+            ),
+        outline = systemColors.outline,
+        inverseOnSurface = systemColors.inverseOnSurface,
+        inverseSurface = systemColors.inverseSurface,
+        inversePrimary = systemColors.inversePrimary,
+        widgetBackground = systemColors.widgetBackground.withAlpha(context, surfaceAlpha),
     )
 }
 
 @Composable
-fun WidgetTheme?.getColors(): ColorProviders {
-    val themeColors = GlanceTheme.colors
-    return if (this == null) {
-        themeColors
-    } else {
-        colorProviders(
-            primary =
-                ColorProvider(
-                    day = Color(lightPrimaryColor),
-                    night = Color(darkPrimaryColor),
-                ),
-            onPrimary =
-                ColorProvider(
-                    day = Color(lightOnPrimaryColor),
-                    night = Color(darkOnPrimaryColor),
-                ),
-            primaryContainer =
-                ColorProvider(
-                    day = Color(lightPrimaryContainerColor),
-                    night = Color(darkPrimaryContainerColor),
-                ),
-            onPrimaryContainer =
-                ColorProvider(
-                    day = Color(lightOnPrimaryContainerColor),
-                    night = Color(darkOnPrimaryContainerColor),
-                ),
-            secondary = themeColors.secondary,
-            onSecondary = themeColors.onSecondary,
-            secondaryContainer = themeColors.secondaryContainer,
-            onSecondaryContainer = themeColors.onSecondaryContainer,
-            tertiary = themeColors.tertiary,
-            onTertiary = themeColors.onTertiary,
-            tertiaryContainer =
-                ColorProvider(
-                    day = Color(lightTertiaryContainerColor),
-                    night = Color(darkTertiaryContainerColor),
-                ),
-            onTertiaryContainer =
-                ColorProvider(
-                    day = Color(lightOnTertiaryContainerColor),
-                    night = Color(darkOnTertiaryContainerColor),
-                ),
-            error = themeColors.error,
-            errorContainer = themeColors.errorContainer,
-            onError = themeColors.onError,
-            onErrorContainer = themeColors.onErrorContainer,
-            background = themeColors.background,
-            onBackground = themeColors.onBackground,
-            surface =
-                ColorProvider(
-                    day = Color(lightSurfaceColor),
-                    night = Color(darkSurfaceColor),
-                ),
-            onSurface =
-                ColorProvider(
-                    day = Color(lightOnSurfaceColor),
-                    night = Color(darkOnSurfaceColor),
-                ),
-            surfaceVariant = themeColors.surfaceVariant,
-            onSurfaceVariant =
-                ColorProvider(
-                    day = Color(lightOnSurfaceVariantColor),
-                    night = Color(darkOnSurfaceVariantColor),
-                ),
-            outline = themeColors.outline,
-            inverseOnSurface = themeColors.inverseOnSurface,
-            inverseSurface = themeColors.inverseSurface,
-            inversePrimary = themeColors.inversePrimary,
-            widgetBackground = themeColors.widgetBackground,
+fun WidgetTheme?.getScrimColor(
+    context: Context,
+    themeMode: WidgetThemeMode,
+    transparencyPercent: Int,
+): UnitColorProvider {
+    val scrimAlpha = WidgetSettingsStore.scrimAlpha(transparencyPercent)
+    return if ((themeMode == WidgetThemeMode.AlbumArt || themeMode == WidgetThemeMode.Wallpaper) && this != null) {
+        androidx.glance.color.ColorProvider(
+            day = Color(lightPrimaryContainerColor).copy(alpha = scrimAlpha),
+            night = Color(darkPrimaryContainerColor).copy(alpha = scrimAlpha),
         )
+    } else {
+        GlanceTheme.colors.primaryContainer.withAlpha(context, scrimAlpha)
     }
 }
 

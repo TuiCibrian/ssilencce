@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <int name="minimum_song_duration" value="1" />
+    <boolean name="aurora_appearance" value="true" />
+    <boolean name="remember_last_page" value="false" />
+</map>

@@ -72,6 +72,15 @@
             android:label="@string/action_tag_editor"
             android:name=".ui.screen.tageditor.ArtistTagEditorActivity"/>
 
+        <activity
+            android:label="@string/action_tag_editor"
+            android:name=".ui.screen.tageditor.BatchTagEditorActivity"/>
+
+        <activity
+            android:exported="false"
+            android:label="@string/action_calculate_replay_gain"
+            android:name=".ui.screen.replaygain.ReplayGainScanActivity"/>
+
         <activity android:name=".ui.screen.permissions.PermissionsActivity"/>
 
         <activity
@@ -211,6 +220,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </receiver>
+
+        <activity
+            android:name=".ui.screen.widgets.WidgetConfigActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Ssilencce" />
 
         <!-- Begin: App Widgets -->
         <receiver

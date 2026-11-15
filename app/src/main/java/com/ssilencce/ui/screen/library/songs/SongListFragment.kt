@@ -51,7 +51,7 @@ class SongListFragment :
         get() = R.string.no_songs_label
 
     private var allSongs: List<Song> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override val defaultGridSize: Int
         get() =

@@ -165,6 +165,14 @@
             app:widgetLayout="@layout/preference_switch"
             app:key="pause_on_disconnect"/>
 
+        <com.ssilencce.ui.component.preferences.CustomDialogPreference
+            app:iconSpaceReserved="true"
+            app:title="@string/headset_button_mapping_title"
+            app:summary="@string/headset_button_mapping_summary_default"
+            app:persistent="false"
+            app:layout="@layout/list_item_view"
+            app:key="headset_button_mapping"/>
+
     </PreferenceCategory>
 
     <PreferenceCategory

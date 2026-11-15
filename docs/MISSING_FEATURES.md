@@ -21,7 +21,7 @@ described. Items in the appendix are not applicable to an open-source app.
 - **A-B repeat** loop within a track.
 - **Per-song play speed** — speed/pitch per individual song (ssilencce has global tempo only).
 - **Mute handling** — don't play when muted, pause when muted, resume when unmuted.
-- **Previous-button behavior** — configure as restart / play previous; next/prev override to FF/Rewind (headsets, remotes); configurable FF/Rewind durations.
+- **Previous-button behavior** — configure as restart / play previous; dedicated next/prev override to FF/Rewind for headsets/remotes and configurable FF/Rewind durations remain missing.
 - **Queue control actions** — "Load next song and pause", "Pause after this song", "Play after current song".
 - **Session survival beyond force-stop** — ssilencce now opts into restoring an active session after a system service/process restart; Android force-stop and an OS kill that never restarts the service remain outside app control.
 - **Preview a song** without adding it to any queue.
@@ -31,11 +31,8 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## 2. Queues
 
-- **End-of-queue behaviors** — resume next/previous queue from its last position, re-shuffle the queue, jump to next/first queue.
-- **Playlist duplicate-name handling when saving a queue** — **replace / merge / keep both**; saving the active queue already exists as a named queue.
-- **Max queue limit** with auto-delete of oldest.
-- **Swipe-right-to-remove** in the queue tab (toggle).
-- **Confirm before removing queues**.
+- **Named-queue merge** - duplicate save/rename now offers Replace existing / Keep both / Rename; merging two saved queues remains deferred.
+- **Automatic oldest-queue deletion at the cap** - ssilencce enforces 100 named queues and rejects new saves with an explicit error; it does not delete a queue automatically.
 
 ## 3. Shuffle & repeat
 
@@ -43,37 +40,29 @@ described. Items in the appendix are not applicable to an open-source app.
 - **Shuffle behaviors** — "only shuffle below the current song", "shuffle all songs of each queue".
 - **Shuffle queue visible & reorderable**.
 - **"Shuffle and then…"** and **"shuffle and play"** from multi-select.
-- **Advance Shuffle** for album-artists and composers (ssilencce covers albums/artists/genres/folders only).
 - **Repeat "load-next-and-pause"** mode.
 
 ## 4. Equalizer & sound
 
 - **Configurable band count** — 3 / 5 / 10 / 15 / 31 bands (ssilencce engines use a fixed band count).
-- **Per-Bluetooth-device EQ** — separate profile per paired BT device.
 - **Per-screencast-device EQ** (PRO).
 - **Stereo/mono output** switch.
 - **Surround sound** effect.
 - **Reverb effects** (experimental) — room level/HF, decay time/ratio, reflection level/delay, reverb level/delay, diffusion.
-- **ReplayGain calculation** — read *and calculate* RG tags (ssilencce only reads them).
-- **Non-RG preamp** and **"convert RG to constant volume"**.
+- **"Convert RG to constant volume"** — a non-RG preamp is implemented; conversion is not.
 - **Headroom handling** and channel-balance warning.
 - **Musicolet EQ vs System equalizer** engine choice.
 
 ## 5. Library & browsing
 
-- **Composers tab** and **Album-Artists tab** (ssilencce has album-artist support inside Artists only).
-- **Configurable Queues library category outside Aurora** — Aurora provides a fixed primary Queue destination, not a multiple-queue browser.
-- **Sub-categorization** — albums by artist/album-artist/composer, artists by albums, albums sorted by year, genre sub-categorization.
-- **Extra sort keys** — filename, track number, path, date modified, date last played, most/least played, alphanumeric sorting.
-- **Ignore-keyword whitelist** (custom list beyond A/An/The).
+- **Sub-categorization** - albums by artist/album-artist, artists by albums, and genre album-artist/composer subcategories; album composer filtering and genre Songs/Albums/Artists subcategories are available.
+- **Play-statistics sort keys** — date last played and most/least played; ssilencce already sorts by filename, path, track number and date modified with numeric-aware collation.
 - **Album-merge strategy** — user-configurable fields that decide album equality.
 - **Disc number** support.
 - **Multi-artist / multi-album-artist / multi-composer / multi-genre tags** with custom separators (PRO).
 - **"Use album-artist if artist missing"** fallback.
-- **Quick search box at the bottom of every list** — implemented for the seven top-level lists (songs, albums, artists, playlists, genres, years, folders) and the queue; detail lists and other secondary lists do not have the inline bar.
-- **Filename-vs-title display** toggle and **extra list info** (date updated, etc.).
-- **Most Played CSV export** of songs/artists (manual and automatic weekly/monthly/yearly); the in-app period views and artist percentages are implemented (ADR-040), but CSV export is not.
-- **"Not played in past N days"** filter.
+- **Third-line list info** — date modified and other extra fields only append to the existing secondary text; compact album/artist song rows and Home song suggestions have no secondary text view, and a configurable multi-field list picker is not available.
+- **Genre duration-filter parity** - minimum/maximum duration filters apply to the shared song cursor (songs, albums/artists, years, folders, search and their detail lists); genre detail lists, genre search and genre counts still use raw genre-member queries, and the unknown-genre list uses an explicit unfiltered cursor, so all four remain outside the duration filters.
 
 ## 6. Scanning & folder management
 
@@ -88,7 +77,7 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## 7. Tags, lyrics & album art
 
-- **Multi-song (batch) tag editing** across all fields and formats (ssilencce has batch save but limited scope).
+- **Multi-song (batch) tag editing** across all fields and formats (ssilencce now has a multi-select text-field editor with Keep/Set/Clear and per-file values and per-field read-back; the legacy album/artist editors now aggregate every file, write only changed fields and confirm destructive writes; batch covers, session undo, in-place write backup/restore, single-entity routing and the full runtime format matrix remain missing).
 - **Create/edit synchronized LRC in-app** (ssilencce's editor has no sync/timing editing).
 - **A-B repeat on selected lyric lines**.
 - **Select/copy/share lyric lines**.
@@ -141,17 +130,15 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## 14. Headset, Bluetooth & USB
 
-- **Earphone double/triple press configuration**, 4+ presses = fast-forward, allowed-delay tuning, disclaimer.
+- **Dedicated Next/Previous override to FF/Rewind** and per-device filtering remain missing; configurable single/double/triple/long-press mapping, optional 4+ Seek forward, 250–600 ms delay and the OEM/AVRCP disclaimer are implemented.
 
 ## 15. Backup & restore
 
-- **Choose what to restore** (settings, playlists, favorites, play counts, queues, per-file settings) — ssilencce offers a selective-restore picker over its four content types (settings, playlists, lyrics cache, artist images; nothing preselected), but favorites, play counts, queues and per-file settings cannot be restored.
-- **Share the backup ZIP** directly from the app — not implemented; scheduled automatic backups, a custom SAF folder and structural restore verification are implemented (ADR-043).
+- **Share the backup ZIP directly from the app** - no remaining gap for manual backups: a successful manual backup opens the "Backup saved" sheet and can share the archive. Scheduled archives remain in the user-chosen SAF folder without auto-share; that is intended behavior, not a missing feature.
 
 ## 16. Export / import
 
-- **Conflict handling** on playlist import (replace / keep / rename); M3U, M3U8 and PLS export are implemented (ADR-044), so the remaining gap is import conflict handling.
-- **CSV export** of statistics.
+- Device-playlist import conflict handling (Keep both, Replace existing, Rename imported) is implemented; no remaining gap. Backup playlist restore intentionally keeps its separate non-interactive merge-into-existing policy instead of showing this dialog.
 
 ## 17. Interface & theming
 
@@ -166,16 +153,13 @@ described. Items in the appendix are not applicable to an open-source app.
 
 ## Appendix A — Partial overlaps (Musicolet feature exists in reduced form)
 
-- **Sleep timer** — Musicolet adds HH:MM form, stop-after-N-songs, timer history with 1-tap reuse, "stop only music if UI is foreground" (ssilencce has countdown, fade-out, quit-after-end).
-- **Queue drag-reorder** — Musicolet adds dragging of multiple selected songs (ssilencce drags single items).
-- **Exclude by duration** — Musicolet filters by maximum; ssilencce filters by minimum duration.
-- **EQ per output device** — Musicolet splits speaker/headset/BT; ssilencce has one per-output-device association.
-- **Advance Shuffle** — ssilencce has album/artist shuffle strategies but not composer/album-artist or all sorting rules.
-- **ReplayGain** — Musicolet can calculate tags and convert to constant volume; ssilencce only reads them.
-- **Tag editor** — Musicolet batch-edits any field across formats; ssilencce's batch save is limited.
+- **Sleep timer** — Musicolet adds stop-after-N-songs, timer history with 1-tap reuse, "stop only music if UI is foreground" (ssilencce has countdown, exact HH:MM end time, fade-out, quit-after-end).
+- **Advance Shuffle** — album/artist plus album-artist/composer most-played strategies are available; composer strategies require Android 11/API 30+ (matching the Composers category), while album-artist strategies work on all supported versions. Per-entity within-group sorting rules are fixed rather than user-configurable.
+- **ReplayGain** — both can calculate tags; Musicolet also converts to constant volume. ssilencce source implements standard/WAV-ID3v2 (explicit RIFF `ID3 ` chunk)/iTunes/Opus tag calculation and writes album gain only for complete albums; the current AA-06 checkpoint is not yet independently accepted, and final review, frozen build and device WAV/M4A gates remain pending. It does not convert to constant volume.
+- **Tag editor** — Musicolet batch-edits any field across formats; ssilencce now has a multi-select text-field editor with Keep/Set/Clear and per-file/per-field read-back; the legacy album/artist editors now aggregate every file, write only changed fields and confirm destructive writes; batch covers, session undo, in-place write backup/restore, single-entity routing and the full runtime format matrix remain missing.
 - **Album art change/remove** — both support it; Musicolet adds fullscreen zoom, save to gallery, lock-screen wallpaper.
-- **Backup** — both ZIP-based and both restore selectively (ssilencce's picker preselects nothing); automatic scheduled backup and structural verification are now implemented (ADR-043). Remaining Musicolet advantages are sharing the ZIP directly and restoring favorites/play counts/queues/per-file settings.
-- **Widgets** — both have 3 widgets; Musicolet adds transparency, per-widget themes and empty-state layouts.
+- **Backup** - both ZIP-based and both restore selectively (ssilencce's picker preselects nothing); automatic scheduled backup, structural verification, direct sharing of a manual backup from the post-backup sheet and selective restore of favorites, play counts, named queues and per-file resume positions are now implemented (ADR-043, ADR-048). No remaining backup/restore gap.
+- **Widgets** - both have 3 widgets; ssilencce now has per-widget System/AlbumArt/Wallpaper themes, transparency with heuristic alpha floors, empty-state layouts and configure/reconfigure. AA-10 V4 source is live-integrated and independently reviewed; it remains unbuilt and runtime-pending. Measured bounds, TalkBack, contrast, wallpaper fallback, per-instance/delete-re-add, empty-state, API 26/27, exact-fit rounding and transparency runtime gates remain open. No AA-10 PASS.
 - **Last.fm/ListenBrainz scrobbling** — ssilencce-only (not listed as gap).
 - **Updater** — present in both (Musicolet via changelog checker, ssilencce via GitHub releases); no gap.
 
@@ -200,10 +184,10 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 ## 1. Sleep timer
 
-- Musicolet: HH:MM form, stop after N songs, stop after this song, gradual fade-out, timer
-  history with 1-tap reuse, reset, "stop only music if UI is foreground".
-- ssilencce: countdown, fade-out, quit-after-end.
-- See Part 1 §1 (timer history, stop-after-N, HH:MM).
+- Musicolet: stop after N songs, stop after this song, gradual fade-out, timer history with
+  1-tap reuse, reset, "stop only music if UI is foreground".
+- ssilencce: countdown, exact HH:MM end time, fade-out, quit-after-end.
+- See Part 1 §1 (timer history, stop-after-N).
 
 ## 2. Audio focus handling
 
@@ -221,8 +205,8 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 - Musicolet: configurable FF/Rewind durations, next/prev button override to FF/Rewind for
   headsets/remotes, FF/Rewind visible only for long audio.
-- ssilencce: configurable seek interval (5–60 s), rewind with back button.
-- See Part 1 §1 (override, long-audio-only).
+- ssilencce: configurable seek interval (5-60 s), rewind with back button, and configurable headset single/double/triple/long-press mapping with optional 4+ Seek forward; remaining gaps are dedicated Next/Previous override and configurable FF/Rewind durations.
+- See Part 1 §1 (override, configurable durations, long-audio-only).
 
 ## 5. Playback speed & pitch
 
@@ -241,8 +225,9 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: own engine or System equalizer, configurable band count (3/5/10/15/31),
   preamp, per-output-device profiles, per-Bluetooth-device EQ, EQ presets save/delete.
 - ssilencce: two engines (classic Equalizer + DynamicsProcessing) with fixed band counts,
-  bass boost, virtualizer, loudness, compressor, limiter, profiles with per-output-device
-  associations and JSON/AutoEq import-export (Musicolet lacks import/export).
+  bass boost, virtualizer, loudness, compressor, limiter, profiles with broad output-type and
+  exact hashed per-device associations, and JSON/AutoEq import-export (Musicolet lacks
+  import/export).
 - See Part 1 §4 (band count, per-BT device).
 
 ## 8. ReplayGain
@@ -250,9 +235,11 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: read *and calculate* RG tags, album/track normalization, RG preamp + non-RG
   preamp, use-embedded-tags option, skip-or-reload, "convert RG to constant volume",
   headroom handling.
-- ssilencce: read-only (standard, iTunes and Opus R128 tags), album/track modes, preamp,
-  peak limiting on 16/24-bit PCM.
-- See Part 1 §4 (calculation, non-RG preamp, constant-volume conversion).
+- ssilencce: reads and calculates standard, iTunes and Opus R128 tags; album/track modes,
+  with-tag and non-RG preamps, peak limiting on 16/24-bit PCM. Calculation writes verified tags
+  and writes album gain only when the complete album is selected (ADR-049).
+- Remaining: "convert RG to constant volume", use-embedded-tags toggle, skip-or-reload and
+  user-facing headroom control. See Part 1 §4 (constant-volume conversion).
 
 ## 9. Shuffle & repeat modes
 
@@ -268,15 +255,16 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: 14+ keys (title, filename, track number, album, artist, duration, year, date
   added, date last played, date modified, most/least played, path), ignore-keyword whitelist,
   experimental alphanumeric sorting.
-- ssilencce: locale-aware collator, article-ignoring (The/A/El…), per-entity sort keys.
-- See Part 1 §5 (extra keys, whitelist, alphanumeric).
+- ssilencce: locale-aware numeric collator (covers natural/alphanumeric ordering), article-ignoring (The/A/El…) with a user-editable keyword list, per-entity sort keys including filename, path, track number and date modified.
+- See Part 1 §5 (date last played, most/least played).
 
 ## 11. Play statistics
 
 - Musicolet: Most Played with periods (week/month/12 months/year/all time), artist stats
   with play percentage, manual and automatic CSV export.
-- ssilencce: period-aware Top Tracks/Top Artists with percentages (ADR-040); the remaining gap
-  is CSV export of statistics.
+- ssilencce: period-aware Top Tracks/Top Artists with percentages, manual current-period CSV
+  export (ADR-040) and optional automatic weekly/monthly/yearly export of the latest completed
+  period; no remaining statistics CSV gap.
 
 ## 12. Playback history
 
@@ -290,9 +278,10 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
   swipe-right-to-remove, drag-reorder incl. multiple selected songs, album-art show/hide,
   quick search box.
 - ssilencce: named queues, queue-local search, highlighted current song, position/total
-  counter, scroll-to-current and single-item drag reordering (ADR-041); queue filtering keeps
-  original indices for actions. The remaining gaps are swipe-right-to-remove and
-  drag-reordering multiple selected songs.
+  counter, scroll-to-current, swipe-right-to-remove with Undo, single-item drag reordering and
+  key-based multi-select block drag (ADR-041); queue filtering keeps original indices for actions.
+  Selection/drag are disabled during search or lock, and the full queue/current/stop positions are
+  persisted after a block move.
 
 ## 14. Android Auto
 
@@ -314,16 +303,20 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: 3 widgets (4×1, 4×1 Advanced, 4×3), horizontal resize, transparency, per-widget
   themes ("match system", "adapt from album art", "adapt from wallpaper"), per-widget
   configuration, empty-state layouts.
-- ssilencce: 3 Glance widgets (responsive, card, full) with dynamic colors, layout style,
-  third-line content, corner radius.
-- See Part 1 Appendix A (themes, transparency, empty states).
+- ssilencce: 3 Glance widgets (responsive, card, full) with per-widget System/AlbumArt/Wallpaper
+  themes, 0-100% transparency (0.35 surface / 0.30 scrim floors), empty-state layouts,
+  configure/reconfigure and existing dynamic colors/layout style/third-line/corner radius.
 
 ## 17. Tag editor
 
 - Musicolet: multi-song batch editing of every field across all formats (ID3v1/v2, MP4,
   FLAC/Vorbis, OGG/Opus, WAV, AIFF, WMA, DFF, DSF), batch artwork replace/delete.
-- ssilencce: full field editing with batch save (limited), covers via Photo Picker,
-  MusicBrainz search (Musicolet lacks MusicBrainz integration).
+- ssilencce: multi-select text-field batch editor (17 fields, Keep/Set/Clear, common/Varies
+  aggregation, per-file values and per-file/per-field read-back), full single-song editing, guarded album/artist editors,
+  covers via Photo Picker, MusicBrainz search (Musicolet lacks MusicBrainz integration).
+- Remaining: batch artwork replace/delete, single-entity routing to the batch editor
+  (the aggregation/dirty-map guard and destructive confirmation are applied; the single-entity action is still a legacy editor), the
+  runtime format matrix, session undo/rollback and in-place write backup/restore.
 - See Part 1 §7 (full batch).
 
 ## 18. Backup & restore
@@ -331,14 +324,18 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 - Musicolet: single ZIP with choose-what-to-restore, automatic backup with custom folder,
   share the ZIP, verification, restore warnings.
 - ssilencce: selective ZIP backup/restore with structural verification and warnings
-  (empty/non-backup/unrestorable), plus opt-in scheduled backups to a SAF folder (ADR-043);
-  the remaining gap is sharing the ZIP directly.
+  (empty/non-backup/unrestorable), including settings, playlists, favorites, play counts, named
+  queues, per-file resume positions, lyrics and artist images; opt-in scheduled backups to a SAF
+  folder and direct sharing of a manual backup from the post-backup sheet are also implemented
+  (ADR-043, ADR-048). Scheduled archives remain in the user-chosen folder without auto-share;
+  this is intended behavior, not a gap.
 
 ## 19. Playlist import/export
 
 - Musicolet: M3U/M3U8/PLS export and import with conflict handling (replace/keep/rename).
-- ssilencce: M3U/M3U8/PLS export and device playlist import; the remaining gap is conflict
-  handling on import.
+- ssilencce: M3U/M3U8/PLS export and device-playlist import with Keep both, Replace existing and
+  Rename imported; creates/replacements are transactional. Backup playlist restore keeps a
+  separate non-interactive merge policy. No remaining conflict-handling gap for device import.
 
 ## 20. Album art handling
 
@@ -361,9 +358,11 @@ specific absent sub-feature was already listed in Part 1, it is referenced inste
 
 - Musicolet: quick search box at the bottom of every list, search history, system search
   with `MEDIA_PLAY_FROM_SEARCH`.
-- ssilencce: quick search on all seven top-level lists, settings search, global search with
-  voice input, debounce, grouped results, filters, scoped searches and `searchable.xml`;
-  secondary/detail lists do not have the inline bar and search history is absent.
+- ssilencce: inline quick search on all seven top-level lists, the queue, the generic
+  detail/statistics list and the song sections of album, artist, genre, year, folder and playlist
+  detail (playlist filtering is drag-safe); settings search; global search with voice input,
+  debounce, grouped results, filters, scoped searches and `searchable.xml`. Search history is
+  still absent.
 
 ## Notes (Part 2)
 

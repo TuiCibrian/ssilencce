@@ -37,6 +37,7 @@ import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.SongPlayStat
 import com.ssilencce.util.Preferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers.IO
@@ -74,7 +75,19 @@ interface SmartRepository {
 
     suspend fun playCountSongs(period: ListeningPeriod): List<Song>
 
+    suspend fun songPlayStats(period: ListeningPeriod): List<SongPlayStat>
+
+    suspend fun songPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<SongPlayStat>
+
     suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat>
+
+    suspend fun artistPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<ArtistPlayStat>
 
     fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>>
 
@@ -141,7 +154,7 @@ class RealSmartRepository(
 
             val oldSongIds =
                 historyDao.notPlayedSongIds(
-                    cutoff = Preferences.getHistoryCutoff(context).interval,
+                    cutoff = Preferences.getNotPlayedCutoff(context).interval,
                 )
             val oldSongs =
                 songRepository.songs(
@@ -185,7 +198,56 @@ class RealSmartRepository(
             .fromPlayCountToSongs()
     }
 
+    override suspend fun songPlayStats(period: ListeningPeriod): List<SongPlayStat> =
+        withContext(IO) {
+            val cutoff = period.cutoffMillis()
+            val pairs =
+                if (cutoff == null) {
+                    playCountDao
+                        .playCountSongs(PLAY_STATS_LIMIT)
+                        .map { it to it.playCount.toLong() }
+                } else {
+                    val topSongs = playEventDao.topSongsSince(cutoff, PLAY_STATS_LIMIT)
+                    if (topSongs.isEmpty()) return@withContext emptyList()
+                    val entities =
+                        playCountDao
+                            .findSongsExistInPlayCount(topSongs.map { it.songId })
+                            .associateBy { it.id }
+                    topSongs.mapNotNull { count ->
+                        entities[count.songId]?.let { it to count.playCount }
+                    }
+                }
+            pairs.toSongPlayStats()
+        }
+
+    override suspend fun songPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<SongPlayStat> =
+        withContext(IO) {
+            val topSongs = playEventDao.topSongsBetween(startMillis, endMillis, PLAY_STATS_LIMIT)
+            if (topSongs.isEmpty()) return@withContext emptyList()
+            val entities =
+                playCountDao
+                    .findSongsExistInPlayCount(topSongs.map { it.songId })
+                    .associateBy { it.id }
+            topSongs
+                .mapNotNull { count ->
+                    entities[count.songId]?.let { it to count.playCount }
+                }.toSongPlayStats()
+        }
+
     override suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat> = artistPlayStatsFlow(period).first()
+
+    override suspend fun artistPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<ArtistPlayStat> =
+        withContext(IO) {
+            playEventDao
+                .topArtistsBetween(startMillis, endMillis, PLAY_STATS_LIMIT)
+                .toRecordedArtistPlayStats()
+        }
 
     override fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> {
         if (period == ListeningPeriod.AllTime) {
@@ -352,32 +414,18 @@ class RealSmartRepository(
 
     private suspend fun List<PlayCountEntity>.fromPlayCountToSongs(): List<Song> =
         withContext(IO) {
-            val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
-            if (deletedTracks.isNotEmpty()) {
-                deletedTracks
-                    .map { it.id }
-                    .chunked(MAX_ITEMS_PER_CHUNK)
-                    .forEach { chunkIds ->
-                        deleteSongsInPlayCount(chunkIds)
-                    }
-            }
-
-            validTracks.map { it.toSong() }
+            filterNot { it.id == -1L || !File(it.data).exists() }
+                .map { it.toSong() }
         }
+
+    private fun List<Pair<PlayCountEntity, Long>>.toSongPlayStats(): List<SongPlayStat> =
+        filterNot { (entity, _) -> entity.id == -1L || !File(entity.data).exists() }
+            .map { (entity, playCount) -> SongPlayStat(entity.toSong(), playCount) }
 
     private suspend fun List<HistoryEntity>.fromHistoryToSongs(): List<Song> =
         withContext(IO) {
-            val (deletedTracks, validTracks) = partition { it.id == -1L || !File(it.data).exists() }
-            if (deletedTracks.isNotEmpty()) {
-                deletedTracks
-                    .map { it.id }
-                    .chunked(MAX_ITEMS_PER_CHUNK)
-                    .forEach { chunkIds ->
-                        deleteSongsInHistory(chunkIds)
-                    }
-            }
-
-            validTracks.map { it.toSong() }
+            filterNot { it.id == -1L || !File(it.data).exists() }
+                .map { it.toSong() }
         }
 
     companion object {

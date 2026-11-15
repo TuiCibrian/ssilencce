@@ -1,0 +1,258 @@
+--- a/app/src/main/java/com/ssilencce/playback/Playback.kt
++++ b/app/src/main/java/com/ssilencce/playback/Playback.kt
+@@ -16,8 +16,11 @@
+     const val EXTRA_MOVE_FROM_INDICES = "move_from_indices"
+     const val EXTRA_MOVE_TO_INDICES = "move_to_indices"
+ 
+     const val SET_UNSHUFFLED_ORDER = "com.ssilencce.command.set.unshuffled_order"
++    const val EXTRA_MEDIA_ITEM_COUNT = "media_item_count"
++    const val EXTRA_START_INDEX = "start_index"
++    const val EXTRA_FIRST_MEDIA_ID = "first_media_id"
+     const val SET_STOP_POSITION = "com.ssilencce.command.set.stop_position"
+ 
+     // Custom events
+     const val EVENT_MEDIA_CONTENT_CHANGED = "com.ssilencce.event.media_content_changed"
+--- a/app/src/main/java/com/ssilencce/playback/PlaybackService.kt
++++ b/app/src/main/java/com/ssilencce/playback/PlaybackService.kt
+@@ -195,8 +195,10 @@
+ 
+     private var errorRecoveryRetryCount = 0
+     private var pausedByZeroVolume = false
+     private var hasSetUnshuffledOrder = false
++    private var pendingUnshuffledOrderCount = -1
++    private var pendingUnshuffledOrderFuture: SettableFuture<SessionResult>? = null
+     private var stopIndex = -1
+ 
+     private var lastKnownPositionMs = 0L
+     private var lastKnownDurationMs = 0L
+@@ -700,54 +702,80 @@
+             runCatching { libraryProvider.getMediaItemsForPlayback(mediaItems) }
+                 .getOrDefault(emptyList())
+         }
+ 
++    private fun applyPendingUnshuffledOrder(count: Int) {
++        if (count <= 0) return
++        pendingUnshuffledOrderCount = -1
++        player.exoPlayer.shuffleOrder = UnshuffledShuffleOrder(count)
++        pendingUnshuffledOrderFuture?.set(SessionResult(SessionResult.RESULT_SUCCESS))
++        pendingUnshuffledOrderFuture = null
++    }
++
+     override fun onSetMediaItems(
+         mediaSession: MediaSession,
+         controller: MediaSession.ControllerInfo,
+         mediaItems: List<MediaItem>,
+         startIndex: Int,
+         startPositionMs: Long,
+     ): ListenableFuture<MediaItemsWithStartPosition> {
++        val pendingSpecialOrder = pendingUnshuffledOrderCount > 0
+         player.exoPlayer.let { exoPlayer ->
+-            if (exoPlayer.shuffleOrder !is ImprovedShuffleOrder && !hasSetUnshuffledOrder) {
++            if (!pendingSpecialOrder &&
++                player.shuffleModeEnabled &&
++                exoPlayer.shuffleOrder !is ImprovedShuffleOrder &&
++                !hasSetUnshuffledOrder
++            ) {
+                 exoPlayer.shuffleOrder =
+                     ImprovedShuffleOrder(
+                         firstIndex = player.currentMediaItemIndex,
+                         length = player.mediaItemCount,
+                         randomSeed = Random.nextLong(),
+                     )
+             }
+ 
+-            (exoPlayer.shuffleOrder as? ImprovedShuffleOrder)
+-                ?.playerIndex = startIndex
++            if (!pendingSpecialOrder) {
++                (exoPlayer.shuffleOrder as? ImprovedShuffleOrder)
++                    ?.playerIndex = startIndex
++            }
+ 
+             hasSetUnshuffledOrder = false
+         }
+         return serviceScope
+             .future(IO) {
+-                if (mediaSession.isAutomotiveController(controller) ||
+-                    mediaSession.isAutoCompanionController(controller)
+-                ) {
+-                    runCatching { libraryProvider.getMediaItemsForAAOSPlayback(mediaItems) }
+-                        .getOrNull()
+-                        .let {
+-                            MediaItemsWithStartPosition(
+-                                it?.first ?: emptyList(),
+-                                it?.second ?: C.INDEX_UNSET,
+-                                startPositionMs,
++                val resolved =
++                    if (mediaSession.isAutomotiveController(controller) ||
++                        mediaSession.isAutoCompanionController(controller)
++                    ) {
++                        runCatching { libraryProvider.getMediaItemsForAAOSPlayback(mediaItems) }
++                            .getOrNull()
++                            .let {
++                                MediaItemsWithStartPosition(
++                                    it?.first ?: emptyList(),
++                                    it?.second ?: C.INDEX_UNSET,
++                                    startPositionMs,
++                                )
++                            }
++                    } else {
++                        runCatching {
++                            libraryProvider.getMediaItemsForPlayback(
++                                mediaItems = mediaItems,
++                                tryToResolveComplexPaths = true,
+                             )
++                        }.getOrDefault(emptyList()).let {
++                            MediaItemsWithStartPosition(it, startIndex, startPositionMs)
+                         }
+-                } else {
+-                    runCatching {
+-                        libraryProvider.getMediaItemsForPlayback(
+-                            mediaItems = mediaItems,
+-                            tryToResolveComplexPaths = true,
++                    }
++                if (pendingSpecialOrder && resolved.mediaItems.size != pendingUnshuffledOrderCount) {
++                    withContext(Main) {
++                        pendingUnshuffledOrderCount = -1
++                        pendingUnshuffledOrderFuture?.set(
++                            SessionResult(SessionError.ERROR_INVALID_STATE),
+                         )
+-                    }.getOrDefault(emptyList()).let {
+-                        MediaItemsWithStartPosition(it, startIndex, startPositionMs)
+-                    }
+-                }
++                        pendingUnshuffledOrderFuture = null
++                    }
++                }
++                resolved
+             }.also { future ->
+                 future.addListener({
+                     val result = runCatching { future.get() }.getOrNull()
+                     if (result != null && result.mediaItems.isNotEmpty()) {
+@@ -875,11 +903,33 @@
+                 }
+             }
+ 
+             Playback.SET_UNSHUFFLED_ORDER -> {
+-                hasSetUnshuffledOrder = true
+-                player.exoPlayer.shuffleOrder = UnshuffledShuffleOrder(player.mediaItemCount)
+-                Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
++                val requestedCount =
++                    customCommand.customExtras.getInt(Playback.EXTRA_MEDIA_ITEM_COUNT, -1)
++                val requestedIndex =
++                    customCommand.customExtras.getInt(Playback.EXTRA_START_INDEX, -1)
++                val requestedFirstId =
++                    customCommand.customExtras.getString(Playback.EXTRA_FIRST_MEDIA_ID)
++                if (requestedCount > 0) {
++                    pendingUnshuffledOrderFuture?.set(
++                        SessionResult(SessionError.ERROR_INVALID_STATE),
++                    )
++                    pendingUnshuffledOrderCount = requestedCount
++                    val future = SettableFuture.create<SessionResult>()
++                    pendingUnshuffledOrderFuture = future
++                    if (player.mediaItemCount == requestedCount &&
++                        player.currentMediaItemIndex == requestedIndex &&
++                        player.getMediaItemAt(0).mediaId == requestedFirstId
++                    ) {
++                        applyPendingUnshuffledOrder(requestedCount)
++                    }
++                    future
++                } else {
++                    hasSetUnshuffledOrder = true
++                    player.exoPlayer.shuffleOrder = UnshuffledShuffleOrder(player.mediaItemCount)
++                    Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
++                }
+             }
+ 
+             Playback.SET_STOP_POSITION -> {
+                 val newStopIndex = customCommand.customExtras.getInt("index", -1)
+@@ -979,8 +1029,13 @@
+     override fun onTimelineChanged(
+         timeline: Timeline,
+         reason: Int,
+     ) {
++        if (pendingUnshuffledOrderCount > 0 &&
++            timeline.windowCount == pendingUnshuffledOrderCount
++        ) {
++            applyPendingUnshuffledOrder(timeline.windowCount)
++        }
+         persistentStorage.saveState(true)
+     }
+ 
+     override fun onPlayWhenReadyChanged(
+--- a/app/src/main/java/com/ssilencce/ui/screen/player/PlayerViewModel.kt
++++ b/app/src/main/java/com/ssilencce/ui/screen/player/PlayerViewModel.kt
+@@ -77,8 +77,9 @@
+ import kotlinx.coroutines.launch
+ import kotlinx.coroutines.sync.Mutex
+ import kotlinx.coroutines.sync.withLock
+ import kotlinx.coroutines.withContext
++import kotlinx.coroutines.withTimeoutOrNull
+ import kotlin.time.Duration.Companion.milliseconds
+ 
+ const val QUEUE_DEBOUNCE = 100L
+ 
+@@ -1013,32 +1014,47 @@
+                 mediaController?.let { controller ->
+                     val currentMediaId = controller.currentMediaItem?.mediaId
+                     val currentPosition = controller.currentPosition.coerceAtLeast(0L)
+                     val wasPlaying = controller.playWhenReady
+-                    controller.shuffleModeEnabled = true
++                    val wasShuffleEnabled = controller.shuffleModeEnabled
++                    val currentIndex =
++                        currentMediaId?.let { mediaId ->
++                            mediaItems.indexOfFirst { it.mediaId == mediaId }
++                        } ?: -1
++                    if (wasShuffleEnabled) {
++                        controller.shuffleModeEnabled = false
++                    }
++                    if (currentIndex >= 0) {
++                        controller.setMediaItems(mediaItems, currentIndex, currentPosition)
++                    } else {
++                        // The playing item is not in the new queue; start safely at 0 while
++                        // preserving the previous play/pause intent.
++                        controller.setMediaItems(mediaItems, 0, 0L)
++                    }
++                    controller.prepare()
++                    // The new timeline is installed. Request the identity order for the new
++                    // list so the saved index/position cannot be resolved against the old queue
++                    // or its old shuffle order.
+                     val resultFuture =
+                         controller.sendCustomCommand(
+-                            SessionCommand(Playback.SET_UNSHUFFLED_ORDER, Bundle.EMPTY),
++                            SessionCommand(
++                                Playback.SET_UNSHUFFLED_ORDER,
++                                Bundle().apply {
++                                    putInt(Playback.EXTRA_MEDIA_ITEM_COUNT, mediaItems.size)
++                                    putInt(Playback.EXTRA_START_INDEX, currentIndex.coerceAtLeast(0))
++                                    putString(Playback.EXTRA_FIRST_MEDIA_ID, mediaItems.first().mediaId)
++                                },
++                            ),
+                             Bundle.EMPTY,
+                         )
+                     val result =
+-                        runCatching { resultFuture.await() }
+-                            .getOrDefault(SessionResult(SessionError.ERROR_UNKNOWN))
++                        runCatching { withTimeoutOrNull(5_000) { resultFuture.await() } }
++                            .getOrNull()
++                            ?: SessionResult(SessionError.ERROR_UNKNOWN)
+                     if (result.resultCode == SessionResult.RESULT_SUCCESS) {
+-                        val currentIndex =
+-                            currentMediaId?.let { mediaId ->
+-                                mediaItems.indexOfFirst { it.mediaId == mediaId }
+-                            } ?: -1
+-                        if (currentIndex >= 0) {
+-                            controller.setMediaItems(mediaItems, currentIndex, currentPosition)
+-                        } else {
+-                            // The playing item is not in the new queue; start safely at 0 while
+-                            // preserving the previous play/pause intent.
+-                            controller.setMediaItems(mediaItems, 0, 0L)
+-                        }
+-                        controller.prepare()
+-                        controller.playWhenReady = wasPlaying
++                        controller.shuffleModeEnabled = true
+                     }
++                    controller.playWhenReady = wasPlaying
+                 }
+             }
+             _shuffleOperationState.value = ShuffleOperationState()
+         }

@@ -119,6 +119,26 @@
             app:widgetLayout="@layout/preference_switch"
             app:key="larger_header_image"/>
 
+        <ListPreference
+            app:icon="@drawable/ic_text_fields_24dp"
+            app:title="@string/song_title_mode_title"
+            app:summary="@string/song_title_mode_summary"
+            app:entries="@array/pref_song_title_mode_entries"
+            app:entryValues="@array/pref_song_title_mode_values"
+            app:useSimpleSummaryProvider="true"
+            app:defaultValue="FollowSort"
+            app:layout="@layout/list_item_view"
+            app:key="song_title_mode"/>
+
+        <SwitchPreferenceCompat
+            app:iconSpaceReserved="true"
+            app:title="@string/show_list_date_modified_title"
+            app:summary="@string/show_list_date_modified_summary"
+            app:defaultValue="false"
+            app:layout="@layout/list_item_view"
+            app:widgetLayout="@layout/preference_switch"
+            app:key="show_list_date_modified"/>
+
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -3,7 +3,8 @@
 ## Status
 
 Accepted on 2026-10-20. Supersedes the "keep one active queue" availability decision in
-ADR-036 and amends ADR-012.
+ADR-036 and amends ADR-012. The outgoing-save ordering is superseded by ADR-046; the remaining
+named-queue and queue-search decisions remain in force.
 
 ## Context
 

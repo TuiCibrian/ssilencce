@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -28,19 +29,26 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ShapeDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -54,10 +62,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.ssilencce.R
+import com.ssilencce.playback.SleepTimerEndTime
 import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
-import com.ssilencce.ui.theme.SliderTokens
 import com.ssilencce.ui.component.compose.aurora.AuroraUnavailableRow
+import com.ssilencce.ui.theme.SliderTokens
 import com.ssilencce.util.Preferences
 import kotlin.math.round
 
@@ -68,6 +78,9 @@ data class SleepTimerUiState(
     val isFadeOut: Boolean,
     val fadeOutDuration: Float,
     val timerValue: Float,
+    val timerMode: SleepTimerMode,
+    val endAtHour: Int,
+    val endAtMinute: Int,
 )
 
 sealed class SleepTimerWaitingFor {
@@ -79,9 +92,7 @@ sealed class SleepTimerWaitingFor {
 }
 
 sealed class SleepTimerEvent {
-    class Set(
-        val minutes: Long,
-    ) : SleepTimerEvent()
+    object Set : SleepTimerEvent()
 
     object Canceled : SleepTimerEvent()
 }
@@ -132,6 +143,10 @@ fun SleepTimerBottomSheet(
 
     var sliderPosition by remember(uiState.timerValue) { mutableFloatStateOf(uiState.timerValue) }
     var fadeOutDuration by remember(uiState.fadeOutDuration) { mutableFloatStateOf(uiState.fadeOutDuration) }
+    var selectedMode by remember(uiState.timerMode) { mutableStateOf(uiState.timerMode) }
+    var endAtHour by remember(uiState.endAtHour) { mutableIntStateOf(uiState.endAtHour) }
+    var endAtMinute by remember(uiState.endAtMinute) { mutableIntStateOf(uiState.endAtMinute) }
+    var showTimePicker by remember { mutableStateOf(false) }
 
     BottomSheetDialogSurface {
         Column(
@@ -160,6 +175,33 @@ fun SleepTimerBottomSheet(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .selectableGroup(),
+                ) {
+                    FilterChip(
+                        selected = selectedMode == SleepTimerMode.Duration,
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            selectedMode = SleepTimerMode.Duration
+                        },
+                        enabled = uiState.isRunning.not(),
+                        label = { Text(stringResource(R.string.sleep_timer_duration)) },
+                    )
+                    FilterChip(
+                        selected = selectedMode == SleepTimerMode.EndAt,
+                        onClick = {
+                            hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                            selectedMode = SleepTimerMode.EndAt
+                        },
+                        enabled = uiState.isRunning.not(),
+                        label = { Text(stringResource(R.string.sleep_timer_end_at)) },
+                    )
+                }
+
                 Column(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
@@ -175,7 +217,14 @@ fun SleepTimerBottomSheet(
                                 }
 
                                 else -> {
-                                    stringResource(R.string.sleep_timer_x_mins, sliderPosition.toInt())
+                                    if (selectedMode == SleepTimerMode.EndAt) {
+                                        stringResource(
+                                            R.string.sleep_timer_ends_at,
+                                            SleepTimerEndTime.format(endAtHour, endAtMinute),
+                                        )
+                                    } else {
+                                        stringResource(R.string.sleep_timer_x_mins, sliderPosition.toInt())
+                                    }
                                 }
                             },
                         modifier =
@@ -184,110 +233,140 @@ fun SleepTimerBottomSheet(
                                 .align(Alignment.End),
                     )
 
-                    Slider(
-                        value = sliderPosition,
-                        onValueChange = { sliderPosition = round(it) },
-                        onValueChangeFinished = {
-                            hapticFeedback.performHapticFeedback(
-                                HapticFeedbackType.SegmentFrequentTick,
-                            )
-                            viewModel.setTimerState(value = sliderPosition)
-                        },
-                        valueRange = 5f..180f,
-                        track = { sliderState ->
-                            SliderDefaults.Track(
-                                sliderState = sliderState,
-                                modifier = Modifier.height(SliderTokens.MediumTrackHeight),
-                            )
-                        },
-                        enabled = uiState.isRunning.not(),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    if (uiState.isRunning && uiState.timerMode == SleepTimerMode.EndAt) {
+                        SleepTimerText(
+                            text =
+                                stringResource(
+                                    R.string.sleep_timer_ends_at,
+                                    SleepTimerEndTime.format(uiState.endAtHour, uiState.endAtMinute),
+                                ),
+                            modifier =
+                                Modifier
+                                    .padding(end = 8.dp)
+                                    .align(Alignment.End),
+                        )
+                    }
 
-                    Spacer(Modifier.height(4.dp))
-
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
-                        modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        OutlinedButton(
-                            onClick = {
+                    if (selectedMode == SleepTimerMode.Duration) {
+                        Slider(
+                            value = sliderPosition,
+                            onValueChange = { sliderPosition = round(it) },
+                            onValueChangeFinished = {
                                 hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ContextClick,
+                                    HapticFeedbackType.SegmentFrequentTick,
                                 )
-                                viewModel.setTimerState(value = 15f)
+                                viewModel.setTimerState(value = sliderPosition)
                             },
-                            shape = ButtonGroupDefaults.connectedLeadingButtonShape,
-                            contentPadding = PaddingValues(8.dp),
+                            valueRange = 5f..180f,
+                            track = { sliderState ->
+                                SliderDefaults.Track(
+                                    sliderState = sliderState,
+                                    modifier = Modifier.height(SliderTokens.MediumTrackHeight),
+                                )
+                            },
                             enabled = uiState.isRunning.not(),
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+
+                        Spacer(Modifier.height(4.dp))
+
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(
-                                text = stringResource(R.string.sleep_timer_15_mins),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            OutlinedButton(
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ContextClick,
+                                    )
+                                    viewModel.setTimerState(value = 15f)
+                                },
+                                shape = ButtonGroupDefaults.connectedLeadingButtonShape,
+                                contentPadding = PaddingValues(8.dp),
+                                enabled = uiState.isRunning.not(),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sleep_timer_15_mins),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ContextClick,
+                                    )
+                                    viewModel.setTimerState(value = 45f)
+                                },
+                                shape = ShapeDefaults.Small,
+                                contentPadding = PaddingValues(8.dp),
+                                enabled = uiState.isRunning.not(),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sleep_timer_45_mins),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ContextClick,
+                                    )
+                                    viewModel.setTimerState(value = 60f)
+                                },
+                                shape = ShapeDefaults.Small,
+                                contentPadding = PaddingValues(8.dp),
+                                enabled = uiState.isRunning.not(),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sleep_timer_1_hour),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    hapticFeedback.performHapticFeedback(
+                                        HapticFeedbackType.ContextClick,
+                                    )
+                                    viewModel.setTimerState(value = 120f)
+                                },
+                                shape = ButtonGroupDefaults.connectedTrailingButtonShape,
+                                contentPadding = PaddingValues(8.dp),
+                                enabled = uiState.isRunning.not(),
+                                modifier = Modifier.weight(1f),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.sleep_timer_2_hour),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
-
+                    }
+                    if (selectedMode == SleepTimerMode.EndAt) {
                         OutlinedButton(
                             onClick = {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ContextClick,
-                                )
-                                viewModel.setTimerState(value = 45f)
+                                hapticFeedback.performHapticFeedback(HapticFeedbackType.ContextClick)
+                                showTimePicker = true
                             },
-                            shape = ShapeDefaults.Small,
-                            contentPadding = PaddingValues(8.dp),
                             enabled = uiState.isRunning.not(),
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.fillMaxWidth(),
                         ) {
-                            Text(
-                                text = stringResource(R.string.sleep_timer_45_mins),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ContextClick,
-                                )
-                                viewModel.setTimerState(value = 60f)
-                            },
-                            shape = ShapeDefaults.Small,
-                            contentPadding = PaddingValues(8.dp),
-                            enabled = uiState.isRunning.not(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.sleep_timer_1_hour),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                hapticFeedback.performHapticFeedback(
-                                    HapticFeedbackType.ContextClick,
-                                )
-                                viewModel.setTimerState(value = 120f)
-                            },
-                            shape = ButtonGroupDefaults.connectedTrailingButtonShape,
-                            contentPadding = PaddingValues(8.dp),
-                            enabled = uiState.isRunning.not(),
-                            modifier = Modifier.weight(1f),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.sleep_timer_2_hour),
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            Text(stringResource(R.string.sleep_timer_end_at))
+                            Spacer(Modifier.width(8.dp))
+                            Text(SleepTimerEndTime.format(endAtHour, endAtMinute))
                         }
                     }
                 }
@@ -378,7 +457,7 @@ fun SleepTimerBottomSheet(
                         if (uiState.isRunning) {
                             viewModel.cancelTimer()
                         } else {
-                            viewModel.startTimer()
+                            viewModel.startTimer(selectedMode, endAtHour, endAtMinute)
                         }
                     },
                     colors =
@@ -408,6 +487,66 @@ fun SleepTimerBottomSheet(
                                 stringResource(R.string.sleep_timer_set_action)
                             },
                     )
+                }
+            }
+        }
+
+        if (showTimePicker) {
+            EndAtTimePickerDialog(
+                initialHour = endAtHour,
+                initialMinute = endAtMinute,
+                onDismiss = { showTimePicker = false },
+                onConfirm = { hour, minute ->
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.Confirm)
+                    endAtHour = hour
+                    endAtMinute = minute
+                    showTimePicker = false
+                },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EndAtTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onDismiss: () -> Unit,
+    onConfirm: (hour: Int, minute: Int) -> Unit,
+) {
+    val timePickerState =
+        rememberTimePickerState(
+            initialHour = initialHour,
+            initialMinute = initialMinute,
+            is24Hour = true,
+        )
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 6.dp,
+            modifier = Modifier.padding(24.dp),
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.sleep_timer_end_at),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                TimeInput(state = timePickerState)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = onDismiss) {
+                        Text(stringResource(R.string.sleep_timer_cancel_current_timer))
+                    }
+                    TextButton(onClick = { onConfirm(timePickerState.hour, timePickerState.minute) }) {
+                        Text(stringResource(R.string.sleep_timer_set_action))
+                    }
                 }
             }
         }

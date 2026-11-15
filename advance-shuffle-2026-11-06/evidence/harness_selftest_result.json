@@ -1,0 +1,11 @@
+{
+  "checks": {
+    "leaf_found": true,
+    "real_found": true,
+    "combined_found": true,
+    "childless_truthiness_is_false": true,
+    "corrected_only_leaf_is_found": true,
+    "old_truthiness_would_miss_only_leaf": true
+  },
+  "passed": true
+}

@@ -25,6 +25,9 @@ import com.ssilencce.core.SsilencceDatabase
 import com.ssilencce.core.audio.AudioOutputObserver
 import com.ssilencce.data.local.EditTarget
 import com.ssilencce.data.local.MediaStoreWriter
+import com.ssilencce.data.local.replaygain.ReplayGainDecoder
+import com.ssilencce.data.local.replaygain.ReplayGainScanner
+import com.ssilencce.data.local.replaygain.ReplayGainTagWriter
 import com.ssilencce.data.local.repository.AlbumRepository
 import com.ssilencce.data.local.repository.ArtistRepository
 import com.ssilencce.data.local.repository.GenreRepository
@@ -73,7 +76,9 @@ import com.ssilencce.ui.screen.library.search.SearchViewModel
 import com.ssilencce.ui.screen.library.years.YearDetailViewModel
 import com.ssilencce.ui.screen.lyrics.LyricsViewModel
 import com.ssilencce.ui.screen.player.PlayerViewModel
+import com.ssilencce.ui.screen.replaygain.ReplayGainScanViewModel
 import com.ssilencce.ui.screen.sleeptimer.SleepTimerViewModel
+import com.ssilencce.ui.screen.tageditor.BatchTagEditorViewModel
 import com.ssilencce.ui.screen.tageditor.TagEditorViewModel
 import com.ssilencce.ui.screen.update.UpdateViewModel
 import org.koin.android.ext.koin.androidApplication
@@ -137,6 +142,19 @@ private val mainModule =
         }
         single {
             MediaStoreWriter(context = androidContext(), contentResolver = get())
+        }
+        single {
+            ReplayGainDecoder(context = androidContext())
+        }
+        single {
+            ReplayGainTagWriter(contentResolver = get(), tempDir = androidContext().noBackupFilesDir.resolve("replaygain-wav-backup"))
+        }
+        single {
+            ReplayGainScanner(
+                repository = get(),
+                decoder = get(),
+                tagWriter = get(),
+            )
         }
         single {
             CustomArtistImageManager(context = androidContext())
@@ -220,7 +238,7 @@ private val dataModule =
         } bind Repository::class
 
         single {
-            NamedQueueRepository(dao = get())
+            NamedQueueRepository(dao = get(), database = get())
         }
 
         single {
@@ -240,6 +258,7 @@ private val dataModule =
                 context = androidContext(),
                 songRepository = get(),
                 playlistDao = get(),
+                database = get(),
             )
         } bind PlaylistRepository::class
 
@@ -321,6 +340,13 @@ private val viewModule =
             )
         }
 
+        viewModel {
+            ReplayGainScanViewModel(
+                repository = get(),
+                scanner = get(),
+            )
+        }
+
         viewModel { (albumId: Long) ->
             AlbumDetailViewModel(
                 application = androidApplication(),
@@ -329,12 +355,13 @@ private val viewModule =
             )
         }
 
-        viewModel { (artistId: Long, artistName: String?) ->
+        viewModel { (artistId: Long, artistName: String?, composerName: String?) ->
             ArtistDetailViewModel(
                 application = androidApplication(),
                 repository = get(),
                 artistId = artistId,
                 artistName = artistName,
+                composerName = composerName,
             )
         }
 
@@ -363,6 +390,13 @@ private val viewModule =
                 repository = get(),
                 customArtistImageManager = get(),
                 target = target,
+            )
+        }
+
+        viewModel { (songIds: List<Long>) ->
+            BatchTagEditorViewModel(
+                repository = get(),
+                songIds = songIds,
             )
         }
 

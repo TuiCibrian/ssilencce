@@ -26,6 +26,7 @@ import android.os.Build
 class AudioDevice(
     val type: AudioDeviceType,
     private val productName: String?,
+    val deviceKey: String? = null,
 ) {
     fun getDeviceName(
         context: Context,

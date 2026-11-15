@@ -1,0 +1,1 @@
+﻿KTLINT_EXIT=0

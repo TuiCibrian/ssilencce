@@ -19,6 +19,7 @@ package com.ssilencce.ui.screen.library
 
 import android.content.Context
 import com.ssilencce.R
+import com.ssilencce.data.local.room.PlaylistEntity
 import com.ssilencce.data.model.Song
 
 data class HandleIntentResult(
@@ -41,18 +42,88 @@ class ImportablePlaylistResult(
     val songs: List<Song>,
 )
 
-class ImportResult(
+enum class ImportOutcome {
+    Created,
+    Replaced,
+}
+
+data class ImportResult(
     val resultMessage: String,
+    val actualName: String?,
+    val outcome: ImportOutcome?,
+    val importedSongCount: Int,
+    val success: Boolean,
 ) {
     companion object {
-        fun success(
+        fun created(
             ctx: Context,
-            res: ImportablePlaylistResult,
-        ): ImportResult = ImportResult(ctx.getString(R.string.imported_playlist_x, res.playlistName))
+            actualName: String,
+            importedSongCount: Int,
+        ): ImportResult =
+            ImportResult(
+                resultMessage = ctx.getString(R.string.import_applied_as, actualName, importedSongCount),
+                actualName = actualName,
+                outcome = ImportOutcome.Created,
+                importedSongCount = importedSongCount,
+                success = true,
+            )
+
+        fun replaced(
+            ctx: Context,
+            actualName: String,
+            importedSongCount: Int,
+        ): ImportResult =
+            ImportResult(
+                resultMessage = ctx.getString(R.string.import_replaced, actualName, importedSongCount),
+                actualName = actualName,
+                outcome = ImportOutcome.Replaced,
+                importedSongCount = importedSongCount,
+                success = true,
+            )
 
         fun error(
             ctx: Context,
-            res: ImportablePlaylistResult,
-        ): ImportResult = ImportResult(ctx.getString(R.string.could_not_import_the_playlist_x, res.playlistName))
+            sourceName: String,
+        ): ImportResult =
+            ImportResult(
+                resultMessage = ctx.getString(R.string.could_not_import_the_playlist_x, sourceName),
+                actualName = null,
+                outcome = null,
+                importedSongCount = 0,
+                success = false,
+            )
     }
+}
+
+enum class PlaylistImportReplaceBlock {
+    Favorites,
+    MultipleMatches,
+}
+
+enum class PlaylistImportRenameError {
+    Blank,
+    Duplicate,
+}
+
+enum class PlaylistImportGeneralError {
+    SuffixExhausted,
+    NameTaken,
+    ConflictChanged,
+    DatabaseFailure,
+}
+
+data class PlaylistImportConflictState(
+    val sourceName: String,
+    val selectedSongCount: Int,
+    val existing: List<PlaylistEntity>,
+    val existingSongCount: Int,
+    val defaultName: String?,
+    val existingNames: List<String>,
+    val replaceBlock: PlaylistImportReplaceBlock?,
+    val applying: Boolean = false,
+    val renameError: PlaylistImportRenameError? = null,
+    val generalError: PlaylistImportGeneralError? = null,
+) {
+    val canReplace: Boolean
+        get() = existing.size == 1 && replaceBlock == null
 }

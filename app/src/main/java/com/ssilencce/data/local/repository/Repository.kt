@@ -33,10 +33,12 @@ import com.ssilencce.data.model.ArtistPlayStat
 import com.ssilencce.data.model.ContentType
 import com.ssilencce.data.model.Folder
 import com.ssilencce.data.model.Genre
+import com.ssilencce.data.model.GenreContent
 import com.ssilencce.data.model.ListeningPeriod
 import com.ssilencce.data.model.Playlist
 import com.ssilencce.data.model.ReleaseYear
 import com.ssilencce.data.model.Song
+import com.ssilencce.data.model.SongPlayStat
 import com.ssilencce.data.model.Suggestion
 import com.ssilencce.data.model.network.LoginParams
 import com.ssilencce.data.model.network.LoginState
@@ -50,6 +52,7 @@ import com.ssilencce.data.remote.lastfm.model.LastFmAlbum
 import com.ssilencce.data.remote.lastfm.model.LastFmArtist
 import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzRecording
 import com.ssilencce.data.remote.musicbrainz.model.MusicBrainzSearchResponse
+import com.ssilencce.util.Preferences
 import kotlinx.coroutines.flow.Flow
 import java.io.File
 
@@ -63,6 +66,8 @@ interface Repository {
     suspend fun allArtists(): List<Artist>
 
     suspend fun allAlbumArtists(): List<Artist>
+
+    suspend fun allComposers(): List<Artist>
 
     suspend fun allGenres(): List<Genre>
 
@@ -125,6 +130,20 @@ interface Repository {
 
     suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long
 
+    suspend fun createPlaylistWithSongsIfNameFree(
+        playlist: PlaylistEntity,
+        songs: List<Song>,
+    ): Long
+
+    suspend fun replacePlaylistContentsIfEligible(
+        playlistId: Long,
+        expectedName: String,
+        favoritesName: String,
+        songs: List<Song>,
+    ): Boolean
+
+    suspend fun playlists(): List<PlaylistEntity>
+
     suspend fun deletePlaylists(playlists: List<PlaylistEntity>)
 
     suspend fun renamePlaylist(
@@ -154,11 +173,15 @@ interface Repository {
 
     fun albumArtistByName(name: String): Artist
 
+    fun composerByName(name: String): Artist
+
     suspend fun similarAlbumArtists(artist: Artist): List<Artist>
 
     fun songById(songId: Long): Song
 
     suspend fun songsByGenre(genreId: Long): List<Song>
+
+    suspend fun genreContent(genreId: Long): GenreContent
 
     fun songByGenre(genreId: Long): Song
 
@@ -218,7 +241,19 @@ interface Repository {
 
     suspend fun playCountSongs(period: ListeningPeriod): List<Song>
 
+    suspend fun songPlayStats(period: ListeningPeriod): List<SongPlayStat>
+
+    suspend fun songPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<SongPlayStat>
+
     suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat>
+
+    suspend fun artistPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<ArtistPlayStat>
 
     fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>>
 
@@ -334,6 +369,8 @@ class RealRepository(
 
     override suspend fun allAlbumArtists(): List<Artist> = artistRepository.albumArtists()
 
+    override suspend fun allComposers(): List<Artist> = artistRepository.composers()
+
     override suspend fun allGenres(): List<Genre> = genreRepository.genres()
 
     override suspend fun allYears(): List<ReleaseYear> = specialRepository.releaseYears()
@@ -395,6 +432,20 @@ class RealRepository(
 
     override suspend fun createPlaylist(playlistEntity: PlaylistEntity): Long = playlistRepository.createPlaylist(playlistEntity)
 
+    override suspend fun createPlaylistWithSongsIfNameFree(
+        playlist: PlaylistEntity,
+        songs: List<Song>,
+    ): Long = playlistRepository.createPlaylistWithSongsIfNameFree(playlist, songs)
+
+    override suspend fun replacePlaylistContentsIfEligible(
+        playlistId: Long,
+        expectedName: String,
+        favoritesName: String,
+        songs: List<Song>,
+    ): Boolean = playlistRepository.replacePlaylistContentsIfEligible(playlistId, expectedName, favoritesName, songs)
+
+    override suspend fun playlists(): List<PlaylistEntity> = playlistRepository.playlists()
+
     override suspend fun deletePlaylists(playlists: List<PlaylistEntity>) = playlistRepository.deletePlaylists(playlists)
 
     override suspend fun renamePlaylist(
@@ -449,11 +500,23 @@ class RealRepository(
 
     override fun albumArtistByName(name: String): Artist = artistRepository.albumArtist(name)
 
+    override fun composerByName(name: String): Artist = artistRepository.composer(name)
+
     override suspend fun similarAlbumArtists(artist: Artist): List<Artist> = artistRepository.similarAlbumArtists(artist)
 
     override fun songById(songId: Long): Song = songRepository.song(songId)
 
     override suspend fun songsByGenre(genreId: Long): List<Song> = genreRepository.songs(genreId)
+
+    override suspend fun genreContent(genreId: Long): GenreContent {
+        val songs = genreRepository.songs(genreId)
+        val albums =
+            albumRepository
+                .splitIntoAlbums(songs)
+                .filter { it.songCount >= Preferences.minimumSongCountForAlbum }
+        val artists = artistRepository.artistsForSongs(songs)
+        return GenreContent(songs, albums, artists)
+    }
 
     override fun songByGenre(genreId: Long): Song = genreRepository.song(genreId)
 
@@ -541,7 +604,19 @@ class RealRepository(
 
     override suspend fun playCountSongs(period: ListeningPeriod): List<Song> = smartRepository.playCountSongs(period)
 
+    override suspend fun songPlayStats(period: ListeningPeriod): List<SongPlayStat> = smartRepository.songPlayStats(period)
+
+    override suspend fun songPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<SongPlayStat> = smartRepository.songPlayStats(startMillis, endMillis)
+
     override suspend fun artistPlayStats(period: ListeningPeriod): List<ArtistPlayStat> = smartRepository.artistPlayStats(period)
+
+    override suspend fun artistPlayStats(
+        startMillis: Long,
+        endMillis: Long,
+    ): List<ArtistPlayStat> = smartRepository.artistPlayStats(startMillis, endMillis)
 
     override fun artistPlayStatsFlow(period: ListeningPeriod): Flow<List<ArtistPlayStat>> = smartRepository.artistPlayStatsFlow(period)
 

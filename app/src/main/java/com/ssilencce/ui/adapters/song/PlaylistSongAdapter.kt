@@ -114,13 +114,16 @@ class PlaylistSongAdapter(
         notifyDataSetChanged()
     }
 
-    fun saveSongs(playlistEntity: PlaylistEntity) {
+    fun saveSongs(
+        playlistEntity: PlaylistEntity,
+        songs: List<Song> = dataSet,
+    ) {
         if (playlistEntity == PlaylistEntity.Empty) {
             return
         }
 
         activity.lifecycleScope.launch(Dispatchers.IO) {
-            libraryViewModel.insertSongs(dataSet.toSongsEntity(playlistEntity))
+            libraryViewModel.insertSongs(songs.toSongsEntity(playlistEntity))
         }
     }
 

@@ -49,7 +49,12 @@ object SortedCursorUtil : KoinComponent {
 
             // get a list of songs with the data given the selection statement
             val songRepository = get<RealSongRepository>()
-            val songCursor = songRepository.makeSongCursor(selection.toString(), null)
+            val songCursor =
+                songRepository.makeSongCursor(
+                    selection.toString(),
+                    null,
+                    skipDurationFilter = true,
+                )
             if (songCursor != null) {
                 // now return the wrapped cursor to handle sorting given order
                 return SortedLongCursor(

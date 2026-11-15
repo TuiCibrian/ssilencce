@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds use applicationId com.ssilencce.debug; target the exported launcher alias. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_last_added"
+        android:shortcutId="last_added"
+        android:shortcutLongLabel="@string/app_shortcut_last_added_short"
+        android:shortcutShortLabel="@string/last_added_label">
+        <intent
+            android:action="com.ssilencce.shortcut.LAST_ADDED"
+            android:targetClass="com.ssilencce.activities.MainActivity"
+            android:targetPackage="com.ssilencce.debug" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_top"
+        android:shortcutId="top_tracks"
+        android:shortcutLongLabel="@string/app_shortcut_top_tracks_short"
+        android:shortcutShortLabel="@string/top_tracks_label">
+        <intent
+            android:action="com.ssilencce.shortcut.TOP_TRACKS"
+            android:targetClass="com.ssilencce.activities.MainActivity"
+            android:targetPackage="com.ssilencce.debug" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_fav"
+        android:shortcutId="favorites"
+        android:shortcutLongLabel="@string/app_shortcut_favorites_short"
+        android:shortcutShortLabel="@string/favorites_label">
+        <intent
+            android:action="com.ssilencce.shortcut.FAVORITES"
+            android:targetClass="com.ssilencce.activities.MainActivity"
+            android:targetPackage="com.ssilencce.debug" />
+    </shortcut>
+    <shortcut
+        android:enabled="true"
+        android:icon="@mipmap/ic_launcher_shuffle_all"
+        android:shortcutId="shuffle_all"
+        android:shortcutLongLabel="@string/app_shortcut_shuffle_all_short"
+        android:shortcutShortLabel="@string/shuffle_all_label">
+        <intent
+            android:action="com.ssilencce.shortcut.SHUFFLE"
+            android:targetClass="com.ssilencce.activities.MainActivity"
+            android:targetPackage="com.ssilencce.debug" />
+    </shortcut>
+</shortcuts>

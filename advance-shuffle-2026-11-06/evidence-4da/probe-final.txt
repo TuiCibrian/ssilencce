@@ -1,0 +1,31 @@
+﻿AA05 ORDER CONTRACT PASS
+PASS vm_captures_position_and_play_state
+PASS vm_computes_index_on_new_items
+PASS vm_suspends_old_shuffle_before_install
+PASS vm_installs_new_timeline_before_play_state
+PASS vm_installs_new_timeline_before_order_request
+PASS vm_applies_order_before_play_state
+PASS vm_restores_shuffle_before_play_state
+PASS vm_carries_new_count_in_order_command
+PASS vm_carries_new_index_in_order_command
+PASS vm_carries_first_media_id
+PASS service_count_path_does_not_build_old_order
+PASS service_skips_improved_order_while_pending
+PASS service_skips_order_when_shuffle_disabled
+PASS service_immediate_apply_checks_new_index
+PASS service_immediate_apply_checks_new_first_id
+PASS service_applies_order_after_new_timeline
+PASS service_order_uses_new_count
+PASS pure_preserves_current_item
+PASS pure_does_not_select_next_item
+PASS pure_fallback_is_index_zero
+PASS pure_uses_new_queue_count
+{
+  "preserved_id": 180,
+  "preserved_index": 5,
+  "preserved_position": 2921,
+  "fallback_id": 70,
+  "fallback_index": 0,
+  "old_queue_length": 20,
+  "new_queue_length": 21
+}

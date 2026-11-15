@@ -51,6 +51,7 @@ open class Song(
     open val albumArtistName: String?,
     open val genreName: String?,
     open val volumeName: String? = null,
+    open val composerName: String? = null,
 ) : Parcelable,
     FileSystemItem {
     val uri: Uri
@@ -99,6 +100,7 @@ open class Song(
         song.albumArtistName,
         song.genreName,
         song.volumeName,
+        song.composerName,
     )
 
     fun toMediaItem(itemId: String = id.toString()): MediaItem =
@@ -188,6 +190,7 @@ open class Song(
             ", albumArtistName='" + albumArtistName + '\'' +
             ", genreName='" + genreName + '\'' +
             ", volumeName='" + volumeName + '\'' +
+            ", composerName='" + composerName + '\'' +
             '}'
 
     companion object {

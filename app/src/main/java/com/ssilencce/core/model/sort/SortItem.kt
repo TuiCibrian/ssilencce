@@ -78,6 +78,12 @@ sealed class KeySortItem(
         R.string.sort_order_file_name,
         SortKey.FileName,
     )
+
+    object Path : KeySortItem(
+        R.id.action_sort_order_path,
+        R.string.sort_order_path,
+        SortKey.Path,
+    )
 }
 
 object DescendingItem : SortItem(

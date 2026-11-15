@@ -25,7 +25,6 @@ import android.view.MenuItem
 import android.view.View
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.doOnPreDraw
-import androidx.core.view.updatePadding
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.ConcatAdapter
@@ -74,6 +73,9 @@ import com.ssilencce.ui.adapters.album.SimpleAlbumAdapter
 import com.ssilencce.ui.adapters.artist.ArtistAdapter
 import com.ssilencce.ui.adapters.song.SimpleSongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onAlbumsMenu
 import com.ssilencce.ui.component.menu.onArtistMenu
 import com.ssilencce.ui.component.menu.onArtistsMenu
@@ -94,7 +96,7 @@ class ArtistDetailFragment :
     ISongCallback {
     private val arguments by navArgs<ArtistDetailFragmentArgs>()
     private val detailViewModel by viewModel<ArtistDetailViewModel> {
-        parametersOf(arguments.artistId, arguments.artistName)
+        parametersOf(arguments.artistId, arguments.artistName, arguments.composerName)
     }
 
     private var _binding: FragmentArtistDetailBinding? = null
@@ -113,8 +115,15 @@ class ArtistDetailFragment :
     private var lang: String? = null
     private var biography: String? = null
 
+    private var allSongs: List<Song> = emptyList()
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
+
     private val isAlbumArtist: Boolean
         get() = !arguments.artistName.isNullOrEmpty()
+
+    private val isComposer: Boolean
+        get() = !arguments.composerName.isNullOrEmpty()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,18 +150,31 @@ class ArtistDetailFragment :
         binding.appBarLayout.setupStatusBarForeground()
 
         postponeEnterTransition()
+        setupRecyclerView()
+
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                extraBottomPadding = 16.dp(resources),
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
+
         detailViewModel.getArtistDetail().observe(viewLifecycleOwner) { result ->
             view.doOnPreDraw {
                 startPostponedEnterTransition()
             }
             showArtist(result)
         }
-
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(16.dp(resources), includeNavigation = true))
-        }
-
-        setupRecyclerView()
 
         detailViewModel.loadArtistDetail()
     }
@@ -181,10 +203,10 @@ class ArtistDetailFragment :
         headerAdapter =
             HeaderAdapter { headerBinding ->
                 headerBinding.image.transitionName =
-                    if (isAlbumArtist) {
-                        arguments.artistName
-                    } else {
-                        arguments.artistId.toString()
+                    when {
+                        isComposer -> arguments.composerName
+                        isAlbumArtist -> arguments.artistName
+                        else -> arguments.artistId.toString()
                     }
                 headerBinding.image.removeHorizontalMarginIfRequired()
                 headerBinding.image.artistImage(getArtist()) { crossfade(false) }
@@ -193,10 +215,10 @@ class ArtistDetailFragment :
                 headerBinding.subtitle.text = getArtist().artistInfo(requireContext())
 
                 headerBinding.playAction.setOnClickListener {
-                    playerViewModel.openQueue(getArtist().sortedSongs, shuffleMode = OpenShuffleMode.Off)
+                    playerViewModel.openQueue(visibleSongs(), shuffleMode = OpenShuffleMode.Off)
                 }
                 headerBinding.shuffleAction.setOnClickListener {
-                    playerViewModel.openAndShuffleQueue(getArtist().sortedSongs)
+                    playerViewModel.openAndShuffleQueue(visibleSongs())
                 }
                 headerBinding.searchAction?.setOnClickListener { goToSearch() }
             }
@@ -314,14 +336,15 @@ class ArtistDetailFragment :
             return
         }
 
-        val songText = plurals(R.plurals.songs, artist.songCount)
         val albumText = plurals(R.plurals.albums, artist.albumCount)
 
         headerAdapter.notifyItemChanged(0)
-        loadBiography(artist.name)
+        if (!isComposer) {
+            loadBiography(artist.name)
+        }
 
-        songHeaderAdapter.updateTitle(songText)
-        songAdapter.dataSet = artist.sortedSongs
+        allSongs = artist.sortedSongs
+        applyQuickSearch()
 
         albumHeaderAdapter.updateTitle(albumText)
         albumGridAdapter.dataSet = artist.sortedAlbums
@@ -334,6 +357,30 @@ class ArtistDetailFragment :
         if (artist.isAlbumArtist) {
             loadSimilarArtists(artist)
         }
+    }
+
+    private fun visibleSongs(): List<Song> =
+        if (quickSearchQuery.isBlank() || !::songAdapter.isInitialized) {
+            allSongs
+        } else {
+            songAdapter.dataSet
+        }
+
+    private fun applyQuickSearch() {
+        if (!::songAdapter.isInitialized) return
+        songAdapter.dataSet = allSongs.filter { it.matchesDetailQuery(quickSearchQuery) }
+        updateSongHeader()
+    }
+
+    private fun updateSongHeader() {
+        val artist = getArtist()
+        songHeaderAdapter.updateTitle(
+            if (allSongs.isNotEmpty() && quickSearchQuery.isNotBlank() && songAdapter.dataSet.isEmpty()) {
+                getString(R.string.quick_search_empty)
+            } else {
+                plurals(R.plurals.songs, artist.songCount)
+            },
+        )
     }
 
     private fun updateAlbumsVisibility() {
@@ -464,6 +511,10 @@ class ArtistDetailFragment :
         menu.findItem(R.id.action_horizontal_albums)?.isChecked = Preferences.horizontalArtistAlbums
         menu.findItem(R.id.action_ignore_singles)?.isChecked = Preferences.ignoreSingles
         menu.findItem(R.id.action_toggle_compact_song_view)?.isChecked = Preferences.compactArtistSongView
+        if (isComposer) {
+            menu.findItem(R.id.action_tag_editor)?.isVisible = false
+            menu.findItem(R.id.action_play_info)?.isVisible = false
+        }
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean =
@@ -506,6 +557,7 @@ class ArtistDetailFragment :
                 menuItem.isChecked = isChecked
                 createSongAdapter()
                 updateConcatAdapter()
+                applyQuickSearch()
                 true
             }
 
@@ -527,7 +579,13 @@ class ArtistDetailFragment :
         detailViewModel.loadArtistDetail()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
+        quickSearchHost = null
         binding.recyclerView.layoutManager = null
         binding.recyclerView.adapter = null
         super.onDestroyView()

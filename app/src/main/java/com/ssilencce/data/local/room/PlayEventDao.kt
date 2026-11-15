@@ -87,6 +87,22 @@ interface PlayEventDao {
 
     @Query(
         """
+        SELECT song_id AS songId, COUNT(*) AS playCount
+        FROM PlayEventEntity
+        WHERE played_at >= :startMillis AND played_at < :endMillis
+        GROUP BY song_id
+        ORDER BY playCount DESC, MAX(played_at) DESC
+        LIMIT :limit
+        """,
+    )
+    suspend fun topSongsBetween(
+        startMillis: Long,
+        endMillis: Long,
+        limit: Int,
+    ): List<SongPlayCount>
+
+    @Query(
+        """
         SELECT p.*
         FROM PlayEventEntity e
         INNER JOIN PlayCountEntity p ON p.id = e.song_id
@@ -114,6 +130,23 @@ interface PlayEventDao {
     )
     suspend fun topArtistsSince(
         cutoff: Long,
+        limit: Int,
+    ): List<ArtistEventPlayCount>
+
+    @Query(
+        """
+        SELECT artist_name AS artistName, COUNT(*) AS playCount,
+            (SELECT COUNT(*) FROM PlayEventEntity WHERE played_at >= :startMillis AND played_at < :endMillis) AS totalPlayCount
+        FROM PlayEventEntity
+        WHERE played_at >= :startMillis AND played_at < :endMillis
+        GROUP BY artist_name
+        ORDER BY playCount DESC, artist_name ASC
+        LIMIT :limit
+        """,
+    )
+    suspend fun topArtistsBetween(
+        startMillis: Long,
+        endMillis: Long,
         limit: Int,
     ): List<ArtistEventPlayCount>
 

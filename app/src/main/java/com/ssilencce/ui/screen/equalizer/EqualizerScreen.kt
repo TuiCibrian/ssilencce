@@ -100,6 +100,7 @@ import androidx.core.app.ShareCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ssilencce.R
 import com.ssilencce.core.model.LibraryMargin
+import com.ssilencce.core.model.audiodevice.AudioDevice
 import com.ssilencce.core.model.audiodevice.AudioDeviceType
 import com.ssilencce.core.model.equalizer.EqBand
 import com.ssilencce.core.model.equalizer.EqEngineMode
@@ -425,8 +426,19 @@ fun EqualizerScreen(
 
     if (showProfileSaverDialog) {
         ProfileSaverDialog(
-            onConfirm = { profileName: String, allowReplace: Boolean, associatedDevices: Set<AudioDeviceType> ->
-                eqViewModel.saveProfile(profileName, allowReplace, associatedDevices)
+            currentDevice = outputDevice,
+            onConfirm = {
+                profileName: String,
+                allowReplace: Boolean,
+                associatedDevices: Set<AudioDeviceType>,
+                associatedDeviceKeys: Set<String>,
+                ->
+                eqViewModel.saveProfile(
+                    profileName,
+                    allowReplace,
+                    associatedDevices,
+                    associatedDeviceKeys,
+                )
             },
             onDismiss = { showProfileSaverDialog = false },
         )
@@ -446,8 +458,9 @@ fun EqualizerScreen(
         if (showDialog) {
             ProfileEditorDialog(
                 profile = targetProfile,
-                onConfirm = { newName, newAssociations ->
-                    eqViewModel.editProfile(targetProfile, newName, newAssociations)
+                currentDevice = outputDevice,
+                onConfirm = { newName, newAssociations, newDeviceKeys ->
+                    eqViewModel.editProfile(targetProfile, newName, newAssociations, newDeviceKeys)
                 },
                 onDismiss = { editProfileState = null },
             )
@@ -1420,11 +1433,18 @@ private fun ProfileSelectorDialog(
 
 @Composable
 private fun ProfileSaverDialog(
-    onConfirm: (profileName: String, allowReplace: Boolean, associatedDevices: Set<AudioDeviceType>) -> Unit,
+    currentDevice: AudioDevice?,
+    onConfirm: (
+        profileName: String,
+        allowReplace: Boolean,
+        associatedDevices: Set<AudioDeviceType>,
+        associatedDeviceKeys: Set<String>,
+    ) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var allowReplace by remember { mutableStateOf(true) }
     val associatedDevices = remember { mutableStateSetOf<AudioDeviceType>() }
+    val associatedDeviceKeys = remember { mutableStateSetOf<String>() }
 
     InputDialog(
         icon = painterResource(R.drawable.ic_save_24dp),
@@ -1442,6 +1462,7 @@ private fun ProfileSaverDialog(
             Spacer(Modifier.height(4.dp))
 
             ProfileAssociationView(
+                currentDevice = currentDevice,
                 isChecked = { associatedDevices.contains(it) },
                 onDeviceStateChange = { device, isChecked ->
                     if (isChecked) {
@@ -1450,11 +1471,19 @@ private fun ProfileSaverDialog(
                         associatedDevices.remove(device)
                     }
                 },
+                isCurrentDeviceChecked = { associatedDeviceKeys.contains(it) },
+                onCurrentDeviceChange = { deviceKey, isChecked ->
+                    if (isChecked) {
+                        associatedDeviceKeys.add(deviceKey)
+                    } else {
+                        associatedDeviceKeys.remove(deviceKey)
+                    }
+                },
             )
         },
         confirmButton = stringResource(R.string.action_save),
         onConfirm = { profileName ->
-            onConfirm(profileName, allowReplace, associatedDevices)
+            onConfirm(profileName, allowReplace, associatedDevices, associatedDeviceKeys)
         },
         onDismiss = onDismiss,
     )
@@ -1463,10 +1492,12 @@ private fun ProfileSaverDialog(
 @Composable
 private fun ProfileEditorDialog(
     profile: EqProfile,
-    onConfirm: (String, Set<AudioDeviceType>) -> Unit,
+    currentDevice: AudioDevice?,
+    onConfirm: (String, Set<AudioDeviceType>, Set<String>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val mutableAssociations = remember { mutableStateSetOf(*profile.associations.toTypedArray()) }
+    val mutableDeviceKeys = remember { mutableStateSetOf(*profile.associatedDeviceKeys.toTypedArray()) }
 
     InputDialog(
         icon = painterResource(R.drawable.ic_edit_24dp),
@@ -1477,6 +1508,7 @@ private fun ProfileEditorDialog(
         inputMaxLength = PRESET_NAME_MAX_LENGTH,
         additionalContent = {
             ProfileAssociationView(
+                currentDevice = currentDevice,
                 isChecked = { mutableAssociations.contains(it) },
                 onDeviceStateChange = { device, isChecked ->
                     if (isChecked) {
@@ -1485,10 +1517,18 @@ private fun ProfileEditorDialog(
                         mutableAssociations.remove(device)
                     }
                 },
+                isCurrentDeviceChecked = { mutableDeviceKeys.contains(it) },
+                onCurrentDeviceChange = { deviceKey, isChecked ->
+                    if (isChecked) {
+                        mutableDeviceKeys.add(deviceKey)
+                    } else {
+                        mutableDeviceKeys.remove(deviceKey)
+                    }
+                },
             )
         },
         confirmButton = stringResource(R.string.action_save),
-        onConfirm = { input -> onConfirm(input, mutableAssociations) },
+        onConfirm = { input -> onConfirm(input, mutableAssociations, mutableDeviceKeys) },
         onDismiss = onDismiss,
     )
 }
@@ -1567,10 +1607,14 @@ private fun ProfileCheckDialog(
 
 @Composable
 private fun ProfileAssociationView(
+    currentDevice: AudioDevice?,
     isChecked: (AudioDeviceType) -> Boolean,
     onDeviceStateChange: (AudioDeviceType, Boolean) -> Unit,
+    isCurrentDeviceChecked: (String) -> Boolean,
+    onCurrentDeviceChange: (String, Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
     OutlinedCard(
         shape = RoundedCornerShape(8.dp),
         colors =
@@ -1596,6 +1640,52 @@ private fun ProfileAssociationView(
         HorizontalDivider(
             modifier = Modifier.padding(top = 8.dp),
         )
+
+        currentDevice
+            ?.takeIf { it.deviceKey != null }
+            ?.let { device ->
+                val deviceKey = device.deviceKey ?: return@let
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .toggleable(
+                                value = isCurrentDeviceChecked(deviceKey),
+                                onValueChange = { checked ->
+                                    onCurrentDeviceChange(deviceKey, checked)
+                                },
+                                role = Role.Checkbox,
+                            ).padding(12.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(device.type.iconRes),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.size(20.dp),
+                    )
+
+                    Text(
+                        text =
+                            stringResource(
+                                R.string.use_with_current_device,
+                                device.getDeviceName(context),
+                            ),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+
+                    Checkbox(
+                        checked = isCurrentDeviceChecked(deviceKey),
+                        onCheckedChange = null,
+                    )
+                }
+
+                HorizontalDivider()
+            }
 
         AudioDeviceType.entries
             .filterNot { it == AudioDeviceType.Unknown }

@@ -1,7 +1,10 @@
 package com.ssilencce.playback.shuffle
 
+import android.os.Build
 import android.util.Log
 import com.ssilencce.core.model.shuffle.GroupShuffleMode
+import com.ssilencce.core.model.shuffle.ShuffleGroupKeyPolicy
+import com.ssilencce.core.model.shuffle.ShuffleModeAvailabilityPolicy
 import com.ssilencce.core.model.shuffle.SpecialShuffleMode
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.SongProvider
@@ -22,6 +25,11 @@ class ShuffleManager : KoinComponent {
         mode: SpecialShuffleMode,
     ): List<Song> {
         if (songs.isEmpty()) return emptyList()
+
+        // A stale persisted composer mode must not silently degrade to uniform weights below API 30.
+        if (!ShuffleModeAvailabilityPolicy.isAvailable(mode.composerDependent, Build.VERSION.SDK_INT)) {
+            return songs.shuffled()
+        }
 
         val expandedSongs = songs.expandSongsBatch()
         val now = System.currentTimeMillis()
@@ -63,6 +71,34 @@ class ShuffleManager : KoinComponent {
 
                         weightedShuffle(expandedSongs) { song ->
                             1.0 + (albumWeights[song.albumId] ?: 0.0)
+                        }
+                    }
+
+                    SpecialShuffleMode.MostPlayedAlbumArtists -> {
+                        val albumArtistWeights =
+                            expandedSongs
+                                .groupBy { ShuffleGroupKeyPolicy.albumArtist(it) }
+                                .mapValues { entry ->
+                                    ln(entry.value.sumOf { s -> s.playCount }.toDouble() + 1.0)
+                                }
+
+                        weightedShuffle(expandedSongs) { song ->
+                            val key = ShuffleGroupKeyPolicy.albumArtist(song)
+                            1.0 + (albumArtistWeights[key] ?: 0.0)
+                        }
+                    }
+
+                    SpecialShuffleMode.MostPlayedComposers -> {
+                        val composerWeights =
+                            expandedSongs
+                                .groupBy { ShuffleGroupKeyPolicy.composer(it) }
+                                .mapValues { entry ->
+                                    ln(entry.value.sumOf { s -> s.playCount }.toDouble() + 1.0)
+                                }
+
+                        weightedShuffle(expandedSongs) { song ->
+                            val key = ShuffleGroupKeyPolicy.composer(song)
+                            1.0 + (composerWeights[key] ?: 0.0)
                         }
                     }
 

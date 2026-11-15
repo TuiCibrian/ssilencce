@@ -26,6 +26,7 @@ import androidx.core.content.edit
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import com.ssilencce.R
+import com.ssilencce.core.model.CategoryInfo
 import com.ssilencce.core.model.GridViewType
 import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.core.sort.ArtistSortMode
@@ -44,24 +45,44 @@ import com.ssilencce.ui.component.menu.onArtistsMenu
 import com.ssilencce.ui.screen.library.ReloadType
 import com.ssilencce.util.Preferences
 
-class ArtistListFragment :
+open class ArtistListFragment :
     AbsRecyclerViewCustomGridSizeFragment<ArtistAdapter, GridLayoutManager>(),
     IArtistCallback,
     QuickSearchable {
-    override val titleRes: Int = R.string.artists_label
+    open val kind: ArtistListKind = ArtistListKind.Artists
+
+    override val titleRes: Int
+        get() =
+            when (kind) {
+                ArtistListKind.Artists -> R.string.artists_label
+                ArtistListKind.AlbumArtists -> R.string.album_artists_label
+                ArtistListKind.Composers -> R.string.composers_label
+            }
+
     override val isShuffleVisible: Boolean = true
+
     override val emptyMessageRes: Int
-        get() = R.string.no_artists_label
+        get() =
+            when (kind) {
+                ArtistListKind.Artists, ArtistListKind.AlbumArtists -> R.string.no_artists_label
+                ArtistListKind.Composers -> R.string.no_composers_label
+            }
 
     private var allArtists: List<Artist> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override fun onViewCreated(
         view: View,
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        libraryViewModel.getArtists().observe(viewLifecycleOwner) { artists ->
+        val liveData =
+            when (kind) {
+                ArtistListKind.Artists -> libraryViewModel.getArtists()
+                ArtistListKind.AlbumArtists -> libraryViewModel.getAlbumArtists()
+                ArtistListKind.Composers -> libraryViewModel.getComposers()
+            }
+        liveData.observe(viewLifecycleOwner) { artists ->
             allArtists = artists
             applyQuickSearch()
         }
@@ -101,8 +122,24 @@ class ArtistListFragment :
 
     override fun onResume() {
         super.onResume()
-        libraryViewModel.forceReload(ReloadType.Artists)
+        reloadArtists()
     }
+
+    private fun reloadArtists() {
+        libraryViewModel.forceReload(
+            when (kind) {
+                ArtistListKind.Artists -> ReloadType.Artists
+                ArtistListKind.AlbumArtists -> ReloadType.AlbumArtists
+                ArtistListKind.Composers -> ReloadType.Composers
+            },
+        )
+    }
+
+    private val albumArtistsTabVisible: Boolean
+        get() =
+            Preferences.libraryCategories.any {
+                it.category == CategoryInfo.Category.AlbumArtists && it.visible
+            }
 
     override fun createLayoutManager(): GridLayoutManager = GridLayoutManager(activity, gridSize)
 
@@ -144,39 +181,57 @@ class ArtistListFragment :
     ) {
         super.onCreateMenu(menu, inflater)
         ArtistSortMode.AllArtists.createMenu(menu)
-        menu.add(0, R.id.action_album_artist, 0, R.string.show_album_artists).apply {
-            isCheckable = true
-            isChecked = Preferences.onlyAlbumArtists
+        if (kind == ArtistListKind.Artists && !albumArtistsTabVisible) {
+            menu.add(0, R.id.action_album_artist, 0, R.string.show_album_artists).apply {
+                isCheckable = true
+                isChecked = Preferences.onlyAlbumArtists
+            }
         }
     }
 
     override fun onMenuItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == R.id.action_album_artist) {
+        if (item.itemId == R.id.action_album_artist && kind == ArtistListKind.Artists) {
             item.isChecked = !item.isChecked
             Preferences.onlyAlbumArtists = item.isChecked
-            libraryViewModel.forceReload(ReloadType.Artists)
+            reloadArtists()
             return true
         }
         if (ArtistSortMode.AllArtists.sortItemSelected(item)) {
-            libraryViewModel.forceReload(ReloadType.Artists)
+            reloadArtists()
             return true
         }
         return super.onMenuItemSelected(item)
     }
 
+    private val viewTypeKey: String
+        get() =
+            when (kind) {
+                ArtistListKind.Artists -> "artists_view_type"
+                ArtistListKind.AlbumArtists -> "album_artists_view_type"
+                ArtistListKind.Composers -> "composers_view_type"
+            }
+
+    private val gridSizeKey: String
+        get() =
+            when (kind) {
+                ArtistListKind.Artists -> "artists_grid_size"
+                ArtistListKind.AlbumArtists -> "album_artists_grid_size"
+                ArtistListKind.Composers -> "composers_grid_size"
+            }
+
     override fun getSavedViewType(): GridViewType =
         GridViewType.entries.firstOrNull {
-            it.name == sharedPreferences.getString(VIEW_TYPE, null)
+            it.name == sharedPreferences.getString(viewTypeKey, null)
         } ?: GridViewType.Circle
 
     override fun saveViewType(viewType: GridViewType) {
-        sharedPreferences.edit { putString(VIEW_TYPE, viewType.name) }
+        sharedPreferences.edit { putString(viewTypeKey, viewType.name) }
     }
 
-    override fun getSavedGridSize(): Int = sharedPreferences.getInt(GRID_SIZE, defaultGridSize)
+    override fun getSavedGridSize(): Int = sharedPreferences.getInt(gridSizeKey, defaultGridSize)
 
     override fun saveGridSize(newGridSize: Int) {
-        sharedPreferences.edit { putInt(GRID_SIZE, newGridSize) }
+        sharedPreferences.edit { putInt(gridSizeKey, newGridSize) }
     }
 
     override fun onGridSizeChanged(
@@ -189,16 +244,17 @@ class ArtistListFragment :
 
     override fun onMediaContentChanged() {
         super.onMediaContentChanged()
-        libraryViewModel.forceReload(ReloadType.Artists)
+        reloadArtists()
     }
 
     override fun onPause() {
         super.onPause()
         adapter?.actionMode?.finish()
     }
+}
 
-    companion object {
-        private const val VIEW_TYPE = "artists_view_type"
-        private const val GRID_SIZE = "artists_grid_size"
-    }
+enum class ArtistListKind {
+    Artists,
+    AlbumArtists,
+    Composers,
 }

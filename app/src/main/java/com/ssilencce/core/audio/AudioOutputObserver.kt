@@ -33,8 +33,10 @@ import androidx.core.content.getSystemService
 import androidx.media.AudioManagerCompat.getStreamMaxVolume
 import androidx.media.AudioManagerCompat.getStreamMinVolume
 import androidx.mediarouter.media.MediaControlIntent
+import androidx.mediarouter.media.MediaRouteSelector
 import androidx.mediarouter.media.MediaRouter
 import com.ssilencce.core.model.audiodevice.AudioDevice
+import com.ssilencce.core.model.audiodevice.AudioDeviceKeyPolicy
 import com.ssilencce.core.model.audiodevice.AudioDeviceType
 import com.ssilencce.core.model.audiodevice.BitPerfectState
 import com.ssilencce.core.model.audiodevice.getDeviceType
@@ -60,6 +62,11 @@ class AudioOutputObserver(
     val availableBitPerfectDevices = _availableBitPerfectDevices.asStateFlow()
 
     private var mediaRouter = MediaRouter.getInstance(context)
+    private val liveAudioSelector =
+        MediaRouteSelector
+            .Builder()
+            .addControlCategory(MediaControlIntent.CATEGORY_LIVE_AUDIO)
+            .build()
     var audioManager = context.getSystemService<AudioManager>()
         private set
 
@@ -124,6 +131,11 @@ class AudioOutputObserver(
                     }
                 ContextCompat.registerReceiver(context, this, filter, ContextCompat.RECEIVER_EXPORTED)
                 audioManager?.registerAudioDeviceCallback(audioDeviceCallback, null)
+                mediaRouter.addCallback(
+                    liveAudioSelector,
+                    mediaRouterCallback,
+                    MediaRouter.CALLBACK_FLAG_UNFILTERED_EVENTS,
+                )
                 this.isObserving = true
             } catch (e: Throwable) {
                 Log.e(TAG, "Unable to start audio output observer", e)
@@ -136,6 +148,7 @@ class AudioOutputObserver(
             try {
                 context.unregisterReceiver(this)
                 audioManager?.unregisterAudioDeviceCallback(audioDeviceCallback)
+                mediaRouter.removeCallback(mediaRouterCallback)
                 this.isObserving = false
             } catch (e: Throwable) {
                 Log.e(TAG, "Unable to stop audio output observer", e)
@@ -349,10 +362,17 @@ class AudioOutputObserver(
         val route = mediaRouter.selectedRoute
         val isConnected = route.connectionState == MediaRouter.RouteInfo.CONNECTION_STATE_CONNECTED
         if (isConnected && route.isEnabled && route.supportsControlCategory(MediaControlIntent.CATEGORY_LIVE_AUDIO)) {
+            val type = route.getMediaRouteType()
             audioDevice =
                 AudioDevice(
-                    type = route.getMediaRouteType(),
+                    type = type,
                     productName = route.name,
+                    deviceKey =
+                        if (type.isProduct) {
+                            AudioDeviceKeyPolicy.opaqueKey(type.name, route.id)
+                        } else {
+                            null
+                        },
                 )
         }
         return audioDevice ?: audioManager
@@ -360,9 +380,26 @@ class AudioOutputObserver(
             ?.minByOrNull { info ->
                 AudioDeviceType.entries.indexOf(info.getDeviceType())
             }?.let { chosen ->
+                val type = chosen.getDeviceType()
+                val productName = chosen.productName?.toString()
+                val identity =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        runCatching { chosen.address }.getOrNull()
+                    } else {
+                        null
+                    }
                 AudioDevice(
-                    type = chosen.getDeviceType(),
-                    productName = chosen.productName.toString(),
+                    type = type,
+                    productName = productName,
+                    deviceKey =
+                        if (type.isProduct) {
+                            AudioDeviceKeyPolicy.opaqueKey(
+                                type.name,
+                                identity?.takeIf { it.isNotBlank() } ?: productName,
+                            )
+                        } else {
+                            null
+                        },
                 )
             } ?: AudioDevice.UnknownDevice
     }
@@ -387,6 +424,24 @@ class AudioOutputObserver(
                 isFixed = audioManager?.isVolumeFixed == true,
             )
     }
+
+    private val mediaRouterCallback: MediaRouter.Callback =
+        object : MediaRouter.Callback() {
+            override fun onRouteSelected(
+                router: MediaRouter,
+                route: MediaRouter.RouteInfo,
+                reason: Int,
+            ) {
+                requestAudioDevice()
+            }
+
+            override fun onRouteChanged(
+                router: MediaRouter,
+                route: MediaRouter.RouteInfo,
+            ) {
+                requestAudioDevice()
+            }
+        }
 
     private val audioDeviceCallback: AudioDeviceCallback =
         object : AudioDeviceCallback() {

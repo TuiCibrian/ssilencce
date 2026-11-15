@@ -34,6 +34,12 @@ interface AlbumRepository {
     fun albums(query: String): List<Album>
 
     fun similarAlbums(album: Album): List<Album>
+
+    fun splitIntoAlbums(
+        songs: List<Song>,
+        sorted: Boolean = true,
+        sortMode: AlbumSortMode = AlbumSortMode.AllAlbums,
+    ): List<Album>
 }
 
 class RealAlbumRepository(
@@ -102,10 +108,10 @@ class RealAlbumRepository(
         }
     }
 
-    fun splitIntoAlbums(
+    override fun splitIntoAlbums(
         songs: List<Song>,
-        sorted: Boolean = true,
-        sortMode: AlbumSortMode = AlbumSortMode.AllAlbums,
+        sorted: Boolean,
+        sortMode: AlbumSortMode,
     ): List<Album> {
         val grouped =
             songs

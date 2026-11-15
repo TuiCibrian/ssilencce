@@ -33,6 +33,7 @@ import com.ssilencce.extensions.resources.textColorSecondary
 import com.ssilencce.extensions.resources.toForegroundColorSpan
 import com.ssilencce.extensions.utilities.DEFAULT_INFO_DELIMITER
 import com.ssilencce.extensions.utilities.buildInfoString
+import java.text.DateFormat
 import java.util.Locale
 
 fun Album.isArtistNameUnknown() = albumArtistName().isArtistNameUnknown()
@@ -121,18 +122,23 @@ fun Song.searchQuery(engine: WebSearchEngine): String {
 
 fun Song.songInfo(): String = buildInfoString(songDurationStr(), displayArtistName())
 
+fun Song.listDateModified(context: Context): String {
+    val locale = context.resources.configuration.locales[0] ?: Locale.getDefault()
+    return DateFormat.getDateInstance(DateFormat.MEDIUM, locale).format(dateModified)
+}
+
 fun Song.replayGainStr(context: Context): String? {
     val rg = ReplayGainTagExtractor.getReplayGain(this)
     val builder = StringBuilder()
-    if (rg.trackGain != 0f) {
-        builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.track), rg.trackGain))
+    rg.trackGain?.let { gain ->
+        builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.track), gain))
     }
-    if (rg.albumGain != 0f) {
+    rg.albumGain?.let { gain ->
         if (builder.isNotEmpty()) {
             builder.append(" - ")
         }
 
-        builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.album), rg.albumGain))
+        builder.append(String.format(Locale.ROOT, "%s: %.2f dB", context.getString(R.string.album), gain))
     }
     val replayGainValues = builder.toString()
     return replayGainValues.ifEmpty { null }

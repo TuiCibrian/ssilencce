@@ -32,6 +32,7 @@ import androidx.fragment.app.FragmentActivity
 import com.ssilencce.R
 import com.ssilencce.coil.DEFAULT_SONG_IMAGE
 import com.ssilencce.core.model.action.SongClickBehavior
+import com.ssilencce.core.model.list.SongListDisplayPolicy
 import com.ssilencce.core.model.sort.SortKey
 import com.ssilencce.core.sort.SongSortMode
 import com.ssilencce.data.model.Song
@@ -39,6 +40,7 @@ import com.ssilencce.extensions.isActivated
 import com.ssilencce.extensions.loadPaletteImage
 import com.ssilencce.extensions.media.asSectionName
 import com.ssilencce.extensions.media.displayArtistName
+import com.ssilencce.extensions.media.listDateModified
 import com.ssilencce.extensions.media.songInfo
 import com.ssilencce.extensions.resources.hide
 import com.ssilencce.extensions.showToast
@@ -102,30 +104,38 @@ open class SongAdapter(
         holder.loadPaletteImage(song, DEFAULT_SONG_IMAGE)
     }
 
-    private fun getSongTitle(song: Song): String =
-        when (sortMode?.selectedKey) {
-            SortKey.FileName -> song.fileName
-            else -> song.title
-        }
+    protected fun getSongTitle(song: Song): String = SongListDisplayPolicy.title(song, sortMode?.selectedKey, Preferences.songTitleMode)
 
     protected open fun getSongText(song: Song): String? =
-        when (sortMode?.selectedKey) {
-            SortKey.Year -> {
-                if (song.year > 0) {
-                    buildInfoString(song.displayArtistName(), song.year.toString())
-                } else {
-                    song.displayArtistName()
+        appendListDateModified(
+            when (sortMode?.selectedKey) {
+                SortKey.Year -> {
+                    if (song.year > 0) {
+                        buildInfoString(song.displayArtistName(), song.year.toString())
+                    } else {
+                        song.displayArtistName()
+                    }
                 }
-            }
 
-            SortKey.Album -> {
-                buildInfoString(song.displayArtistName(), song.albumName)
-            }
+                SortKey.Album -> {
+                    buildInfoString(song.displayArtistName(), song.albumName)
+                }
 
-            else -> {
-                song.songInfo()
-            }
-        }
+                else -> {
+                    song.songInfo()
+                }
+            },
+            song,
+        )
+
+    protected fun appendListDateModified(
+        baseText: String?,
+        song: Song,
+    ): String? {
+        if (!Preferences.showListDateModified) return baseText
+        val dateModified = activity.getString(R.string.list_date_modified, song.listDateModified(activity))
+        return SongListDisplayPolicy.appendDateModified(baseText, dateModified)
+    }
 
     override fun getItemCount(): Int = dataSet.size
 
@@ -133,7 +143,7 @@ open class SongAdapter(
 
     override fun getIdentifier(position: Int): Song? = dataSet[position]
 
-    override fun getName(item: Song): String? = item.title
+    override fun getName(item: Song): String? = getSongTitle(item)
 
     override fun onMultipleItemAction(
         menuItem: MenuItem,
@@ -151,13 +161,15 @@ open class SongAdapter(
         position: Int,
     ): CharSequence {
         val song = dataSet.getOrNull(position) ?: return ""
+        val displayTitle = getSongTitle(song)
         return when (sortMode?.selectedKey) {
             SortKey.Album -> song.albumName.asSectionName(sortMode)
             SortKey.Artist -> song.displayArtistName().asSectionName(sortMode)
-            SortKey.Name -> song.title.asSectionName(sortMode)
+            SortKey.Name -> displayTitle.asSectionName(sortMode)
             SortKey.Year -> ""
             SortKey.FileName -> song.fileName.asSectionName(sortMode)
-            else -> song.title.asSectionName(sortMode)
+            SortKey.Path -> ""
+            else -> displayTitle.asSectionName(sortMode)
         }
     }
 

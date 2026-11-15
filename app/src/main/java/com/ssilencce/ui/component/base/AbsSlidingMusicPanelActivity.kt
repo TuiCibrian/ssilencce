@@ -168,6 +168,10 @@ abstract class AbsSlidingMusicPanelActivity :
             } else {
                 dip(R.dimen.bottom_nav_height)
             }
+
+    val navigationHeightWithInsets: Int
+        get() = navigationHeight + (windowInsets?.getBottomInsets(this) ?: 0)
+
     var auroraDestination by mutableIntStateOf(R.id.nav_home)
         protected set
     private var auroraPlayerExpanded by mutableStateOf(false)
@@ -767,6 +771,7 @@ abstract class AbsSlidingMusicPanelActivity :
         preferences: SharedPreferences,
         key: String?,
     ) {
+        if (isDestroyed || isFinishing) return
         when (key) {
             TAB_TITLES_MODE -> {
                 navigationView.labelVisibilityMode = Preferences.bottomTitlesMode

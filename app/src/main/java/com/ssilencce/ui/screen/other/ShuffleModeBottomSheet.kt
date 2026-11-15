@@ -17,6 +17,7 @@
 
 package com.ssilencce.ui.screen.other
 
+import android.os.Build
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -40,6 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.ssilencce.core.model.shuffle.ShuffleModeAvailabilityPolicy
 import com.ssilencce.core.model.shuffle.ShuffleOperationState
 import com.ssilencce.core.model.shuffle.SpecialShuffleMode
 import com.ssilencce.ui.component.compose.BottomSheetDialogSurface
@@ -56,6 +58,13 @@ fun ShuffleModeBottomSheet(
 ) {
     val allSongs by libraryViewModel.getSongs().observeAsState(emptyList())
     val shuffleState by playerViewModel.shuffleOperationState.collectAsState()
+    val availableModes =
+        remember(modes) {
+            ShuffleModeAvailabilityPolicy.available(
+                modes.toList(),
+                Build.VERSION.SDK_INT,
+            ) { it.composerDependent }
+        }
 
     val isBusy = shuffleState.status == ShuffleOperationState.Status.InProgress
 
@@ -87,7 +96,7 @@ fun ShuffleModeBottomSheet(
                         .clip(RoundedCornerShape(24.dp)),
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                items(modes) { mode ->
+                items(availableModes) { mode ->
                     ShuffleModeItem(
                         mode = mode,
                         isEnabled = allSongs.isNotEmpty() && !isBusy,

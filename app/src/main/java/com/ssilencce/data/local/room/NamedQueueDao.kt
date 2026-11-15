@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.Flow
 data class NamedQueueSummary(
     val id: String,
     val name: String,
+    val createdAt: Long,
     val updatedAt: Long,
     val itemCount: Int,
 )
@@ -55,20 +56,20 @@ interface NamedQueueDao {
 
     @Query(
         """
-        SELECT q.id AS id, q.name AS name, q.updated_at AS updatedAt,
+        SELECT q.id AS id, q.name AS name, q.created_at AS createdAt, q.updated_at AS updatedAt,
                (SELECT COUNT(*) FROM NamedQueueItemEntity i WHERE i.queue_id = q.id) AS itemCount
         FROM NamedQueueEntity q
-        ORDER BY q.updated_at DESC
+        ORDER BY q.created_at ASC, q.id ASC
         """,
     )
     fun summariesFlow(): Flow<List<NamedQueueSummary>>
 
     @Query(
         """
-        SELECT q.id AS id, q.name AS name, q.updated_at AS updatedAt,
+        SELECT q.id AS id, q.name AS name, q.created_at AS createdAt, q.updated_at AS updatedAt,
                (SELECT COUNT(*) FROM NamedQueueItemEntity i WHERE i.queue_id = q.id) AS itemCount
         FROM NamedQueueEntity q
-        ORDER BY q.updated_at DESC
+        ORDER BY q.created_at ASC, q.id ASC
         """,
     )
     suspend fun summaries(): List<NamedQueueSummary>

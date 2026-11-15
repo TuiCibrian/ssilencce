@@ -26,6 +26,12 @@ interface PlaylistDao {
     @Query("SELECT * FROM PlaylistEntity WHERE playlist_name = :name")
     fun playlist(name: String): List<PlaylistEntity>
 
+    @Query("SELECT * FROM PlaylistEntity WHERE playlist_id = :playlistId")
+    suspend fun playlistById(playlistId: Long): PlaylistEntity?
+
+    @Query("SELECT COUNT(*) FROM PlaylistEntity WHERE playlist_name = :name")
+    suspend fun countPlaylistsByName(name: String): Int
+
     @Query("SELECT * FROM PlaylistEntity")
     suspend fun playlists(): List<PlaylistEntity>
 

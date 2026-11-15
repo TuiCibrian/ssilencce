@@ -26,6 +26,16 @@
         android:label="ArtistsFragment"/>
 
     <fragment
+        android:id="@+id/nav_album_artists"
+        android:name="com.ssilencce.ui.screen.library.artists.AlbumArtistListFragment"
+        android:label="AlbumArtistListFragment"/>
+
+    <fragment
+        android:id="@+id/nav_composers"
+        android:name="com.ssilencce.ui.screen.library.artists.ComposerListFragment"
+        android:label="ComposerListFragment"/>
+
+    <fragment
         android:id="@+id/nav_genres"
         android:name="com.ssilencce.ui.screen.library.genres.GenresListFragment"
         android:label="GenresFragment"/>
@@ -59,6 +69,11 @@
             app:nullable="true"/>
     </fragment>
 
+    <fragment
+        android:id="@+id/nav_queues"
+        android:name="com.ssilencce.ui.screen.queue.QueuesFragment"
+        android:label="QueuesFragment"/>
+
     <dialog
         android:id="@+id/nav_queue"
         android:name="com.ssilencce.ui.screen.queue.QueueFragment"
@@ -82,6 +97,10 @@
             app:argType="long"/>
         <argument
             android:name="artist_name"
+            app:argType="string"
+            app:nullable="true"/>
+        <argument
+            android:name="composer_name"
             app:argType="string"
             app:nullable="true"/>
     </fragment>

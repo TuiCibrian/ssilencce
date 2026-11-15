@@ -22,7 +22,7 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
-import androidx.core.view.updatePadding
+import androidx.core.view.isVisible
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -43,6 +43,10 @@ import com.ssilencce.extensions.utilities.buildInfoString
 import com.ssilencce.ui.ISongCallback
 import com.ssilencce.ui.adapters.song.SongAdapter
 import com.ssilencce.ui.component.base.AbsMainActivityFragment
+import com.ssilencce.ui.component.base.QuickSearchHost
+import com.ssilencce.ui.component.base.QuickSearchPolicy
+import com.ssilencce.ui.component.base.QuickSearchState
+import com.ssilencce.ui.component.base.matchesDetailQuery
 import com.ssilencce.ui.component.menu.onSongMenu
 import com.ssilencce.ui.component.menu.onSongsMenu
 import com.ssilencce.ui.component.menu.showAddShortcutDialog
@@ -62,6 +66,9 @@ class FolderDetailFragment :
     private val binding get() = _binding!!
 
     private lateinit var songAdapter: SongAdapter
+    private var allSongs: List<Song> = emptyList()
+    private var quickSearchQuery: String = ""
+    private var quickSearchHost: QuickSearchHost? = null
 
     private val folder: Folder
         get() = detailViewModel.getFolder().value ?: Folder.empty
@@ -77,12 +84,25 @@ class FolderDetailFragment :
 
         view.applyHorizontalWindowInsets()
 
-        libraryViewModel.getMiniPlayerMargin().observe(viewLifecycleOwner) {
-            binding.recyclerView.updatePadding(bottom = it.getWithSpace(includeNavigation = true))
-        }
-
         setupButtons()
         setupRecyclerView()
+
+        quickSearchQuery = QuickSearchState.restore(savedInstanceState)
+        quickSearchHost =
+            QuickSearchHost(
+                fragment = this,
+                bar = binding.quickSearchBar!!,
+                recyclerView = binding.recyclerView,
+                miniPlayerMargin = libraryViewModel.getMiniPlayerMargin(),
+                barMargin = libraryViewModel.getFabMargin(),
+                navigationHeightProvider = { mainActivity.navigationHeightWithInsets },
+                queryProvider = { quickSearchQuery },
+                onQueryChanged = { query ->
+                    quickSearchQuery = query
+                    applyQuickSearch()
+                },
+            ).also { it.setup() }
+
         detailViewModel.getFolder().observe(viewLifecycleOwner) {
             binding.collapsingAppBarLayout.title = it.fileName
             binding.title.text = it.fileName
@@ -115,6 +135,7 @@ class FolderDetailFragment :
     }
 
     fun songs(songs: List<Song>) {
+        allSongs = songs
         if (songs.isEmpty()) {
             findNavController().popBackStack()
             return
@@ -122,7 +143,20 @@ class FolderDetailFragment :
         binding.progressIndicator.hide()
         binding.subtitle.text =
             buildInfoString(songs.songCountStr(requireContext()), songs.songsDurationStr())
-        songAdapter.dataSet = songs
+        applyQuickSearch()
+    }
+
+    private fun applyQuickSearch() {
+        songAdapter.dataSet =
+            allSongs.filter { it.matchesDetailQuery(quickSearchQuery, includeFileName = true) }
+        updateEmptyState()
+    }
+
+    private fun updateEmptyState() {
+        val visibleCount = songAdapter.dataSet.size
+        val noMatches = QuickSearchPolicy.isNoMatch(quickSearchQuery, allSongs.size, visibleCount)
+        binding.empty.setText(if (noMatches) R.string.quick_search_empty else R.string.empty_label)
+        binding.empty.isVisible = visibleCount == 0
     }
 
     override fun songMenuItemClick(
@@ -186,7 +220,13 @@ class FolderDetailFragment :
             }
         }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        QuickSearchState.save(outState, quickSearchQuery)
+        super.onSaveInstanceState(outState)
+    }
+
     override fun onDestroyView() {
+        quickSearchHost = null
         super.onDestroyView()
         _binding = null
     }

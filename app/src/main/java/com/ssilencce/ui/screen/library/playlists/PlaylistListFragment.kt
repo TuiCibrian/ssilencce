@@ -55,7 +55,7 @@ class PlaylistListFragment :
         get() = R.string.no_device_playlists
 
     private var allPlaylists: List<PlaylistWithSongs> = emptyList()
-    private var quickSearchQuery: String = ""
+    override var quickSearchQuery: String = ""
 
     override val maxGridSize: Int
         get() =
