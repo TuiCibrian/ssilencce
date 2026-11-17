@@ -204,7 +204,7 @@ private fun AuroraDrawerHeader() {
                 .border(1.dp, Color.White.copy(alpha = .08f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Image(painterResource(R.drawable.app_logo_splash), contentDescription = null, modifier = Modifier.size(46.dp))
+            Image(painterResource(R.drawable.app_logo_mark), contentDescription = null, modifier = Modifier.size(46.dp))
         }
         Column {
             Text(stringResource(R.string.app_name), Modifier.semantics { heading() }, fontSize = 18.sp, fontWeight = FontWeight.Medium, color = AuroraDesign.foreground)
